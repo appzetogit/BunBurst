@@ -29,8 +29,8 @@ export default function Top10() {
         setTop10Restaurants([])
       }
     } catch (err) {
-      console.error('Error fetching Top 10 cafes:', err)
-      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load Top 10 cafes'
+      console.error('Error fetching Top 10 restaurants:', err)
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load Top 10 restaurants'
       setError(errorMessage)
       toast.error(errorMessage)
       setTop10Restaurants([])
@@ -76,7 +76,7 @@ export default function Top10() {
         <div className="absolute inset-0 z-0">
           <img
             src={top10Banner}
-            alt="Top 10 Cafes"
+            alt="Top 10 Restaurants"
             className="w-full h-full object-cover"
           />
         </div>
@@ -89,16 +89,16 @@ export default function Top10() {
           <div className="mb-2">
             <div className="flex items-center gap-2 mb-1">
               <Trophy className="h-6 w-6 text-yellow-500 fill-yellow-500" />
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Top 10 Cafes</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Top 10 Restaurants</h1>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Most loved cafes in your area</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Most loved restaurants in your area</p>
           </div>
 
           {/* Loading State */}
           {loading && (
             <div className="flex flex-col items-center justify-center py-20">
               <Loader2 className="h-10 w-10 animate-spin text-gray-400" />
-              <p className="mt-4 text-gray-500 dark:text-gray-400">Loading Top 10 cafes...</p>
+              <p className="mt-4 text-gray-500 dark:text-gray-400">Loading Top 10 restaurants...</p>
             </div>
           )}
 
@@ -115,7 +115,7 @@ export default function Top10() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {top10Restaurants.length === 0 ? (
                 <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400">No Top 10 cafes available at the moment</p>
+                  <p className="text-gray-500 dark:text-gray-400">No Top 10 restaurants available at the moment</p>
                 </div>
               ) : (
                 top10Restaurants.map((restaurant) => {
