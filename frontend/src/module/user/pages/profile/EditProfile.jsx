@@ -246,12 +246,10 @@ export default function EditProfile() {
 
   const handleMobileChange = () => {
     // Navigate to mobile change page or show modal
-    console.log('Change mobile clicked')
   }
 
   const handleEmailChange = () => {
     // Navigate to email change page or show modal
-    console.log('Change email clicked')
   }
 
   return (
@@ -475,8 +473,8 @@ export default function EditProfile() {
           onClick={handleUpdate}
           disabled={!hasChanges || isSaving || isUploadingImage}
           className={`w-full h-14 rounded-xl font-semibold text-base transition-all ${hasChanges && !isSaving && !isUploadingImage
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            ? 'bg-green-600 hover:bg-green-700 text-white'
+            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
         >
           {isSaving ? (

@@ -93,6 +93,7 @@ export default function Cart() {
   const { getDefaultAddress, getDefaultPaymentMethod, addresses, paymentMethods, userProfile } = useProfile()
   const { createOrder } = useOrders()
   const { openLocationSelector } = useLocationSelector()
+  const { location: userLocation, setManualLocation } = useUserLocation()
 
   // Custom addon states
   const [selectedItemForAddons, setSelectedItemForAddons] = useState(null)
@@ -850,20 +851,7 @@ export default function Cart() {
         return
       }
 
-      // Update location in backend
-      await userAPI.updateLocation({
-        latitude,
-        longitude,
-        address: `${address.street}, ${address.city}`,
-        city: address.city,
-        state: address.state,
-        area: address.additionalDetails || "",
-        formattedAddress: address.additionalDetails
-          ? `${address.additionalDetails}, ${address.street}, ${address.city}, ${address.state}${address.zipCode ? ` ${address.zipCode}` : ''}`
-          : `${address.street}, ${address.city}, ${address.state}${address.zipCode ? ` ${address.zipCode}` : ''}`
-      })
-
-      // Update the location in localStorage
+      // Update the location globally via context
       const locationData = {
         city: address.city,
         state: address.state,
@@ -876,12 +864,9 @@ export default function Cart() {
           ? `${address.additionalDetails}, ${address.street}, ${address.city}, ${address.state}${address.zipCode ? ` ${address.zipCode}` : ''}`
           : `${address.street}, ${address.city}, ${address.state}${address.zipCode ? ` ${address.zipCode}` : ''}`
       }
-      localStorage.setItem("userLocation", JSON.stringify(locationData))
 
+      setManualLocation(locationData)
       toast.success(`${label} address selected!`)
-
-      // Force page reload to update location
-      window.location.reload()
     } catch (error) {
       console.error(`Error selecting ${label} address:`, error)
       toast.error(`Failed to select ${label} address. Please try again.`)

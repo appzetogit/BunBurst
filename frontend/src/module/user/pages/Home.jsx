@@ -475,7 +475,7 @@ export default function Home() {
         if (!healthCheck.ok) {
           throw new Error(`Backend health check failed: ${healthCheck.status}`)
         }
-        console.log('✅ Backend connection successful')
+        // Result handled silently
       } catch (healthError) {
         // Backend connection error - handled silently, toast notifications shown via axios interceptor
         setRestaurantsData([])
@@ -544,13 +544,10 @@ export default function Home() {
       }
       // Note: We show all restaurants regardless of zone, but apply grayscale styling if user is out of service
 
-      console.log('Fetching restaurants with params:', params)
       const response = await restaurantAPI.getRestaurants(params)
-      console.log('Restaurants API response:', response.data)
 
       if (response.data && response.data.success && response.data.data && response.data.data.restaurants) {
         const restaurantsArray = response.data.data.restaurants
-        console.log(`Fetched ${restaurantsArray.length} restaurants from API`)
 
         if (restaurantsArray.length === 0) {
           console.warn('No restaurants found in API response')
@@ -672,7 +669,6 @@ export default function Home() {
           })
         }
 
-        console.log('Transformed and sorted restaurants:', transformedRestaurants)
         setRestaurantsData(transformedRestaurants)
       } else {
         console.warn('Invalid API response structure:', response.data)
@@ -686,7 +682,6 @@ export default function Home() {
       setRestaurantsData([])
     } finally {
       setLoadingRestaurants(false)
-      console.log('Restaurant loading completed. restaurantsData length:', restaurantsData.length)
     }
   }, [zoneId])
 
@@ -695,63 +690,61 @@ export default function Home() {
     fetchRestaurants(appliedFilters)
   }, [appliedFilters, fetchRestaurants])
 
-  // Recalculate distances when user location updates
-  useEffect(() => {
-    if (!restaurantsData || restaurantsData.length === 0 || !location?.latitude || !location?.longitude) return
+  // Compute restaurants with up-to-date distances and sorting
+  const restaurantsWithDistances = useMemo(() => {
+    if (!restaurantsData || restaurantsData.length === 0) return []
 
-    const calculateDistance = (lat1, lng1, lat2, lng2) => {
-      const R = 6371 // Earth's radius in kilometers
+    const userLat = location?.latitude
+    const userLng = location?.longitude
+
+    const calculateDist = (lat1, lng1, lat2, lng2) => {
+      const R = 6371
       const dLat = (lat2 - lat1) * Math.PI / 180
       const dLng = (lng2 - lng1) * Math.PI / 180
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
         Math.sin(dLng / 2) * Math.sin(dLng / 2)
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-      return R * c // Distance in kilometers
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
     }
 
-    const userLat = location.latitude
-    const userLng = location.longitude
-
-    // Recalculate distances for all restaurants
-    const updatedRestaurants = restaurantsData.map(restaurant => {
-      if (!restaurant.location) return restaurant
+    return restaurantsData.map(restaurant => {
+      if (!userLat || !userLng || !restaurant.location) return restaurant
 
       const restaurantLat = restaurant.location?.latitude || (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) ? restaurant.location.coordinates[1] : null)
       const restaurantLng = restaurant.location?.longitude || (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) ? restaurant.location.coordinates[0] : null)
 
-      if (!restaurantLat || !restaurantLng ||
-        isNaN(restaurantLat) || isNaN(restaurantLng)) {
-        return restaurant
-      }
+      if (!restaurantLat || !restaurantLng || isNaN(restaurantLat) || isNaN(restaurantLng)) return restaurant
 
-      const distanceInKm = calculateDistance(userLat, userLng, restaurantLat, restaurantLng)
-      let calculatedDistance = null
+      const distanceInKm = calculateDist(userLat, userLng, restaurantLat, restaurantLng)
+      let formattedDistance = null
 
-      // Format distance: show 1 decimal place if >= 1km, otherwise show in meters
       if (distanceInKm >= 1) {
-        calculatedDistance = `${distanceInKm.toFixed(1)} km`
+        formattedDistance = `${distanceInKm.toFixed(1)} km`
       } else {
-        const distanceInMeters = Math.round(distanceInKm * 1000)
-        calculatedDistance = `${distanceInMeters} m`
+        formattedDistance = `${Math.round(distanceInKm * 1000)} m`
       }
 
       return {
         ...restaurant,
-        distance: calculatedDistance,
-        distanceInKm: distanceInKm // Preserve numeric distance for sorting
+        distance: formattedDistance,
+        distanceInKm
       }
+    }).sort((a, b) => {
+      // Available restaurants first
+      const aAvailable = a.isActive && a.isAcceptingOrders
+      const bAvailable = b.isActive && b.isAcceptingOrders
+      if (aAvailable !== bAvailable) return aAvailable ? -1 : 1
+
+      // Then by distance
+      const aDist = a.distanceInKm ?? 999
+      const bDist = b.distanceInKm ?? 999
+      return aDist - bDist
     })
+  }, [restaurantsData, location?.latitude, location?.longitude])
 
-    setRestaurantsData(updatedRestaurants)
-    console.log('🔄 Recalculated distances for all restaurants based on user location')
-  }, [location?.latitude, location?.longitude])
-
-  // Filter restaurants and foods based on active filters
+  // Filter restaurants based on active filters
   const filteredRestaurants = useMemo(() => {
-    // Use only API data - no mock data fallback
-    let filtered = [...restaurantsData]
+    let filtered = [...restaurantsWithDistances]
 
     // Apply filters
     if (activeFilters.has('price-under-200')) {

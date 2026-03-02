@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import {
@@ -48,7 +48,7 @@ import { authAPI, userAPI } from "@/lib/api"
 import { firebaseAuth } from "@/lib/firebase"
 import { clearModuleAuth } from "@/lib/utils/auth"
 import { toast } from "sonner"
-import { useRef } from "react"
+
 
 export default function Profile() {
   const { userProfile, vegMode, setVegMode } = useProfile()
@@ -96,7 +96,7 @@ export default function Profile() {
   const displayEmail = hasValidEmail ? userProfile.email : (userProfile?.phone || 'Not available')
 
   // Calculate profile completion percentage
-  const calculateProfileCompletion = () => {
+  const profileCompletion = useMemo(() => {
     if (!userProfile) return 0
 
     // Helper function to check if date field is filled (handles Date objects, date strings, ISO strings)
@@ -133,7 +133,7 @@ export default function Profile() {
     const hasPhone = !!(userProfile.phone &&
       typeof userProfile.phone === 'string' &&
       userProfile.phone.trim() !== '')
-    const hasContact = hasPhone || hasValidEmail
+    const hasContact = hasPhone || (userProfile?.email && userProfile.email.trim() !== '' && userProfile.email.includes('@'))
 
     // Check profile image - must have URL string
     const hasImage = !!(userProfile.profileImage &&
@@ -166,35 +166,9 @@ export default function Profile() {
     const completedRequiredFields = Object.values(requiredFields).filter(Boolean).length
 
     // Calculate percentage based ONLY on required fields (anniversary NOT included)
-    const percentage = Math.round((completedRequiredFields / totalRequiredFields) * 100)
+    return Math.round((completedRequiredFields / totalRequiredFields) * 100)
+  }, [userProfile])
 
-    // Always log for debugging (remove in production if needed)
-    console.log('🔍 Profile completion check:', {
-      requiredFields,
-      completedRequiredFields,
-      totalRequiredFields,
-      percentage,
-      fieldStatus: {
-        name: hasName ? '✅' : '❌',
-        contact: hasContact ? '✅' : '❌',
-        profileImage: hasImage ? '✅' : '❌',
-        dateOfBirth: hasDateOfBirth ? '✅' : '❌',
-        gender: hasGender ? '✅' : '❌',
-      },
-      rawData: {
-        name: userProfile.name || 'missing',
-        phone: userProfile.phone || 'missing',
-        email: userProfile.email || 'missing',
-        profileImage: userProfile.profileImage ? 'exists' : 'missing',
-        dateOfBirth: userProfile.dateOfBirth ? String(userProfile.dateOfBirth) : 'missing',
-        gender: userProfile.gender || 'missing',
-      }
-    })
-
-    return percentage
-  }
-
-  const profileCompletion = calculateProfileCompletion()
   const isComplete = profileCompletion === 100
 
   // Handle logout

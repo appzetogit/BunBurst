@@ -113,6 +113,8 @@ function LocationSelectorProvider({ children }) {
   )
 }
 
+import { LocationProvider } from "../context/LocationContext"
+
 export default function UserLayout() {
   const location = useLocation()
 
@@ -140,17 +142,19 @@ export default function UserLayout() {
       <CartProvider>
         <ProfileProvider>
           <OrdersProvider>
-            <SearchOverlayProvider>
-              <LocationSelectorProvider>
-                {/* <Navbar /> */}
-                {showBottomNav && <DesktopNavbar />}
-                <LocationPrompt />
-                <main>
-                  <Outlet />
-                </main>
-                {showBottomNav && <BottomNavigation />}
-              </LocationSelectorProvider>
-            </SearchOverlayProvider>
+            <LocationProvider>
+              <SearchOverlayProvider>
+                <LocationSelectorProvider>
+                  {/* <Navbar /> */}
+                  {showBottomNav && <DesktopNavbar />}
+                  <LocationPrompt />
+                  <main>
+                    <Outlet />
+                  </main>
+                  {showBottomNav && <BottomNavigation />}
+                </LocationSelectorProvider>
+              </SearchOverlayProvider>
+            </LocationProvider>
           </OrdersProvider>
         </ProfileProvider>
       </CartProvider>

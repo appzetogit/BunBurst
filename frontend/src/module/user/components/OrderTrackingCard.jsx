@@ -50,54 +50,29 @@ export default function OrderTrackingCard() {
   useEffect(() => {
     // Combine context orders and API orders
     const allOrders = [...contextOrders, ...apiOrders];
-    
+
     // Remove duplicates by ID
     const uniqueOrders = allOrders.filter((order, index, self) =>
       index === self.findIndex((o) => (o.id || o._id) === (order.id || order._id))
     );
 
-    console.log('🔍 OrderTrackingCard - Checking for active orders:', {
-      contextOrdersCount: contextOrders.length,
-      apiOrdersCount: apiOrders.length,
-      uniqueOrdersCount: uniqueOrders.length,
-      orders: uniqueOrders.map(o => ({
-        id: o.id || o._id,
-        status: o.status || o.deliveryState?.status,
-        restaurant: o.restaurant || o.restaurantName
-      }))
+    // Find active order - any order that is NOT delivered, cancelled, or completed
+    const activeOrderObj = uniqueOrders.find(order => {
+      const status = (order.status || order.deliveryState?.status || '').toLowerCase();
+      return status !== 'delivered' &&
+        status !== 'cancelled' &&
+        status !== 'completed' &&
+        status !== '';
     });
 
-    // Find active order - any order that is NOT delivered, cancelled, or completed
-    const active = uniqueOrders.find(order => {
-      const status = (order.status || order.deliveryState?.status || '').toLowerCase();
-      const isInactive = status === 'delivered' || 
-                        status === 'cancelled' || 
-                        status === 'completed' ||
-                        status === '';
-      
-      if (isInactive) {
-        return false;
-      }
-      
-      // If status exists and is not inactive, it's active
-      return true;
-    });
-    
-    console.log('✅ OrderTrackingCard - Active order found:', active ? {
-      id: active.id || active._id,
-      status: active.status || active.deliveryState?.status,
-      restaurant: active.restaurant || active.restaurantName
-    } : 'No active order');
-    
-    if (active) {
-      setActiveOrder(active);
+    if (activeOrderObj) {
+      setActiveOrder(activeOrderObj);
       // Calculate estimated delivery time
-      const orderTime = new Date(active.createdAt || active.orderDate || active.created_at || active.date || Date.now());
-      const estimatedMinutes = active.estimatedDeliveryTime || active.estimatedTime || active.estimated_delivery_time || 35;
+      const orderTime = new Date(activeOrderObj.createdAt || activeOrderObj.orderDate || activeOrderObj.created_at || activeOrderObj.date || Date.now());
+      const estimatedMinutes = activeOrderObj.estimatedDeliveryTime || activeOrderObj.estimatedTime || activeOrderObj.estimated_delivery_time || 35;
       const deliveryTime = new Date(orderTime.getTime() + estimatedMinutes * 60000);
       const remaining = Math.max(0, Math.floor((deliveryTime - new Date()) / 60000));
       setTimeRemaining(remaining);
-      console.log('⏰ OrderTrackingCard - Time remaining:', remaining, 'minutes');
     } else {
       setActiveOrder(null);
       setTimeRemaining(null);
@@ -167,39 +142,30 @@ export default function OrderTrackingCard() {
 
   // Debug: Log when component renders
   useEffect(() => {
-    console.log('🎯 OrderTrackingCard render:', {
-      hasActiveOrder: !!activeOrder,
-      timeRemaining,
-      contextOrdersCount: contextOrders.length,
-      apiOrdersCount: apiOrders.length
-    });
-  }, [activeOrder, timeRemaining, contextOrders.length, apiOrders.length]);
+    if (activeOrder) {
+      console.log('🎯 OrderTrackingCard active:', {
+        restaurant: activeOrder.restaurant || activeOrder.restaurantName,
+        timeRemaining
+      });
+    }
+  }, [activeOrder, timeRemaining]);
 
   if (!activeOrder) {
-    console.log('❌ OrderTrackingCard - No active order, not rendering');
     return null;
   }
 
   // Check if order is delivered or time remaining is 0 - hide card
   const orderStatus = (activeOrder.status || activeOrder.deliveryState?.status || 'preparing').toLowerCase();
   if (orderStatus === 'delivered' || orderStatus === 'completed' || timeRemaining === 0) {
-    console.log('❌ OrderTrackingCard - Order delivered or time is 0, hiding card');
     return null;
   }
 
   const restaurantName = activeOrder.restaurant || activeOrder.restaurantName || activeOrder.restaurantName || 'Restaurant';
   const statusText = orderStatus === 'preparing' || orderStatus === 'confirmed' || orderStatus === 'pending'
-    ? 'Preparing your order' 
+    ? 'Preparing your order'
     : orderStatus === 'out_for_delivery' || orderStatus === 'outfordelivery' || orderStatus === 'on_way'
-    ? 'On the way'
-    : 'Preparing your order';
-
-  console.log('✅ OrderTrackingCard - Rendering card:', {
-    restaurantName,
-    orderStatus,
-    statusText,
-    timeRemaining
-  });
+      ? 'On the way'
+      : 'Preparing your order';
 
   return (
     <AnimatePresence>

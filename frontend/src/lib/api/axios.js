@@ -63,24 +63,13 @@ function getTokenForCurrentRoute() {
     !path.startsWith("/restaurant/under-250")
   ) {
     // /restaurant/* is for restaurant module, /restaurants/* is for user module viewing restaurants
-    // Exclude public routes like /restaurant/list and /restaurant/under-250
     return localStorage.getItem("restaurant_accessToken");
   } else if (path.startsWith("/delivery")) {
     return localStorage.getItem("delivery_accessToken");
-  } else if (
-    path.startsWith("/user") ||
-    path.startsWith("/usermain") ||
-    path === "/" ||
-    (!path.startsWith("/admin") &&
-      !(path.startsWith("/restaurant") && !path.startsWith("/restaurants")) &&
-      !path.startsWith("/delivery"))
-  ) {
-    // User module includes /restaurants/* and /usermain/* paths
-    return localStorage.getItem("user_accessToken");
+  } else {
+    // Default to user module for /, /user/*, /auth/*, /restaurants/*, etc.
+    return localStorage.getItem("user_accessToken") || localStorage.getItem("accessToken");
   }
-
-  // Fallback to legacy token for backward compatibility
-  return localStorage.getItem("accessToken");
 }
 
 /**
@@ -368,18 +357,13 @@ apiClient.interceptors.response.use(
             currentPath.startsWith("/restaurant") &&
             !currentPath.startsWith("/restaurants")
           ) {
-            // /restaurant/* is for restaurant module, /restaurants/* is for user module viewing restaurants
             tokenKey = "restaurant_accessToken";
             expectedRole = "restaurant";
           } else if (currentPath.startsWith("/delivery")) {
             tokenKey = "delivery_accessToken";
             expectedRole = "delivery";
-          } else if (
-            currentPath.startsWith("/user") ||
-            currentPath === "/" ||
-            currentPath.startsWith("/restaurants")
-          ) {
-            // User module includes /restaurants/* paths
+          } else {
+            // Default to user module for everything else
             tokenKey = "user_accessToken";
             expectedRole = "user";
           }
@@ -402,27 +386,31 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         // Show error toast in development mode for refresh errors
         if (import.meta.env.DEV) {
-          const refreshErrorMessage =
-            refreshError.response?.data?.message ||
-            refreshError.response?.data?.error ||
-            refreshError.message ||
-            "Token refresh failed";
+          const currentPath = window.location.pathname;
+          const isLoginPage = currentPath.includes("/login") || currentPath.includes("/sign-in") || currentPath === "/auth/sign-in";
 
-          toast.error(refreshErrorMessage, {
-            duration: 3000,
-            style: {
-              background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-              color: "#ffffff",
-              border: "1px solid #b91c1c",
-              borderRadius: "12px",
-              padding: "16px",
-              fontSize: "14px",
-              fontWeight: "500",
-              boxShadow:
-                "0 10px 25px -5px rgba(239, 68, 68, 0.3), 0 8px 10px -6px rgba(239, 68, 68, 0.2)",
-            },
-            className: "error-toast",
-          });
+          if (!isLoginPage) {
+            const refreshErrorMessage =
+              refreshError.response?.status === 401
+                ? "Session expired. Please login again."
+                : (refreshError.response?.data?.message || refreshError.message || "Token refresh failed");
+
+            toast.error(refreshErrorMessage, {
+              duration: 3000,
+              style: {
+                background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                color: "#ffffff",
+                border: "1px solid #b91c1c",
+                borderRadius: "12px",
+                padding: "16px",
+                fontSize: "14px",
+                fontWeight: "500",
+                boxShadow:
+                  "0 10px 25px -5px rgba(239, 68, 68, 0.3), 0 8px 10px -6px rgba(239, 68, 68, 0.2)",
+              },
+              className: "error-toast",
+            });
+          }
         }
 
         // Refresh failed, clear module-specific token and redirect to login
@@ -436,37 +424,46 @@ apiClient.interceptors.response.use(
         // For landing page management, don't auto-logout on 401 - let component handle it
         // Only auto-logout for other pages after token refresh fails
         if (!isOnboardingPage && !isLandingPageManagement) {
+          const currentPath = window.location.pathname;
+
           if (currentPath.startsWith("/admin")) {
-            localStorage.removeItem("admin_accessToken");
-            localStorage.removeItem("admin_authenticated");
-            localStorage.removeItem("admin_user");
-            window.location.href = "/admin/login";
+            clearModuleAuth("admin");
+            if (currentPath !== "/admin/login") {
+              window.location.href = "/admin/login";
+            }
           } else if (
             currentPath.startsWith("/restaurant") &&
             !currentPath.startsWith("/restaurants")
           ) {
-            // /restaurant/* is for restaurant module, /restaurants/* is for user module viewing restaurants
-            localStorage.removeItem("restaurant_accessToken");
-            localStorage.removeItem("restaurant_authenticated");
-            localStorage.removeItem("restaurant_user");
-            window.location.href = "/restaurant/login";
+            clearModuleAuth("restaurant");
+            if (currentPath !== "/restaurant/login") {
+              window.location.href = "/restaurant/login";
+            }
           } else if (currentPath.startsWith("/delivery")) {
-            localStorage.removeItem("delivery_accessToken");
-            localStorage.removeItem("delivery_authenticated");
-            localStorage.removeItem("delivery_user");
-            window.location.href = "/delivery/sign-in";
+            clearModuleAuth("delivery");
+            if (currentPath !== "/delivery/sign-in") {
+              window.location.href = "/delivery/sign-in";
+            }
           } else {
             // User module includes /restaurants/* paths
-            localStorage.removeItem("user_accessToken");
-            localStorage.removeItem("user_authenticated");
+            clearModuleAuth("user");
+
+            // Also clear legacy token to prevent it from being used as fallback
+            localStorage.removeItem("accessToken");
             localStorage.removeItem("user");
-            window.location.href = "/user/auth/sign-in";
+
+            // Standard user sign-in path is /user/auth/sign-in, but can be /auth/sign-in after redirect
+            const userLoginPath = "/user/auth/sign-in";
+            const userAltLoginPath = "/auth/sign-in";
+            const currentPath = window.location.pathname;
+
+            if (currentPath !== userLoginPath && currentPath !== userAltLoginPath) {
+              window.location.href = userLoginPath;
+            }
           }
         }
 
-        // For onboarding page, reject the promise so component can handle it
-        return Promise.reject(refreshError);
-
+        // Return the rejection once
         return Promise.reject(refreshError);
       }
     }
