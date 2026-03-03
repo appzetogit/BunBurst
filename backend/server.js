@@ -106,9 +106,6 @@ const allowedSocketOrigins = [
   process.env.CORS_ORIGIN,
   'https://bunburst.com',
   'https://www.bunburst.com',
-  'http://bunburst.com',
-  'http://www.bunburst.com',
-  
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
