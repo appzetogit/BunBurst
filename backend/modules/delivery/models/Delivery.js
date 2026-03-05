@@ -245,12 +245,12 @@ const deliverySchema = new mongoose.Schema(
       ref: 'Admin'
     },
     fcmTokenWeb: {
-      type: String,
-      trim: true
+      type: [String],
+      default: []
     },
     fcmTokenMobile: {
-      type: String,
-      trim: true
+      type: [String],
+      default: []
     },
     // Rejection details
     rejectionReason: {

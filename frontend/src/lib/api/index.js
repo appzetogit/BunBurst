@@ -245,6 +245,12 @@ export const userAPI = {
       platform,
     });
   },
+  // Remove user FCM token (for logout)
+  removeFcmToken: (token, platform = "web") => {
+    return apiClient.delete(API_ENDPOINTS.NOTIFICATION.REMOVE_USER_FCM_TOKEN, {
+      data: { token, platform },
+    });
+  },
 };
 
 // Export location API helper functions
@@ -778,8 +784,24 @@ export const restaurantAPI = {
   },
   respondToComplaint: (id, response) => {
     return apiClient.put(
-      API_ENDPOINTS.RESTAURANT.COMPLAINT_RESPOND.replace(":id", id),
+      API_ENDPOINTS.RESTAURANT.COMPLAINT_BY_ID.replace(":id", id),
       { response },
+    );
+  },
+
+  // FCM Token operations
+  saveFcmToken: (token, platform = "web") => {
+    return apiClient.post(API_ENDPOINTS.NOTIFICATION.RESTAURANT_FCM_TOKEN, {
+      token,
+      platform,
+    });
+  },
+  removeFcmToken: (token, platform = "web") => {
+    return apiClient.delete(
+      API_ENDPOINTS.NOTIFICATION.REMOVE_RESTAURANT_FCM_TOKEN,
+      {
+        data: { token, platform },
+      },
     );
   },
 };
@@ -817,6 +839,15 @@ export const deliveryAPI = {
       token,
       platform,
     });
+  },
+  // Remove delivery FCM token (for logout)
+  removeFcmToken: (token, platform = "web") => {
+    return apiClient.delete(
+      API_ENDPOINTS.NOTIFICATION.REMOVE_DELIVERY_FCM_TOKEN,
+      {
+        data: { token, platform },
+      },
+    );
   },
 
   // Dashboard
@@ -1820,6 +1851,7 @@ export const uploadAPI = {
     });
   },
 };
+
 
 // Export order API helper functions
 export const orderAPI = {

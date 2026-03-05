@@ -4,6 +4,7 @@ import Restaurant from '../models/Restaurant.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
 import { notifyRestaurantOrderUpdate } from '../../order/services/restaurantNotificationService.js';
+import { notifyUserOrderStatusUpdate } from '../../order/services/userNotificationService.js';
 import { assignOrderToDeliveryBoy, findNearestDeliveryBoys, findNearestDeliveryBoy } from '../../order/services/deliveryAssignmentService.js';
 import { notifyDeliveryBoyNewOrder, notifyMultipleDeliveryBoys } from '../../order/services/deliveryNotificationService.js';
 import mongoose from 'mongoose';
@@ -313,6 +314,7 @@ export const acceptOrder = asyncHandler(async (req, res) => {
     // Notify about status update
     try {
       await notifyRestaurantOrderUpdate(order._id.toString(), 'preparing');
+      await notifyUserOrderStatusUpdate(order, 'preparing');
     } catch (notifError) {
       console.error('Error sending notification:', notifError);
     }
@@ -459,6 +461,7 @@ export const rejectOrder = asyncHandler(async (req, res) => {
     // Notify about status update
     try {
       await notifyRestaurantOrderUpdate(order._id.toString(), 'cancelled');
+      await notifyUserOrderStatusUpdate(order, 'cancelled');
     } catch (notifError) {
       console.error('Error sending notification:', notifError);
     }
@@ -528,6 +531,7 @@ export const markOrderPreparing = asyncHandler(async (req, res) => {
     if (!wasAlreadyPreparing) {
       try {
         await notifyRestaurantOrderUpdate(order._id.toString(), 'preparing');
+        await notifyUserOrderStatusUpdate(order, 'preparing');
       } catch (notifError) {
         console.error('Error sending notification:', notifError);
       }
@@ -636,6 +640,8 @@ export const markOrderReady = asyncHandler(async (req, res) => {
 
     try {
       await notifyRestaurantOrderUpdate(order._id.toString(), 'ready');
+      // Note: User notification for 'ready' is usually less critical than 'out_for_delivery'
+      // but we can add it if needed. For now sticking to the plan.
     } catch (notifError) {
       console.error('Error sending cafe notification:', notifError);
     }

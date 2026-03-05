@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import User from '../../auth/models/User.js';
 import Delivery from '../../delivery/models/Delivery.js';
+import Restaurant from '../../restaurant/models/Restaurant.js';
 import { getFirebaseCredentials } from '../../../shared/utils/envService.js';
 
 function normalizePrivateKey(privateKey) {
@@ -69,19 +70,27 @@ async function removeInvalidTokensFromDatabase(invalidTokens = []) {
   await Promise.all([
     User.updateMany(
       { fcmTokenWeb: { $in: invalidTokens } },
-      { $unset: { fcmTokenWeb: '' } }
+      { $pull: { fcmTokenWeb: { $in: invalidTokens } } }
     ),
     User.updateMany(
       { fcmTokenMobile: { $in: invalidTokens } },
-      { $unset: { fcmTokenMobile: '' } }
+      { $pull: { fcmTokenMobile: { $in: invalidTokens } } }
     ),
     Delivery.updateMany(
       { fcmTokenWeb: { $in: invalidTokens } },
-      { $unset: { fcmTokenWeb: '' } }
+      { $pull: { fcmTokenWeb: { $in: invalidTokens } } }
     ),
     Delivery.updateMany(
       { fcmTokenMobile: { $in: invalidTokens } },
-      { $unset: { fcmTokenMobile: '' } }
+      { $pull: { fcmTokenMobile: { $in: invalidTokens } } }
+    ),
+    Restaurant.updateMany(
+      { fcmTokenWeb: { $in: invalidTokens } },
+      { $pull: { fcmTokenWeb: { $in: invalidTokens } } }
+    ),
+    Restaurant.updateMany(
+      { fcmTokenMobile: { $in: invalidTokens } },
+      { $pull: { fcmTokenMobile: { $in: invalidTokens } } }
     )
   ]);
 }
@@ -172,6 +181,8 @@ export async function sendPushNotificationToAudience({
   let docs = [];
   if (audience === 'delivery') {
     docs = await Delivery.find({}, { fcmTokenWeb: 1, fcmTokenMobile: 1 }).lean();
+  } else if (audience === 'restaurant') {
+    docs = await Restaurant.find({}, { fcmTokenWeb: 1, fcmTokenMobile: 1 }).lean();
   } else {
     docs = await User.find({ role: 'user' }, { fcmTokenWeb: 1, fcmTokenMobile: 1 }).lean();
   }

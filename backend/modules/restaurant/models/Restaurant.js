@@ -141,12 +141,12 @@ const restaurantSchema = new mongoose.Schema(
       default: true,
     },
     fcmTokenWeb: {
-      type: String,
-      trim: true,
+      type: [String],
+      default: []
     },
     fcmTokenMobile: {
-      type: String,
-      trim: true,
+      type: [String],
+      default: []
     },
     isAcceptingOrders: {
       type: Boolean,

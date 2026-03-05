@@ -428,7 +428,11 @@ export const API_ENDPOINTS = {
     ADMIN_SEND: "/notification/admin/send",
     USER_FCM_TOKEN: "/notification/user/token",
     DELIVERY_FCM_TOKEN: "/notification/delivery/token",
+    RESTAURANT_FCM_TOKEN: "/notification/restaurant/token",
     TEST: "/notification/test-notification",
+    REMOVE_USER_FCM_TOKEN: "/notification/user/token",
+    REMOVE_DELIVERY_FCM_TOKEN: "/notification/delivery/token",
+    REMOVE_RESTAURANT_FCM_TOKEN: "/notification/restaurant/token",
   },
   // Dining endpoints
   DINING: {

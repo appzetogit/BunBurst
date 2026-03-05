@@ -7,6 +7,7 @@ import Restaurant from '../../restaurant/models/Restaurant.js';
 import DeliveryWallet from '../models/DeliveryWallet.js';
 import RestaurantWallet from '../../restaurant/models/RestaurantWallet.js';
 import { calculateRoute } from '../../order/services/routeCalculationService.js';
+import { notifyUserOrderStatusUpdate } from '../../order/services/userNotificationService.js';
 import mongoose from 'mongoose';
 import winston from 'winston';
 
@@ -641,6 +642,13 @@ export const acceptOrder = asyncHandler(async (req, res) => {
     console.log(`✅ Order ${order.orderId} accepted by delivery partner ${delivery._id}`);
     console.log(`📍 Route calculated: ${routeData.distance.toFixed(2)} km, ${routeData.duration.toFixed(1)} mins`);
 
+    // Notify user about delivery partner assignment
+    try {
+      await notifyUserOrderStatusUpdate(updatedOrder, 'assigned');
+    } catch (notifError) {
+      console.error('Error sending assignment notification:', notifError);
+    }
+
     // Calculate delivery distance (restaurant to customer) for earnings calculation
     let deliveryDistance = 0;
     if (updatedOrder.restaurantId?.location?.coordinates && updatedOrder.address?.location?.coordinates) {
@@ -809,8 +817,14 @@ export const confirmReachedPickup = asyncHandler(async (req, res) => {
     order.deliveryState.currentPhase = 'at_pickup';
     order.deliveryState.reachedPickupAt = new Date();
     await order.save();
-
     console.log(`✅ Delivery partner ${delivery._id} reached pickup for order ${order.orderId}`);
+
+    // Notify user about partner reaching cafe
+    try {
+      await notifyUserOrderStatusUpdate(order, 'reached_pickup');
+    } catch (notifError) {
+      console.error('Error sending reached_pickup notification:', notifError);
+    }
 
     // After 10 seconds, trigger order ID confirmation request
     // Use order._id (MongoDB ObjectId) instead of orderId string
@@ -1164,6 +1178,9 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
           });
 
           console.log(`📢 Notified customer for order ${updatedOrder.orderId} - Delivery partner on the way`);
+
+          // Send FCM Push Notification
+          await notifyUserOrderStatusUpdate(updatedOrder, 'out_for_delivery');
         } else {
           console.warn('⚠️ Socket.IO not initialized, skipping customer notification');
         }
@@ -1523,6 +1540,13 @@ export const completeDelivery = asyncHandler(async (req, res) => {
 
     const orderIdForLog = updatedOrder.orderId || order.orderId || orderMongoId?.toString() || orderId;
     console.log(`✅ Order ${orderIdForLog} marked as delivered by delivery partner ${delivery._id}`);
+
+    // Notify user about delivery completion
+    try {
+      await notifyUserOrderStatusUpdate(updatedOrder, 'delivered');
+    } catch (notifError) {
+      console.error('Error sending delivery notification:', notifError);
+    }
 
     // Mark COD payment as collected (admin Payment Status → Collected)
     if (order.payment?.method === 'cash' || order.payment?.method === 'cod') {
