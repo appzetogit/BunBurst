@@ -95,10 +95,21 @@ async function tryInitializeFirebaseFromEnvOrFile() {
   let privateKey = normalizePrivateKey(credentials.privateKey || process.env.FIREBASE_PRIVATE_KEY);
 
   if (!projectId || !clientEmail || !privateKey) {
+    const configuredConfig = process.env.FIREBASE_CONFIG;
+    if (configuredConfig) {
+      try {
+        const json = JSON.parse(configuredConfig);
+        projectId = projectId || json.project_id;
+        clientEmail = clientEmail || json.client_email;
+        privateKey = privateKey || normalizePrivateKey(json.private_key);
+      } catch (e) {
+        console.warn(`[Push] Failed to parse FIREBASE_CONFIG from env: ${e.message}`);
+      }
+    }
+  }
+
+  if (!projectId || !clientEmail || !privateKey) {
     const candidates = [
-      process.env.FIREBASE_SERVICE_ACCOUNT_PATH
-        ? path.resolve(process.cwd(), process.env.FIREBASE_SERVICE_ACCOUNT_PATH)
-        : null,
       path.resolve(process.cwd(), 'config', 'firebase-service-account.json'),
       path.resolve(process.cwd(), 'config', 'zomato-607fa-firebase-adminsdk-fbsvc-f5f782c2cc.json'),
       path.resolve(process.cwd(), 'firebaseconfig.json')
@@ -235,18 +246,38 @@ export async function sendPushNotificationToSingleToken({
     };
   }
 
-  const response = await admin.messaging().send({
-    token: cleanToken,
-    ...buildPushPayload({ title, body, data })
-  });
+  try {
+    console.log('[Push] Attempting to send notification to token:', cleanToken.slice(0, 12) + '...');
+    const response = await admin.messaging().send({
+      token: cleanToken,
+      ...buildPushPayload({ title, body, data })
+    });
 
-  console.log('[Push] Single token notification sent:', {
-    tokenPreview: `${cleanToken.slice(0, 12)}...`,
-    responseId: response
-  });
+    console.log('[Push] ✅ Single token notification sent:', {
+      tokenPreview: `${cleanToken.slice(0, 12)}...`,
+      responseId: response
+    });
 
-  return {
-    success: true,
-    responseId: response
-  };
+    return {
+      success: true,
+      responseId: response
+    };
+  } catch (err) {
+    console.error('[Push] ❌ Failed to send notification:', {
+      errorCode: err?.code || err?.errorInfo?.code,
+      errorMessage: err?.message,
+      tokenPreview: `${cleanToken.slice(0, 12)}...`
+    });
+
+    if (err?.message?.includes('CONFIGURATION_NOT_FOUND')) {
+      console.error('[Push] 💡 CONFIGURATION_NOT_FOUND means the Firebase Cloud Messaging API is NOT enabled.');
+      console.error('[Push] 💡 Go to: https://console.cloud.google.com/apis/library/fcm.googleapis.com');
+      console.error('[Push] 💡 Select your project and click "Enable".');
+    }
+
+    return {
+      success: false,
+      message: err?.message || 'Failed to send push notification'
+    };
+  }
 }
