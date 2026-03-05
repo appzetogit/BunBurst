@@ -44,15 +44,9 @@ export default function EarningAddon() {
       const response = await adminAPI.getEarningAddons()
       if (response.data.success) {
         const addons = response.data.data.earningAddons || []
-        console.log('📦 Fetched earning addons:', addons)
         // Log redemption counts for debugging
         addons.forEach(addon => {
-          console.log(`📊 Addon "${addon.title}":`, {
-            currentRedemptions: addon.currentRedemptions,
-            maxRedemptions: addon.maxRedemptions,
-            display: `${addon.currentRedemptions || 0} / ${addon.maxRedemptions || '∞'}`
           })
-        })
         setEarningAddons(addons)
       } else {
         toast.error(response.data.message || "Failed to fetch earning addons")
@@ -167,15 +161,11 @@ export default function EarningAddon() {
         maxRedemptions: formData.maxRedemptions && formData.maxRedemptions.trim() ? parseInt(formData.maxRedemptions) : null,
       }
 
-      console.log('Submitting earning addon:', { isEditMode, payload })
-
       if (isEditMode && selectedAddon) {
         const response = await adminAPI.updateEarningAddon(selectedAddon._id, payload)
-        console.log('Update response:', response.data)
         toast.success("Earning addon updated successfully")
       } else {
         const response = await adminAPI.createEarningAddon(payload)
-        console.log('Create response:', response.data)
         toast.success("Earning addon created successfully")
       }
 

@@ -20,8 +20,7 @@ import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey'
  *   routeDestination={{ lat: restaurantLat, lng: restaurantLng }}
  *   destinationName="Restaurant Name"
  *   onRouteInfoUpdate={(info) => {
- *     console.log('Distance:', info.distance, 'Duration:', info.duration)
- *   }}
+ *     *   }}
  *   lastUpdate={new Date()}
  * />
  * 
@@ -260,13 +259,11 @@ export default function GoogleMapsTracking({
   // Calculate and display route using Google Directions Service
   const calculateAndDisplayRoute = useCallback((origin, destination, waypoints = []) => {
     if (!isLoaded || !mapRef.current || !window.google?.maps) {
-      console.log('⚠️ Cannot calculate route: map not loaded or not ready')
       return
     }
 
     // Validate origin and destination
     if (!origin || !destination || !origin.lat || !origin.lng || !destination.lat || !destination.lng) {
-      console.log('⚠️ Cannot calculate route: invalid origin or destination', { origin, destination })
       return
     }
 

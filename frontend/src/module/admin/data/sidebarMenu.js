@@ -6,12 +6,7 @@ export const sidebarMenuData = [
     path: "/admin",
     icon: "LayoutDashboard",
   },
-  {
-    type: "link",
-    label: "Point of Sale",
-    path: "/admin/point-of-sale",
-    icon: "CreditCard",
-  },
+
   {
     type: "section",
     label: "FOOD MANAGEMENT",

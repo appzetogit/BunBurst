@@ -185,15 +185,10 @@ export default function FeedNavbar({ className = "" }) {
                 latitude >= -90 && latitude <= 90 &&
                 longitude >= -180 && longitude <= 180) {
                 await deliveryAPI.updateLocation(latitude, longitude, next);
-                console.log('✅ Online status and location updated in backend:', {
-                    isOnline: next,
-                    latitude,
-                    longitude,
-                    format: "lat, lng (correct order)"
-                });
+                
             } else {
                 await deliveryAPI.updateOnlineStatus(next);
-                console.log('✅ Online status updated in backend (location not available):', next);
+                
             }
         } catch (error) {
             console.error('❌ Error updating online status in backend:', error);

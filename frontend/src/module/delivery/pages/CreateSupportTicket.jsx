@@ -67,8 +67,6 @@ export default function CreateSupportTicket() {
         requestData.priority = formData.priority
       }
 
-      console.log('Sending ticket creation request:', requestData)
-
       const response = await deliveryAPI.createSupportTicket(requestData)
 
       if (response?.data?.success) {

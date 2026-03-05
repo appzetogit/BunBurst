@@ -104,14 +104,11 @@ if (API_BASE_URL.includes("5173")) {
 }
 
 // Log API base URL in both development and production for debugging
-console.log("🌐 API Base URL:", API_BASE_URL);
-console.log("🌐 Backend URL:", API_BASE_URL.replace("/api", ""));
-console.log("🌐 Frontend URL:", window.location.origin);
-console.log("🌐 Environment:", import.meta.env.MODE);
-console.log(
-  "🌐 VITE_API_BASE_URL:",
-  import.meta.env.VITE_API_BASE_URL || "Not set (using default)",
-);
+
+
+
+
+
 
 // Warn if API_BASE_URL is localhost in production
 if (

@@ -32,7 +32,6 @@ export default function AISetup() {
 
   const handleAIConfigSave = (e) => {
     e.preventDefault()
-    console.log("Saving AI Configuration:", { apiKey, organization, isEnabled })
     alert("AI Configuration saved successfully!")
   }
 
@@ -43,7 +42,6 @@ export default function AISetup() {
 
   const handleAISettingsSave = (e) => {
     e.preventDefault()
-    console.log("Saving AI Settings:", { sectionWiseLimit, imageUploadLimit })
     alert("AI Settings saved successfully!")
   }
 

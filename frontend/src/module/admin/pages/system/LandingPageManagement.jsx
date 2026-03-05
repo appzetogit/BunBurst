@@ -110,12 +110,7 @@ export default function LandingPageManagement() {
 
     // Debug logging in development
     if (import.meta.env.DEV) {
-      console.log('[LandingPageManagement] Token check:', {
-        token: adminToken ? 'exists' : 'missing',
-        tokenLength: adminToken?.length || 0,
-        path: window.location.pathname
-      })
-    }
+      }
 
     if (!adminToken || adminToken.trim() === '' || adminToken === 'null' || adminToken === 'undefined') {
       // Token not found, return config without auth header (will be handled by error)
@@ -220,12 +215,7 @@ export default function LandingPageManagement() {
 
       // Debug: Log the config to verify Authorization header is set
       if (import.meta.env.DEV) {
-        console.log('[uploadBanners] Request config:', {
-          hasAuthHeader: !!config.headers?.Authorization,
-          authHeaderPrefix: config.headers?.Authorization?.substring(0, 20),
-          hasFormData: formData instanceof FormData
-        })
-      }
+        }
 
       const response = await api.post('/hero-banners/multiple', formData, config)
 

@@ -211,7 +211,6 @@ export default function JoiningRequest() {
     try {
       // First, use fullData if available (has all details from API)
       if (request.fullData) {
-        console.log("Using fullData from request:", request.fullData)
         setRestaurantDetails(request.fullData)
         setLoadingDetails(false)
         return
@@ -228,16 +227,14 @@ export default function JoiningRequest() {
             response = await adminAPI.getRestaurantById(restaurantId)
           }
         } catch (err) {
-          console.log("Admin API failed, trying cafe API:", err)
-        }
+          }
         
         // Fallback to regular restaurant API
         if (!response || !response?.data?.success) {
           try {
             response = await restaurantAPI.getRestaurantById(restaurantId)
           } catch (err) {
-            console.log("Cafe API also failed:", err)
-          }
+            }
         }
       }
       

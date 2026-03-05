@@ -242,7 +242,6 @@ export default function RestaurantOTP() {
         sessionStorage.removeItem("restaurantAuthData")
 
         setTimeout(async () => {
-          console.log({authData})
           // After signup, send to onboarding
           if (authData?.isSignUp) {
             navigate("/restaurant/onboarding", { replace: true })

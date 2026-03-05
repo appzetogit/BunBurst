@@ -100,15 +100,11 @@ export default function DeliverymanReviews() {
     const fetchReviews = async () => {
       try {
         setIsLoading(true)
-        console.log('🔍 Fetching deliveryman reviews...')
         const response = await adminAPI.getDeliverymanReviews({ limit: 1000 })
-        
-        console.log('✅ Deliveryman reviews response:', response?.data)
         
         if (response?.data?.success && response?.data?.data?.reviews) {
           setReviews(response.data.data.reviews)
-          console.log(`✅ Loaded ${response.data.data.reviews.length} reviews`)
-        } else {
+          } else {
           console.error('❌ Unexpected response structure:', response?.data)
           setReviews([])
           toast.error('Failed to load reviews: Unexpected response format')

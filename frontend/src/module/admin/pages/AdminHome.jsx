@@ -42,13 +42,7 @@ export default function AdminHome() {
         const response = await adminAPI.getDashboardStats()
         if (response.data?.success && response.data?.data) {
           setDashboardData(response.data.data)
-          console.log('✅ Dashboard stats fetched:', response.data.data)
-          console.log('💰 Commission:', response.data.data.commission)
-          console.log('💳 Platform Fee:', response.data.data.platformFee)
-          console.log('🚚 Delivery Fee:', response.data.data.deliveryFee)
-          console.log('🧾 GST:', response.data.data.gst)
-          console.log('💵 Total Admin Earnings:', response.data.data.totalAdminEarnings)
-        } else {
+          } else {
           console.error('❌ Invalid response format:', response.data)
         }
       } catch (error) {

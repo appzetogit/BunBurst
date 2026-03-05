@@ -51,38 +51,18 @@ export default function EarningAddonHistory() {
   const fetchHistory = async () => {
     try {
       setIsLoading(true)
-      console.log('🔄 Fetching earning addon history...')
       const response = await adminAPI.getEarningAddonHistory()
-      console.log('📦 API Response:', {
-        success: response.data.success,
-        message: response.data.message,
-        dataKeys: response.data.data ? Object.keys(response.data.data) : [],
-        historyCount: response.data.data?.history?.length || 0,
-        pagination: response.data.data?.pagination
-      })
-      
       if (response.data.success) {
         const historyData = response.data.data.history || []
-        console.log('✅ Earning Addon History fetched:', historyData.length, 'records')
-        
         // Log sample data for debugging
         if (historyData.length > 0) {
-          console.log('📋 Sample history record:', {
-            deliveryman: historyData[0].deliveryman,
-            offerTitle: historyData[0].offerTitle,
-            status: historyData[0].status,
-            ordersCompleted: historyData[0].ordersCompleted,
-            earningAmount: historyData[0].earningAmount
-          })
-        }
+          }
         
         setHistory(historyData)
         if (historyData.length === 0) {
-          console.log('ℹ️ No history records found in database')
           toast.info("No earning addon history found. History will appear when delivery boys complete offers.")
         } else {
-          console.log(`✅ Successfully loaded ${historyData.length} history records`)
-        }
+          }
       } else {
         console.error('❌ API returned unsuccessful response:', response.data)
         toast.error(response.data.message || "Failed to fetch earning addon history")
@@ -227,13 +207,9 @@ export default function EarningAddonHistory() {
   const handleCheckAllCompletions = async () => {
     try {
       setIsCheckingCompletions(true)
-      console.log('🔄 Checking completions for all delivery partners...')
-      
       // Get all delivery partners
       const partnersResponse = await adminAPI.getDeliveryPartners({ limit: 1000 })
       const partners = partnersResponse.data?.data?.deliveryPartners || []
-      
-      console.log(`📋 Found ${partners.length} delivery partners to check`)
       
       let totalCompletions = 0
       let checkedCount = 0
@@ -246,16 +222,13 @@ export default function EarningAddonHistory() {
             const completions = response.data.data.completionsFound || 0
             if (completions > 0) {
               totalCompletions += completions
-              console.log(`✅ Found ${completions} completions for ${partner.name}`)
-            }
+              }
           }
           checkedCount++
         } catch (error) {
           console.error(`Error checking ${partner.name}:`, error)
         }
       }
-      
-      console.log(`✅ Checked ${checkedCount} delivery partners, found ${totalCompletions} new completions`)
       
       if (totalCompletions > 0) {
         toast.success(`Found ${totalCompletions} new completion(s)! Refreshing history...`)

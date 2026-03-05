@@ -966,7 +966,7 @@ export const deliveryAPI = {
   getActiveEarningAddons: () => {
     const endpoint = API_ENDPOINTS.DELIVERY.EARNINGS_ACTIVE_OFFERS;
     if (import.meta.env.DEV) {
-      console.log("📡 Fetching active earning addons from:", endpoint);
+      
     }
     return apiClient.get(endpoint);
   },

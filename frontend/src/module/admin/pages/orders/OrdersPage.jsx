@@ -104,29 +104,11 @@ export default function OrdersPage({ statusKey = "all" }) {
       return
     }
     
-    console.log('🔍 Order details for refund:', {
-      orderIdString: order.orderId,
-      mongoId: order.id,
-      orderIdToUse,
-      willUse: order.orderId ? 'orderId string' : 'MongoDB _id',
-      refundAmount
-    })
-
     try {
       setProcessingRefund(orderIdToUse)
       
-      console.log('🔍 Processing refund for order:', {
-        orderId: order.orderId,
-        id: order.id,
-        _id: order._id,
-        orderIdToUse,
-        refundAmount,
-        url: `/api/admin/orders/${orderIdToUse}/refund`
-      })
-      
       // Include refundAmount in request body if provided (ensure it's a number)
       const requestData = refundAmount !== null ? { refundAmount: parseFloat(refundAmount) } : {}
-      console.log('📤 Request data being sent:', requestData)
       const response = await adminAPI.processRefund(orderIdToUse, requestData)
       
       if (response.data?.success) {

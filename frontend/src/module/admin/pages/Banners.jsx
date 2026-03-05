@@ -65,7 +65,6 @@ export default function Banners() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Form submitted:", formData)
     alert("Banner added successfully!")
   }
 

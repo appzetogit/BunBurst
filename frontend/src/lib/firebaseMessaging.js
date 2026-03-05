@@ -18,10 +18,10 @@ const TOKEN_SYNC_STATE_KEY = "fcm_token_sync_state_v1";
 
 function logInfo(message, data) {
   if (data !== undefined) {
-    console.log(`${LOG_PREFIX} ${message}`, data);
+    
     return;
   }
-  console.log(`${LOG_PREFIX} ${message}`);
+  
 }
 
 function logWarn(message, data) {
@@ -180,7 +180,7 @@ async function generateFcmToken(messaging, serviceWorkerRegistration) {
     }
 
     logInfo("FCM token generated successfully.");
-    console.log(`${LOG_PREFIX} FCM TOKEN: ${token}`);
+    
     return token;
   } catch (error) {
     const code = error?.code || "";

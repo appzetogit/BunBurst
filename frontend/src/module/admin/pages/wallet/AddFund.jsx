@@ -14,7 +14,6 @@ export default function AddFund() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Form submitted:", formData)
     alert("Fund added successfully!")
   }
 

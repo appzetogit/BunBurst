@@ -79,15 +79,13 @@ export default function AddZone() {
   // Draw existing polygon when in edit mode and coordinates are loaded
   useEffect(() => {
     if (isEditMode && coordinates.length >= 3 && mapInstanceRef.current && window.google && !mapLoading) {
-      console.log("Drawing existing polygon in edit mode, coordinates:", coordinates.length)
       setTimeout(() => {
         if (mapInstanceRef.current && window.google) {
           // Ensure drawing mode is off when editing existing polygon
           if (drawingManagerRef.current) {
             drawingManagerRef.current.setDrawingMode(null)
             setIsDrawing(false)
-            console.log("Drawing mode disabled, polygon is editable")
-          }
+            }
           drawExistingPolygon(window.google, mapInstanceRef.current, coordinates)
         }
       }, 500)
@@ -285,7 +283,6 @@ export default function AddZone() {
           pathMarkersRef.current = pathMarkers
         }
         
-        console.log("Coordinates set:", coords)
         setCoordinates(coords)
         
         // Make polygon editable
@@ -438,11 +435,8 @@ export default function AddZone() {
 
   const drawExistingPolygon = (google, map, coords) => {
     if (!coords || coords.length < 3) {
-      console.log("drawExistingPolygon: Not enough coordinates", coords?.length)
       return
     }
-
-    console.log("drawExistingPolygon: Drawing polygon with", coords.length, "coordinates")
 
     // Clear existing polygon
     if (polygonRef.current) {
@@ -490,14 +484,10 @@ export default function AddZone() {
     // Ensure polygon is editable
     polygon.setEditable(true)
     polygon.setDraggable(false)
-    console.log("Polygon created and set to editable:", polygon.getEditable())
-
     // Fit map to polygon bounds
     const bounds = new google.maps.LatLngBounds()
     path.forEach(latLng => bounds.extend(latLng))
     map.fitBounds(bounds)
-    console.log("Map fitted to polygon bounds")
-
     // Add markers for each point
     const markers = []
     coords.forEach((coord, index) => {
@@ -522,8 +512,6 @@ export default function AddZone() {
       }
     })
     pathMarkersRef.current = markers
-    console.log("drawExistingPolygon: Polygon and markers created successfully")
-
     // Function to update markers when polygon is edited
     const updateMarkersFromPolygon = () => {
       // Clear existing markers
@@ -556,8 +544,7 @@ export default function AddZone() {
       }
       
       pathMarkersRef.current = newMarkers
-      console.log("Markers updated after polygon edit, new count:", newMarkers.length)
-    }
+      }
 
     // Update coordinates and markers when polygon is edited
     const handlePolygonEdit = () => {
@@ -570,8 +557,7 @@ export default function AddZone() {
     google.maps.event.addListener(polygonPath, 'insert_at', handlePolygonEdit)
     google.maps.event.addListener(polygonPath, 'remove_at', handlePolygonEdit)
     
-    console.log("Event listeners attached for polygon editing")
-  }
+    }
 
   const toggleDrawingMode = () => {
     if (!drawingManagerRef.current) return
@@ -653,17 +639,13 @@ export default function AddZone() {
         isActive: true
       }
 
-      console.log("Sending zone data:", zoneData)
-
       if (isEditMode && id) {
         // Update existing zone
         const response = await adminAPI.updateZone(id, zoneData)
-        console.log("Zone updated successfully:", response)
         alert("Zone updated successfully!")
       } else {
         // Create new zone
         const response = await adminAPI.createZone(zoneData)
-        console.log("Zone created successfully:", response)
         alert("Zone created successfully!")
       }
       navigate("/admin/zone-setup")

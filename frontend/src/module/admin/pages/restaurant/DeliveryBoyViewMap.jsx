@@ -99,8 +99,6 @@ export default function DeliveryBoyViewMap() {
         includeAvailability: true // Request availability data
       })
       
-      console.log("📦 Delivery Partners API Response:", response.data)
-      
       if (response.data?.success && response.data.data?.deliveryPartners) {
         // Filter only online delivery boys with valid location
         // Check both formatted data and fullData, and also top-level availability
@@ -109,7 +107,6 @@ export default function DeliveryBoyViewMap() {
           const availability = boy.availability || boy.fullData?.availability || (boy.fullData && boy.fullData.availability)
           
           if (!availability) {
-            console.log("⚠️ No availability data for:", boy.name || boy.fullData?.name)
             return false
           }
           
@@ -126,20 +123,8 @@ export default function DeliveryBoyViewMap() {
                             coordinates[1] !== 0
           
           if (isOnline && hasLocation) {
-            console.log("✅ Found online delivery boy:", {
-              name: boy.name || boy.fullData?.name,
-              isOnline,
-              coordinates,
-              hasLocation: true
-            })
-          } else {
-            console.log("⚠️ Delivery boy filtered out:", {
-              name: boy.name || boy.fullData?.name,
-              isOnline,
-              hasLocation: !!hasLocation,
-              coordinates: coordinates ? `[${coordinates[0]}, ${coordinates[1]}]` : 'none'
-            })
-          }
+            } else {
+            }
           
           return isOnline && hasLocation
         })
@@ -172,7 +157,6 @@ export default function DeliveryBoyViewMap() {
         })
         
         const uniqueBoys = Array.from(uniqueBoysMap.values())
-        console.log(`🚴 Found ${onlineBoys.length} online delivery boys, ${uniqueBoys.length} unique after deduplication`)
         setDeliveryBoys(uniqueBoys)
       } else {
         console.warn("⚠️ No delivery partners in response:", response.data)
@@ -483,13 +467,6 @@ export default function DeliveryBoyViewMap() {
       const boyName = fullData.name || "Delivery Boy"
       const boyPhone = fullData.phone || "N/A"
       
-      console.log("🚴 Creating bike marker for:", {
-        name: boyName,
-        lat,
-        lng,
-        heading
-      })
-
       // Get rotated bike icon
       const rotatedIconUrl = await getRotatedBikeIcon(heading)
 

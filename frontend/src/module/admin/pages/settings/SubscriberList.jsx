@@ -81,7 +81,7 @@ export default function SubscriberList() {
       alert("No data to export");
       return;
     }
-    console.log(`Exporting as ${format}`, filteredRows);
+    
   };
 
   const toggleColumn = (columnKey) => {

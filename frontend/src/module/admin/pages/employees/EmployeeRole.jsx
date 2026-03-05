@@ -94,7 +94,6 @@ export default function EmployeeRole() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Form submitted:", { roleName, permissions })
     alert("Employee role created successfully!")
   }
 
@@ -122,8 +121,7 @@ export default function EmployeeRole() {
       alert("No data to export")
       return
     }
-    console.log(`Exporting as ${format}`, filteredRoles)
-  }
+    }
 
   const toggleColumn = (columnKey) => {
     setVisibleColumns(prev => ({ ...prev, [columnKey]: !prev[columnKey] }))

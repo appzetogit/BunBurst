@@ -158,7 +158,6 @@ export default function CleanDatabase() {
     }
     const confirmMessage = `Are you sure you want to clear ${selectedTables.size} table(s)? This action cannot be undone.`
     if (window.confirm(confirmMessage)) {
-      console.log("Clearing tables:", Array.from(selectedTables))
       alert("Database cleared successfully!")
       setSelectedTables(new Set())
     }

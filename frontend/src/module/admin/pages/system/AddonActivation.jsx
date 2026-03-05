@@ -57,12 +57,10 @@ export default function AddonActivation() {
   }
 
   const handleView = (id) => {
-    console.log("View addon:", id)
-  }
+    }
 
   const handleSettings = (id) => {
-    console.log("Settings for addon:", id)
-  }
+    }
 
   return (
     <div className="p-2 lg:p-3 bg-slate-50 min-h-screen">

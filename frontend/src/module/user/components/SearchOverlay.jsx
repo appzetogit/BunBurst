@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { X, Search, Clock, Mic } from "lucide-react"
+import { X, Search, Clock, Mic, UtensilsCrossed, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
@@ -9,34 +9,18 @@ import { cn } from "@/lib/utils"
 // Import shared food images - prevents duplication
 import { foodImages } from "@/constants/images"
 import VoiceSearchOverlay from "./VoiceSearchOverlay"
+import { adminAPI } from "@/lib/api"
 
-// Recent search suggestions
-const recentSuggestions = [
-  "Biryani", "Cake", "Chhole Bhature", "Chicken Tanduri", "Donuts", "Dosa", "French Fries", "Idli"
-]
-
-// Categories matching the home page browse section - only unique categories
-const categories = [
-  { id: 1, name: "Biryani", image: foodImages[0] },
-  { id: 2, name: "Cake", image: foodImages[1] },
-  { id: 3, name: "Chhole Bhature", image: foodImages[2] },
-  { id: 4, name: "Chicken Tanduri", image: foodImages[3] },
-  { id: 5, name: "Donuts", image: foodImages[4] },
-  { id: 6, name: "Dosa", image: foodImages[5] },
-  { id: 7, name: "French Fries", image: foodImages[6] },
-  { id: 8, name: "Idli", image: foodImages[7] },
-  { id: 9, name: "Momos", image: foodImages[8] },
-  { id: 10, name: "Samosa", image: foodImages[9] },
-  { id: 11, name: "Starters", image: foodImages[10] },
-]
-
-// Use only unique categories (no duplicates)
-const allFoodsWithWhiteBg = categories
+// Local storage key for recent searches
+const RECENT_SEARCHES_KEY = 'bun_burst_recent_searches';
 
 export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchChange, autoStartVoice }) {
   const navigate = useNavigate()
   const inputRef = useRef(null)
-  const [filteredFoods, setFilteredFoods] = useState(allFoodsWithWhiteBg)
+  const [categories, setCategories] = useState([])
+  const [filteredFoods, setFilteredFoods] = useState([])
+  const [recentSuggestions, setRecentSuggestions] = useState([])
+  const [loading, setLoading] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [showVoiceModal, setShowVoiceModal] = useState(false)
   const recognitionRef = useRef(null)
@@ -132,6 +116,45 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
     if (isOpen) {
       document.addEventListener("keydown", handleEscape)
       document.body.style.overflow = "hidden"
+
+      // Load categories from API
+      const fetchCategories = async () => {
+        try {
+          setLoading(true)
+          const response = await adminAPI.getPublicCategories()
+          if (response.data?.success && response.data?.data?.categories) {
+            const apiCategories = response.data.data.categories.map(cat => ({
+              id: cat._id || cat.id,
+              name: cat.name,
+              image: cat.image || foodImages[0]
+            }))
+            setCategories(apiCategories)
+            setFilteredFoods(apiCategories)
+          }
+        } catch (error) {
+          console.error("Error fetching categories for search:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      // Load recent searches from localStorage
+      const loadRecentSearches = () => {
+        const saved = localStorage.getItem(RECENT_SEARCHES_KEY)
+        if (saved) {
+          try {
+            setRecentSuggestions(JSON.parse(saved))
+          } catch (e) {
+            setRecentSuggestions([])
+          }
+        } else {
+          // Default suggestions if none saved
+          setRecentSuggestions(["Biryani", "Burger", "Pizza", "Dosa", "Momos"])
+        }
+      }
+
+      fetchCategories()
+      loadRecentSearches()
     }
 
     return () => {
@@ -145,23 +168,41 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
 
   useEffect(() => {
     if (searchValue.trim() === "") {
-      setFilteredFoods(allFoodsWithWhiteBg)
+      setFilteredFoods(categories)
     } else {
-      const filtered = allFoodsWithWhiteBg.filter((food) =>
+      const filtered = categories.filter((food) =>
         food.name.toLowerCase().includes(searchValue.toLowerCase())
       )
       setFilteredFoods(filtered)
     }
-  }, [searchValue])
+  }, [searchValue, categories])
 
   const handleSuggestionClick = (suggestion) => {
     onSearchChange(suggestion)
     inputRef.current?.focus()
   }
 
+  const addToRecentSearches = (query) => {
+    if (!query.trim()) return
+
+    const saved = localStorage.getItem(RECENT_SEARCHES_KEY)
+    let recent = []
+    try {
+      recent = saved ? JSON.parse(saved) : []
+    } catch (e) {
+      recent = []
+    }
+
+    // Remove if already exists and add to front
+    recent = [query, ...recent.filter(s => s.toLowerCase() !== query.toLowerCase())].slice(0, 10)
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent))
+    setRecentSuggestions(recent)
+  }
+
   const handleSearchSubmit = (e) => {
     e.preventDefault()
     if (searchValue.trim()) {
+      addToRecentSearches(searchValue.trim())
       navigate(`/user/search?q=${encodeURIComponent(searchValue.trim())}`)
       onClose()
       onSearchChange("")
@@ -169,6 +210,7 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
   }
 
   const handleFoodClick = (food) => {
+    addToRecentSearches(food.name)
     navigate(`/user/search?q=${encodeURIComponent(food.name)}`)
     onClose()
     onSearchChange("")
@@ -256,40 +298,41 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
         {/* Food Grid */}
         <div
           style={{
-            animation: 'fadeIn 0.3s ease-out 0.2s both'
+            animation: 'fadeInUp 0.3s ease-out 0.2s both'
           }}
         >
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
-            {searchValue.trim() === "" ? "All Dishes" : `Search Results (${filteredFoods.length})`}
+          <h3 className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+            <UtensilsCrossed className="h-4 w-4 text-primary-orange" />
+            {searchValue.trim() ? "Search Results" : "All Dishes"}
           </h3>
-          {filteredFoods.length > 0 ? (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-primary-orange" />
+              <p className="text-sm text-gray-500">Loading dishes...</p>
+            </div>
+          ) : filteredFoods.length > 0 ? (
+            <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4 sm:gap-6">
               {filteredFoods.map((food, index) => (
-                <div
-                  key={food.id}
-                  className="flex flex-col items-center gap-2 sm:gap-3 cursor-pointer group"
-                  style={{
-                    animation: `slideUp 0.3s ease-out ${0.25 + 0.05 * (index % 12)}s both`
-                  }}
+                <button
+                  key={food.id || index}
                   onClick={() => handleFoodClick(food)}
+                  className="flex flex-col items-center gap-2.5 group focus:outline-none"
+                  style={{
+                    animation: `fadeInUp 0.3s ease-out ${0.2 + index * 0.05}s both`
+                  }}
                 >
-                  <div className="relative w-full aspect-square rounded-full overflow-hidden transition-all duration-200 shadow-md group-hover:shadow-lg bg-white dark:bg-[#1a1a1a] p-1 sm:p-1.5">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden flex-shrink-0 bg-white ring-1 ring-gray-100 group-hover:ring-primary-orange shadow-sm group-hover:shadow-md transition-all duration-300 transform group-hover:scale-110 p-1.5 flex items-center justify-center">
                     <img
                       src={food.image}
                       alt={food.name}
-                      className="w-full h-full object-cover rounded-full"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.src = foodImages[0]
-                      }}
+                      className="w-full h-full object-contain"
                     />
                   </div>
-                  <div className="px-1 sm:px-2 text-center">
-                    <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-primary-orange dark:group-hover:text-orange-400 transition-colors line-clamp-2">
-                      {food.name}
-                    </span>
-                  </div>
-                </div>
+                  <span className="text-xs sm:text-sm font-semibold text-gray-700 group-hover:text-primary-orange transition-colors duration-200 text-center line-clamp-2 leading-tight">
+                    {food.name}
+                  </span>
+                </button>
               ))}
             </div>
           ) : (
@@ -302,41 +345,23 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
         </div>
       </div>
       <style>{`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes slideDown {
-            from {
-              opacity: 0;
-              transform: translateY(-20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          @keyframes slideUp {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          @keyframes scaleIn {
-            from {
-              opacity: 0;
-              transform: scale(0.9);
-            }
-            to {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-        `}</style>
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
       <VoiceSearchOverlay
         isOpen={showVoiceModal}
         onClose={closeVoiceModal}
@@ -346,4 +371,3 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
     </div>
   )
 }
-

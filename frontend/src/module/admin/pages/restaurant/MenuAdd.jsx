@@ -94,7 +94,6 @@ export default function MenuAdd() {
         if (restaurants.length > 0 && location.state?.restaurantId && !selectedRestaurant) {
             const found = restaurants.find(r => r._id === location.state.restaurantId || r.id === location.state.restaurantId)
             if (found) {
-                console.log("Auto-selecting cafe:", found.name)
                 setSelectedRestaurant(found)
             }
         }

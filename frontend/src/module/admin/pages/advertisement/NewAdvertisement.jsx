@@ -143,12 +143,6 @@ export default function NewAdvertisement() {
       await new Promise(resolve => setTimeout(resolve, 1000))
       
       // Here you would typically send the data to your API
-      console.log("Form submitted:", {
-        ...formData,
-        profileImage,
-        coverImage
-      })
-      
       setShowSuccessDialog(true)
       
       setTimeout(() => {

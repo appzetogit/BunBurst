@@ -478,10 +478,8 @@ export default function AddCouponPage(props) {
         <Button
           onClick={() => {
             if (isEditMode) {
-              console.log("Update coupon:", { id: couponId, ...formData })
-            } else {
-              console.log("Add coupon:", formData)
-            }
+              } else {
+              }
             // Navigate to coupon list after save
             navigate("/restaurant/coupon")
           }}

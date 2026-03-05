@@ -42,7 +42,6 @@ export default function Bonus() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Form submitted:", formData)
     alert("Bonus setup saved successfully!")
   }
 

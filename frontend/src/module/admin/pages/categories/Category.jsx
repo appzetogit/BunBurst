@@ -83,9 +83,6 @@ export default function Category() {
     }
 
     // Log API base URL for debugging
-    console.log('API Base URL:', API_BASE_URL)
-    console.log('Admin Token:', adminToken ? 'Present' : 'Missing')
-
     fetchCategories()
   }, [])
 
@@ -493,17 +490,8 @@ export default function Category() {
         formDataToSend.append('image', formData.image)
       }
 
-      console.log('Sending category data:', {
-        name: formData.name,
-        type: formData.type,
-        status: formData.status,
-        hasImageFile: !!selectedImageFile,
-        imageUrl: formData.image
-      })
-
       if (editingCategory) {
         const response = await adminAPI.updateCategory(editingCategory.id, formDataToSend)
-        console.log('Category update response:', response.data)
         if (response.data.success) {
           toast.success('Category updated successfully')
           // Update local state immediately for better UX
@@ -518,7 +506,6 @@ export default function Category() {
         }
       } else {
         const response = await adminAPI.createCategory(formDataToSend)
-        console.log('Category create response:', response.data)
         if (response.data.success) {
           toast.success('Category created successfully')
         }

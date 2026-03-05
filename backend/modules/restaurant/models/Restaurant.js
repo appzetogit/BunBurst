@@ -3,13 +3,17 @@ import bcrypt from "bcryptjs";
 import { normalizePhoneNumber } from "../../../shared/utils/phoneUtils.js";
 
 const locationSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ["Point"],
+    default: "Point",
+  },
+  coordinates: {
+    type: [Number], // [longitude, latitude]
+    required: true,
+  },
   latitude: Number,
   longitude: Number,
-  // GeoJSON coordinates [longitude, latitude] for spatial queries
-  coordinates: {
-    type: [Number],
-    default: undefined,
-  },
   // Live address from Google Maps reverse geocoding
   formattedAddress: String,
   // Stored address fields
@@ -29,7 +33,7 @@ const locationSchema = new mongoose.Schema({
   pincode: String,
   postalCode: String,
   street: String,
-});
+}, { _id: false });
 
 const deliveryTimingsSchema = new mongoose.Schema({
   openingTime: String,
@@ -304,6 +308,8 @@ const restaurantSchema = new mongoose.Schema(
 restaurantSchema.index({ email: 1 }, { unique: true, sparse: true });
 restaurantSchema.index({ phone: 1 }, { unique: true, sparse: true });
 restaurantSchema.index({ googleId: 1 }, { unique: true, sparse: true });
+restaurantSchema.index({ "location": "2dsphere" });
+restaurantSchema.index({ "onboarding.step1.location": "2dsphere" });
 
 // Hash password before saving
 restaurantSchema.pre("save", async function (next) {

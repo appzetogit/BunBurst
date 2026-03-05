@@ -638,6 +638,25 @@ export default function CategoryPage() {
     return filtered
   }, [selectedCategory, activeFilters, searchQuery, restaurantsData, categoryKeywords, vegMode])
 
+  // Get unique cuisines from restaurant data for filters
+  const availableCuisines = useMemo(() => {
+    const cuisinesSet = new Set()
+    restaurantsData.forEach(r => {
+      if (r.cuisine) {
+        r.cuisine.split(',').forEach(c => {
+          const trimmed = c.trim()
+          if (trimmed) cuisinesSet.add(trimmed)
+        })
+      }
+    })
+
+    // Fallback cuisines if none found in data
+    const fallbacks = ['North Indian', 'Chinese', 'South Indian', 'Italian', 'Continental', 'Desserts', 'Fast Food', 'Beverages']
+    const result = Array.from(cuisinesSet).sort()
+
+    return result.length > 0 ? result : fallbacks
+  }, [restaurantsData])
+
   const handleCategorySelect = (category) => {
     const categorySlug = category.slug || category.id
     setSelectedCategory(categorySlug)
@@ -1333,7 +1352,7 @@ export default function CategoryPage() {
                       >
                         <h3 className="text-lg md:text-xl font-semibold text-foreground mb-4">Cuisine</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-                          {['Chinese', 'American', 'Japanese', 'Italian', 'Mexican', 'Indian', 'Asian', 'Seafood', 'Desserts', 'Cafe', 'Healthy'].map((cuisine) => (
+                          {availableCuisines.map((cuisine) => (
                             <button
                               key={cuisine}
                               onClick={() => setSelectedCuisine(selectedCuisine === cuisine ? null : cuisine)}

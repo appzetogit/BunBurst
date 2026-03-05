@@ -36,7 +36,7 @@ import { useLocation } from "../hooks/useLocation"
 import { useZone } from "../hooks/useZone"
 import appzetoFoodLogo from "@/assets/appzetologo.png"
 import offerImage from "@/assets/offerimage.png"
-import api, { restaurantAPI } from "@/lib/api"
+import api, { restaurantAPI, adminAPI } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
 import OptimizedImage from "@/components/OptimizedImage"
 // Explore More Icons
@@ -49,7 +49,8 @@ import mealDealLogo from "@/assets/meal-deal-logo.jpeg"
 // Banner images for hero carousel - will be fetched from API
 
 // Animated placeholder for search - moved outside component to prevent recreation
-const placeholders = [
+// Animated placeholder for search - default values
+const DEFAULT_PLACEHOLDERS = [
   "Search \"burger\"",
   "Search \"biryani\"",
   "Search \"pizza\"",
@@ -356,9 +357,30 @@ export default function Home() {
   }, [])
 
   // PlaceholderIndex for search
+  const [placeholders, setPlaceholders] = useState(DEFAULT_PLACEHOLDERS)
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
 
-  // Animated placeholder cycling
+  // Fetch categories for dynamic placeholders
+  useEffect(() => {
+    const fetchPlaceholders = async () => {
+      try {
+        const response = await adminAPI.getPublicCategories()
+        if (response.data?.success && response.data?.data?.categories) {
+          const names = response.data.data.categories
+            .slice(0, 10)
+            .map(cat => `Search "${cat.name.toLowerCase()}"`)
+          if (names.length > 0) {
+            setPlaceholders(names)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching placeholders for home:", error)
+      }
+    }
+    fetchPlaceholders()
+  }, [])
+
+  // Banners effect
   useEffect(() => {
     const interval = setInterval(() => {
       setPlaceholderIndex((prev) => (prev + 1) % placeholders.length)

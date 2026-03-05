@@ -56,8 +56,7 @@ export default function ReactRegistration() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Form submitted:", { heroImage, activeTab })
-  }
+    }
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">

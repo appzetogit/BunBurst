@@ -201,10 +201,8 @@ export default function DeliveryOTP() {
 
         // Store auth data using utility function
         try {
-          console.log("Storing auth data for signup flow:", { hasToken: !!accessToken, hasUser: !!user })
           storeAuthData("delivery", accessToken, user)
-          console.log("Auth data stored successfully for signup")
-        } catch (storageError) {
+          } catch (storageError) {
           console.error("Failed to store authentication data:", storageError)
           setError("Failed to save authentication. Please try again or clear your browser storage.")
           setIsLoading(false)
@@ -236,10 +234,8 @@ export default function DeliveryOTP() {
       // Store auth data using utility function to ensure proper role handling
       // The setAuthData function includes error handling and verification
       try {
-        console.log("Storing auth data for delivery:", { hasToken: !!accessToken, hasUser: !!user })
         storeAuthData("delivery", accessToken, user)
-        console.log("Auth data stored successfully")
-      } catch (storageError) {
+        } catch (storageError) {
         console.error("Failed to store authentication data:", storageError)
         setError("Failed to save authentication. Please try again or clear your browser storage.")
         setIsLoading(false)
@@ -259,11 +255,8 @@ export default function DeliveryOTP() {
         const storedToken = localStorage.getItem("delivery_accessToken")
         const storedAuth = localStorage.getItem("delivery_authenticated")
 
-        console.log("Verifying token storage:", { hasToken: !!storedToken, authenticated: storedAuth, retryCount })
-
         if (storedToken && storedAuth === "true") {
           // Token is stored, navigate to delivery home
-          console.log("Token verified, navigating to /delivery")
           navigate("/delivery", { replace: true })
         } else if (retryCount < maxRetries) {
           // Token not stored yet, retry after short delay
@@ -331,10 +324,8 @@ export default function DeliveryOTP() {
       // Store auth data using utility function to ensure proper role handling
       // The setAuthData function includes error handling and verification
       try {
-        console.log("Storing auth data for delivery (with name):", { hasToken: !!accessToken, hasUser: !!user })
         storeAuthData("delivery", accessToken, user)
-        console.log("Auth data stored successfully")
-      } catch (storageError) {
+        } catch (storageError) {
         console.error("Failed to store authentication data:", storageError)
         setError("Failed to save authentication. Please try again or clear your browser storage.")
         setIsLoading(false)
@@ -354,11 +345,8 @@ export default function DeliveryOTP() {
         const storedToken = localStorage.getItem("delivery_accessToken")
         const storedAuth = localStorage.getItem("delivery_authenticated")
 
-        console.log("Verifying token storage (with name):", { hasToken: !!storedToken, authenticated: storedAuth, retryCount })
-
         if (storedToken && storedAuth === "true") {
           // Token is stored, navigate to delivery home
-          console.log("Token verified, navigating to /delivery")
           navigate("/delivery", { replace: true })
         } else if (retryCount < maxRetries) {
           // Token not stored yet, retry after short delay
