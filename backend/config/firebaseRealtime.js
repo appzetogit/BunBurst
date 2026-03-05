@@ -13,10 +13,23 @@ function normalizePrivateKey(privateKey) {
 }
 
 function resolveServiceAccountFromFile() {
-  const configuredPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-  // Keep serviceAccountKey.json under backend/config (and in .gitignore), then set FIREBASE_SERVICE_ACCOUNT_PATH if needed.
+  const configuredConfig = process.env.FIREBASE_CONFIG;
+  if (configuredConfig) {
+    try {
+      const parsed = JSON.parse(configuredConfig);
+      if (parsed?.project_id && parsed?.client_email && parsed?.private_key) {
+        return {
+          projectId: parsed.project_id,
+          clientEmail: parsed.client_email,
+          privateKey: normalizePrivateKey(parsed.private_key)
+        };
+      }
+    } catch (error) {
+      console.warn(`⚠️ Failed parsing FIREBASE_CONFIG from env: ${error.message}`);
+    }
+  }
+
   const candidatePaths = [
-    configuredPath ? path.resolve(process.cwd(), configuredPath) : null,
     path.resolve(process.cwd(), 'config', 'serviceAccountKey.json'),
     path.resolve(process.cwd(), 'config', 'firebase-service-account.json'),
     path.resolve(process.cwd(), 'firebaseconfig.json')

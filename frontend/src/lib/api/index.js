@@ -198,6 +198,11 @@ export const userAPI = {
     });
   },
 
+  // Test Push Notifications
+  testPushNotification: (token) => {
+    return apiClient.post(API_ENDPOINTS.NOTIFICATION.TEST, { token });
+  },
+
   // Create Razorpay order for wallet top-up
   createWalletTopupOrder: (amount) => {
     return apiClient.post(`${API_ENDPOINTS.USER.WALLET}/create-topup-order`, {
