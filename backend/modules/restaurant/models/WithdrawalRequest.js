@@ -47,7 +47,7 @@ const withdrawalRequestSchema = new mongoose.Schema({
   rejectionReason: String,
   transactionId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Transaction',
+    ref: 'RestaurantTransaction',
     sparse: true
   },
   // Additional restaurant info for quick access

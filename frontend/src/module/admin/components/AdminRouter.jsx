@@ -54,10 +54,9 @@ const Bonus = lazy(() => import("../pages/wallet/Bonus"));
 const LoyaltyPointReport = lazy(() => import("../pages/loyalty-point/Report"));
 const SubscribedMailList = lazy(() => import("../pages/SubscribedMailList"));
 // Deliveryman Management
-const DeliveryBoyCommission = lazy(() => import("../pages/DeliveryBoyCommission"));
-const DeliveryCashLimit = lazy(() => import("../pages/DeliveryCashLimit"));
-const CashLimitSettlement = lazy(() => import("../pages/CashLimitSettlement"));
-const DeliveryWithdrawal = lazy(() => import("../pages/DeliveryWithdrawal"));
+// Deliveryman Management
+
+
 const DeliveryBoyWallet = lazy(() => import("../pages/DeliveryBoyWallet"));
 const DeliveryEmergencyHelp = lazy(() => import("../pages/DeliveryEmergencyHelp"));
 const DeliverySupportTickets = lazy(() => import("../pages/DeliverySupportTickets"));
@@ -225,10 +224,9 @@ export default function AdminRouter() {
           <Route path="subscribed-mail-list" element={<SubscribedMailList />} />
 
           {/* DELIVERYMAN MANAGEMENT */}
-          <Route path="delivery-boy-commission" element={<DeliveryBoyCommission />} />
-          <Route path="delivery-cash-limit" element={<DeliveryCashLimit />} />
-          <Route path="cash-limit-settlement" element={<CashLimitSettlement />} />
-          <Route path="delivery-withdrawal" element={<DeliveryWithdrawal />} />
+
+
+
           <Route path="delivery-boy-wallet" element={<DeliveryBoyWallet />} />
           <Route path="delivery-emergency-help" element={<DeliveryEmergencyHelp />} />
           <Route path="delivery-support-tickets" element={<DeliverySupportTickets />} />

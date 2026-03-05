@@ -2,7 +2,7 @@ import Order from '../../order/models/Order.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
 import mongoose from 'mongoose';
-import { canDeliveryPartnerTakeCodOrder, resolveOrderPaymentMethod } from '../../../shared/utils/deliveryCashLimitGuard.js';
+import { resolveOrderPaymentMethod } from '../../../shared/utils/deliveryCashLimitGuard.js';
 
 /**
  * Get all orders for admin
@@ -1919,19 +1919,8 @@ export const manualAssignOrder = asyncHandler(async (req, res) => {
       return errorResponse(res, 404, 'Delivery Partner not found');
     }
 
-    // COD guard: if delivery partner reached cash limit, don't allow COD assignment
+    // Salary model: unrestricted COD assignment
     const paymentMethod = await resolveOrderPaymentMethod(order);
-    const isCashOrder = paymentMethod === 'cash';
-    if (isCashOrder) {
-      const codEligibility = await canDeliveryPartnerTakeCodOrder(deliveryBoy._id);
-      if (!codEligibility.allowed) {
-        return errorResponse(
-          res,
-          400,
-          `Delivery partner cash limit reached (cash in hand ₹${codEligibility.cashInHand.toFixed(2)} / limit ₹${codEligibility.totalCashLimit.toFixed(2)}). Please settle cash limit before assigning COD orders.`
-        );
-      }
-    }
 
     // Check if order is already assigned
     if (order.deliveryPartnerId) {

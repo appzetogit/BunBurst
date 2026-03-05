@@ -89,24 +89,8 @@ const availabilitySchema = new mongoose.Schema({
   }]
 }, { _id: false });
 
-const earningsSchema = new mongoose.Schema({
-  totalEarned: {
-    type: Number,
-    default: 0
-  },
-  currentBalance: {
-    type: Number,
-    default: 0
-  },
-  pendingPayout: {
-    type: Number,
-    default: 0
-  },
-  tips: {
-    type: Number,
-    default: 0
-  }
-}, { _id: false });
+// Note: Earnings and Wallet functionality moved to separate DeliveryWallet model
+
 
 const metricsSchema = new mongoose.Schema({
   totalOrders: {
@@ -209,20 +193,19 @@ const deliverySchema = new mongoose.Schema(
     documents: documentsSchema,
     // Availability
     availability: availabilitySchema,
-    // Earnings
-    earnings: earningsSchema,
+
     // Metrics
     metrics: metricsSchema,
     // Salary Configuration
     salary: {
-      type: {
-        type: String,
-        enum: ['commission', 'fixed', 'commission_plus_fixed'],
-        default: 'fixed' // Changed default to fixed as per requirements
-      },
       amount: {
         type: Number,
         default: 0
+      },
+      cycle: {
+        type: String,
+        enum: ['monthly', 'weekly', 'daily'],
+        default: 'monthly'
       }
     },
     joiningDate: {

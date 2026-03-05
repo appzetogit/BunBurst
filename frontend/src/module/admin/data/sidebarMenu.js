@@ -124,30 +124,15 @@ export const sidebarMenuData = [
     type: "section",
     label: "DELIVERYMAN MANAGEMENT",
     items: [
-      {
-        type: "link",
-        label: "Delivery Cash Limit",
-        path: "/admin/delivery-cash-limit",
-        icon: "IndianRupee",
-      },
+
       {
         type: "link",
         label: "Delivery & Platform Fee",
         path: "/admin/fee-settings",
         icon: "DollarSign",
       },
-      {
-        type: "link",
-        label: "Cash limit settlement",
-        path: "/admin/cash-limit-settlement",
-        icon: "Receipt",
-      },
-      {
-        type: "link",
-        label: "Delivery Withdrawal",
-        path: "/admin/delivery-withdrawal",
-        icon: "Wallet",
-      },
+
+
 
       {
         type: "link",

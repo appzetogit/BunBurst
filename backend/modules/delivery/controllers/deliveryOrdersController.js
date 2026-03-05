@@ -5,14 +5,12 @@ import Order from '../../order/models/Order.js';
 import Payment from '../../payment/models/Payment.js';
 import Restaurant from '../../restaurant/models/Restaurant.js';
 import DeliveryWallet from '../models/DeliveryWallet.js';
-import DeliveryBoyCommission from '../../admin/models/DeliveryBoyCommission.js';
 import RestaurantWallet from '../../restaurant/models/RestaurantWallet.js';
 import RestaurantCommission from '../../admin/models/RestaurantCommission.js';
 import AdminCommission from '../../admin/models/AdminCommission.js';
 import { calculateRoute } from '../../order/services/routeCalculationService.js';
 import mongoose from 'mongoose';
 import winston from 'winston';
-import { canDeliveryPartnerTakeCodOrder, resolveOrderPaymentMethod } from '../../../shared/utils/deliveryCashLimitGuard.js';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -236,20 +234,7 @@ export const acceptOrder = asyncHandler(async (req, res) => {
       return errorResponse(res, 404, 'Order not found');
     }
 
-    // COD guard: block COD acceptance when available cash limit is exhausted.
-    const paymentMethodForAcceptance = await resolveOrderPaymentMethod(order);
-    if (paymentMethodForAcceptance === 'cash') {
-      const codEligibility = await canDeliveryPartnerTakeCodOrder(delivery._id);
-      if (!codEligibility.allowed) {
-        return errorResponse(
-          res,
-          400,
-          `Cash limit reached. Settle with admin to accept COD orders. (cash in hand INR ${codEligibility.cashInHand.toFixed(2)} / limit INR ${codEligibility.totalCashLimit.toFixed(2)})`
-        );
-      }
-    }
-
-    // Check if order is assigned to this delivery partner
+    // Salary model: unrestricted COD acceptance
     const orderDeliveryPartnerId = order.deliveryPartnerId?.toString();
     const currentDeliveryId = delivery._id.toString();
 
@@ -1459,21 +1444,10 @@ export const completeDelivery = asyncHandler(async (req, res) => {
             transactionId: existingTransaction._id?.toString() || existingTransaction.id
           };
         } else {
-          // Calculate earnings even if order is already delivered (for consistency)
-          let deliveryDistance = 0;
-          if (order.deliveryState?.routeToDelivery?.distance) {
-            deliveryDistance = order.deliveryState.routeToDelivery.distance;
-          } else if (order.assignmentInfo?.distance) {
-            deliveryDistance = order.assignmentInfo.distance;
-          }
-
-          if (deliveryDistance > 0) {
-            const commissionResult = await DeliveryBoyCommission.calculateCommission(deliveryDistance);
-            earnings = {
-              amount: commissionResult.commission,
-              breakdown: commissionResult.breakdown
-            };
-          }
+          earnings = {
+            amount: 0,
+            breakdown: 'Salaried model'
+          };
         }
       } catch (earningsError) {
         console.error('⚠️ Error calculating earnings for already delivered order:', earningsError.message);
@@ -1605,31 +1579,16 @@ export const completeDelivery = asyncHandler(async (req, res) => {
 
     console.log(`📏 Delivery distance: ${deliveryDistance.toFixed(2)} km for order ${orderIdForLog}`);
 
-    // Calculate earnings using admin's commission rules
+    // Salaried model: no per-order earnings
     let totalEarning = 0;
-    let commissionBreakdown = null;
-
-    try {
-      // Use DeliveryBoyCommission model to calculate commission based on distance
-      const commissionResult = await DeliveryBoyCommission.calculateCommission(deliveryDistance);
-      totalEarning = commissionResult.commission;
-      commissionBreakdown = commissionResult.breakdown;
-
-      console.log(`💰 Delivery earnings calculated using commission rules: ₹${totalEarning.toFixed(2)} for order ${orderIdForLog}`);
-      console.log(`📊 Commission breakdown:`, {
-        rule: commissionResult.rule.name,
-        basePayout: commissionResult.breakdown.basePayout,
-        distance: commissionResult.breakdown.distance,
-        commissionPerKm: commissionResult.breakdown.commissionPerKm,
-        distanceCommission: commissionResult.breakdown.distanceCommission,
-        total: totalEarning
-      });
-    } catch (commissionError) {
-      console.error('⚠️ Error calculating commission using rules:', commissionError.message);
-      // Fallback: Use delivery fee as earnings if commission calculation fails
-      totalEarning = order.pricing?.deliveryFee || 0;
-      console.warn(`⚠️ Using fallback earnings (delivery fee): ₹${totalEarning.toFixed(2)}`);
-    }
+    let commissionBreakdown = {
+      basePayout: 0,
+      distance: 0,
+      commissionPerKm: 0,
+      distanceCommission: 0,
+      total: 0,
+      isSalaried: true
+    };
 
     // Add earning to delivery boy's wallet
     let walletTransaction = null;

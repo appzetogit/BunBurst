@@ -88,20 +88,6 @@ import {
   saveEnvVariables,
 } from "../controllers/envVariablesController.js";
 import {
-  getCommissionRules,
-  getCommissionRuleById,
-  createCommissionRule,
-  updateCommissionRule,
-  deleteCommissionRule,
-  toggleCommissionRuleStatus,
-  calculateCommission,
-} from "../controllers/deliveryBoyCommissionController.js";
-import {
-  getDeliveryCashLimit,
-  updateDeliveryCashLimit,
-} from "../controllers/deliveryCashLimitController.js";
-import { getCashLimitSettlements } from "../controllers/cashLimitSettlementController.js";
-import {
   getDeliveryWithdrawalRequests,
   approveDeliveryWithdrawal,
   rejectDeliveryWithdrawal,
@@ -265,11 +251,6 @@ router.use((req, res, next) => {
 // Dashboard
 router.get("/dashboard/stats", getDashboardStats);
 
-// Delivery Partner global cash limit (applies to all delivery boys)
-router.get("/delivery-cash-limit", getDeliveryCashLimit);
-router.put("/delivery-cash-limit", updateDeliveryCashLimit);
-router.get("/cash-limit-settlement", getCashLimitSettlements);
-
 // Delivery withdrawal requests (admin)
 router.get("/delivery-withdrawal/requests", getDeliveryWithdrawalRequests);
 router.post("/delivery-withdrawal/:id/approve", approveDeliveryWithdrawal);
@@ -376,14 +357,9 @@ router.patch("/earning-addon-history/:id/cancel", cancelEarningAddonHistory);
 router.get("/env-variables", getEnvVariables);
 router.post("/env-variables", saveEnvVariables);
 
-// Delivery Boy Commission Management
-router.get("/delivery-boy-commission", getCommissionRules);
-router.post("/delivery-boy-commission", createCommissionRule);
-router.post("/delivery-boy-commission/calculate", calculateCommission);
-router.get("/delivery-boy-commission/:id", getCommissionRuleById);
-router.put("/delivery-boy-commission/:id", updateCommissionRule);
-router.delete("/delivery-boy-commission/:id", deleteCommissionRule);
-router.patch("/delivery-boy-commission/:id/status", toggleCommissionRuleStatus);
+// Delivery Boy Wallet Management
+router.get("/delivery-boy-wallet", getDeliveryBoyWallets);
+router.post("/delivery-boy-wallet/adjustment", addWalletAdjustment);
 
 // Delivery Emergency Help Management
 router.get("/delivery-emergency-help", getEmergencyHelp);

@@ -966,7 +966,7 @@ export const deliveryAPI = {
   getActiveEarningAddons: () => {
     const endpoint = API_ENDPOINTS.DELIVERY.EARNINGS_ACTIVE_OFFERS;
     if (import.meta.env.DEV) {
-      
+
     }
     return apiClient.get(endpoint);
   },
@@ -1705,91 +1705,7 @@ export const adminAPI = {
     return apiClient.get("/env/public");
   },
 
-  // Delivery Boy Commission Management
-  getCommissionRules: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.DELIVERY_BOY_COMMISSION, {
-      params,
-    });
-  },
 
-  getCommissionRuleById: (id) => {
-    return apiClient.get(
-      API_ENDPOINTS.ADMIN.DELIVERY_BOY_COMMISSION_BY_ID.replace(":id", id),
-    );
-  },
-
-  createCommissionRule: (data) => {
-    return apiClient.post(API_ENDPOINTS.ADMIN.DELIVERY_BOY_COMMISSION, data);
-  },
-
-  updateCommissionRule: (id, data) => {
-    return apiClient.put(
-      API_ENDPOINTS.ADMIN.DELIVERY_BOY_COMMISSION_BY_ID.replace(":id", id),
-      data,
-    );
-  },
-
-  deleteCommissionRule: (id) => {
-    return apiClient.delete(
-      API_ENDPOINTS.ADMIN.DELIVERY_BOY_COMMISSION_BY_ID.replace(":id", id),
-    );
-  },
-
-  toggleCommissionRuleStatus: (id, status) => {
-    return apiClient.patch(
-      API_ENDPOINTS.ADMIN.DELIVERY_BOY_COMMISSION_STATUS.replace(":id", id),
-      { status },
-    );
-  },
-
-  calculateCommission: (distance) => {
-    return apiClient.post(
-      API_ENDPOINTS.ADMIN.DELIVERY_BOY_COMMISSION_CALCULATE,
-      { distance },
-    );
-  },
-
-  // Delivery Partner global cash limit
-  getDeliveryCashLimit: () => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.DELIVERY_CASH_LIMIT);
-  },
-
-  updateDeliveryCashLimit: (data) => {
-    return apiClient.put(
-      API_ENDPOINTS.ADMIN.DELIVERY_CASH_LIMIT,
-      typeof data === "object" ? data : { deliveryCashLimit: data },
-    );
-  },
-
-  // Deliveryman Reviews
-  getDeliverymanReviews: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.DELIVERY_PARTNER_REVIEWS, {
-      params,
-    });
-  },
-
-  getCashLimitSettlements: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.CASH_LIMIT_SETTLEMENT, { params });
-  },
-
-  getDeliveryWithdrawalRequests: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.DELIVERY_WITHDRAWAL_REQUESTS, {
-      params,
-    });
-  },
-  approveDeliveryWithdrawal: (id) => {
-    const sid = id != null ? String(id) : "";
-    return apiClient.post(
-      API_ENDPOINTS.ADMIN.DELIVERY_WITHDRAWAL_APPROVE.replace(":id", sid),
-    );
-  },
-  rejectDeliveryWithdrawal: (id, rejectionReason = "") => {
-    const sid = id != null ? String(id) : "";
-    return apiClient.post(
-      API_ENDPOINTS.ADMIN.DELIVERY_WITHDRAWAL_REJECT.replace(":id", sid),
-      { rejectionReason },
-    );
-  },
 
   getDeliveryBoyWallets: (params = {}) => {
     return apiClient.get(API_ENDPOINTS.ADMIN.DELIVERY_BOY_WALLET, { params });

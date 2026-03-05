@@ -1,88 +1,6 @@
 import mongoose from 'mongoose';
-
-const transactionSchema = new mongoose.Schema({
-  amount: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  type: {
-    type: String,
-    enum: ['payment', 'withdrawal', 'refund', 'bonus', 'deduction'],
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['Pending', 'Completed', 'Failed', 'Cancelled'],
-    default: 'Pending'
-  },
-  description: {
-    type: String,
-    trim: true
-  },
-  orderId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Order',
-    sparse: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  processedAt: Date
-}, {
-  timestamps: true,
-  _id: true
-});
-
-// Withdrawal Request Schema
-const withdrawalRequestSchema = new mongoose.Schema({
-  amount: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  status: {
-    type: String,
-    enum: ['Pending', 'Approved', 'Rejected', 'Processed'],
-    default: 'Pending'
-  },
-  paymentMethod: {
-    type: String,
-    enum: ['bank_transfer', 'upi', 'card'],
-    required: true
-  },
-  bankDetails: {
-    accountNumber: String,
-    ifscCode: String,
-    accountHolderName: String,
-    bankName: String
-  },
-  upiId: String,
-  cardDetails: {
-    last4Digits: String,
-    cardType: String
-  },
-  requestedAt: {
-    type: Date,
-    default: Date.now
-  },
-  processedAt: Date,
-  processedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Admin',
-    sparse: true
-  },
-  rejectionReason: String,
-  transactionId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Transaction',
-    sparse: true
-  }
-}, {
-  timestamps: true,
-  _id: true
-});
+// import RestaurantWithdrawalRequest from './RestaurantWithdrawalRequest.js';
+import WithdrawalRequest from './WithdrawalRequest.js';
 
 // Restaurant Wallet Schema
 const restaurantWalletSchema = new mongoose.Schema({
@@ -109,10 +27,6 @@ const restaurantWalletSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
-  // Transactions array
-  transactions: [transactionSchema],
-  // Withdrawal requests
-  withdrawalRequests: [withdrawalRequestSchema],
   // Status
   isActive: {
     type: Boolean,
@@ -126,25 +40,21 @@ const restaurantWalletSchema = new mongoose.Schema({
 
 // Indexes
 restaurantWalletSchema.index({ restaurantId: 1 });
-restaurantWalletSchema.index({ 'transactions.orderId': 1 });
-restaurantWalletSchema.index({ 'transactions.status': 1 });
-restaurantWalletSchema.index({ 'transactions.type': 1 });
 restaurantWalletSchema.index({ lastTransactionAt: -1 });
 
 // Virtual for pending balance (earned but not withdrawn)
-restaurantWalletSchema.virtual('pendingBalance').get(function() {
+restaurantWalletSchema.virtual('pendingBalance').get(function () {
   return this.totalEarned - this.totalWithdrawn;
 });
 
 // Method to add transaction and update balances
-restaurantWalletSchema.methods.addTransaction = function(transactionData) {
-  const transaction = {
+restaurantWalletSchema.methods.addTransaction = async function (transactionData) {
+  const transaction = await RestaurantTransaction.create({
     ...transactionData,
-    createdAt: new Date()
-  };
-  
-  this.transactions.push(transaction);
-  
+    restaurantId: this.restaurantId,
+    walletId: this._id
+  });
+
   // Update balances based on transaction type and status
   if (transaction.status === 'Completed') {
     if (transaction.type === 'payment' || transaction.type === 'bonus' || transaction.type === 'refund') {
@@ -157,29 +67,31 @@ restaurantWalletSchema.methods.addTransaction = function(transactionData) {
       this.totalBalance -= transaction.amount;
     }
   }
-  
+
   this.lastTransactionAt = new Date();
-  
+  await this.save();
+
   return transaction;
 };
 
 // Method to update transaction status
-restaurantWalletSchema.methods.updateTransactionStatus = function(transactionId, status, failureReason = null) {
-  const transaction = this.transactions.id(transactionId);
+restaurantWalletSchema.methods.updateTransactionStatus = async function (transactionId, status, failureReason = null) {
+  const transaction = await RestaurantTransaction.findById(transactionId);
   if (!transaction) {
     throw new Error('Transaction not found');
   }
-  
+
   const oldStatus = transaction.status;
   const oldAmount = transaction.amount;
-  
+
   transaction.status = status;
   transaction.processedAt = new Date();
-  
+
   if (status === 'Failed' && failureReason) {
     transaction.failureReason = failureReason;
   }
-  
+  await transaction.save();
+
   // If transaction status changed from Pending to Completed, update balances
   if (oldStatus === 'Pending' && status === 'Completed') {
     if (transaction.type === 'payment' || transaction.type === 'bonus' || transaction.type === 'refund') {
@@ -192,7 +104,7 @@ restaurantWalletSchema.methods.updateTransactionStatus = function(transactionId,
       this.totalBalance -= oldAmount;
     }
   }
-  
+
   // If transaction status changed from Completed to Failed/Cancelled, reverse balances
   if (oldStatus === 'Completed' && (status === 'Failed' || status === 'Cancelled')) {
     if (transaction.type === 'payment' || transaction.type === 'bonus' || transaction.type === 'refund') {
@@ -203,14 +115,15 @@ restaurantWalletSchema.methods.updateTransactionStatus = function(transactionId,
       this.totalWithdrawn = Math.max(0, this.totalWithdrawn - oldAmount);
     }
   }
-  
+
+  await this.save();
   return transaction;
 };
 
 // Static method to get wallet by restaurant ID or create if doesn't exist
-restaurantWalletSchema.statics.findOrCreateByRestaurantId = async function(restaurantId) {
+restaurantWalletSchema.statics.findOrCreateByRestaurantId = async function (restaurantId) {
   let wallet = await this.findOne({ restaurantId });
-  
+
   if (!wallet) {
     wallet = await this.create({
       restaurantId,
@@ -219,9 +132,8 @@ restaurantWalletSchema.statics.findOrCreateByRestaurantId = async function(resta
       totalEarned: 0
     });
   }
-  
+
   return wallet;
 };
 
 export default mongoose.model('RestaurantWallet', restaurantWalletSchema);
-

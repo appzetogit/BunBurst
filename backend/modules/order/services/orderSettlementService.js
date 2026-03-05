@@ -1,7 +1,7 @@
 import Order from '../models/Order.js';
 import OrderSettlement from '../models/OrderSettlement.js';
 import RestaurantCommission from '../../admin/models/RestaurantCommission.js';
-import DeliveryBoyCommission from '../../admin/models/DeliveryBoyCommission.js';
+
 import FeeSettings from '../../admin/models/FeeSettings.js';
 import Restaurant from '../../restaurant/models/Restaurant.js';
 import Delivery from '../../delivery/models/Delivery.js';

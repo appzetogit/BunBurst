@@ -2,6 +2,7 @@ import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import Delivery from '../models/Delivery.js';
 import DeliveryWallet from '../models/DeliveryWallet.js';
+import DeliveryTransaction from '../models/DeliveryTransaction.js';
 import Order from '../../order/models/Order.js';
 import winston from 'winston';
 
@@ -56,6 +57,24 @@ export const getDashboard = asyncHandler(async (req, res) => {
       logger.warn(`Error counting pending orders for delivery ${delivery._id}:`, error);
     }
 
+    // Get recent orders
+    const recentOrders = await Order.find({ deliveryPartnerId: delivery._id })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    // Get wallet stats from separate collection
+    const wallet = await DeliveryWallet.findOrCreateByDeliveryId(delivery._id);
+
+    // Calculate today's earnings (though it should be 0 for salaried model per user request, 
+    // we can still show transaction sums if any)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // No per-order earnings in salaried model
+    const todayEarnings = 0;
+
+
     // Prepare dashboard data (Salaried model)
     const dashboardData = {
       profile: {
@@ -73,13 +92,11 @@ export const getDashboard = asyncHandler(async (req, res) => {
         joiningDate: delivery.joiningDate
       },
       wallet: {
-        balance: 0,
+        balance: wallet.totalBalance || 0,
         totalEarned: 0,
-        currentBalance: 0,
-        pendingPayout: 0,
-        tips: 0,
+        currentBalance: wallet.totalBalance || 0,
+        cashInHand: 0,
         todayEarnings: 0,
-        weeklyEarnings: 0,
       },
       stats: {
         totalOrders: totalOrders,
@@ -90,19 +107,15 @@ export const getDashboard = asyncHandler(async (req, res) => {
         averageDeliveryTime: delivery.metrics?.averageDeliveryTime || 0,
       },
       joiningBonus: {
-        amount: 0,
-        unlocked: false,
-        claimed: true, // Mark as claimed to hide UI
-        unlockThreshold: 1,
-        ordersCompleted: completedOrders,
-        ordersRequired: 1,
-        message: 'Salaried model - no joining bonus',
+        amount: wallet.joiningBonusAmount || 0,
+        unlocked: wallet.joiningBonusAmount > 0,
+        claimed: wallet.joiningBonusClaimed,
       },
       recentOrders: recentOrders.map(order => ({
         orderId: order.orderId,
         status: order.status,
         restaurantName: order.restaurantName,
-        deliveryFee: 0, // Force to 0 for display
+        deliveryFee: 0,
         createdAt: order.createdAt,
         deliveredAt: order.deliveredAt,
       })),
@@ -204,20 +217,8 @@ export const getOrderStats = asyncHandler(async (req, res) => {
     });
     const cancelledOrders = await Order.countDocuments({ ...query, status: 'cancelled' });
 
-    // Calculate earnings
-    let orders = [];
-    try {
-      orders = await Order.find({
-        ...query,
-        status: 'delivered'
-      }).select('pricing.deliveryFee deliveredAt');
-    } catch (error) {
-      logger.warn(`Error fetching orders for stats:`, error);
-    }
+    const totalEarnings = 0;
 
-    const totalEarnings = orders.reduce((sum, order) => {
-      return sum + (order.pricing?.deliveryFee || 0);
-    }, 0);
 
     const stats = {
       period,

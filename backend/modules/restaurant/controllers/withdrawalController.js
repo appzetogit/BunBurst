@@ -1,6 +1,7 @@
 import WithdrawalRequest from '../models/WithdrawalRequest.js';
 import RestaurantWallet from '../models/RestaurantWallet.js';
 import Restaurant from '../models/Restaurant.js';
+import RestaurantTransaction from '../models/RestaurantTransaction.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
 import winston from 'winston';
@@ -34,7 +35,7 @@ export const createWithdrawalRequest = asyncHandler(async (req, res) => {
 
     // Get restaurant wallet
     const wallet = await RestaurantWallet.findOrCreateByRestaurantId(restaurant._id);
-    
+
     // Check if sufficient balance
     const availableBalance = wallet.totalBalance || 0;
     if (amount > availableBalance) {
@@ -66,7 +67,7 @@ export const createWithdrawalRequest = asyncHandler(async (req, res) => {
     // Deduct balance immediately when withdrawal request is created
     // Create a pending withdrawal transaction
     const withdrawalRequestId = withdrawalRequest._id.toString();
-    const transaction = wallet.addTransaction({
+    const transaction = await wallet.addTransaction({
       amount: parseFloat(amount),
       type: 'withdrawal',
       status: 'Pending',
@@ -250,29 +251,31 @@ export const approveWithdrawalRequest = asyncHandler(async (req, res) => {
     // Find and update the pending withdrawal transaction to Completed
     // Balance was already deducted when request was created, so we just mark transaction as completed
     let pendingTransaction = null;
-    
+
     if (withdrawalRequest.transactionId) {
       // Find transaction by ID if linked
-      pendingTransaction = wallet.transactions.id(withdrawalRequest.transactionId);
+      pendingTransaction = await RestaurantTransaction.findById(withdrawalRequest.transactionId);
     }
-    
+
     if (!pendingTransaction) {
       // Fallback: find by description
-      pendingTransaction = wallet.transactions.find(
-        t => t.type === 'withdrawal' && 
-             t.status === 'Pending' && 
-             t.description?.includes(withdrawalRequest._id.toString())
-      );
+      pendingTransaction = await RestaurantTransaction.findOne({
+        walletId: wallet._id,
+        type: 'withdrawal',
+        status: 'Pending',
+        description: { $regex: withdrawalRequest._id.toString() }
+      });
     }
 
     if (pendingTransaction) {
       // Update transaction status to Completed
       pendingTransaction.status = 'Completed';
       pendingTransaction.processedAt = new Date();
+      await pendingTransaction.save();
       // Balance was already deducted, so no need to deduct again
     } else {
       // If transaction not found, create a new one (fallback)
-      wallet.addTransaction({
+      await wallet.addTransaction({
         amount: withdrawalRequest.amount,
         type: 'withdrawal',
         status: 'Completed',
@@ -338,32 +341,34 @@ export const rejectWithdrawalRequest = asyncHandler(async (req, res) => {
     // Find and update the pending withdrawal transaction to Cancelled
     // Refund the balance back
     let pendingTransaction = null;
-    
+
     if (withdrawalRequest.transactionId) {
       // Find transaction by ID if linked
-      pendingTransaction = wallet.transactions.id(withdrawalRequest.transactionId);
+      pendingTransaction = await RestaurantTransaction.findById(withdrawalRequest.transactionId);
     }
-    
+
     if (!pendingTransaction) {
       // Fallback: find by description
-      pendingTransaction = wallet.transactions.find(
-        t => t.type === 'withdrawal' && 
-             t.status === 'Pending' && 
-             t.description?.includes(withdrawalRequest._id.toString())
-      );
+      pendingTransaction = await RestaurantTransaction.findOne({
+        walletId: wallet._id,
+        type: 'withdrawal',
+        status: 'Pending',
+        description: { $regex: withdrawalRequest._id.toString() }
+      });
     }
 
     if (pendingTransaction) {
       // Update transaction status to Cancelled
       pendingTransaction.status = 'Cancelled';
       pendingTransaction.processedAt = new Date();
-      
+      await pendingTransaction.save();
+
       // Refund the balance back
       wallet.totalBalance = (wallet.totalBalance || 0) + withdrawalRequest.amount;
       wallet.totalWithdrawn = Math.max(0, (wallet.totalWithdrawn || 0) - withdrawalRequest.amount);
     } else {
       // If transaction not found, create a refund transaction (fallback)
-      wallet.addTransaction({
+      await wallet.addTransaction({
         amount: withdrawalRequest.amount,
         type: 'refund',
         status: 'Completed',
@@ -392,4 +397,3 @@ export const rejectWithdrawalRequest = asyncHandler(async (req, res) => {
     return errorResponse(res, 500, 'Failed to reject withdrawal request');
   }
 });
-

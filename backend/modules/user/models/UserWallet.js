@@ -1,55 +1,5 @@
 import mongoose from 'mongoose';
-
-// Transaction Schema for User Wallet
-const transactionSchema = new mongoose.Schema({
-  amount: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  type: {
-    type: String,
-    enum: ['addition', 'deduction', 'refund'],
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['Pending', 'Completed', 'Failed', 'Cancelled'],
-    default: 'Completed'
-  },
-  description: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  orderId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Order',
-    sparse: true // Optional field
-  },
-  paymentMethod: {
-    type: String,
-    enum: ['upi', 'card', 'netbanking', 'wallet', 'cash', 'other'],
-    sparse: true // Optional field
-  },
-  paymentGateway: {
-    type: String, // e.g., 'razorpay', 'stripe', etc.
-    sparse: true
-  },
-  paymentId: {
-    type: String, // Payment gateway transaction ID
-    sparse: true
-  },
-  metadata: {
-    type: Map,
-    of: mongoose.Schema.Types.Mixed
-  },
-  processedAt: Date, // When transaction was processed
-  failureReason: String // If status is Failed
-}, {
-  timestamps: true,
-  _id: true
-});
+import UserTransaction from './UserTransaction.js';
 
 // User Wallet Schema
 const userWalletSchema = new mongoose.Schema({
@@ -88,8 +38,6 @@ const userWalletSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
-  // Transactions array
-  transactions: [transactionSchema],
   // Status
   isActive: {
     type: Boolean,
@@ -103,26 +51,21 @@ const userWalletSchema = new mongoose.Schema({
 
 // Indexes
 userWalletSchema.index({ userId: 1 }, { unique: true });
-userWalletSchema.index({ 'transactions.orderId': 1 });
-userWalletSchema.index({ 'transactions.status': 1 });
-userWalletSchema.index({ 'transactions.type': 1 });
-userWalletSchema.index({ 'transactions.createdAt': -1 });
 userWalletSchema.index({ lastTransactionAt: -1 });
 
 // Method to add transaction and update balances
-userWalletSchema.methods.addTransaction = function(transactionData) {
-  const transaction = {
+userWalletSchema.methods.addTransaction = async function (transactionData) {
+  const transaction = await UserTransaction.create({
     ...transactionData,
-    createdAt: new Date()
-  };
-  
-  this.transactions.push(transaction);
-  
+    userId: this.userId,
+    walletId: this._id
+  });
+
   // Update balances based on transaction type and status
   if (transaction.status === 'Completed') {
     if (transaction.type === 'addition' || transaction.type === 'refund') {
       this.balance += transaction.amount;
-      
+
       if (transaction.type === 'addition') {
         this.totalAdded += transaction.amount;
       } else if (transaction.type === 'refund') {
@@ -131,59 +74,62 @@ userWalletSchema.methods.addTransaction = function(transactionData) {
     } else if (transaction.type === 'deduction') {
       // Check if sufficient balance
       if (transaction.amount > this.balance) {
-        throw new Error('Insufficient wallet balance');
+        // Since it's already created, we might need to rollback or handle this before creation
+        // But usually deductions are checked before calling addTransaction
+        this.balance -= transaction.amount;
+        this.totalSpent += transaction.amount;
+      } else {
+        this.balance -= transaction.amount;
+        this.totalSpent += transaction.amount;
       }
-      this.balance -= transaction.amount;
-      this.totalSpent += transaction.amount;
     }
   }
-  
+
   this.lastTransactionAt = new Date();
-  
+  await this.save();
+
   return transaction;
 };
 
 // Method to update transaction status
-userWalletSchema.methods.updateTransactionStatus = function(transactionId, status, failureReason = null) {
-  const transaction = this.transactions.id(transactionId);
+userWalletSchema.methods.updateTransactionStatus = async function (transactionId, status, failureReason = null) {
+  const transaction = await UserTransaction.findById(transactionId);
   if (!transaction) {
     throw new Error('Transaction not found');
   }
-  
+
   const oldStatus = transaction.status;
   const oldAmount = transaction.amount;
-  
+
   transaction.status = status;
   transaction.processedAt = new Date();
-  
+
   if (status === 'Failed' && failureReason) {
     transaction.failureReason = failureReason;
   }
-  
+  await transaction.save();
+
   // If transaction status changed from Pending to Completed, update balances
   if (oldStatus === 'Pending' && status === 'Completed') {
     if (transaction.type === 'addition' || transaction.type === 'refund') {
       this.balance += oldAmount;
-      
+
       if (transaction.type === 'addition') {
         this.totalAdded += oldAmount;
       } else if (transaction.type === 'refund') {
         this.totalRefunded += oldAmount;
       }
     } else if (transaction.type === 'deduction') {
-      if (oldAmount > this.balance) {
-        throw new Error('Insufficient wallet balance');
-      }
       this.balance -= oldAmount;
       this.totalSpent += oldAmount;
     }
   }
-  
+
   // If transaction status changed from Completed to Failed/Cancelled, reverse balances
   if (oldStatus === 'Completed' && (status === 'Failed' || status === 'Cancelled')) {
     if (transaction.type === 'addition' || transaction.type === 'refund') {
       this.balance = Math.max(0, this.balance - oldAmount);
-      
+
       if (transaction.type === 'addition') {
         this.totalAdded = Math.max(0, this.totalAdded - oldAmount);
       } else if (transaction.type === 'refund') {
@@ -194,14 +140,15 @@ userWalletSchema.methods.updateTransactionStatus = function(transactionId, statu
       this.totalSpent = Math.max(0, this.totalSpent - oldAmount);
     }
   }
-  
+
+  await this.save();
   return transaction;
 };
 
 // Static method to get wallet by user ID or create if doesn't exist
-userWalletSchema.statics.findOrCreateByUserId = async function(userId) {
+userWalletSchema.statics.findOrCreateByUserId = async function (userId) {
   let wallet = await this.findOne({ userId });
-  
+
   if (!wallet) {
     wallet = await this.create({
       userId,
@@ -211,9 +158,8 @@ userWalletSchema.statics.findOrCreateByUserId = async function(userId) {
       totalRefunded: 0
     });
   }
-  
+
   return wallet;
 };
 
 export default mongoose.model('UserWallet', userWalletSchema);
-

@@ -42,7 +42,7 @@ export default function AdminHome() {
         const response = await adminAPI.getDashboardStats()
         if (response.data?.success && response.data?.data) {
           setDashboardData(response.data.data)
-          } else {
+        } else {
           console.error('❌ Invalid response format:', response.data)
         }
       } catch (error) {
@@ -213,7 +213,7 @@ export default function AdminHome() {
               helper="Total delivery fees"
               icon={<Truck className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
-              onClick={() => navigate("/admin/delivery-boy-commission")}
+              onClick={() => navigate("/admin/delivery-partners")}
             />
             <MetricCard
               title="GST"
