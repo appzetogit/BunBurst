@@ -14,8 +14,8 @@ export async function testBackendConnection() {
     const baseUrl = API_BASE_URL.replace('/api', '');
     const healthUrl = `${baseUrl}/health`;
     
-    console.log('🔍 Testing backend connection...');
-    console.log('📍 Health check URL:', healthUrl);
+    
+    
     
     const response = await fetch(healthUrl, {
       method: 'GET',
@@ -32,8 +32,8 @@ export async function testBackendConnection() {
     
     const data = await response.json();
     
-    console.log('✅ Backend connection successful!');
-    console.log('📦 Response:', data);
+    
+    
     
     return {
       success: true,
@@ -60,7 +60,7 @@ export async function testAPIEndpoint(endpoint) {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    console.log('🔍 Testing API endpoint:', url);
+    
     
     const response = await fetch(url, {
       method: 'GET',
@@ -76,8 +76,8 @@ export async function testAPIEndpoint(endpoint) {
       throw new Error(data.message || `HTTP ${response.status}`);
     }
     
-    console.log('✅ API endpoint test successful!');
-    console.log('📦 Response:', data);
+    
+    
     
     return {
       success: true,
@@ -99,16 +99,16 @@ export async function testAPIEndpoint(endpoint) {
  * Run all connection tests
  */
 export async function runConnectionTests() {
-  console.log('🚀 Starting connection tests...');
-  console.log('🌐 API Base URL:', API_BASE_URL);
-  console.log('🌐 Backend URL:', API_BASE_URL.replace('/api', ''));
+  
+  
+  
   
   const results = {
     health: await testBackendConnection(),
     // Add more tests as needed
   };
   
-  console.log('📊 Connection Test Results:', results);
+  
   
   return results;
 }

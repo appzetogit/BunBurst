@@ -79,7 +79,6 @@ export default function PageMetaDataPageMetaData() {
     if (!editingPage) return
     
     // In real app, this would save to API
-    console.log("Saving SEO data for:", editingPage.name, seoData)
     alert(`SEO data saved successfully for ${editingPage.name}!`)
     setIsEditDialogOpen(false)
     setEditingPage(null)

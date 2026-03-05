@@ -151,7 +151,6 @@ export default function FirebaseNotification() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Form submitted:", { activeTab, messages, firebaseConfig })
     alert("Firebase Notification settings saved successfully!")
   }
 

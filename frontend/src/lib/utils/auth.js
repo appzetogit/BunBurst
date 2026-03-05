@@ -187,11 +187,7 @@ export function setAuthData(module, token, user) {
       throw new Error(`Invalid parameters: module=${module}, token=${!!token}`);
     }
 
-    console.log(`[setAuthData] Storing auth for module: ${module}`, {
-      hasToken: !!token,
-      tokenLength: token?.length,
-      hasUser: !!user
-    });
+    
 
     // Store module-specific token (don't clear other modules)
     const tokenKey = `${module}_accessToken`;
@@ -230,7 +226,7 @@ export function setAuthData(module, token, user) {
       throw new Error(`Authentication flag storage failed for module: ${module}`);
     }
 
-    console.log(`[setAuthData] Successfully stored auth data for ${module}`);
+    
   } catch (error) {
     // If quota exceeded, try to clear some space
     if (error.name === 'QuotaExceededError' || error.code === 22) {

@@ -81,10 +81,8 @@ export default function LoginSetup() {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (activeTab === "customer-login") {
-      console.log("Form submitted:", { loginOptions, socialMedia, verification })
-    } else {
-      console.log("Panel URLs submitted:", panelUrls)
-    }
+      } else {
+      }
     alert("Settings saved successfully!")
   }
 

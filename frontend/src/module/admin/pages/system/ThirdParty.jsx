@@ -157,7 +157,6 @@ export default function ThirdParty() {
       key: field.key,
       value: fieldValues[`${serviceId}-${field.key}`] || field.value
     }))
-    console.log("Saving service:", service.name, serviceFields)
     alert(`${service.name} configuration saved successfully!`)
     
     setServices(prev => prev.map(s => 

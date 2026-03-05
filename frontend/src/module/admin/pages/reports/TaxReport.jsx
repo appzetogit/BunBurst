@@ -23,8 +23,7 @@ export default function TaxReport() {
 
   const handleSubmit = () => {
     // Handle form submission
-    console.log("Submitting tax report filters:", filters)
-  }
+    }
 
   const handleExport = (format) => {
     if (taxReportDummy.length === 0) {

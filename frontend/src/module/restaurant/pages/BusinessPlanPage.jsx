@@ -125,8 +125,7 @@ export default function BusinessPlanPage() {
           className="w-full bg-[#ff8100] hover:bg-[#e67300] text-white font-semibold py-3 rounded-xl text-base"
           onClick={() => {
             // Future: open change plan flow
-            console.log("Change Business Plan clicked")
-          }}
+            }}
         >
           Change Business Plan
         </Button>
@@ -257,7 +256,6 @@ export default function BusinessPlanPage() {
                               variant={isActive ? "default" : "outline"}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                console.log("Shift plan to:", p.id)
                                 setSelectedPlanId(p.id)
                                 setShowPlans(false)
                               }}

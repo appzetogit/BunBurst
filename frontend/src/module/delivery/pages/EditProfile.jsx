@@ -28,7 +28,6 @@ export default function EditProfile() {
   const handleSubmit = (e) => {
     e.preventDefault()
     // Handle form submission
-    console.log("Profile updated:", formData)
     navigate("/delivery/profile")
   }
 
@@ -66,8 +65,7 @@ export default function EditProfile() {
                       className="hidden"
                       onChange={(e) => {
                         // Handle image upload
-                        console.log("Image selected:", e.target.files[0])
-                      }}
+                        }}
                     />
                   </label>
                 </div>

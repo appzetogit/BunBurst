@@ -29,7 +29,6 @@ export default function AddEmployee() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Form submitted:", formData)
     alert("Employee added successfully!")
   }
 

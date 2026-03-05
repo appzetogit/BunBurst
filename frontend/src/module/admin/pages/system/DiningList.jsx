@@ -29,7 +29,6 @@ export default function DiningList() {
                     // Try admin API first
                     response = await adminAPI.getRestaurants()
                 } catch (adminErr) {
-                    console.log("Admin restaurants endpoint not available, using fallback")
                     response = await restaurantAPI.getRestaurants()
                 }
 

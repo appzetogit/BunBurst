@@ -92,12 +92,7 @@ function ensureFirebaseInitialized() {
     const existingApps = getApps();
     if (existingApps.length === 0) {
       app = initializeApp(firebaseConfig);
-      console.log('Firebase initialized successfully with config:', {
-        projectId: firebaseConfig.projectId,
-        authDomain: firebaseConfig.authDomain,
-        apiKey: firebaseConfig.apiKey ? firebaseConfig.apiKey.substring(0, 20) + '...' : 'missing',
-        usingFallbackConfig: isUsingFallbackFirebaseConfig
-      });
+      
       if (isUsingFallbackFirebaseConfig) {
         console.warn(
           'Firebase is not using Admin System ENV values. Set Firebase keys in Admin > System > Environment Variables (or VITE_FIREBASE_* in frontend .env).'
@@ -105,7 +100,7 @@ function ensureFirebaseInitialized() {
       }
     } else {
       app = existingApps[0];
-      console.log('Firebase app already initialized, reusing existing instance');
+      
     }
 
     // Initialize Auth - ensure it's connected to the app
@@ -114,10 +109,7 @@ function ensureFirebaseInitialized() {
       if (!firebaseAuth) {
         throw new Error('Failed to get Firebase Auth instance');
       }
-      console.log('Firebase Auth initialized successfully', {
-        app: app.name,
-        authApp: firebaseAuth.app.name
-      });
+      
     }
 
     // Initialize Google Provider
@@ -127,7 +119,7 @@ function ensureFirebaseInitialized() {
       googleProvider.addScope('email');
       googleProvider.addScope('profile');
       // Note: Don't set custom client_id - Firebase uses its own OAuth client
-      console.log('Google Auth Provider initialized');
+      
     }
     return true;
   } catch (error) {

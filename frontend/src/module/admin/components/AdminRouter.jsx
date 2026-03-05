@@ -5,7 +5,7 @@ import AdminLayout from "./AdminLayout";
 import Loader from "@/components/Loader";
 
 const AdminHome = lazy(() => import("../pages/AdminHome"));
-const PointOfSale = lazy(() => import("../pages/PointOfSale"));
+
 const AdminProfile = lazy(() => import("../pages/AdminProfile"));
 const AdminSettings = lazy(() => import("../pages/AdminSettings"));
 const NewRefundRequests = lazy(() => import("../pages/refunds/NewRefundRequests"));
@@ -139,7 +139,7 @@ export default function AdminRouter() {
           <Route path="/" element={<AdminHome />} />
 
 
-          <Route path="/point-of-sale" element={<PointOfSale />} />
+
 
           {/* Profile */}
           <Route path="/profile" element={<AdminProfile />} />

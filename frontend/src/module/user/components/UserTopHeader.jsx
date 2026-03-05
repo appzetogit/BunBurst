@@ -11,6 +11,7 @@ import { useLocationSelector, useSearchOverlay } from "./UserLayout"
 import { getCachedSettings, loadBusinessSettings } from "@/lib/utils/businessSettings"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { adminAPI } from "@/lib/api"
 
 const DEFAULT_PLACEHOLDERS = [
     "Search \"burger\"",
@@ -41,6 +42,7 @@ export default function UserTopHeader({
     const [logoUrl, setLogoUrl] = useState(null)
     const [companyName, setCompanyName] = useState(null)
     const [searchQuery, setSearchQuery] = useState("")
+    const [cyclingPlaceholders, setCyclingPlaceholders] = useState(placeholders || DEFAULT_PLACEHOLDERS)
     const [placeholderIndex, setPlaceholderIndex] = useState(0)
     const routeLocation = useRouteLocation()
 
@@ -85,13 +87,33 @@ export default function UserTopHeader({
         }
     }, [])
 
+    // Fetch categories for dynamic placeholders
+    useEffect(() => {
+        const fetchPlaceholders = async () => {
+            try {
+                const response = await adminAPI.getPublicCategories()
+                if (response.data?.success && response.data?.data?.categories) {
+                    const names = response.data.data.categories
+                        .slice(0, 10)
+                        .map(cat => `Search "${cat.name.toLowerCase()}"`)
+                    if (names.length > 0) {
+                        setCyclingPlaceholders(names)
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching placeholders for header:", error)
+            }
+        }
+        fetchPlaceholders()
+    }, [])
+
     // Animated placeholder cycling
     useEffect(() => {
         const interval = setInterval(() => {
-            setPlaceholderIndex((prev) => (prev + 1) % placeholders.length)
+            setPlaceholderIndex((prev) => (prev + 1) % cyclingPlaceholders.length)
         }, 2000)
         return () => clearInterval(interval)
-    }, [placeholders.length])
+    }, [cyclingPlaceholders.length])
 
     // Get location display
     const getLocationText = () => {
@@ -177,7 +199,7 @@ export default function UserTopHeader({
                                                         transition={{ duration: 0.4 }}
                                                         className="text-sm font-medium text-muted-foreground whitespace-nowrap"
                                                     >
-                                                        {placeholders[placeholderIndex]}
+                                                        {cyclingPlaceholders[placeholderIndex]}
                                                     </motion.span>
                                                 </AnimatePresence>
                                             </div>
@@ -292,7 +314,7 @@ export default function UserTopHeader({
                                                 transition={{ duration: 0.4 }}
                                                 className="text-sm font-medium text-muted-foreground whitespace-nowrap"
                                             >
-                                                {placeholders[placeholderIndex]}
+                                                {cyclingPlaceholders[placeholderIndex]}
                                             </motion.span>
                                         </AnimatePresence>
                                     </div>

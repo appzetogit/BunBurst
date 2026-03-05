@@ -77,7 +77,6 @@ export default function JoinUsPageSetup() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Form submitted:", { activeTab, customFields })
     alert("Join Request Form Setup saved successfully!")
   }
 

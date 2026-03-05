@@ -119,13 +119,7 @@ export default function ProfilePage() {
           const profileData = response.data.data.profile
           setProfile(profileData)
           // Debug: Log profile image data
-          console.log("Profile image data:", {
-            profileImage: profileData.profileImage,
-            documentsPhoto: profileData.documents?.photo,
-            hasProfileImage: !!profileData.profileImage?.url,
-            hasDocumentsPhoto: !!profileData.documents?.photo
-          })
-        }
+          }
       } catch (error) {
         console.error("Error fetching profile:", error)
         toast.error("Failed to load profile data")
@@ -389,15 +383,13 @@ export default function ProfilePage() {
                       localStorage.setItem('delivery_alert_sound', e.target.value)
                       // Play preview sound
                       try {
-                        console.log('🔊 Playing preview sound: Original', { originalSoundPath: originalSound })
                         const audio = new Audio(originalSound)
                         audio.volume = 0.7
                         const playPromise = audio.play()
                         if (playPromise !== undefined) {
                           playPromise
                             .then(() => {
-                              console.log('✅ Preview sound playing: Original')
-                            })
+                              })
                             .catch(err => {
                               console.error('❌ Preview audio error:', err)
                             })
@@ -423,15 +415,13 @@ export default function ProfilePage() {
                       localStorage.setItem('delivery_alert_sound', e.target.value)
                       // Play preview sound
                       try {
-                        console.log('🔊 Playing preview sound: Zomato Tone', { alertSoundPath: alertSound })
                         const audio = new Audio(alertSound)
                         audio.volume = 0.7
                         const playPromise = audio.play()
                         if (playPromise !== undefined) {
                           playPromise
                             .then(() => {
-                              console.log('✅ Preview sound playing: Zomato Tone')
-                            })
+                              })
                             .catch(err => {
                               console.error('❌ Preview audio error:', err)
                             })

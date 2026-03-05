@@ -17,7 +17,6 @@ export default function PromotionalBanner() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log("Banner saved:", { title })
     alert("Promotional banner saved successfully!")
   }
 

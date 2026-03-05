@@ -24,7 +24,7 @@ export async function getGoogleMapsApiKey() {
   const runtimeEnv = typeof window !== 'undefined' ? (window.__PUBLIC_ENV__ || {}) : {};
   if (runtimeEnv.VITE_GOOGLE_MAPS_API_KEY && runtimeEnv.VITE_GOOGLE_MAPS_API_KEY.trim()) {
     cachedApiKey = runtimeEnv.VITE_GOOGLE_MAPS_API_KEY.trim();
-    console.log('✅ Google Maps API key loaded from Admin System ENV (runtime)');
+    
     return cachedApiKey;
   }
 
@@ -32,7 +32,7 @@ export async function getGoogleMapsApiKey() {
   const envFileKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   if (envFileKey && envFileKey.trim()) {
     cachedApiKey = envFileKey.trim();
-    console.log('✅ Google Maps API key loaded from .env file');
+    
     return cachedApiKey;
   }
 
@@ -52,7 +52,7 @@ export async function getGoogleMapsApiKey() {
         if (typeof window !== 'undefined') {
           window.__PUBLIC_ENV__ = { ...(window.__PUBLIC_ENV__ || {}), VITE_GOOGLE_MAPS_API_KEY: cachedApiKey };
         }
-        console.log('✅ Google Maps API key loaded from backend database');
+        
         return cachedApiKey;
       }
 

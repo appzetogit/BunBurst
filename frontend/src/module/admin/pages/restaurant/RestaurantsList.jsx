@@ -99,7 +99,6 @@ export default function RestaurantsList() {
           zonesResponse = zonesRes
         } catch (adminErr) {
           // Fallback to regular restaurant API if admin endpoint doesn't exist
-          console.log("Admin restaurants endpoint not available, using fallback")
           response = await restaurantAPI.getRestaurants()
         }
 
@@ -250,7 +249,6 @@ export default function RestaurantsList() {
     try {
       // First, use original data if available (has all details)
       if (restaurant.originalData) {
-        console.log("Using original restaurant data:", restaurant.originalData)
         setRestaurantDetails(restaurant.originalData)
         setLoadingDetails(false)
         return
@@ -268,16 +266,14 @@ export default function RestaurantsList() {
             response = await adminAPI.getRestaurantById(restaurantId)
           }
         } catch (err) {
-          console.log("Admin API failed, trying restaurant API:", err)
-        }
+          }
 
         // Fallback to regular restaurant API
         if (!response || !response?.data?.success) {
           try {
             response = await restaurantAPI.getRestaurantById(restaurantId)
           } catch (err) {
-            console.log("Restaurant API also failed:", err)
-          }
+            }
         }
       }
 
@@ -295,7 +291,6 @@ export default function RestaurantsList() {
         }
       } else {
         // Use the restaurant data we already have
-        console.log("Using restaurant data from list:", restaurant)
         setRestaurantDetails(restaurant)
       }
     } catch (err) {
@@ -349,8 +344,7 @@ export default function RestaurantsList() {
         setBanConfirmDialog(null)
 
         // Show success message
-        console.log(`Restaurant ${isBanning ? 'banned' : 'unbanned'} successfully`)
-      } catch (apiErr) {
+        } catch (apiErr) {
         console.error("API Error:", apiErr)
         // If API fails, still update locally for better UX
         setRestaurants(prevRestaurants =>

@@ -168,7 +168,6 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
         const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`)
         if (!res.ok) return null
         const data = await res.json()
-        console.log('🗺️ Invoice geocode status:', data.status, '| results:', data.results?.length ?? 0)
         if (data.status === 'OK' && data.results?.length > 0) {
           return data.results[0].formatted_address || null
         }
@@ -197,8 +196,6 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
 
       // Step 2 — extract coordinates from restaurantLocation and reverse geocode
       const coords = extractCoords(order?.restaurantLocation)
-      console.log('📍 Invoice: restaurantLocation raw =', order?.restaurantLocation, '| extracted =', coords)
-
       if (coords) {
         const geocoded = await reverseGeocode(coords.lat, coords.lng)
         if (!isCancelled && geocoded) {
@@ -215,8 +212,6 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
         const resp = await adminAPI.getOrderById(orderId)
         if (isCancelled) return
         const detailed = resp?.data?.data?.order || resp?.data?.order
-        console.log('📦 Invoice: detailed order restaurantLocation =', detailed?.restaurantLocation)
-
         if (detailed) {
           // Try text fields from detailed order
           const rest = (detailed.restaurantId && typeof detailed.restaurantId === 'object') ? detailed.restaurantId
@@ -236,8 +231,6 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
 
           // Try coordinates from the detailed order
           const detailCoords = extractCoords(detailed?.restaurantLocation) || extractCoords(rest?.location)
-          console.log('📍 Invoice: detailed order coords =', detailCoords)
-
           if (detailCoords) {
             const geocoded = await reverseGeocode(detailCoords.lat, detailCoords.lng)
             if (!isCancelled && geocoded) {
@@ -563,8 +556,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                         if (errorDiv) errorDiv.style.display = 'block';
                       }}
                       onLoad={() => {
-                        console.log('✅ Bill image loaded successfully')
-                      }}
+                        }}
                     />
                     <div className="error-message hidden p-6 text-center text-[#1E1E1E] text-sm bg-[#F5F5F5]">
                       <Receipt className="w-8 h-8 mx-auto mb-2 text-[#1E1E1E]" />

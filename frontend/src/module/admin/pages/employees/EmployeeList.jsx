@@ -71,8 +71,7 @@ export default function EmployeeList() {
       alert("No data to export")
       return
     }
-    console.log(`Exporting as ${format}`, filteredEmployees)
-  }
+    }
 
   const toggleColumn = (columnKey) => {
     setVisibleColumns(prev => ({ ...prev, [columnKey]: !prev[columnKey] }))

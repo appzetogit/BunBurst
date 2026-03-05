@@ -136,21 +136,6 @@ export default function PocketBalancePage() {
   const canWithdraw = withdrawableAmount >= withdrawalLimit && withdrawableAmount > 0
   
   // Debug logging (cashInHand = Cash collected from backend)
-  console.log('💰 PocketBalance Page Calculations:', {
-    walletStateCashInHand: walletState?.cashInHand,
-    balancesCashInHand: balances.cashInHand,
-    cashCollected,
-    walletStateTotalBalance: walletState?.totalBalance,
-    walletStatePocketBalance: walletState?.pocketBalance,
-    balancesTotalBalance: balances.totalBalance,
-    calculatedPocketBalance: pocketBalance,
-    totalBonus: totalBonus,
-    weeklyEarnings: weeklyEarnings,
-    withdrawableAmount: withdrawableAmount,
-    withdrawalLimit,
-    canWithdraw
-  })
-
   // Get current week date range
   const getCurrentWeekRange = () => {
     const now = new Date()

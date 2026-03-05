@@ -65,7 +65,6 @@ export default function ChatDetailPage() {
   const handleSend = () => {
     if (message.trim()) {
       // Add message logic here
-      console.log("Sending message:", message)
       setMessage("")
       scrollToBottom()
     }
