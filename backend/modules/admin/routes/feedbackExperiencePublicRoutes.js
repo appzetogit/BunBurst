@@ -46,7 +46,7 @@ const authenticateFlexible = async (req, res, next) => {
       const restaurant = await Restaurant.findById(decoded.userId).select('-password');
       
       if (!restaurant) {
-        return errorResponse(res, 401, 'Restaurant not found');
+        return errorResponse(res, 401, 'Cafe not found');
       }
 
       // For feedback, attach restaurant as user for compatibility with controller

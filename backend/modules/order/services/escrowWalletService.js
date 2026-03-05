@@ -179,7 +179,7 @@ const creditRestaurantWallet = async (restaurantId, orderId, netAmount, orderNum
       description: `Restaurant wallet credited for order ${orderNumber}`
     });
   } catch (error) {
-    console.error('Error crediting restaurant wallet:', error);
+    console.error('Error crediting cafe wallet:', error);
     throw error;
   }
 };

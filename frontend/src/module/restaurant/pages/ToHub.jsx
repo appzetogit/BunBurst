@@ -55,7 +55,7 @@ export default function ToHub() {
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          console.error("Error fetching restaurant data:", error)
+          console.error("Error fetching cafe data:", error)
         }
         // Continue with default values if fetch fails
       } finally {
@@ -93,7 +93,7 @@ export default function ToHub() {
     customers: {
       title: "Customers",
       metrics: [
-        { name: "New customers", definition: "First-time visitors ordering from your restaurant" },
+        { name: "New customers", definition: "First-time visitors ordering from your cafe" },
         { name: "Repeat customers", definition: "Returning customers who ordered before" },
         { name: "Lapsed customers", definition: "Previous customers who haven't ordered recently" }
       ]
@@ -933,7 +933,7 @@ export default function ToHub() {
   const findSourcesMetrics = [
     { title: "Dish/cuisine search", color: "#111827", impressions: "0", menu: "0", change: "- 0%" },
     { title: "Recommended for you", color: "#ef4444", impressions: "0", menu: "0", change: "- 0%" },
-    { title: "Restaurant search", color: "#2563eb", impressions: "0", menu: "0", change: "- 0%" },
+    { title: "Cafe search", color: "#2563eb", impressions: "0", menu: "0", change: "- 0%" },
     { title: "Home page listing", color: "#f59e0b", impressions: "0", menu: "0", change: "- 0%" },
     { title: "Offers page", color: "#10b981", impressions: "0", menu: "0", change: "- 0%" },
     { title: "Campaign page", color: "#d1d5db", impressions: "0", menu: "0", change: "- 0%" },

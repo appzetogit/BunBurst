@@ -19,7 +19,7 @@ const getStatusColor = (orderStatus) => {
     "Processing": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Food On The Way": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Canceled": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
-    "Cancelled by Restaurant": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
+    "Cancelled by Cafe": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Cancelled by User": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Payment Failed": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Refunded": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
@@ -162,7 +162,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
         const { getGoogleMapsApiKey } = await import('@/lib/utils/googleMapsApiKey.js')
         const apiKey = await getGoogleMapsApiKey()
         if (!apiKey) {
-          console.warn('⚠️ Invoice: No Google Maps API key — cannot reverse geocode restaurant location')
+          console.warn('⚠️ Invoice: No Google Maps API key — cannot reverse geocode cafe location')
           return null
         }
         const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`)
@@ -417,7 +417,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                       <p className="text-xs text-red-600 mt-1">
                         <span className="font-medium">
                           {order.cancelledBy === 'user' ? 'Cancelled by User - ' :
-                            order.cancelledBy === 'restaurant' ? 'Cancelled by Restaurant - ' :
+                            order.cancelledBy === 'restaurant' ? 'Cancelled by Cafe - ' :
                               'Cancellation '}Reason:
                         </span> {order.cancellationReason}
                       </p>
@@ -499,9 +499,9 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
             {/* Restaurant Information */}
             {order.restaurant && (
               <div className="border-t border-[#F5F5F5] pt-4">
-                <h3 className="text-sm font-semibold text-[#1E1E1E] mb-4">Restaurant Information</h3>
+                <h3 className="text-sm font-semibold text-[#1E1E1E] mb-4">Cafe Information</h3>
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Restaurant Name</p>
+                  <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Cafe Name</p>
                   <p className="text-sm font-medium text-[#1E1E1E]">{order.restaurant}</p>
                 </div>
               </div>

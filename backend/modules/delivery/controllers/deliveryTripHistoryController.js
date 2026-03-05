@@ -121,7 +121,7 @@ export const getTripHistory = asyncHandler(async (req, res) => {
     // Get unique restaurant IDs that need name lookup (where restaurantName is missing/empty)
     const restaurantIdsToLookup = [...new Set(
       orders
-        .filter(o => !o.restaurantName || o.restaurantName === 'Unknown Restaurant' || o.restaurantName.trim() === '')
+        .filter(o => !o.restaurantName || o.restaurantName === 'Unknown Cafe' || o.restaurantName.trim() === '')
         .map(o => o.restaurantId)
         .filter(id => id)
     )];
@@ -160,7 +160,7 @@ export const getTripHistory = asyncHandler(async (req, res) => {
           }
         });
       } catch (e) {
-        logger.warn('Could not fetch restaurant names:', e.message);
+        logger.warn('Could not fetch cafe names:', e.message);
       }
     }
 
@@ -187,11 +187,11 @@ export const getTripHistory = asyncHandler(async (req, res) => {
 
       // Get restaurant name - use restaurantName field, fallback to Restaurant collection lookup
       let restaurantName = order.restaurantName;
-      if (!restaurantName || restaurantName === 'Unknown Restaurant' || restaurantName.trim() === '') {
+      if (!restaurantName || restaurantName === 'Unknown Cafe' || restaurantName.trim() === '') {
         // Try to get from lookup map
         restaurantName = restaurantNameMap.get(order.restaurantId) || 
                         restaurantNameMap.get(order.restaurantId?.toString()) ||
-                        'Unknown Restaurant';
+                        'Unknown Cafe';
       }
 
       // Get order amount (delivery fee or total)

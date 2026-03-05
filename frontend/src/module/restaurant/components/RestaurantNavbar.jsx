@@ -30,7 +30,7 @@ export default function RestaurantNavbar({
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          console.error("Error fetching restaurant data:", error)
+          console.error("Error fetching cafe data:", error)
         }
         // Continue with default values if fetch fails
       } finally {
@@ -128,7 +128,7 @@ export default function RestaurantNavbar({
     }
     // Priority 2: Check restaurantData location
     else if (restaurantData) {
-      console.log('🔍 Checking restaurant data for address:', {
+      console.log('🔍 Checking cafe data for address:', {
         hasLocation: !!restaurantData.location,
         locationKeys: restaurantData.location ? Object.keys(restaurantData.location) : [],
         formattedAddress: restaurantData.location?.formattedAddress,
@@ -177,9 +177,9 @@ export default function RestaurantNavbar({
     
     // Debug log
     if (newLocation) {
-      console.log('📍 Restaurant address displayed:', newLocation)
+      console.log('📍 Cafe address displayed:', newLocation)
     } else if (restaurantData) {
-      console.log('⚠️ Restaurant data available but no address found')
+      console.log('⚠️ Cafe data available but no address found')
     }
   }, [restaurantData, propLocation])
 
@@ -196,7 +196,7 @@ export default function RestaurantNavbar({
           setStatus("Offline")
         }
       } catch (error) {
-        console.error("Error loading restaurant status:", error)
+        console.error("Error loading cafe status:", error)
         setStatus("Offline")
       }
     }

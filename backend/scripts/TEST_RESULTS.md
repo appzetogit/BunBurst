@@ -10,7 +10,7 @@
 Delivery partner's location is set to `(0, 0)` which is treated as invalid/null location.
 
 ### Test Results:
-- ✅ **Restaurants**: 2 active restaurants found (both have valid locations)
+- ✅ **Cafes**: 2 active cafes found (both have valid locations)
 - ⚠️ **Delivery Partners**: 1 online delivery partner found BUT location is `(0, 0)`
 - ❌ **Assignment**: Failed because location filter excludes `(0, 0)` coordinates
 
@@ -93,7 +93,7 @@ node scripts/testDeliveryAssignment.js
 ```
 
 This script will:
-- Check restaurants and their locations
+- Check cafes and their locations
 - Check delivery partners and their locations
 - Test assignment logic
 - Show detailed debugging information

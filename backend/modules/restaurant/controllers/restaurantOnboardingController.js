@@ -7,21 +7,21 @@ export const getOnboarding = async (req, res) => {
   try {
     // Check if restaurant is authenticated
     if (!req.restaurant || !req.restaurant._id) {
-      return errorResponse(res, 401, 'Restaurant not authenticated');
+      return errorResponse(res, 401, 'Cafe not authenticated');
     }
 
     const restaurantId = req.restaurant._id;
     const restaurant = await Restaurant.findById(restaurantId).select('onboarding').lean();
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     return successResponse(res, 200, 'Onboarding data retrieved', {
       onboarding: restaurant.onboarding || null,
     });
   } catch (error) {
-    console.error('Error fetching restaurant onboarding:', error);
+    console.error('Error fetching cafe onboarding:', error);
     return errorResponse(res, 500, 'Failed to fetch onboarding data');
   }
 };
@@ -99,7 +99,7 @@ export const upsertOnboarding = async (req, res) => {
     );
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     const onboarding = restaurant.onboarding;
@@ -139,7 +139,7 @@ export const upsertOnboarding = async (req, res) => {
     
     // Update restaurant schema when step1 is completed (basic info)
     if (finalCompletedSteps >= 1 && step1) {
-      console.log('🔄 Step1 completed, updating restaurant schema with step1 data...');
+      console.log('🔄 Step1 completed, updating cafe schema with step1 data...');
       try {
         const updateData = {};
         if (step1.restaurantName) {
@@ -163,17 +163,17 @@ export const upsertOnboarding = async (req, res) => {
         
         if (Object.keys(updateData).length > 0) {
           await Restaurant.findByIdAndUpdate(restaurantId, { $set: updateData });
-          console.log('✅ Restaurant schema updated with step1 data:', Object.keys(updateData));
+          console.log('✅ Cafe schema updated with step1 data:', Object.keys(updateData));
         }
       } catch (step1UpdateError) {
-        console.error('⚠️ Error updating restaurant schema with step1 data:', step1UpdateError);
+        console.error('⚠️ Error updating cafe schema with step1 data:', step1UpdateError);
         // Don't fail the request, just log the error
       }
     }
     
     // Update restaurant schema when step2 is completed (cuisines, openDays, menuImages, etc.)
     if (finalCompletedSteps >= 2 && step2) {
-      console.log('🔄 Step2 completed, updating restaurant schema with step2 data...');
+      console.log('🔄 Step2 completed, updating cafe schema with step2 data...');
       console.log('📦 Step2 data received:', {
         hasProfileImage: !!step2.profileImageUrl,
         hasMenuImages: !!step2.menuImageUrls,
@@ -202,17 +202,17 @@ export const upsertOnboarding = async (req, res) => {
         
         if (Object.keys(updateData).length > 0) {
           const updated = await Restaurant.findByIdAndUpdate(restaurantId, { $set: updateData }, { new: true });
-          console.log('✅ Restaurant schema updated with step2 data:', {
+          console.log('✅ Cafe schema updated with step2 data:', {
             updatedFields: Object.keys(updateData),
             cuisines: updated?.cuisines,
             openDays: updated?.openDays,
             menuImagesCount: updated?.menuImages?.length || 0,
           });
         } else {
-          console.warn('⚠️ No step2 data to update in restaurant schema');
+          console.warn('⚠️ No step2 data to update in cafe schema');
         }
       } catch (step2UpdateError) {
-        console.error('⚠️ Error updating restaurant schema with step2 data:', step2UpdateError);
+        console.error('⚠️ Error updating cafe schema with step2 data:', step2UpdateError);
         console.error('Error details:', {
           message: step2UpdateError.message,
           stack: step2UpdateError.stack,
@@ -241,7 +241,7 @@ export const upsertOnboarding = async (req, res) => {
     
     // Update restaurant schema when step4 is completed (display data)
     if (finalCompletedSteps >= 4 && step4) {
-      console.log('🔄 Step4 completed, updating restaurant schema with step4 data...');
+      console.log('🔄 Step4 completed, updating cafe schema with step4 data...');
       console.log('📦 Step4 data received:', {
         estimatedDeliveryTime: step4.estimatedDeliveryTime,
         distance: step4.distance,
@@ -273,17 +273,17 @@ export const upsertOnboarding = async (req, res) => {
         
         if (Object.keys(updateData).length > 0) {
           const updated = await Restaurant.findByIdAndUpdate(restaurantId, { $set: updateData }, { new: true });
-          console.log('✅ Restaurant schema updated with step4 data:', {
+          console.log('✅ Cafe schema updated with step4 data:', {
             updatedFields: Object.keys(updateData),
             estimatedDeliveryTime: updated?.estimatedDeliveryTime,
             priceRange: updated?.priceRange,
             featuredDish: updated?.featuredDish,
           });
         } else {
-          console.warn('⚠️ No step4 data to update in restaurant schema');
+          console.warn('⚠️ No step4 data to update in cafe schema');
         }
       } catch (step4UpdateError) {
-        console.error('⚠️ Error updating restaurant schema with step4 data:', step4UpdateError);
+        console.error('⚠️ Error updating cafe schema with step4 data:', step4UpdateError);
         // Don't fail the request, just log the error
       }
     }
@@ -304,7 +304,7 @@ export const upsertOnboarding = async (req, res) => {
     // Also check if step4 is being sent (which means user is completing step 4)
     // Note: Individual step updates are handled above, this is for final consolidation
     if (finalCompletedSteps === 4 || (step4 && completedSteps === 4)) {
-      console.log('✅ Onboarding is complete (step 4), finalizing restaurant data...');
+      console.log('✅ Onboarding is complete (step 4), finalizing cafe data...');
       
       // All individual steps have already updated the restaurant schema above
       // This section is kept for backward compatibility and final validation
@@ -312,7 +312,7 @@ export const upsertOnboarding = async (req, res) => {
       // Fetch the complete restaurant to verify all data is saved
       const completeRestaurant = await Restaurant.findById(restaurantId).lean();
       
-      console.log('📋 Final restaurant data verification:', {
+      console.log('📋 Final cafe data verification:', {
         name: completeRestaurant?.name,
         cuisines: completeRestaurant?.cuisines?.length || 0,
         openDays: completeRestaurant?.openDays?.length || 0,
@@ -323,7 +323,7 @@ export const upsertOnboarding = async (req, res) => {
       });
       
       // Return success response with restaurant info
-      return successResponse(res, 200, 'Onboarding data saved and restaurant updated', {
+      return successResponse(res, 200, 'Onboarding data saved and cafe updated', {
         onboarding,
         restaurant: {
           restaurantId: completeRestaurant?.restaurantId,
@@ -339,7 +339,7 @@ export const upsertOnboarding = async (req, res) => {
       onboarding,
     });
   } catch (error) {
-    console.error('Error saving restaurant onboarding:', error);
+    console.error('Error saving cafe onboarding:', error);
     return errorResponse(res, 500, 'Failed to save onboarding data');
   }
 };
@@ -353,7 +353,7 @@ export const createRestaurantFromOnboardingManual = async (req, res) => {
     const restaurant = await Restaurant.findById(restaurantId).lean();
     
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
     
     if (!restaurant.onboarding) {
@@ -371,7 +371,7 @@ export const createRestaurantFromOnboardingManual = async (req, res) => {
     try {
       const updatedRestaurant = await createRestaurantFromOnboarding(restaurant.onboarding, restaurantId);
       
-      return successResponse(res, 200, 'Restaurant updated successfully', {
+      return successResponse(res, 200, 'Cafe updated successfully', {
         restaurant: {
           restaurantId: updatedRestaurant.restaurantId,
           _id: updatedRestaurant._id,
@@ -381,7 +381,7 @@ export const createRestaurantFromOnboardingManual = async (req, res) => {
         },
       });
     } catch (error) {
-      console.error('Error updating restaurant:', error);
+      console.error('Error updating cafe:', error);
       return errorResponse(res, 500, `Failed to update restaurant: ${error.message}`);
     }
   } catch (error) {

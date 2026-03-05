@@ -22,14 +22,14 @@ const fixSohamLocation = async () => {
         await mongoose.connect(MONGODB_URI);
         console.log('✅ Connected to MongoDB');
 
-        console.log('🔍 Searching for restaurant "Soham"...');
+        console.log('🔍 Searching for cafe "Soham"...');
         // Case-insensitive search using regex
         const restaurant = await Restaurant.findOne({
             name: { $regex: new RegExp('^soham$', 'i') }
         });
 
         if (!restaurant) {
-            console.error('❌ Restaurant "Soham" not found!');
+            console.error('❌ Cafe "Soham" not found!');
             process.exit(1);
         }
 
@@ -61,14 +61,14 @@ const fixSohamLocation = async () => {
 
         await restaurant.save();
 
-        console.log('✅ Restaurant location updated successfully!');
+        console.log('✅ Cafe location updated successfully!');
 
         // verify update
         const updatedRestaurant = await Restaurant.findById(restaurant._id);
         console.log('New Location in DB:', updatedRestaurant.location);
 
     } catch (error) {
-        console.error('❌ Error updating restaurant location:', error);
+        console.error('❌ Error updating cafe location:', error);
     } finally {
         await mongoose.disconnect();
         console.log('🔌 Disconnected from MongoDB');

@@ -196,7 +196,7 @@ If you're using MongoDB Atlas and getting connection errors:
 
 ## Next Steps
 
-1. Implement other modules (user, restaurant, order, etc.)
+1. Implement other modules (user, cafe, order, etc.)
 2. Set up file upload handling
 3. Configure email service
 4. Set up payment gateway (Razorpay)

@@ -57,6 +57,7 @@ import locationRoutes from './modules/location/index.js';
 import heroBannerRoutes from './modules/heroBanner/index.js';
 import diningRoutes from './modules/dining/index.js';
 import diningAdminRoutes from './modules/dining/routes/diningAdminRoutes.js';
+import chatRoutes from './modules/chat/index.js';
 
 
 // Validate required environment variables
@@ -165,7 +166,7 @@ const restaurantNamespace = io.of('/restaurant');
 restaurantNamespace.use((socket, next) => {
   try {
     // Log connection attempt
-    console.log('🍽️ Restaurant connection attempt:', {
+    console.log('🍽️ Cafe connection attempt:', {
       socketId: socket.id,
       auth: socket.handshake.auth,
       query: socket.handshake.query,
@@ -178,13 +179,13 @@ restaurantNamespace.use((socket, next) => {
     // to avoid blocking connections unnecessarily
     next();
   } catch (error) {
-    console.error('❌ Error in restaurant namespace middleware:', error);
+    console.error('❌ Error in cafe namespace middleware:', error);
     next(error);
   }
 });
 
 restaurantNamespace.on('connection', (socket) => {
-  console.log('🍽️ Restaurant client connected:', socket.id);
+  console.log('🍽️ Cafe client connected:', socket.id);
   console.log('🍽️ Socket auth:', socket.handshake.auth);
   console.log('🍽️ Socket query:', socket.handshake.query);
   console.log('🍽️ Socket headers:', socket.handshake.headers);
@@ -231,19 +232,19 @@ restaurantNamespace.on('connection', (socket) => {
       const socketRooms = Array.from(socket.rooms).filter(r => r.startsWith('restaurant:'));
       console.log(`📋 Socket ${socket.id} is now in restaurant rooms:`, socketRooms);
     } else {
-      console.warn('⚠️ Restaurant tried to join without restaurantId');
+      console.warn('⚠️ Cafe tried to join without restaurantId');
       console.warn('⚠️ Socket ID:', socket.id);
       console.warn('⚠️ Socket auth:', socket.handshake.auth);
     }
   });
 
   socket.on('disconnect', () => {
-    console.log('🍽️ Restaurant client disconnected:', socket.id);
+    console.log('🍽️ Cafe client disconnected:', socket.id);
   });
 
   // Handle connection errors
   socket.on('error', (error) => {
-    console.error('🍽️ Restaurant socket error:', error);
+    console.error('🍽️ Cafe socket error:', error);
   });
 });
 
@@ -408,6 +409,7 @@ app.use('/api/location', locationRoutes);
 app.use('/api', heroBannerRoutes);
 app.use('/api/dining', diningRoutes);
 app.use('/api/admin/dining', diningAdminRoutes);
+app.use('/api/chat', chatRoutes);
 
 // 404 handler - but skip Socket.IO paths
 app.use((req, res, next) => {

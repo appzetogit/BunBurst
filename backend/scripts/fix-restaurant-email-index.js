@@ -112,7 +112,7 @@ async function fixRestaurantEmailIndex() {
     console.log('The email index is now sparse, so it only indexes documents where email exists.');
     
   } catch (error) {
-    console.error('❌ Error fixing restaurant email index:', error);
+    console.error('❌ Error fixing cafe email index:', error);
     process.exit(1);
   } finally {
     await mongoose.connection.close();

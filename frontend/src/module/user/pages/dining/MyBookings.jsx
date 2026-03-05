@@ -188,7 +188,7 @@ export default function MyBookings() {
                             <Utensils className="w-8 h-8 text-muted-foreground" />
                         </div>
                         <h3 className="text-lg font-bold text-foreground">No bookings yet</h3>
-                        <p className="text-muted-foreground text-sm mt-2">Book your favorite restaurant for a great dining experience!</p>
+                        <p className="text-muted-foreground text-sm mt-2">Book your favorite cafe for a great dining experience!</p>
                         <Link to="/dining">
                             <button className="mt-6 bg-primary text-primary-foreground font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-primary/20">
                                 Book a table

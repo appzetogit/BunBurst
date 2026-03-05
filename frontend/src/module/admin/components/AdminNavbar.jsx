@@ -147,7 +147,7 @@ export default function AdminNavbar({ onMenuClick }) {
   // Mock data for dropdowns
   const messages = [
     { id: 1, sender: "Sarah Johnson", message: "Order #12345 needs attention", time: "2m ago", unread: true },
-    { id: 2, sender: "Mike Chen", message: "New restaurant registration", time: "15m ago", unread: true },
+    { id: 2, sender: "Mike Chen", message: "New cafe registration", time: "15m ago", unread: true },
     { id: 3, sender: "Emma Wilson", message: "Payment issue resolved", time: "1h ago", unread: false },
   ];
 

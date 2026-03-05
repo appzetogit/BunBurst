@@ -1228,7 +1228,7 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     }
     // Default: Show all restaurants (no filter on isActive) if status is not provided or 'all'
 
-    console.log("🔍 Admin Restaurants List Query:", {
+    console.log("🔍 Admin Cafes List Query:", {
       status,
       isActive: query.isActive,
       query: JSON.stringify(query, null, 2),
@@ -1272,7 +1272,7 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     // Get total count
     const total = await Restaurant.countDocuments(query);
 
-    return successResponse(res, 200, "Restaurants retrieved successfully", {
+    return successResponse(res, 200, "Cafes retrieved successfully", {
       restaurants: restaurants,
       pagination: {
         page: parseInt(page),
@@ -1285,7 +1285,7 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     logger.error(`Error fetching restaurants: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to fetch restaurants");
+    return errorResponse(res, 500, "Failed to fetch cafes");
   }
 });
 
@@ -1300,17 +1300,17 @@ export const getRestaurantById = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(id).select("-password").lean();
 
     if (!restaurant) {
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
-    return successResponse(res, 200, "Restaurant retrieved successfully", {
+    return successResponse(res, 200, "Cafe retrieved successfully", {
       restaurant,
     });
   } catch (error) {
     logger.error(`Error fetching restaurant by id: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to fetch restaurant");
+    return errorResponse(res, 500, "Failed to fetch cafe");
   }
 });
 
@@ -1330,7 +1330,7 @@ export const updateRestaurantStatus = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(id);
 
     if (!restaurant) {
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
     restaurant.isActive = isActive;
@@ -1341,7 +1341,7 @@ export const updateRestaurantStatus = asyncHandler(async (req, res) => {
       updatedBy: req.user._id,
     });
 
-    return successResponse(res, 200, "Restaurant status updated successfully", {
+    return successResponse(res, 200, "Cafe status updated successfully", {
       restaurant: {
         id: restaurant._id.toString(),
         name: restaurant.name,
@@ -1352,7 +1352,7 @@ export const updateRestaurantStatus = asyncHandler(async (req, res) => {
     logger.error(`Error updating restaurant status: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to update restaurant status");
+    return errorResponse(res, 500, "Failed to update cafe status");
   }
 });
 
@@ -1445,7 +1445,7 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
     }
 
     console.log(
-      "🔍 Restaurant Join Requests Query:",
+      "🔍 Cafe Join Requests Query:",
       JSON.stringify(query, null, 2),
     );
 
@@ -1508,7 +1508,7 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
       });
 
       console.log(
-        "⚠️ No restaurants found with query. Debugging inactive restaurants:",
+        "⚠️ No cafes found with query. Debugging inactive cafes:",
         {
           totalInactive,
           queryUsed: JSON.stringify(query, null, 2),
@@ -1599,7 +1599,7 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
     return successResponse(
       res,
       200,
-      "Restaurant join requests retrieved successfully",
+      "Cafe join requests retrieved successfully",
       {
         requests: formattedRequests,
         pagination: {
@@ -1614,7 +1614,7 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
     logger.error(`Error fetching restaurant join requests: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to fetch restaurant join requests");
+    return errorResponse(res, 500, "Failed to fetch cafe join requests");
   }
 });
 
@@ -1630,18 +1630,18 @@ export const approveRestaurant = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(id);
 
     if (!restaurant) {
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
     if (restaurant.isActive) {
-      return errorResponse(res, 400, "Restaurant is already approved");
+      return errorResponse(res, 400, "Cafe is already approved");
     }
 
     if (restaurant.rejectionReason) {
       return errorResponse(
         res,
         400,
-        "Cannot approve a rejected restaurant. Please remove rejection reason first.",
+        "Cannot approve a rejected cafe. Please remove rejection reason first.",
       );
     }
 
@@ -1658,7 +1658,7 @@ export const approveRestaurant = asyncHandler(async (req, res) => {
       restaurantName: restaurant.name,
     });
 
-    return successResponse(res, 200, "Restaurant approved successfully", {
+    return successResponse(res, 200, "Cafe approved successfully", {
       restaurant: {
         id: restaurant._id.toString(),
         name: restaurant.name,
@@ -1670,7 +1670,7 @@ export const approveRestaurant = asyncHandler(async (req, res) => {
     logger.error(`Error approving restaurant: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to approve restaurant");
+    return errorResponse(res, 500, "Failed to approve cafe");
   }
 });
 
@@ -1690,7 +1690,7 @@ export const updateRestaurantDiningSettings = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(id);
 
     if (!restaurant) {
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
     // Update dining settings
@@ -1738,7 +1738,7 @@ export const rejectRestaurant = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(id);
 
     if (!restaurant) {
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
     // Set rejection details (allow updating if already rejected)
@@ -1755,7 +1755,7 @@ export const rejectRestaurant = asyncHandler(async (req, res) => {
       restaurantName: restaurant.name,
     });
 
-    return successResponse(res, 200, "Restaurant rejected successfully", {
+    return successResponse(res, 200, "Cafe rejected successfully", {
       restaurant: {
         id: restaurant._id.toString(),
         name: restaurant.name,
@@ -1766,7 +1766,7 @@ export const rejectRestaurant = asyncHandler(async (req, res) => {
     logger.error(`Error rejecting restaurant: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to reject restaurant");
+    return errorResponse(res, 500, "Failed to reject cafe");
   }
 });
 
@@ -1782,7 +1782,7 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(id);
 
     if (!restaurant) {
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
     // Check if restaurant was rejected
@@ -1790,7 +1790,7 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
       return errorResponse(
         res,
         400,
-        "Restaurant is not rejected. Only rejected restaurants can be reverified.",
+        "Cafe is not rejected. Only rejected cafes can be reverified.",
       );
     }
 
@@ -1810,7 +1810,7 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
     return successResponse(
       res,
       200,
-      "Restaurant reverified successfully. Waiting for admin approval.",
+      "Cafe reverified successfully. Waiting for admin approval.",
       {
         restaurant: {
           id: restaurant._id.toString(),
@@ -1824,7 +1824,7 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
     logger.error(`Error reverifying restaurant: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to reverify restaurant");
+    return errorResponse(res, 500, "Failed to reverify cafe");
   }
 });
 
@@ -1881,7 +1881,7 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(id);
 
     if (!restaurant) {
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
     // Validation (if modifying email/phone)
@@ -1891,7 +1891,7 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
         _id: { $ne: id },
       });
       if (existingEmail) {
-        return errorResponse(res, 400, "Restaurant with this email already exists");
+        return errorResponse(res, 400, "Cafe with this email already exists");
       }
     }
 
@@ -1902,7 +1902,7 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
         _id: { $ne: id },
       });
       if (existingPhone) {
-        return errorResponse(res, 400, "Restaurant with this phone already exists");
+        return errorResponse(res, 400, "Cafe with this phone already exists");
       }
     }
 
@@ -2124,7 +2124,7 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
 
     logger.info(`Restaurant updated by admin: ${id}`, { adminId: req.user._id });
 
-    return successResponse(res, 200, "Restaurant updated successfully", {
+    return successResponse(res, 200, "Cafe updated successfully", {
       restaurant: {
         id: restaurant._id,
         name: restaurant.name,
@@ -2139,13 +2139,13 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
       const firstPath = error?.errors ? Object.keys(error.errors)[0] : null;
       const firstMessage =
         (firstPath && error.errors[firstPath]?.message) || error.message;
-      return errorResponse(res, 400, firstMessage || "Invalid restaurant data");
+      return errorResponse(res, 400, firstMessage || "Invalid cafe data");
     }
     if (error?.code === 11000) {
       const duplicateField = Object.keys(error.keyPattern || {})[0] || "field";
       return errorResponse(res, 409, `${duplicateField} already exists`);
     }
-    return errorResponse(res, 500, "Failed to update restaurant");
+    return errorResponse(res, 500, "Failed to update cafe");
   }
 });
 
@@ -2205,7 +2205,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
       return errorResponse(
         res,
         400,
-        "Restaurant name, owner name, and owner email are required",
+        "Cafe name, owner name, and owner email are required",
       );
     }
 
@@ -2244,14 +2244,14 @@ export const createRestaurant = asyncHandler(async (req, res) => {
         return errorResponse(
           res,
           400,
-          "Restaurant with this email already exists",
+          "Cafe with this email already exists",
         );
       }
       if (normalizedPhone && existingRestaurant.phone === normalizedPhone) {
         return errorResponse(
           res,
           400,
-          "Restaurant with this phone number already exists. Please use a different phone number.",
+          "Cafe with this phone number already exists. Please use a different phone number.",
         );
       }
     }
@@ -2509,13 +2509,13 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     if (email && !password && finalPassword) {
       responseData.generatedPassword = finalPassword;
       responseData.message =
-        "Restaurant created successfully. Please share the generated password with the restaurant.";
+        "Cafe created successfully. Please share the generated password with the cafe.";
     }
 
     return successResponse(
       res,
       201,
-      "Restaurant created successfully",
+      "Cafe created successfully",
       responseData,
     );
   } catch (error) {
@@ -2553,7 +2553,7 @@ export const deleteRestaurant = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(id);
 
     if (!restaurant) {
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
     // Delete restaurant
@@ -2564,7 +2564,7 @@ export const deleteRestaurant = asyncHandler(async (req, res) => {
       restaurantName: restaurant.name,
     });
 
-    return successResponse(res, 200, "Restaurant deleted successfully", {
+    return successResponse(res, 200, "Cafe deleted successfully", {
       restaurant: {
         id: id,
         name: restaurant.name,
@@ -2574,7 +2574,7 @@ export const deleteRestaurant = asyncHandler(async (req, res) => {
     logger.error(`Error deleting restaurant: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to delete restaurant");
+    return errorResponse(res, 500, "Failed to delete cafe");
   }
 });
 
@@ -2633,7 +2633,7 @@ export const getAllOffers = asyncHandler(async (req, res) => {
           offerItems.push({
             sl: skip + offerItems.length + 1,
             offerId: offer._id.toString(),
-            restaurantName: offer.restaurant?.name || "Unknown Restaurant",
+            restaurantName: offer.restaurant?.name || "Unknown Cafe",
             restaurantId:
               offer.restaurant?.restaurantId ||
               offer.restaurant?._id?.toString() ||
@@ -2693,19 +2693,19 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
     logger.info(`Fetching restaurant analytics for: ${restaurantId}`);
 
     if (!restaurantId) {
-      return errorResponse(res, 400, "Restaurant ID is required");
+      return errorResponse(res, 400, "Cafe ID is required");
     }
 
     if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
       logger.warn(`Invalid restaurant ID format: ${restaurantId}`);
-      return errorResponse(res, 400, "Invalid restaurant ID format");
+      return errorResponse(res, 400, "Invalid cafe ID format");
     }
 
     // Get restaurant details
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
       logger.warn(`Restaurant not found: ${restaurantId}`);
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
     logger.info(
@@ -3201,7 +3201,7 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
     return successResponse(
       res,
       200,
-      "Restaurant analytics retrieved successfully",
+      "Cafe analytics retrieved successfully",
       {
         restaurant: {
           _id: restaurant._id,
@@ -3242,7 +3242,7 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
     logger.error(`Error fetching restaurant analytics: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to fetch restaurant analytics");
+    return errorResponse(res, 500, "Failed to fetch cafe analytics");
   }
 });
 
@@ -3513,7 +3513,7 @@ export const updateRestaurantZone = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(id);
 
     if (!restaurant) {
-      return errorResponse(res, 404, "Restaurant not found");
+      return errorResponse(res, 404, "Cafe not found");
     }
 
     if (!restaurant.location) {
@@ -3528,7 +3528,7 @@ export const updateRestaurantZone = asyncHandler(async (req, res) => {
       updatedBy: req.user._id,
     });
 
-    return successResponse(res, 200, "Restaurant zone updated successfully", {
+    return successResponse(res, 200, "Cafe zone updated successfully", {
       restaurant: {
         id: restaurant._id,
         name: restaurant.name,
@@ -3539,6 +3539,6 @@ export const updateRestaurantZone = asyncHandler(async (req, res) => {
     logger.error(`Error updating restaurant zone: ${error.message}`, {
       error: error.stack,
     });
-    return errorResponse(res, 500, "Failed to update restaurant zone");
+    return errorResponse(res, 500, "Failed to update cafe zone");
   }
 });

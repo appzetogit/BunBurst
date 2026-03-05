@@ -67,7 +67,7 @@ const aboutSchema = new mongoose.Schema(
     description: {
       type: String,
       required: true,
-      default: 'Your trusted food delivery partner, bringing delicious meals right to your doorstep. Experience the convenience of ordering from your favorite restaurants with fast, reliable delivery.',
+      default: 'Your trusted food delivery partner, bringing delicious meals right to your doorstep. Experience the convenience of ordering from your favorite cafes with fast, reliable delivery.',
       trim: true
     },
     logo: {

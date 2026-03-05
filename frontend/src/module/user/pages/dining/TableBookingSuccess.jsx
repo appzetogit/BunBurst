@@ -87,7 +87,7 @@ export default function TableBookingSuccess() {
                             />
                         </div>
                         <div className="min-w-0">
-                            <h2 className="font-black text-lg text-foreground truncate">{booking.restaurant?.name || "The Great Indian Restaurant"}</h2>
+                            <h2 className="font-black text-lg text-foreground truncate">{booking.restaurant?.name || "The Great Indian Cafe"}</h2>
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                 <MapPin className="w-3 h-3" />
                                 <span className="truncate">
@@ -163,7 +163,7 @@ export default function TableBookingSuccess() {
             </motion.div>
 
             <p className="fixed bottom-10 text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-10 text-center opacity-50">
-                Show this ticket at the restaurant for a smooth entry
+                Show this ticket at the cafe for a smooth entry
             </p>
         </AnimatedPage>
     )

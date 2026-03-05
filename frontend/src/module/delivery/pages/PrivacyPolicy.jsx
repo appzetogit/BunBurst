@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
     },
     {
       title: "3. Information Sharing",
-      content: "We do not sell your personal information. We may share your information with restaurants and delivery partners to fulfill your orders, and with service providers who assist us in operating our platform."
+      content: "We do not sell your personal information. We may share your information with cafes and delivery partners to fulfill your orders, and with service providers who assist us in operating our platform."
     },
     {
       title: "4. Location Information",

@@ -153,7 +153,7 @@ export const handleRestaurantAccepted = asyncHandler(async (req, res) => {
     acceptedAt ? new Date(acceptedAt) : new Date()
   );
 
-  return successResponse(res, 200, 'Restaurant accepted event processed', result);
+  return successResponse(res, 200, 'Cafe accepted event processed', result);
 });
 
 /**
@@ -191,7 +191,7 @@ export const handleRiderReachedRestaurant = asyncHandler(async (req, res) => {
 
   const result = await etaEventService.handleRiderReachedRestaurant(order._id.toString());
 
-  return successResponse(res, 200, 'Rider reached restaurant event processed', result);
+  return successResponse(res, 200, 'Rider reached cafe event processed', result);
 });
 
 /**

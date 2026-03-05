@@ -147,7 +147,7 @@ export default function WishlistPage() {
           </motion.div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Your Wishlist is Empty</h3>
           <p className="text-gray-600 text-center mb-6 max-w-sm">
-            Start adding your favorite foods and restaurants to your wishlist!
+            Start adding your favorite foods and cafes to your wishlist!
           </p>
           <Button
             onClick={() => navigate('/usermain')}

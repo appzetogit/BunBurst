@@ -54,14 +54,14 @@ export async function testRestaurantAPI() {
     }
     
     const data = await response.json();
-    console.log('✅ Restaurant API test passed:', data);
+    console.log('✅ Cafe API test passed:', data);
     return { success: true, data };
   } catch (error) {
-    console.error('❌ Restaurant API test failed:', error.message);
+    console.error('❌ Cafe API test failed:', error.message);
     return { 
       success: false, 
       error: error.message,
-      message: 'Restaurant API endpoint is not accessible'
+      message: 'Cafe API endpoint is not accessible'
     };
   }
 }
@@ -111,7 +111,7 @@ export function displayConnectionStatus(results) {
     return {
       type: 'warning',
       title: 'API Endpoint Issue',
-      message: 'Backend is running but restaurant API is not accessible',
+      message: 'Backend is running but cafe API is not accessible',
       action: 'Check backend routes and MongoDB connection'
     };
   }

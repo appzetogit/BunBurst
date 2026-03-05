@@ -63,7 +63,7 @@ export const restaurantJoinRequestsDummy = [
 export const rejectedRestaurantRequestsDummy = [
   {
     sl: 1,
-    restaurantName: "Rejected Restaurant",
+    restaurantName: "Rejected Cafe",
     restaurantImage: food1,
     ownerName: "Test Owner",
     ownerPhone: "+1**********",

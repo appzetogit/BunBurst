@@ -17,8 +17,8 @@ const restaurantReviewBanner = "https://images.unsplash.com/photo-1517248135467-
 const accordionItems = [
   {
     id: 1,
-    question: "How is my restaurant's rating calculated",
-    answer: "Your restaurant's rating is calculated based on customer reviews and ratings from delivery and dining orders. The system takes an average of all ratings received, with more recent reviews having slightly more weight."
+    question: "How is my cafe's rating calculated",
+    answer: "Your cafe's rating is calculated based on customer reviews and ratings from delivery and dining orders. The system takes an average of all ratings received, with more recent reviews having slightly more weight."
   },
   {
     id: 2,
@@ -43,7 +43,7 @@ const accordionItems = [
   {
     id: 6,
     question: "How can I reply on a customer review",
-    answer: "To reply to a customer review, go to the Reviews section in your restaurant dashboard. Find the review you want to respond to and click the 'Reply' button. Write a professional, courteous response."
+    answer: "To reply to a customer review, go to the Reviews section in your cafe dashboard. Find the review you want to respond to and click the 'Reply' button. Write a professional, courteous response."
   }
 ]
 
@@ -132,7 +132,7 @@ export default function RatingsReviews() {
       {/* Your Restaurant's Rating Section */}
       <div className="px-4 py-4 bg-white">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-base font-semibold text-gray-900">Your restaurant's rating</h2>
+          <h2 className="text-base font-semibold text-gray-900">Your cafe's rating</h2>
           <div className="bg-green-600 px-3 py-1.5 rounded-lg flex items-center gap-1">
             <span className="text-white text-sm font-bold">4.0</span>
             <Star className="w-4 h-4 text-white fill-white" />

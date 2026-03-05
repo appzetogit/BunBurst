@@ -270,7 +270,7 @@ export const getCouponsByItemIdPublic = asyncHandler(async (req, res) => {
   console.log(`[COUPONS-PUBLIC] Request received for itemId: ${itemId}, restaurantId: ${restaurantId}`);
 
   if (!itemId || !restaurantId) {
-    return errorResponse(res, 400, 'Item ID and Restaurant ID are required');
+    return errorResponse(res, 400, 'Item ID and Cafe ID are required');
   }
 
   const now = new Date();

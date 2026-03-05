@@ -59,8 +59,8 @@ export default function RestaurantReport() {
           }
         }
       } catch (error) {
-        console.error("Error fetching restaurant report:", error)
-        toast.error("Failed to fetch restaurant report")
+        console.error("Error fetching cafe report:", error)
+        toast.error("Failed to fetch cafe report")
         setRestaurants([])
       } finally {
         setLoading(false)
@@ -93,7 +93,7 @@ export default function RestaurantReport() {
     }
     const headers = [
       { key: "sl", label: "SL" },
-      { key: "restaurantName", label: "Restaurant Name" },
+      { key: "restaurantName", label: "Cafe Name" },
       { key: "totalFood", label: "Total Food" },
       { key: "totalOrder", label: "Total Order" },
       { key: "totalOrderAmount", label: "Total Order Amount" },
@@ -105,7 +105,7 @@ export default function RestaurantReport() {
     switch (format) {
       case "csv": exportReportsToCSV(filteredRestaurants, headers, "restaurant_report"); break
       case "excel": exportReportsToExcel(filteredRestaurants, headers, "restaurant_report"); break
-      case "pdf": exportReportsToPDF(filteredRestaurants, headers, "restaurant_report", "Restaurant Report"); break
+      case "pdf": exportReportsToPDF(filteredRestaurants, headers, "restaurant_report", "Cafe Report"); break
       case "json": exportReportsToJSON(filteredRestaurants, "restaurant_report"); break
     }
   }
@@ -130,7 +130,7 @@ export default function RestaurantReport() {
       <div className="p-4 lg:p-6 bg-slate-50 min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-          <p className="text-gray-600">Loading restaurant report...</p>
+          <p className="text-gray-600">Loading cafe report...</p>
         </div>
       </div>
     )
@@ -145,7 +145,7 @@ export default function RestaurantReport() {
             <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
               <Briefcase className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Restaurant Report</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Cafe Report</h1>
           </div>
         </div>
 
@@ -251,13 +251,13 @@ export default function RestaurantReport() {
         {/* Restaurant Report Table Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Restaurant Report Table {totalRestaurants}</h2>
+            <h2 className="text-xl font-bold text-slate-900">Cafe Report Table {totalRestaurants}</h2>
 
             <div className="flex items-center gap-3">
               <div className="relative flex-1 sm:flex-initial min-w-[250px]">
                 <input
                   type="text"
-                  placeholder="Ex: search restaurant nam"
+                  placeholder="Ex: search cafe nam"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-4 pr-10 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -316,7 +316,7 @@ export default function RestaurantReport() {
                   </th>
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center gap-1">
-                      <span>Restaurant Name</span>
+                      <span>Cafe Name</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-400" />
                     </div>
                   </th>
@@ -370,7 +370,7 @@ export default function RestaurantReport() {
                     <td colSpan={9} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
-                        <p className="text-sm text-slate-500">No restaurants match your search</p>
+                        <p className="text-sm text-slate-500">No cafes match your search</p>
                       </div>
                     </td>
                   </tr>
@@ -448,7 +448,7 @@ export default function RestaurantReport() {
           </DialogHeader>
           <div className="px-6 pb-6">
             <p className="text-sm text-slate-700">
-              Restaurant report settings and preferences will be available here.
+              Cafe report settings and preferences will be available here.
             </p>
           </div>
           <div className="px-6 pb-6 flex items-center justify-end">

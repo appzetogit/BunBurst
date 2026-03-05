@@ -41,7 +41,7 @@ const restaurantRows = [
   },
   {
     id: 3,
-    name: "Cheesy Restaurant",
+    name: "Cheesy Cafe",
     icon: chefIcon,
     packageName: "Pro",
     price: "$ 1,199.00",
@@ -105,7 +105,7 @@ export default function SubscriberList() {
 
   const columnsConfig = {
     si: "Serial Number",
-    restaurantInfo: "Restaurant Info",
+    restaurantInfo: "Cafe Info",
     packageName: "Current Package Name",
     price: "Package Price",
     expDate: "Exp Date",
@@ -124,7 +124,7 @@ export default function SubscriberList() {
           <span role="img" aria-label="subscribed">
             📋
           </span>
-          <span>Subscribed Restaurant List</span>
+          <span>Subscribed Cafe List</span>
         </h1>
 
         <div className="relative">
@@ -205,7 +205,7 @@ export default function SubscriberList() {
         <div className="px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-slate-900">
-              Restaurant List
+              Cafe List
             </h2>
             <span className="inline-flex items-center justify-center min-w-[24px] h-6 text-xs font-semibold rounded-full bg-slate-100 text-slate-700">
               3
@@ -287,7 +287,7 @@ export default function SubscriberList() {
                 {visibleColumns.restaurantInfo && (
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
-                      <span>Restaurant Info</span>
+                      <span>Cafe Info</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
                     </div>
                   </th>

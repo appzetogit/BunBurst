@@ -41,7 +41,7 @@ export default function CollectionDetail() {
   const handleRemoveItem = (e, slug) => {
     e.preventDefault()
     e.stopPropagation()
-    if (window.confirm("Remove this restaurant from collection?")) {
+    if (window.confirm("Remove this cafe from collection?")) {
       removeFavorite(slug)
       // Update collection state
       setCollection(prev => ({
@@ -75,7 +75,7 @@ export default function CollectionDetail() {
               <p className="text-muted-foreground text-lg mb-4">This collection is empty</p>
               <Link to="/user">
                 <Button className="bg-gradient-to-r bg-primary-orange hover:opacity-90 text-white">
-                  Explore Restaurants
+                  Explore Cafes
                 </Button>
               </Link>
             </CardContent>

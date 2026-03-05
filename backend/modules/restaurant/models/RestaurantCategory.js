@@ -5,7 +5,7 @@ const restaurantCategorySchema = new mongoose.Schema(
     restaurant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Restaurant',
-      required: [true, 'Restaurant is required'],
+      required: [true, 'Cafe is required'],
     },
     name: {
       type: String,
@@ -61,7 +61,7 @@ restaurantCategorySchema.pre('save', async function(next) {
     });
     
     if (existingCategory) {
-      const error = new Error('Category with this name already exists for this restaurant');
+      const error = new Error('Category with this name already exists for this cafe');
       error.name = 'ValidationError';
       return next(error);
     }

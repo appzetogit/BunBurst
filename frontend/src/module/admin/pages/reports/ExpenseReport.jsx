@@ -10,7 +10,7 @@ export default function ExpenseReport() {
   const [expenses, setExpenses] = useState(expenseReportDummy)
   const [filters, setFilters] = useState({
     zone: "All Zones",
-    restaurant: "All restaurants",
+    restaurant: "All cafes",
     customer: "All customers",
     type: "All Type",
     time: "All Time",
@@ -34,7 +34,7 @@ export default function ExpenseReport() {
       // Filter by zone if needed
     }
 
-    if (filters.restaurant !== "All restaurants") {
+    if (filters.restaurant !== "All cafes") {
       // Filter by restaurant if needed
     }
 
@@ -79,14 +79,14 @@ export default function ExpenseReport() {
   const handleResetFilters = () => {
     setFilters({
       zone: "All Zones",
-      restaurant: "All restaurants",
+      restaurant: "All cafes",
       customer: "All customers",
       type: "All Type",
       time: "All Time",
     })
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.type !== "All Type" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All cafes" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.type !== "All Type" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
@@ -127,16 +127,16 @@ export default function ExpenseReport() {
 
               <div className="relative">
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Restaurant
+                  Cafe
                 </label>
                 <select
                   value={filters.restaurant}
                   onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="All restaurants">All restaurants</option>
-                  <option value="Restaurant 1">Restaurant 1</option>
-                  <option value="Restaurant 2">Restaurant 2</option>
+                  <option value="All cafes">All cafes</option>
+                  <option value="Cafe 1">Cafe 1</option>
+                  <option value="Cafe 2">Cafe 2</option>
                 </select>
                 <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />
               </div>

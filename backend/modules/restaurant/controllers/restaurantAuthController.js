@@ -63,7 +63,7 @@ export const sendOTP = asyncHandler(async (req, res) => {
 
   // DISABLE PUBLIC RESTAURANT REGISTRATION
   if (purpose === 'register' || purpose === 'login') {
-    return errorResponse(res, 403, 'Public restaurant registration and login are disabled. Please contact the administrator.');
+    return errorResponse(res, 403, 'Public cafe registration and login are disabled. Please contact the administrator.');
   }
 
   // Validate phone number format if provided
@@ -108,7 +108,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
   // DISABLE PUBLIC RESTAURANT REGISTRATION AND LOGIN
   if (purpose === 'register' || purpose === 'login') {
-    return errorResponse(res, 403, 'Public restaurant registration and login are disabled. Please contact the administrator.');
+    return errorResponse(res, 403, 'Public cafe registration and login are disabled. Please contact the administrator.');
   }
 
   try {
@@ -137,7 +137,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
       // Name is mandatory for explicit registration
       if (!name) {
-        return errorResponse(res, 400, 'Restaurant name is required for registration');
+        return errorResponse(res, 400, 'Cafe name is required for registration');
       }
 
       // Verify OTP (phone or email) before creating restaurant
@@ -344,7 +344,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
 
       if (!restaurant && !name) {
         // Tell the client that we need restaurant name to proceed with auto-registration
-        return successResponse(res, 200, 'Restaurant not found. Please provide restaurant name for registration.', {
+        return successResponse(res, 200, 'Cafe not found. Please provide cafe name for registration.', {
           needsName: true,
           identifierType,
           identifier
@@ -354,7 +354,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
       // Handle reset-password purpose
       if (purpose === 'reset-password') {
         if (!restaurant) {
-          return errorResponse(res, 404, 'No restaurant account found with this email.');
+          return errorResponse(res, 404, 'No cafe account found with this email.');
         }
         // Verify OTP for password reset
         await otpService.verifyOTP(phone || null, otp, purpose, email || null);
@@ -592,11 +592,11 @@ export const register = asyncHandler(async (req, res) => {
   const { name, email, password, phone, ownerName, ownerEmail, ownerPhone } = req.body;
 
   if (!name || !email || !password) {
-    return errorResponse(res, 400, 'Restaurant name, email, and password are required');
+    return errorResponse(res, 400, 'Cafe name, email, and password are required');
   }
 
   // DISABLE PUBLIC RESTAURANT REGISTRATION
-  return errorResponse(res, 403, 'Public restaurant registration is disabled. Please contact the administrator.');
+  return errorResponse(res, 403, 'Public cafe registration is disabled. Please contact the administrator.');
 
   // Normalize phone number if provided
   const normalizedPhone = phone ? normalizePhoneNumber(phone) : null;
@@ -614,10 +614,10 @@ export const register = asyncHandler(async (req, res) => {
 
   if (existingRestaurant) {
     if (existingRestaurant.email === email.toLowerCase().trim()) {
-      return errorResponse(res, 400, 'Restaurant with this email already exists. Please login.');
+      return errorResponse(res, 400, 'Cafe with this email already exists. Please login.');
     }
     if (normalizedPhone && existingRestaurant.phone === normalizedPhone) {
-      return errorResponse(res, 400, 'Restaurant with this phone number already exists. Please login.');
+      return errorResponse(res, 400, 'Cafe with this phone number already exists. Please login.');
     }
   }
 
@@ -686,7 +686,7 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   // DISABLE PUBLIC RESTAURANT LOGIN
-  return errorResponse(res, 403, 'Public restaurant login is disabled. Please contact the administrator.');
+  return errorResponse(res, 403, 'Public cafe login is disabled. Please contact the administrator.');
 
   const restaurant = await Restaurant.findOne({ email }).select('+password');
 
@@ -695,7 +695,7 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   if (!restaurant.isActive) {
-    return errorResponse(res, 401, 'Restaurant account is inactive. Please contact support.');
+    return errorResponse(res, 401, 'Cafe account is inactive. Please contact support.');
   }
 
   // Check if restaurant has a password set
@@ -762,7 +762,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
   const restaurant = await Restaurant.findOne({ email }).select('+password');
 
   if (!restaurant) {
-    return errorResponse(res, 404, 'No restaurant account found with this email.');
+    return errorResponse(res, 404, 'No cafe account found with this email.');
   }
 
   // Verify OTP for reset-password purpose
@@ -800,14 +800,14 @@ export const refreshToken = asyncHandler(async (req, res) => {
 
     // Ensure it's a restaurant token
     if (decoded.role !== 'restaurant') {
-      return errorResponse(res, 401, 'Invalid token for restaurant');
+      return errorResponse(res, 401, 'Invalid token for cafe');
     }
 
     // Get restaurant from database
     const restaurant = await Restaurant.findById(decoded.userId).select('-password');
 
     if (!restaurant) {
-      return errorResponse(res, 401, 'Restaurant not found');
+      return errorResponse(res, 401, 'Cafe not found');
     }
 
     // Allow inactive restaurants to refresh tokens - they need access to complete onboarding
@@ -849,7 +849,7 @@ export const logout = asyncHandler(async (req, res) => {
  */
 export const getCurrentRestaurant = asyncHandler(async (req, res) => {
   // Restaurant is attached by authenticate middleware
-  return successResponse(res, 200, 'Restaurant retrieved successfully', {
+  return successResponse(res, 200, 'Cafe retrieved successfully', {
     restaurant: {
       id: req.restaurant._id,
       restaurantId: req.restaurant.restaurantId,
@@ -891,7 +891,7 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
 
     // Check if restaurant was rejected
     if (!restaurant.rejectionReason) {
-      return errorResponse(res, 400, 'Restaurant is not rejected. Only rejected restaurants can be reverified.');
+      return errorResponse(res, 400, 'Cafe is not rejected. Only rejected cafes can be reverified.');
     }
 
     // Clear rejection details and mark as pending again
@@ -906,7 +906,7 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
       restaurantName: restaurant.name
     });
 
-    return successResponse(res, 200, 'Restaurant reverified successfully. Waiting for admin approval. Verification will be done in 24 hours.', {
+    return successResponse(res, 200, 'Cafe reverified successfully. Waiting for admin approval. Verification will be done in 24 hours.', {
       restaurant: {
         id: restaurant._id.toString(),
         name: restaurant.name,
@@ -916,7 +916,7 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error reverifying restaurant: ${error.message}`, { error: error.stack });
-    return errorResponse(res, 500, 'Failed to reverify restaurant');
+    return errorResponse(res, 500, 'Failed to reverify cafe');
   }
 });
 
@@ -983,10 +983,10 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
           restaurant.signupMethod = 'google';
         }
         await restaurant.save();
-        logger.info('Linked Google account to existing restaurant', { restaurantId: restaurant._id, email });
+        logger.info('Linked Google account to existing cafe', { restaurantId: restaurant._id, email });
       }
 
-      logger.info('Existing restaurant logged in via Firebase Google', {
+      logger.info('Existing cafe logged in via Firebase Google', {
         restaurantId: restaurant._id,
         email
       });
@@ -1008,7 +1008,7 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
       try {
         restaurant = await Restaurant.create(restaurantData);
 
-        logger.info('New restaurant registered via Firebase Google login', {
+        logger.info('New cafe registered via Firebase Google login', {
           firebaseUid,
           email,
           restaurantId: restaurant._id,
@@ -1017,10 +1017,10 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
       } catch (createError) {
         // Handle duplicate key error
         if (createError.code === 11000) {
-          logger.warn('Duplicate key error during restaurant creation, retrying find', { email });
+          logger.warn('Duplicate key error during cafe creation, retrying find', { email });
           restaurant = await Restaurant.findOne({ email });
           if (!restaurant) {
-            logger.error('Restaurant not found after duplicate key error', { email });
+            logger.error('Cafe not found after duplicate key error', { email });
             throw createError;
           }
           // Link Google ID if not already linked
@@ -1036,7 +1036,7 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
             await restaurant.save();
           }
         } else {
-          logger.error('Error creating restaurant via Firebase Google login', { error: createError.message, email });
+          logger.error('Error creating cafe via Firebase Google login', { error: createError.message, email });
           throw createError;
         }
       }
@@ -1044,8 +1044,8 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
 
     // Ensure restaurant is active
     if (!restaurant.isActive) {
-      logger.warn('Inactive restaurant attempted login', { restaurantId: restaurant._id, email });
-      return errorResponse(res, 403, 'Your restaurant account has been deactivated. Please contact support.');
+      logger.warn('Inactive cafe attempted login', { restaurantId: restaurant._id, email });
+      return errorResponse(res, 403, 'Your cafe account has been deactivated. Please contact support.');
     }
 
     // Generate JWT tokens for our app (email may be null for phone signups)

@@ -22,7 +22,7 @@ export const getCategories = asyncHandler(async (req, res) => {
     const restaurantId = req.restaurant?._id || req.restaurant?.id;
     
     if (!restaurantId) {
-      return errorResponse(res, 401, 'Restaurant not authenticated');
+      return errorResponse(res, 401, 'Cafe not authenticated');
     }
 
     const categories = await RestaurantCategory.find({ 
@@ -50,7 +50,7 @@ export const getAllCategories = asyncHandler(async (req, res) => {
     const restaurantId = req.restaurant?._id || req.restaurant?.id;
     
     if (!restaurantId) {
-      return errorResponse(res, 401, 'Restaurant not authenticated');
+      return errorResponse(res, 401, 'Cafe not authenticated');
     }
 
     const categories = await RestaurantCategory.find({ 
@@ -77,7 +77,7 @@ export const createCategory = asyncHandler(async (req, res) => {
     const restaurantId = req.restaurant?._id || req.restaurant?.id;
     
     if (!restaurantId) {
-      return errorResponse(res, 401, 'Restaurant not authenticated');
+      return errorResponse(res, 401, 'Cafe not authenticated');
     }
 
     const { name, description, order, icon, color } = req.body;
@@ -141,7 +141,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
     const { name, description, order, icon, color, isActive } = req.body;
 
     if (!restaurantId) {
-      return errorResponse(res, 401, 'Restaurant not authenticated');
+      return errorResponse(res, 401, 'Cafe not authenticated');
     }
 
     const category = await RestaurantCategory.findOne({
@@ -204,7 +204,7 @@ export const deleteCategory = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     if (!restaurantId) {
-      return errorResponse(res, 401, 'Restaurant not authenticated');
+      return errorResponse(res, 401, 'Cafe not authenticated');
     }
 
     const category = await RestaurantCategory.findOne({
@@ -240,7 +240,7 @@ export const reorderCategories = asyncHandler(async (req, res) => {
     const { categories } = req.body; // Array of { id, order }
 
     if (!restaurantId) {
-      return errorResponse(res, 401, 'Restaurant not authenticated');
+      return errorResponse(res, 401, 'Cafe not authenticated');
     }
 
     if (!Array.isArray(categories)) {

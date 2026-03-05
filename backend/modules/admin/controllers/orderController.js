@@ -86,7 +86,7 @@ export const getOrders = asyncHandler(async (req, res) => {
     }
 
     // Restaurant filter
-    if (restaurant && restaurant !== 'All restaurants') {
+    if (restaurant && restaurant !== 'All cafes') {
       // Try to find restaurant by name or ID
       const Restaurant = (await import('../../restaurant/models/Restaurant.js')).default;
       const restaurantDoc = await Restaurant.findOne({
@@ -240,14 +240,14 @@ export const getOrders = asyncHandler(async (req, res) => {
       if (order.status === 'cancelled') {
         // Check cancelledBy field to determine who cancelled
         if (order.cancelledBy === 'restaurant') {
-          orderStatusDisplay = 'Cancelled by Restaurant';
+          orderStatusDisplay = 'Cancelled by Cafe';
         } else if (order.cancelledBy === 'user') {
           orderStatusDisplay = 'Cancelled by User';
         } else {
           // Fallback: check cancellation reason pattern for old orders
           const cancellationReason = order.cancellationReason || '';
           const isRestaurantCancelled = /rejected by restaurant|restaurant rejected|restaurant cancelled|restaurant is too busy|item not available|outside delivery area|kitchen closing|technical issue/i.test(cancellationReason);
-          orderStatusDisplay = isRestaurantCancelled ? 'Cancelled by Restaurant' : 'Cancelled by User';
+          orderStatusDisplay = isRestaurantCancelled ? 'Cancelled by Cafe' : 'Cancelled by User';
         }
       } else {
         const statusMap = {
@@ -371,7 +371,7 @@ export const getOrders = asyncHandler(async (req, res) => {
         customerName: order.userId?.name || 'Unknown',
         customerPhone: customerPhone,
         customerEmail: order.userId?.email || '',
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Restaurant',
+        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
         restaurantId: order.restaurantId?.toString() || order.restaurantId || '',
         restaurantAddress: resolvedRestaurantAddress,
         restaurantLocation: restaurantLocation || null,
@@ -630,7 +630,7 @@ export const getSearchingDeliverymanOrders = asyncHandler(async (req, res) => {
         time: timeStr,
         customerName: order.userId?.name || 'Unknown',
         customerPhone: maskedPhone,
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Restaurant',
+        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
         total: formattedTotal,
         paymentStatus: paymentStatusDisplay,
         orderStatus: orderStatusDisplay,
@@ -823,7 +823,7 @@ export const getOngoingOrders = asyncHandler(async (req, res) => {
         time: timeStr,
         customerName: order.userId?.name || 'Unknown',
         customerPhone: maskedPhone,
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Restaurant',
+        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
         total: formattedTotal,
         paymentStatus: paymentStatusDisplay,
         orderStatus: orderStatusDisplay,
@@ -900,7 +900,7 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
     }
 
     // Restaurant filter
-    if (restaurant && restaurant !== 'All restaurants') {
+    if (restaurant && restaurant !== 'All cafes') {
       const Restaurant = (await import('../../restaurant/models/Restaurant.js')).default;
       const restaurantDoc = await Restaurant.findOne({
         $or: [
@@ -1033,7 +1033,7 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
       return {
         id: order._id.toString(),
         orderId: order.orderId,
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Restaurant',
+        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
         customerName: order.userId?.name || 'Invalid Customer Data',
         totalItemAmount: totalItemAmount,
         itemDiscount: itemDiscount,
@@ -1076,7 +1076,7 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
  */
 export const getRestaurantReport = asyncHandler(async (req, res) => {
   try {
-    console.log('🔍 Fetching restaurant report...');
+    console.log('🔍 Fetching cafe report...');
     const {
       zone,
       all,
@@ -1111,7 +1111,7 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
             { restaurantId: { $in: ordersInZone } }
           ];
         } else {
-          return successResponse(res, 200, 'Restaurant report retrieved successfully', {
+          return successResponse(res, 200, 'Cafe report retrieved successfully', {
             restaurants: [],
             pagination: { page: 1, limit: 1000, total: 0, pages: 0 }
           });
@@ -1254,7 +1254,7 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
     filteredReports.sort((a, b) => a.restaurantName.localeCompare(b.restaurantName));
     filteredReports = filteredReports.map((report, index) => ({ ...report, sl: index + 1 }));
 
-    return successResponse(res, 200, 'Restaurant report retrieved successfully', {
+    return successResponse(res, 200, 'Cafe report retrieved successfully', {
       restaurants: filteredReports,
       pagination: {
         page: 1,
@@ -1264,9 +1264,9 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error fetching restaurant report:', error);
+    console.error('❌ Error fetching cafe report:', error);
     console.error('Error stack:', error.stack);
-    return errorResponse(res, 500, error.message || 'Failed to fetch restaurant report');
+    return errorResponse(res, 500, error.message || 'Failed to fetch cafe report');
   }
 });
 
@@ -1303,7 +1303,7 @@ export const getRefundRequests = asyncHandler(async (req, res) => {
     console.log('📋 Initial query:', JSON.stringify(query, null, 2));
 
     // Restaurant filter
-    if (restaurant && restaurant !== 'All restaurants') {
+    if (restaurant && restaurant !== 'All cafes') {
       try {
         const Restaurant = (await import('../../restaurant/models/Restaurant.js')).default;
         const restaurantDoc = await Restaurant.findOne({
@@ -1318,7 +1318,7 @@ export const getRefundRequests = asyncHandler(async (req, res) => {
           query.restaurantId = restaurantDoc._id?.toString() || restaurantDoc.restaurantId;
         }
       } catch (error) {
-        console.error('Error filtering by restaurant:', error);
+        console.error('Error filtering by cafe:', error);
         // Continue without restaurant filter if there's an error
       }
     }
@@ -1443,13 +1443,13 @@ export const getRefundRequests = asyncHandler(async (req, res) => {
         customerName: order.userId?.name || 'Unknown',
         customerPhone: customerPhone,
         customerEmail: order.userId?.email || '',
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Restaurant',
+        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
         restaurantId: order.restaurantId?.toString() || order.restaurantId || '',
         totalAmount: order.pricing?.total || 0,
         paymentStatus: order.payment?.status === 'completed' ? 'Paid' : 'Pending',
         orderStatus: 'Refund Requested',
         deliveryType: 'Home Delivery',
-        cancellationReason: order.cancellationReason || 'Rejected by restaurant',
+        cancellationReason: order.cancellationReason || 'Rejected by cafe',
         cancelledAt: order.cancelledAt,
         refundStatus: refundStatus,
         refundAmount: refundAmount,
@@ -1617,7 +1617,7 @@ export const processRefund = asyncHandler(async (req, res) => {
     const isUserCancelled = order.cancelledBy === 'user';
 
     if (!isRestaurantCancelled && !isUserCancelled) {
-      return errorResponse(res, 400, 'This order was not cancelled by restaurant or user');
+      return errorResponse(res, 400, 'This order was not cancelled by cafe or user');
     }
 
     // Check payment method - wallet payments don't use Razorpay
@@ -1661,7 +1661,7 @@ export const processRefund = asyncHandler(async (req, res) => {
         orderNumber: order.orderId,
         userId: order.userId?._id || order.userId,
         restaurantId: order.restaurantId,
-        restaurantName: order.restaurantName || 'Unknown Restaurant',
+        restaurantName: order.restaurantName || 'Unknown Cafe',
         userPayment: {
           subtotal: subtotal,
           discount: pricing.discount || 0,

@@ -15,7 +15,7 @@ export default function DisbursementReportRestaurants() {
   const [disbursements, setDisbursements] = useState(disbursementReportRestaurantsDummy)
   const [filters, setFilters] = useState({
     zone: "All Zones",
-    restaurant: "All restaurants",
+    restaurant: "All cafes",
     paymentMethod: "All Payment Method",
     status: "All status",
     time: "All Time",
@@ -38,7 +38,7 @@ export default function DisbursementReportRestaurants() {
       // Filter by zone if needed
     }
 
-    if (filters.restaurant !== "All restaurants") {
+    if (filters.restaurant !== "All cafes") {
       result = result.filter(d => d.restaurantName === filters.restaurant)
     }
 
@@ -63,7 +63,7 @@ export default function DisbursementReportRestaurants() {
     const headers = [
       { key: "sl", label: "SI" },
       { key: "id", label: "ID" },
-      { key: "restaurantName", label: "Restaurant Info" },
+      { key: "restaurantName", label: "Cafe Info" },
       { key: "createdAt", label: "Created At" },
       { key: "disburseAmount", label: "Disburse Amount" },
       { key: "paymentMethod", label: "Payment Method" },
@@ -72,7 +72,7 @@ export default function DisbursementReportRestaurants() {
     switch (format) {
       case "csv": exportReportsToCSV(filteredDisbursements, headers, "disbursement_report_restaurants"); break
       case "excel": exportReportsToExcel(filteredDisbursements, headers, "disbursement_report_restaurants"); break
-      case "pdf": exportReportsToPDF(filteredDisbursements, headers, "disbursement_report_restaurants", "Restaurant Disbursement Report"); break
+      case "pdf": exportReportsToPDF(filteredDisbursements, headers, "disbursement_report_restaurants", "Cafe Disbursement Report"); break
       case "json": exportReportsToJSON(filteredDisbursements, "disbursement_report_restaurants"); break
     }
   }
@@ -84,14 +84,14 @@ export default function DisbursementReportRestaurants() {
   const handleResetFilters = () => {
     setFilters({
       zone: "All Zones",
-      restaurant: "All restaurants",
+      restaurant: "All cafes",
       paymentMethod: "All Payment Method",
       status: "All status",
       time: "All Time",
     })
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.paymentMethod !== "All Payment Method" ? 1 : 0) + (filters.status !== "All status" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All cafes" ? 1 : 0) + (filters.paymentMethod !== "All Payment Method" ? 1 : 0) + (filters.status !== "All status" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
@@ -102,7 +102,7 @@ export default function DisbursementReportRestaurants() {
             <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
               <UtensilsCrossed className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Restaurant Disbursement Report</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Cafe Disbursement Report</h1>
           </div>
         </div>
 
@@ -181,14 +181,14 @@ export default function DisbursementReportRestaurants() {
 
               <div className="relative">
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Restaurant
+                  Cafe
                 </label>
                 <select
                   value={filters.restaurant}
                   onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="All restaurants">All restaurants</option>
+                  <option value="All cafes">All cafes</option>
                   <option value="Café Monarch">Café Monarch</option>
                   <option value="Hungry Puppets">Hungry Puppets</option>
                   <option value="Redcliff Cafe">Redcliff Cafe</option>
@@ -349,7 +349,7 @@ export default function DisbursementReportRestaurants() {
                   </th>
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center gap-1">
-                      <span>Restaurant Info</span>
+                      <span>Cafe Info</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-400" />
                     </div>
                   </th>
@@ -444,7 +444,7 @@ export default function DisbursementReportRestaurants() {
           </DialogHeader>
           <div className="px-6 pb-6">
             <p className="text-sm text-slate-700">
-              Restaurant disbursement report settings and preferences will be available here.
+              Cafe disbursement report settings and preferences will be available here.
             </p>
           </div>
           <div className="px-6 pb-6 flex items-center justify-end">

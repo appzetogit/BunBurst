@@ -51,7 +51,7 @@ export const resendDeliveryNotification = asyncHandler(async (req, res) => {
       .lean();
 
     if (!restaurantDoc || !restaurantDoc.location || !restaurantDoc.location.coordinates) {
-      return errorResponse(res, 400, 'Restaurant location not found. Please update restaurant location.');
+      return errorResponse(res, 400, 'Cafe location not found. Please update cafe location.');
     }
 
     const [restaurantLng, restaurantLat] = restaurantDoc.location.coordinates;

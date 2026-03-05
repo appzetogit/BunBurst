@@ -25,7 +25,7 @@ export const createWithdrawalRequest = asyncHandler(async (req, res) => {
     const { amount } = req.body;
 
     if (!restaurant || !restaurant._id) {
-      return errorResponse(res, 401, 'Restaurant authentication required');
+      return errorResponse(res, 401, 'Cafe authentication required');
     }
 
     if (!amount || amount <= 0) {
@@ -109,7 +109,7 @@ export const getRestaurantWithdrawalRequests = asyncHandler(async (req, res) => 
     const { status, page = 1, limit = 20 } = req.query;
 
     if (!restaurant || !restaurant._id) {
-      return errorResponse(res, 401, 'Restaurant authentication required');
+      return errorResponse(res, 401, 'Cafe authentication required');
     }
 
     const query = { restaurantId: restaurant._id };

@@ -305,12 +305,12 @@ export const linkRestaurantsToBanner = async (req, res) => {
     // Populate linked restaurants for response
     await banner.populate('linkedRestaurants', 'name slug restaurantId profileImage');
 
-    return successResponse(res, 200, 'Restaurants linked to banner successfully', {
+    return successResponse(res, 200, 'Cafes linked to banner successfully', {
       banner
     });
   } catch (error) {
-    console.error('Error linking restaurants to banner:', error);
-    return errorResponse(res, 500, 'Failed to link restaurants to banner');
+    console.error('Error linking cafes to banner:', error);
+    return errorResponse(res, 500, 'Failed to link cafes to banner');
   }
 };
 
@@ -1241,12 +1241,12 @@ export const getAllTop10Restaurants = async (req, res) => {
       .sort({ rank: 1, order: 1 })
       .lean();
 
-    return successResponse(res, 200, 'Top 10 restaurants retrieved successfully', {
+    return successResponse(res, 200, 'Top 10 cafes retrieved successfully', {
       restaurants
     });
   } catch (error) {
-    console.error('Error fetching Top 10 restaurants:', error);
-    return errorResponse(res, 500, 'Failed to fetch Top 10 restaurants');
+    console.error('Error fetching Top 10 cafes:', error);
+    return errorResponse(res, 500, 'Failed to fetch Top 10 cafes');
   }
 };
 
@@ -1260,7 +1260,7 @@ export const getTop10Restaurants = async (req, res) => {
       .sort({ rank: 1, order: 1 })
       .lean();
 
-    return successResponse(res, 200, 'Top 10 restaurants retrieved successfully', {
+    return successResponse(res, 200, 'Top 10 cafes retrieved successfully', {
       restaurants: restaurants.map(r => ({
         ...r.restaurant,
         rank: r.rank,
@@ -1268,8 +1268,8 @@ export const getTop10Restaurants = async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Error fetching Top 10 restaurants:', error);
-    return errorResponse(res, 500, 'Failed to fetch Top 10 restaurants');
+    console.error('Error fetching Top 10 cafes:', error);
+    return errorResponse(res, 500, 'Failed to fetch Top 10 cafes');
   }
 };
 
@@ -1281,7 +1281,7 @@ export const createTop10Restaurant = async (req, res) => {
     const { restaurantId, rank } = req.body;
 
     if (!restaurantId) {
-      return errorResponse(res, 400, 'Restaurant ID is required');
+      return errorResponse(res, 400, 'Cafe ID is required');
     }
 
     if (!rank || rank < 1 || rank > 10) {
@@ -1291,7 +1291,7 @@ export const createTop10Restaurant = async (req, res) => {
     // Check if restaurant exists
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     // Check if rank is already taken
@@ -1303,7 +1303,7 @@ export const createTop10Restaurant = async (req, res) => {
     // Check if restaurant is already in Top 10
     const existingRestaurant = await Top10Restaurant.findOne({ restaurant: restaurantId });
     if (existingRestaurant) {
-      return errorResponse(res, 400, 'Restaurant is already in Top 10');
+      return errorResponse(res, 400, 'Cafe is already in Top 10');
     }
 
     // Get the highest order number
@@ -1327,15 +1327,15 @@ export const createTop10Restaurant = async (req, res) => {
     // Populate restaurant data
     await top10Restaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
-    return successResponse(res, 201, 'Restaurant added to Top 10 successfully', {
+    return successResponse(res, 201, 'Cafe added to Top 10 successfully', {
       restaurant: top10Restaurant
     });
   } catch (error) {
-    console.error('Error creating Top 10 restaurant:', error);
-    if (error.message.includes('Maximum 10 restaurants')) {
+    console.error('Error creating Top 10 cafe:', error);
+    if (error.message.includes('Maximum 10 cafes')) {
       return errorResponse(res, 400, error.message);
     }
-    return errorResponse(res, 500, 'Failed to add restaurant to Top 10');
+    return errorResponse(res, 500, 'Failed to add cafe to Top 10');
   }
 };
 
@@ -1348,15 +1348,15 @@ export const deleteTop10Restaurant = async (req, res) => {
 
     const top10Restaurant = await Top10Restaurant.findById(id);
     if (!top10Restaurant) {
-      return errorResponse(res, 404, 'Top 10 restaurant not found');
+      return errorResponse(res, 404, 'Top 10 cafe not found');
     }
 
     await Top10Restaurant.findByIdAndDelete(id);
 
-    return successResponse(res, 200, 'Restaurant removed from Top 10 successfully');
+    return successResponse(res, 200, 'Cafe removed from Top 10 successfully');
   } catch (error) {
-    console.error('Error deleting Top 10 restaurant:', error);
-    return errorResponse(res, 500, 'Failed to remove restaurant from Top 10');
+    console.error('Error deleting Top 10 cafe:', error);
+    return errorResponse(res, 500, 'Failed to remove cafe from Top 10');
   }
 };
 
@@ -1374,7 +1374,7 @@ export const updateTop10RestaurantRank = async (req, res) => {
 
     const top10Restaurant = await Top10Restaurant.findById(id);
     if (!top10Restaurant) {
-      return errorResponse(res, 404, 'Top 10 restaurant not found');
+      return errorResponse(res, 404, 'Top 10 cafe not found');
     }
 
     // Check if rank is already taken by another restaurant
@@ -1389,12 +1389,12 @@ export const updateTop10RestaurantRank = async (req, res) => {
 
     await top10Restaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
-    return successResponse(res, 200, 'Top 10 restaurant rank updated successfully', {
+    return successResponse(res, 200, 'Top 10 cafe rank updated successfully', {
       restaurant: top10Restaurant
     });
   } catch (error) {
-    console.error('Error updating Top 10 restaurant rank:', error);
-    return errorResponse(res, 500, 'Failed to update Top 10 restaurant rank');
+    console.error('Error updating Top 10 cafe rank:', error);
+    return errorResponse(res, 500, 'Failed to update Top 10 cafe rank');
   }
 };
 
@@ -1417,15 +1417,15 @@ export const updateTop10RestaurantOrder = async (req, res) => {
     );
 
     if (!top10Restaurant) {
-      return errorResponse(res, 404, 'Top 10 restaurant not found');
+      return errorResponse(res, 404, 'Top 10 cafe not found');
     }
 
-    return successResponse(res, 200, 'Top 10 restaurant order updated successfully', {
+    return successResponse(res, 200, 'Top 10 cafe order updated successfully', {
       restaurant: top10Restaurant
     });
   } catch (error) {
-    console.error('Error updating Top 10 restaurant order:', error);
-    return errorResponse(res, 500, 'Failed to update Top 10 restaurant order');
+    console.error('Error updating Top 10 cafe order:', error);
+    return errorResponse(res, 500, 'Failed to update Top 10 cafe order');
   }
 };
 
@@ -1438,14 +1438,14 @@ export const toggleTop10RestaurantStatus = async (req, res) => {
 
     const top10Restaurant = await Top10Restaurant.findById(id);
     if (!top10Restaurant) {
-      return errorResponse(res, 404, 'Top 10 restaurant not found');
+      return errorResponse(res, 404, 'Top 10 cafe not found');
     }
 
     // Check if activating would exceed 10 active restaurants
     if (!top10Restaurant.isActive) {
       const activeCount = await Top10Restaurant.countDocuments({ isActive: true });
       if (activeCount >= 10) {
-        return errorResponse(res, 400, 'Maximum 10 restaurants can be active in Top 10');
+        return errorResponse(res, 400, 'Maximum 10 cafes can be active in Top 10');
       }
     }
 
@@ -1455,12 +1455,12 @@ export const toggleTop10RestaurantStatus = async (req, res) => {
 
     await top10Restaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
-    return successResponse(res, 200, 'Top 10 restaurant status updated successfully', {
+    return successResponse(res, 200, 'Top 10 cafe status updated successfully', {
       restaurant: top10Restaurant
     });
   } catch (error) {
-    console.error('Error toggling Top 10 restaurant status:', error);
-    return errorResponse(res, 500, 'Failed to update Top 10 restaurant status');
+    console.error('Error toggling Top 10 cafe status:', error);
+    return errorResponse(res, 500, 'Failed to update Top 10 cafe status');
   }
 };
 
@@ -1476,12 +1476,12 @@ export const getAllGourmetRestaurants = async (req, res) => {
       .sort({ order: 1, createdAt: -1 })
       .lean();
 
-    return successResponse(res, 200, 'Gourmet restaurants retrieved successfully', {
+    return successResponse(res, 200, 'Gourmet cafes retrieved successfully', {
       restaurants
     });
   } catch (error) {
-    console.error('Error fetching Gourmet restaurants:', error);
-    return errorResponse(res, 500, 'Failed to fetch Gourmet restaurants');
+    console.error('Error fetching Gourmet cafes:', error);
+    return errorResponse(res, 500, 'Failed to fetch Gourmet cafes');
   }
 };
 
@@ -1495,15 +1495,15 @@ export const getGourmetRestaurants = async (req, res) => {
       .sort({ order: 1, createdAt: -1 })
       .lean();
 
-    return successResponse(res, 200, 'Gourmet restaurants retrieved successfully', {
+    return successResponse(res, 200, 'Gourmet cafes retrieved successfully', {
       restaurants: restaurants.map(r => ({
         ...r.restaurant,
         _id: r._id
       }))
     });
   } catch (error) {
-    console.error('Error fetching Gourmet restaurants:', error);
-    return errorResponse(res, 500, 'Failed to fetch Gourmet restaurants');
+    console.error('Error fetching Gourmet cafes:', error);
+    return errorResponse(res, 500, 'Failed to fetch Gourmet cafes');
   }
 };
 
@@ -1515,19 +1515,19 @@ export const createGourmetRestaurant = async (req, res) => {
     const { restaurantId } = req.body;
 
     if (!restaurantId) {
-      return errorResponse(res, 400, 'Restaurant ID is required');
+      return errorResponse(res, 400, 'Cafe ID is required');
     }
 
     // Check if restaurant exists
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     // Check if restaurant is already in Gourmet
     const existingRestaurant = await GourmetRestaurant.findOne({ restaurant: restaurantId });
     if (existingRestaurant) {
-      return errorResponse(res, 400, 'Restaurant is already in Gourmet');
+      return errorResponse(res, 400, 'Cafe is already in Gourmet');
     }
 
     // Get the highest order number
@@ -1550,12 +1550,12 @@ export const createGourmetRestaurant = async (req, res) => {
     // Populate restaurant data
     await gourmetRestaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
-    return successResponse(res, 201, 'Restaurant added to Gourmet successfully', {
+    return successResponse(res, 201, 'Cafe added to Gourmet successfully', {
       restaurant: gourmetRestaurant
     });
   } catch (error) {
-    console.error('Error creating Gourmet restaurant:', error);
-    return errorResponse(res, 500, 'Failed to add restaurant to Gourmet');
+    console.error('Error creating Gourmet cafe:', error);
+    return errorResponse(res, 500, 'Failed to add cafe to Gourmet');
   }
 };
 
@@ -1568,15 +1568,15 @@ export const deleteGourmetRestaurant = async (req, res) => {
 
     const gourmetRestaurant = await GourmetRestaurant.findById(id);
     if (!gourmetRestaurant) {
-      return errorResponse(res, 404, 'Gourmet restaurant not found');
+      return errorResponse(res, 404, 'Gourmet cafe not found');
     }
 
     await GourmetRestaurant.findByIdAndDelete(id);
 
-    return successResponse(res, 200, 'Restaurant removed from Gourmet successfully');
+    return successResponse(res, 200, 'Cafe removed from Gourmet successfully');
   } catch (error) {
-    console.error('Error deleting Gourmet restaurant:', error);
-    return errorResponse(res, 500, 'Failed to remove restaurant from Gourmet');
+    console.error('Error deleting Gourmet cafe:', error);
+    return errorResponse(res, 500, 'Failed to remove cafe from Gourmet');
   }
 };
 
@@ -1599,15 +1599,15 @@ export const updateGourmetRestaurantOrder = async (req, res) => {
     );
 
     if (!gourmetRestaurant) {
-      return errorResponse(res, 404, 'Gourmet restaurant not found');
+      return errorResponse(res, 404, 'Gourmet cafe not found');
     }
 
-    return successResponse(res, 200, 'Gourmet restaurant order updated successfully', {
+    return successResponse(res, 200, 'Gourmet cafe order updated successfully', {
       restaurant: gourmetRestaurant
     });
   } catch (error) {
-    console.error('Error updating Gourmet restaurant order:', error);
-    return errorResponse(res, 500, 'Failed to update Gourmet restaurant order');
+    console.error('Error updating Gourmet cafe order:', error);
+    return errorResponse(res, 500, 'Failed to update Gourmet cafe order');
   }
 };
 
@@ -1620,7 +1620,7 @@ export const toggleGourmetRestaurantStatus = async (req, res) => {
 
     const gourmetRestaurant = await GourmetRestaurant.findById(id);
     if (!gourmetRestaurant) {
-      return errorResponse(res, 404, 'Gourmet restaurant not found');
+      return errorResponse(res, 404, 'Gourmet cafe not found');
     }
 
     gourmetRestaurant.isActive = !gourmetRestaurant.isActive;
@@ -1629,11 +1629,11 @@ export const toggleGourmetRestaurantStatus = async (req, res) => {
 
     await gourmetRestaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
-    return successResponse(res, 200, 'Gourmet restaurant status updated successfully', {
+    return successResponse(res, 200, 'Gourmet cafe status updated successfully', {
       restaurant: gourmetRestaurant
     });
   } catch (error) {
-    console.error('Error toggling Gourmet restaurant status:', error);
-    return errorResponse(res, 500, 'Failed to update Gourmet restaurant status');
+    console.error('Error toggling Gourmet cafe status:', error);
+    return errorResponse(res, 500, 'Failed to update Gourmet cafe status');
   }
 };

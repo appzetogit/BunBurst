@@ -248,7 +248,7 @@ export default function SubmitComplaint() {
           <div className="text-sm text-blue-800">
             <p className="font-semibold mb-1">What happens next?</p>
             <p className="text-blue-700">
-              Your complaint will be sent to the restaurant. They will review and respond to your complaint. You can track the status in your complaints section.
+              Your complaint will be sent to the cafe. They will review and respond to your complaint. You can track the status in your complaints section.
             </p>
           </div>
         </div>

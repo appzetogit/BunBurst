@@ -362,7 +362,7 @@ export default function CategoryPage() {
           setRestaurantsData([])
         }
       } catch (error) {
-        console.error('Error fetching restaurants:', error)
+        console.error('Error fetching cafes:', error)
         setRestaurantsData([])
       } finally {
         setLoadingRestaurants(false)
@@ -669,7 +669,7 @@ export default function CategoryPage() {
             <div className="flex-1 relative max-w-2xl">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Restaurant name or a dish..."
+                placeholder="Cafe name or a dish..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-10 h-11 md:h-12 rounded-lg border-border bg-muted focus:bg-card focus:border-primary text-sm md:text-base text-foreground placeholder:text-muted-foreground"
@@ -929,7 +929,7 @@ export default function CategoryPage() {
               <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg min-h-[400px]">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-8 w-8 text-primary animate-spin" strokeWidth={2.5} />
-                  <span className="text-sm font-medium text-foreground">Loading restaurants...</span>
+                  <span className="text-sm font-medium text-foreground">Loading cafes...</span>
                 </div>
               </div>
             )}
@@ -1064,7 +1064,7 @@ export default function CategoryPage() {
                 <p className="text-muted-foreground text-sm md:text-base">
                   {searchQuery
                     ? `No restaurants found for "${searchQuery}"`
-                    : "No restaurants found with selected filters"}
+                    : "No cafes found with selected filters"}
                 </p>
                 <Button
                   variant="outline"
@@ -1221,7 +1221,7 @@ export default function CategoryPage() {
                         data-section-id="rating"
                         className="space-y-4 mb-8"
                       >
-                        <h3 className="text-lg md:text-xl font-semibold text-foreground mb-4">Restaurant Rating</h3>
+                        <h3 className="text-lg md:text-xl font-semibold text-foreground mb-4">Cafe Rating</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                           <button
                             onClick={() => toggleFilter('rating-35-plus')}

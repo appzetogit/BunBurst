@@ -138,7 +138,7 @@ export default function CategoryFoodsPage() {
     },
     {
       id: 6,
-      name: "Thai Delight Restaurant",
+      name: "Thai Delight Cafe",
       image: "https://images.unsplash.com/photo-1559314809-0d155b1c5b8e?w=400&h=300&fit=crop",
       discount: "20% OFF",
       deliveryTime: "45 mins",

@@ -22,9 +22,11 @@ export default function SendFeedback() {
 
     try {
       setIsSubmitting(true)
-      const response = await api.post(API_ENDPOINTS.ADMIN.FEEDBACK_CREATE, {
+      const formData = {
         message: feedback.trim()
-      })
+      }
+      console.log("Submitting feedback:", formData)
+      const response = await api.post(API_ENDPOINTS.ADMIN.FEEDBACK_CREATE, formData)
       
       if (response.data.success) {
         setIsSubmitted(true)
@@ -36,6 +38,9 @@ export default function SendFeedback() {
       }
     } catch (error) {
       console.error('Error submitting feedback:', error)
+      if (error.response) {
+        console.error("Server Error:", error.response.data)
+      }
       toast.error(error.response?.data?.message || 'Failed to submit feedback. Please try again.')
     } finally {
       setIsSubmitting(false)

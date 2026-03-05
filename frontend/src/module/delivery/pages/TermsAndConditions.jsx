@@ -14,7 +14,7 @@ export default function TermsAndConditions() {
     },
     {
       title: "2. Service Description",
-      content: "We provide food delivery services connecting customers with restaurants. We act as an intermediary between you and the restaurant."
+      content: "We provide food delivery services connecting customers with cafes. We act as an intermediary between you and the cafe."
     },
     {
       title: "3. User Responsibilities",
@@ -30,7 +30,7 @@ export default function TermsAndConditions() {
     },
     {
       title: "6. Cancellation Policy",
-      content: "Orders can be cancelled within 5 minutes of placement. After this time, cancellation may not be possible if the restaurant has started preparation."
+      content: "Orders can be cancelled within 5 minutes of placement. After this time, cancellation may not be possible if the cafe has started preparation."
     },
     {
       title: "7. Limitation of Liability",

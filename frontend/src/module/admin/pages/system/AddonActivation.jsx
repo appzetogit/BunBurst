@@ -4,7 +4,7 @@ import { ChevronDown, Settings } from "lucide-react"
 const addons = [
   {
     id: 1,
-    title: "Restaurant app",
+    title: "Cafe app",
     description: "With this app your vendor will mange their business through mobile app",
     enabled: true,
     hasSettings: true

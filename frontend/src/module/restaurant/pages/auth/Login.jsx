@@ -351,7 +351,7 @@ export default function RestaurantLogin() {
         {/* Restaurant Partner Badge */}
         <div className="">
           <span className="text-gray-600 font-light text-sm tracking-wide block text-center">
-          — restaurant partner —
+          — cafe partner —
           </span>
         </div>        
       </div>

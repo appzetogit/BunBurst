@@ -47,7 +47,7 @@ export default function ContactDetails() {
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-        console.error("Error fetching restaurant data:", error)
+        console.error("Error fetching cafe data:", error)
         }
         // Fallback to localStorage
         try {

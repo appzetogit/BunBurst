@@ -46,7 +46,7 @@ class ETACalculationService {
       // 1. Get restaurant data
       const restaurant = await Restaurant.findOne({ restaurantId });
       if (!restaurant) {
-        throw new Error('Restaurant not found');
+        throw new Error('Cafe not found');
       }
 
       // 2. Calculate restaurant preparation time
@@ -495,7 +495,7 @@ class ETACalculationService {
   async getRestaurantLocation(restaurantId) {
     const restaurant = await Restaurant.findOne({ restaurantId });
     if (!restaurant || !restaurant.location) {
-      throw new Error('Restaurant location not found');
+      throw new Error('Cafe location not found');
     }
 
     return {

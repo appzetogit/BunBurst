@@ -343,7 +343,7 @@ const compensateRestaurant = async (restaurantId, orderId, amount, orderNumber) 
       description: `Restaurant compensated for cancelled order ${orderNumber}`
     });
   } catch (error) {
-    console.error('Error compensating restaurant:', error);
+    console.error('Error compensating cafe:', error);
     throw error;
   }
 };
@@ -489,7 +489,7 @@ export const processRazorpayRefund = async (orderId, adminId = null) => {
         refundAmountInPaise,
         {
           orderId: order.orderId,
-          reason: order.cancellationReason || 'Order cancelled by restaurant',
+          reason: order.cancellationReason || 'Order cancelled by cafe',
           cancelledBy: 'restaurant',
           adminId: adminId || 'system'
         }
@@ -518,7 +518,7 @@ export const processRazorpayRefund = async (orderId, adminId = null) => {
         status: refundAmount === order.pricing.total ? 'full' : 'partial',
         refundId: razorpayRefund.id,
         refundedAt: new Date(),
-        reason: order.cancellationReason || 'Order cancelled by restaurant'
+        reason: order.cancellationReason || 'Order cancelled by cafe'
       };
       payment.logs.push({
         action: 'refunded',
@@ -680,7 +680,7 @@ export const processWalletRefund = async (orderId, adminId = null, refundAmount 
         orderNumber: order.orderId,
         userId: order.userId?._id || order.userId,
         restaurantId: order.restaurantId,
-        restaurantName: order.restaurantName || 'Unknown Restaurant',
+        restaurantName: order.restaurantName || 'Unknown Cafe',
         userPayment: {
           subtotal: subtotal,
           discount: pricing.discount || 0,

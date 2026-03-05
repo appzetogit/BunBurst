@@ -143,7 +143,7 @@ export default function OutletInfo() {
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          console.error("Error fetching restaurant data:", error)
+          console.error("Error fetching cafe data:", error)
         }
         // Continue with default values if fetch fails
       } finally {
@@ -541,7 +541,7 @@ export default function OutletInfo() {
   const handleSaveName = async () => {
     const newName = editNameValue.trim()
     if (!newName) {
-      alert("Restaurant name cannot be empty")
+      alert("Cafe name cannot be empty")
       return
     }
 
@@ -572,7 +572,7 @@ export default function OutletInfo() {
         throw new Error("Invalid response from server")
       }
     } catch (error) {
-      console.error("Error updating restaurant name:", error)
+      console.error("Error updating cafe name:", error)
       alert(`Failed to update restaurant name: ${error.response?.data?.message || error.message || "Please try again."}`)
     }
   }
@@ -607,7 +607,7 @@ export default function OutletInfo() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-900 font-normal">
-              Restaurant id: {loading ? "Loading..." : (restaurantMongoId && restaurantMongoId.length >= 5 ? restaurantMongoId.slice(-5) : (restaurantId || "N/A"))}
+              Cafe id: {loading ? "Loading..." : (restaurantMongoId && restaurantMongoId.length >= 5 ? restaurantMongoId.slice(-5) : (restaurantId || "N/A"))}
             </span>
           </div>
         </div>
@@ -617,7 +617,7 @@ export default function OutletInfo() {
       <div className="relative w-full h-[200px] overflow-visible">
         <img 
           src={mainImage}
-          alt="Restaurant banner"
+          alt="Cafe banner"
           className="w-full h-full object-cover"
         />
         
@@ -684,7 +684,7 @@ export default function OutletInfo() {
           <div className="relative w-[70px] h-[70px] rounded overflow-hidden">
             <img 
               src={thumbnailImage}
-              alt="Restaurant thumbnail"
+              alt="Cafe thumbnail"
               className="w-full h-full rounded-xl object-cover"
             />
           </div>
@@ -742,7 +742,7 @@ export default function OutletInfo() {
 
       {/* Restaurant Information Heading */}
       <div className="px-4 py-4">
-        <h2 className="text-base font-bold text-gray-900 text-center">Restaurant Information</h2>
+        <h2 className="text-base font-bold text-gray-900 text-center">Cafe Information</h2>
       </div>
 
       {/* Information Cards */}
@@ -756,7 +756,7 @@ export default function OutletInfo() {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-500 font-normal mb-1">Restaurant's name</p>
+              <p className="text-xs text-gray-500 font-normal mb-1">Cafe's name</p>
               <p className="text-base font-semibold text-gray-900">
                 {loading ? "Loading..." : (restaurantName || "N/A")}
               </p>
@@ -857,14 +857,14 @@ export default function OutletInfo() {
       <Dialog open={showEditNameDialog} onOpenChange={setShowEditNameDialog}>
         <DialogContent className="sm:max-w-md p-4 w-[90%]">
           <DialogHeader>
-            <DialogTitle className="text-left">Edit Restaurant Name</DialogTitle>
+            <DialogTitle className="text-left">Edit Cafe Name</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <Input
               type="text"
               value={editNameValue}
               onChange={(e) => setEditNameValue(e.target.value)}
-              placeholder="Enter restaurant name"
+              placeholder="Enter cafe name"
               className="w-full focus-visible:border-black focus-visible:ring-0"
               autoFocus
             />

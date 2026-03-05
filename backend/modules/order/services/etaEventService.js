@@ -60,7 +60,7 @@ class ETAEventService {
 
       return { event, newETA };
     } catch (error) {
-      console.error('Error handling restaurant accepted event:', error);
+      console.error('Error handling cafe accepted event:', error);
       throw error;
     }
   }
@@ -173,7 +173,7 @@ class ETAEventService {
 
       return { event, newETA };
     } catch (error) {
-      console.error('Error handling rider reached restaurant event:', error);
+      console.error('Error handling rider reached cafe event:', error);
       throw error;
     }
   }

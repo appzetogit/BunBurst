@@ -11,7 +11,7 @@ export const getRestaurantReviews = asyncHandler(async (req, res) => {
     const restaurant = req.restaurant;
     
     if (!restaurant || !restaurant._id) {
-      return errorResponse(res, 401, 'Restaurant authentication required');
+      return errorResponse(res, 401, 'Cafe authentication required');
     }
     
     const restaurantId = restaurant._id.toString();
@@ -107,7 +107,7 @@ export const getRestaurantReviews = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching restaurant reviews:', error);
+    console.error('Error fetching cafe reviews:', error);
     return errorResponse(res, 500, `Failed to fetch reviews: ${error.message}`);
   }
 });
@@ -121,7 +121,7 @@ export const getReviewByOrderId = asyncHandler(async (req, res) => {
     const restaurant = req.restaurant;
     
     if (!restaurant || !restaurant._id) {
-      return errorResponse(res, 401, 'Restaurant authentication required');
+      return errorResponse(res, 401, 'Cafe authentication required');
     }
     
     const { orderId } = req.params;

@@ -550,7 +550,7 @@ export default function Home() {
         const restaurantsArray = response.data.data.restaurants
 
         if (restaurantsArray.length === 0) {
-          console.warn('No restaurants found in API response')
+          console.warn('No cafes found in API response')
           setRestaurantsData([])
           setLoadingRestaurants(false)
           return
@@ -631,7 +631,7 @@ export default function Home() {
             id: restaurant.restaurantId || restaurant._id,
             name: restaurant.name,
             cuisine: cuisine,
-            rating: restaurant.rating || 4.5,
+            rating: Number(restaurant.rating) || 0,
             deliveryTime: deliveryTime,
             distance: distance,
             distanceInKm: distanceInKm, // Store numeric distance for sorting
@@ -675,7 +675,7 @@ export default function Home() {
         setRestaurantsData([])
       }
     } catch (error) {
-      console.error('Error fetching restaurants:', error)
+      console.error('Error fetching cafes:', error)
       console.error('Error details:', error.response?.data || error.message)
       // Don't set hardcoded data here - let the useMemo fallback handle it
       // This way, if API succeeds later, it will show the real data
@@ -1493,7 +1493,7 @@ export default function Home() {
           >
             <div className="flex flex-col gap-0.5 lg:gap-1">
               <h2 className="text-xs sm:text-sm lg:text-base font-semibold text-muted-foreground/60 tracking-widest uppercase">
-                {filteredRestaurants.length} Restaurants Delivering to You
+                {filteredRestaurants.length} Cafes Delivering to You
               </h2>
               <span className="text-base sm:text-lg lg:text-2xl text-muted-foreground font-normal">Featured</span>
             </div>
@@ -1511,7 +1511,7 @@ export default function Home() {
                 >
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="h-8 w-8 text-primary animate-spin" strokeWidth={2.5} />
-                    <span className="text-sm font-medium text-foreground">Loading restaurants...</span>
+                    <span className="text-sm font-medium text-foreground">Loading cafes...</span>
                   </div>
                 </motion.div>
               )}
@@ -1801,7 +1801,7 @@ export default function Home() {
                     data-section-id="rating"
                     className="space-y-4 mb-8"
                   >
-                    <h3 className="text-lg font-semibold text-gray-900  dark:text-white mb-4">Restaurant Rating</h3>
+                    <h3 className="text-lg font-semibold text-gray-900  dark:text-white mb-4">Cafe Rating</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter('rating-35-plus')}
@@ -1968,7 +1968,7 @@ export default function Home() {
                             : 'border-border hover:border-primary'
                             }`}
                         >
-                          <span className={`text-sm font-medium ${activeFilters.has('has-offers') ? 'text-primary' : 'text-foreground'}`}>Restaurants with offers</span>
+                          <span className={`text-sm font-medium ${activeFilters.has('has-offers') ? 'text-primary' : 'text-foreground'}`}>Cafes with offers</span>
                         </button>
                       </div>
                     </div>
@@ -2104,7 +2104,7 @@ export default function Home() {
                     </div>
                   </div>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    All restaurants
+                    All cafes
                   </span>
                 </label>
 
@@ -2132,7 +2132,7 @@ export default function Home() {
                     </div>
                   </div>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    Pure Veg restaurants only
+                    Pure Veg cafes only
                   </span>
                 </label>
               </div>
@@ -2220,7 +2220,7 @@ export default function Home() {
 
                 {/* Description */}
                 <p className="text-gray-600 text-center mb-6 text-sm">
-                  You'll see all restaurants, including those serving non-veg dishes
+                  You'll see all cafes, including those serving non-veg dishes
                 </p>
 
                 {/* Buttons */}
@@ -2514,7 +2514,7 @@ export default function Home() {
                 transition={{ delay: 0.4 }}
                 className="text-xl font-normal text-gray-800 dark:text-gray-200 text-center relative z-10 mt-56 w-full"
               >
-                Explore veg dishes from all restaurants
+                Explore veg dishes from all cafes
               </motion.p>
             </div>
           </motion.div>
@@ -2693,7 +2693,7 @@ export default function Home() {
                           )}
                         </div>
                         <p className="text-sm text-gray-500 mt-1">
-                          {getFavorites().length} restaurant{getFavorites().length !== 1 ? 's' : ''}
+                          {getFavorites().length} cafe{getFavorites().length !== 1 ? 's' : ''}
                         </p>
                       </div>
                     </div>

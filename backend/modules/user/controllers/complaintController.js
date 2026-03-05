@@ -54,7 +54,7 @@ export const submitComplaint = asyncHandler(async (req, res) => {
     // Get restaurant details
     const restaurant = await Restaurant.findById(order.restaurantId).lean();
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     // Create complaint

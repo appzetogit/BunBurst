@@ -72,7 +72,7 @@ export default function HubFinance() {
         } catch (error) {
           // Suppress 401 errors as they're handled by axios interceptor
           if (error.response?.status !== 401) {
-            console.error('❌ Error fetching restaurant data:', error)
+            console.error('❌ Error fetching cafe data:', error)
           }
         }
       }

@@ -57,7 +57,7 @@ export default function CollectCash() {
     const errors = {}
     if (!formData.method) errors.method = "Payment method is required."
     if (!formData.amount || parseFloat(formData.amount) <= 0) errors.amount = "Amount is required and must be greater than 0."
-    if (formData.type === "Restaurant" && !formData.restaurant) errors.restaurant = "Restaurant is required."
+    if (formData.type === "Restaurant" && !formData.restaurant) errors.restaurant = "Cafe is required."
     if (formData.type === "Deliveryman" && !formData.deliveryman) errors.deliveryman = "Deliveryman is required."
     return errors
   }
@@ -191,7 +191,7 @@ export default function CollectCash() {
               {formData.type === "Restaurant" && (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Restaurant <span className="text-red-500">*</span>
+                    Cafe <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.restaurant}
@@ -200,7 +200,7 @@ export default function CollectCash() {
                       formErrors.restaurant ? "border-red-500" : "border-slate-300"
                     }`}
                   >
-                    <option value="">Select Restaurant</option>
+                    <option value="">Select Cafe</option>
                     <option value="hungry-puppets">Hungry Puppets</option>
                   </select>
                   {formErrors.restaurant && <p className="text-red-500 text-xs mt-1">{formErrors.restaurant}</p>}

@@ -483,7 +483,7 @@ export default function Cart() {
           const cartRestaurantId = cart[0].restaurantId;
           const cartRestaurantName = cart[0].restaurant;
 
-          console.log("🔄 Fetching restaurant data by restaurantId from cart:", cartRestaurantId)
+          console.log("🔄 Fetching cafe data by restaurantId from cart:", cartRestaurantId)
           const response = await restaurantAPI.getRestaurantById(cartRestaurantId)
           const data = response?.data?.data?.restaurant || response?.data?.restaurant
 
@@ -504,7 +504,7 @@ export default function Cart() {
               fetchedRestaurantName?.toLowerCase().trim() === cartRestaurantName.toLowerCase().trim();
 
             if (!restaurantIdMatches) {
-              console.error('❌ CRITICAL: Fetched restaurant ID does not match cart restaurantId!', {
+              console.error('❌ CRITICAL: Fetched cafe ID does not match cart restaurantId!', {
                 cartRestaurantId: cartRestaurantId,
                 fetchedRestaurantId: fetchedRestaurantId,
                 fetched_id: data._id?.toString(),
@@ -518,14 +518,14 @@ export default function Cart() {
             }
 
             if (!restaurantNameMatches) {
-              console.warn('⚠️ WARNING: Restaurant name mismatch:', {
+              console.warn('⚠️ WARNING: Cafe name mismatch:', {
                 cartRestaurantName: cartRestaurantName,
                 fetchedRestaurantName: fetchedRestaurantName
               });
               // Still proceed but log warning
             }
 
-            console.log("✅ Restaurant data loaded from cart restaurantId:", {
+            console.log("✅ Cafe data loaded from cart restaurantId:", {
               _id: data._id,
               restaurantId: data.restaurantId,
               name: data.name,
@@ -544,10 +544,10 @@ export default function Cart() {
       // Strategy 2: If no restaurantId in cart, search by restaurant name
       if (cart[0]?.restaurant && !restaurantData) {
         try {
-          console.log("🔍 Searching restaurant by name:", cart[0].restaurant)
+          console.log("🔍 Searching cafe by name:", cart[0].restaurant)
           const searchResponse = await restaurantAPI.getRestaurants({ limit: 100 })
           const restaurants = searchResponse?.data?.data?.restaurants || searchResponse?.data?.data || []
-          console.log("📋 Fetched", restaurants.length, "restaurants for name search")
+          console.log("📋 Fetched", restaurants.length, "cafes for name search")
 
           // Try exact match first
           let matchingRestaurant = restaurants.find(r =>
@@ -569,7 +569,7 @@ export default function Cart() {
             const foundRestaurantName = matchingRestaurant.name?.toLowerCase().trim();
 
             if (cartRestaurantName && foundRestaurantName && cartRestaurantName !== foundRestaurantName) {
-              console.error("❌ CRITICAL: Restaurant name mismatch!", {
+              console.error("❌ CRITICAL: Cafe name mismatch!", {
                 cartRestaurantName: cart[0]?.restaurant,
                 foundRestaurantName: matchingRestaurant.name,
                 cartRestaurantId: cart[0]?.restaurantId,
@@ -580,7 +580,7 @@ export default function Cart() {
               return;
             }
 
-            console.log("✅ Found restaurant by name:", {
+            console.log("✅ Found cafe by name:", {
               name: matchingRestaurant.name,
               _id: matchingRestaurant._id,
               restaurantId: matchingRestaurant.restaurantId,
@@ -591,13 +591,13 @@ export default function Cart() {
             setLoadingRestaurant(false)
             return
           } else {
-            console.warn("⚠️ Restaurant not found even by name search. Searched in", restaurants.length, "restaurants")
+            console.warn("⚠️ Cafe not found even by name search. Searched in", restaurants.length, "restaurants")
             if (restaurants.length > 0) {
-              console.log("📋 Available restaurant names:", restaurants.map(r => r.name).slice(0, 10))
+              console.log("📋 Available cafe names:", restaurants.map(r => r.name).slice(0, 10))
             }
           }
         } catch (searchError) {
-          console.warn("⚠️ Error searching restaurants by name:", searchError)
+          console.warn("⚠️ Error searching cafes by name:", searchError)
         }
       }
 
@@ -1008,7 +1008,7 @@ export default function Cart() {
       const finalRestaurantName = restaurantData?.name || null;
 
       if (!finalRestaurantId) {
-        console.error('❌ CRITICAL: Cannot place order - Restaurant ID is missing!');
+        console.error('❌ CRITICAL: Cannot place order - Cafe ID is missing!');
         console.error('📋 Debug info:', {
           restaurantData: restaurantData ? {
             _id: restaurantData._id,
@@ -1024,7 +1024,7 @@ export default function Cart() {
             restaurantId: item.restaurantId
           }))
         });
-        alert('Error: Restaurant information is missing. Please refresh the page and try again.');
+        alert('Error: Cafe information is missing. Please refresh the page and try again.');
         setIsPlacingOrder(false);
         return;
       }
@@ -1048,7 +1048,7 @@ export default function Cart() {
       // Note: If restaurant names match, allow even if IDs differ (same restaurant, different ID format)
       if (uniqueRestaurantNames.length > 1) {
         // Different restaurant names = definitely different restaurants
-        console.error('❌ CRITICAL ERROR: Cart contains items from multiple restaurants!', {
+        console.error('❌ CRITICAL ERROR: Cart contains items from multiple cafes!', {
           restaurantIds: uniqueRestaurantIds,
           restaurantNames: uniqueRestaurantNames,
           cartItems: cart.map(item => ({
@@ -1063,17 +1063,17 @@ export default function Cart() {
         if (finalRestaurantId && finalRestaurantName) {
           console.log('🧹 Auto-cleaning cart to keep items from:', finalRestaurantName);
           cleanCartForRestaurant(finalRestaurantId, finalRestaurantName);
-          toast.error('Cart contained items from different restaurants. Items from other restaurants have been removed.');
+          toast.error('Cart contained items from different cafes. Items from other cafes have been removed.');
         } else {
           // If restaurantData is not available, keep items from first restaurant in cart
           const firstRestaurantId = cart[0]?.restaurantId;
           const firstRestaurantName = cart[0]?.restaurant;
           if (firstRestaurantId && firstRestaurantName) {
-            console.log('🧹 Auto-cleaning cart to keep items from first restaurant:', firstRestaurantName);
+            console.log('🧹 Auto-cleaning cart to keep items from first cafe:', firstRestaurantName);
             cleanCartForRestaurant(firstRestaurantId, firstRestaurantName);
-            toast.error('Cart contained items from different restaurants. Items from other restaurants have been removed.');
+            toast.error('Cart contained items from different cafes. Items from other cafes have been removed.');
           } else {
-            toast.error('Cart contains items from different restaurants. Please clear cart and try again.');
+            toast.error('Cart contains items from different cafes. Please clear cart and try again.');
           }
         }
 
@@ -1085,7 +1085,7 @@ export default function Cart() {
       // But log a warning in development
       if (uniqueRestaurantIds.length > 1 && uniqueRestaurantNames.length === 1) {
         if (process.env.NODE_ENV === 'development') {
-          console.warn('⚠️ Cart items have different restaurant IDs but same name. This is OK if IDs are in different formats.', {
+          console.warn('⚠️ Cart items have different cafe IDs but same name. This is OK if IDs are in different formats.', {
             restaurantIds: uniqueRestaurantIds,
             restaurantName: uniqueRestaurantNames[0]
           });
@@ -1111,7 +1111,7 @@ export default function Cart() {
             restaurantDataName: restaurantData?.name,
             cartRestaurantName: cartRestaurantNames[0]
           });
-          alert(`Error: Cart items belong to "${cartRestaurantNames[0] || 'Unknown Restaurant'}" but restaurant data doesn't match. Please refresh the page and try again.`);
+          alert(`Error: Cart items belong to "${cartRestaurantNames[0] || 'Unknown Cafe'}" but restaurant data doesn't match. Please refresh the page and try again.`);
           setIsPlacingOrder(false);
           return;
         }
@@ -1121,7 +1121,7 @@ export default function Cart() {
       if (cartRestaurantNames.length > 0 && finalRestaurantName) {
         const cartRestaurantName = cartRestaurantNames[0];
         if (cartRestaurantName.toLowerCase().trim() !== finalRestaurantName.toLowerCase().trim()) {
-          console.error('❌ CRITICAL ERROR: Restaurant name mismatch!', {
+          console.error('❌ CRITICAL ERROR: Cafe name mismatch!', {
             cartRestaurantName: cartRestaurantName,
             finalRestaurantName: finalRestaurantName
           });
@@ -1132,7 +1132,7 @@ export default function Cart() {
       }
 
       // Log order details for debugging
-      console.log('✅ Order validation passed - Placing order with restaurant:', {
+      console.log('✅ Order validation passed - Placing order with cafe:', {
         restaurantId: finalRestaurantId,
         restaurantName: finalRestaurantName,
         restaurantDataId: restaurantData?._id,
@@ -1155,7 +1155,7 @@ export default function Cart() {
           cartRestaurantName: cart[0]?.restaurant,
           finalRestaurantName: finalRestaurantName
         });
-        alert('Error: Restaurant information mismatch detected. Please refresh the page and try again.');
+        alert('Error: Cafe information mismatch detected. Please refresh the page and try again.');
         setIsPlacingOrder(false);
         return;
       }
@@ -1413,9 +1413,9 @@ export default function Cart() {
             <Utensils className="h-10 w-10 text-muted-foreground" />
           </div>
           <h2 className="text-lg font-semibold text-foreground mb-1">Your cart is empty</h2>
-          <p className="text-sm text-muted-foreground mb-4 text-center">Add items from a restaurant to start a new order</p>
+          <p className="text-sm text-muted-foreground mb-4 text-center">Add items from a cafe to start a new order</p>
           <Link to="/">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">Browse Restaurants</Button>
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">Browse Cafes</Button>
           </Link>
         </div>
       </AnimatedPage>
@@ -1547,7 +1547,7 @@ export default function Cart() {
                   className="flex-1 flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border border-border rounded-lg md:rounded-xl text-sm md:text-base text-muted-foreground hover:bg-muted"
                 >
                   <FileText className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="truncate">{note || "Add a note for the restaurant"}</span>
+                  <span className="truncate">{note || "Add a note for the cafe"}</span>
                 </button>
                 <button
                   onClick={() => setSendCutlery(!sendCutlery)}
@@ -1616,14 +1616,14 @@ export default function Cart() {
                                 const cartRestaurantName = cart[0]?.restaurant || restaurantName;
 
                                 if (!cartRestaurantId || !cartRestaurantName) {
-                                  console.error('❌ Cannot add addon: Missing restaurant information', {
+                                  console.error('❌ Cannot add addon: Missing cafe information', {
                                     cartRestaurantId,
                                     cartRestaurantName,
                                     restaurantId,
                                     restaurantName,
                                     cartItem: cart[0]
                                   });
-                                  toast.error('Restaurant information is missing. Please refresh the page.');
+                                  toast.error('Cafe information is missing. Please refresh the page.');
                                   return;
                                 }
 
@@ -1841,7 +1841,7 @@ export default function Cart() {
                       <span className="text-foreground">₹{formatAmount(platformFee)}</span>
                     </div>
                     <div className="flex justify-between text-sm md:text-base">
-                      <span className="text-muted-foreground">GST and Restaurant Charges</span>
+                      <span className="text-muted-foreground">GST and Cafe Charges</span>
                       <span className="text-foreground">₹{formatAmount(gstCharges)}</span>
                     </div>
                     {discount > 0 && (

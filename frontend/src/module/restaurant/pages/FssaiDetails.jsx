@@ -18,7 +18,7 @@ export default function FssaiDetails() {
         <div className="flex-1">
           <div className="flex items-center gap-1">
             <h1 className="text-base font-semibold text-gray-900">
-              Kadhai Chammach Restaurant
+              Kadhai Chammach Cafe
             </h1>
             <ChevronDown className="w-4 h-4 text-gray-500" />
           </div>

@@ -83,7 +83,7 @@ export const getRestaurantComplaints = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching restaurant complaints:', error);
+    console.error('Error fetching cafe complaints:', error);
     return errorResponse(res, 500, 'Failed to fetch complaints');
   }
 });
@@ -109,7 +109,7 @@ export const getComplaintDetails = asyncHandler(async (req, res) => {
     // Check if complaint belongs to the restaurant
     const complaintRestaurantId = complaint.restaurantId?.toString ? complaint.restaurantId.toString() : complaint.restaurantId;
     if (complaintRestaurantId !== restaurantId.toString()) {
-      return errorResponse(res, 403, 'You can only view complaints for your restaurant');
+      return errorResponse(res, 403, 'You can only view complaints for your cafe');
     }
 
     return successResponse(res, 200, 'Complaint retrieved successfully', {
@@ -144,7 +144,7 @@ export const respondToComplaint = asyncHandler(async (req, res) => {
     // Check if complaint belongs to the restaurant
     const complaintRestaurantId = complaint.restaurantId?.toString ? complaint.restaurantId.toString() : complaint.restaurantId;
     if (complaintRestaurantId !== restaurantId.toString()) {
-      return errorResponse(res, 403, 'You can only respond to complaints for your restaurant');
+      return errorResponse(res, 403, 'You can only respond to complaints for your cafe');
     }
 
     // Update complaint

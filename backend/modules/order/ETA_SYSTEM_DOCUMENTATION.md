@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a comprehensive ETA (Estimated Time of Arrival) calculation system for the food delivery platform, similar to Zomato/Swiggy. It provides real-time ETA updates based on various factors including restaurant preparation time, rider assignment, traffic conditions, and more.
+This is a comprehensive ETA (Estimated Time of Arrival) calculation system for the food delivery platform, similar to Zomato/Swiggy. It provides real-time ETA updates based on various factors including cafe preparation time, rider assignment, traffic conditions, and more.
 
 ## Architecture
 
@@ -30,18 +30,18 @@ This is a comprehensive ETA (Estimated Time of Arrival) calculation system for t
 ETA = restaurantPrepTime
     + restaurantLoadDelay
     + riderAssignmentTime
-    + travelTime(rider → restaurant)
-    + travelTime(restaurant → user)
+    + travelTime(rider → cafe)
+    + travelTime(cafe → user)
     + bufferTime
 ```
 
 ### Components Breakdown
 
-1. **Restaurant Preparation Time**
-   - Retrieved from restaurant settings (`estimatedDeliveryTime`)
+1. **Cafe Preparation Time**
+   - Retrieved from cafe settings (`estimatedDeliveryTime`)
    - Default: 25 minutes
 
-2. **Restaurant Load Delay**
+2. **Cafe Load Delay**
    - Calculated based on pending orders
    - Formula: `(pendingOrders / parallelCapacity) * avgPrepPerOrder`
    - Capped at 30 minutes
@@ -138,9 +138,9 @@ Body:
 
 These endpoints trigger ETA recalculation based on events:
 
-#### Restaurant Accepted
+#### Cafe Accepted
 ```
-POST /api/order/api/orders/:orderId/events/restaurant-accepted
+POST /api/order/api/orders/:orderId/events/cafe-accepted
 
 Body:
 {
@@ -158,9 +158,9 @@ Body:
 }
 ```
 
-#### Rider Reached Restaurant
+#### Rider Reached Cafe
 ```
-POST /api/order/api/orders/:orderId/events/rider-reached-restaurant
+POST /api/order/api/orders/:orderId/events/rider-reached-cafe
 ```
 
 #### Food Not Ready
@@ -273,12 +273,12 @@ const etaResult = await etaCalculationService.calculateInitialETA({
 });
 ```
 
-### 2. Restaurant Accepts Order
+### 2. Cafe Accepts Order
 
 ```javascript
 import etaEventService from '../services/etaEventService.js';
 
-// When restaurant accepts order
+// When cafe accepts order
 await etaEventService.handleRestaurantAccepted(orderId, new Date());
 ```
 
@@ -291,12 +291,12 @@ import etaEventService from '../services/etaEventService.js';
 await etaEventService.handleRiderAssigned(orderId, riderId);
 ```
 
-### 4. Rider Reaches Restaurant
+### 4. Rider Reaches Cafe
 
 ```javascript
 import etaEventService from '../services/etaEventService.js';
 
-// When rider reaches restaurant
+// When rider reaches cafe
 await etaEventService.handleRiderReachedRestaurant(orderId);
 ```
 
@@ -369,7 +369,7 @@ The system automatically:
    - Uses estimated travel time
    - Updates when rider is assigned
 
-2. **Restaurant Delay**
+2. **Cafe Delay**
    - Detects late acceptance
    - Adds delay to ETA
 
@@ -426,7 +426,7 @@ console.log('ETA:', eta);
 ```javascript
 import etaEventService from './services/etaEventService.js';
 
-// Test restaurant accepted
+// Test cafe accepted
 await etaEventService.handleRestaurantAccepted(orderId, new Date());
 ```
 

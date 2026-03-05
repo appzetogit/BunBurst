@@ -187,7 +187,7 @@ export async function notifyDeliveryBoyNewOrder(order, deliveryPartnerId) {
       restaurantLocation: restaurant?.location ? {
         latitude: restaurant.location.coordinates[1],
         longitude: restaurant.location.coordinates[0],
-        address: restaurant.location.formattedAddress || restaurant.address || 'Restaurant address'
+        address: restaurant.location.formattedAddress || restaurant.address || 'Cafe address'
       } : null,
       customerLocation: {
         latitude: order.address.location.coordinates[1],
@@ -396,7 +396,7 @@ export async function notifyMultipleDeliveryBoys(order, deliveryPartnerIds, phas
     }
 
     // Get restaurant details for complete address
-    let restaurantAddress = 'Restaurant address';
+    let restaurantAddress = 'Cafe address';
     let restaurantLocation = null;
 
     if (orderWithUser.restaurantId) {
@@ -405,7 +405,7 @@ export async function notifyMultipleDeliveryBoys(order, deliveryPartnerIds, phas
         restaurantAddress = orderWithUser.restaurantId.address ||
           orderWithUser.restaurantId.location?.formattedAddress ||
           orderWithUser.restaurantId.location?.address ||
-          'Restaurant address';
+          'Cafe address';
         restaurantLocation = orderWithUser.restaurantId.location;
       } else {
         // If restaurantId is just an ID, fetch restaurant details
@@ -418,11 +418,11 @@ export async function notifyMultipleDeliveryBoys(order, deliveryPartnerIds, phas
             restaurantAddress = restaurant.address ||
               restaurant.location?.formattedAddress ||
               restaurant.location?.address ||
-              'Restaurant address';
+              'Cafe address';
             restaurantLocation = restaurant.location;
           }
         } catch (e) {
-          console.warn('⚠️ Could not fetch restaurant details for notification:', e.message);
+          console.warn('⚠️ Could not fetch cafe details for notification:', e.message);
         }
       }
     }

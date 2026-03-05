@@ -166,7 +166,7 @@ export default function RestaurantConfigPage() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </motion.button>
-          <h1 className="text-lg md:text-xl font-semibold text-gray-900">Restaurant Settings</h1>
+          <h1 className="text-lg md:text-xl font-semibold text-gray-900">Cafe Settings</h1>
         </div>
       </div>
 
@@ -241,7 +241,7 @@ export default function RestaurantConfigPage() {
         >
           <Card>
           <CardContent className="p-4 md:p-6">
-            <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Restaurant Types & Tag</h2>
+            <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Cafe Types & Tag</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm md:text-base text-gray-700 mb-2">Cuisines</label>

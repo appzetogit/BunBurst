@@ -1,6 +1,7 @@
 import Restaurant from '../models/Restaurant.js';
 import Menu from '../models/Menu.js';
 import Zone from '../../admin/models/Zone.js';
+import Order from '../../order/models/Order.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../../../shared/utils/cloudinaryService.js';
 import { initializeCloudinary } from '../../../config/cloudinary.js';
@@ -227,6 +228,65 @@ export const getRestaurants = async (req, res) => {
       });
     }
 
+    // Compute dynamic rating/totalRatings from real customer reviews for returned restaurants
+    if (restaurants.length > 0) {
+      const restaurantLookup = new Map(); // key -> index in restaurants array
+      restaurants.forEach((restaurant, index) => {
+        const mongoId = restaurant?._id?.toString();
+        const businessId = restaurant?.restaurantId;
+        if (mongoId) restaurantLookup.set(mongoId, index);
+        if (businessId) restaurantLookup.set(businessId, index);
+      });
+
+      const ratingStats = await Order.aggregate([
+        {
+          $match: {
+            restaurantId: { $in: Array.from(restaurantLookup.keys()) },
+            'review.rating': { $exists: true, $ne: null, $gt: 0 }
+          }
+        },
+        {
+          $group: {
+            _id: '$restaurantId',
+            totalRatings: { $sum: 1 },
+            ratingSum: { $sum: '$review.rating' }
+          }
+        }
+      ]);
+
+      // Accumulate stats per restaurant in case orders use mixed restaurantId formats
+      const accumulatedStats = new Map(); // index -> { totalRatings, ratingSum }
+      for (const stat of ratingStats) {
+        const key = stat?._id?.toString();
+        if (!key || !restaurantLookup.has(key)) continue;
+
+        const idx = restaurantLookup.get(key);
+        const prev = accumulatedStats.get(idx) || { totalRatings: 0, ratingSum: 0 };
+        accumulatedStats.set(idx, {
+          totalRatings: prev.totalRatings + (stat.totalRatings || 0),
+          ratingSum: prev.ratingSum + (stat.ratingSum || 0)
+        });
+      }
+
+      restaurants = restaurants.map((restaurant, index) => {
+        const stat = accumulatedStats.get(index);
+        if (!stat || stat.totalRatings <= 0) {
+          return {
+            ...restaurant,
+            rating: Math.round(Number(restaurant.rating || 0) * 10) / 10,
+            totalRatings: restaurant.totalRatings || 0
+          };
+        }
+
+        const dynamicRating = Math.round((stat.ratingSum / stat.totalRatings) * 10) / 10;
+        return {
+          ...restaurant,
+          rating: dynamicRating,
+          totalRatings: stat.totalRatings
+        };
+      });
+    }
+
     // Get total count (before filtering by string fields)
     const totalQuery = { ...query };
     delete totalQuery.$or; // Remove $or for count
@@ -242,7 +302,7 @@ export const getRestaurants = async (req, res) => {
       hasOffers
     });
 
-    return successResponse(res, 200, 'Restaurants retrieved successfully', {
+    return successResponse(res, 200, 'Cafes retrieved successfully', {
       restaurants,
       total: restaurants.length,
       filters: {
@@ -256,8 +316,8 @@ export const getRestaurants = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching restaurants:', error);
-    return errorResponse(res, 500, 'Failed to fetch restaurants');
+    console.error('Error fetching cafes:', error);
+    return errorResponse(res, 500, 'Failed to fetch cafes');
   }
 };
 
@@ -288,15 +348,15 @@ export const getRestaurantById = async (req, res) => {
       .lean();
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
-    return successResponse(res, 200, 'Restaurant retrieved successfully', {
+    return successResponse(res, 200, 'Cafe retrieved successfully', {
       restaurant,
     });
   } catch (error) {
-    console.error('Error fetching restaurant:', error);
-    return errorResponse(res, 500, 'Failed to fetch restaurant');
+    console.error('Error fetching cafe:', error);
+    return errorResponse(res, 500, 'Failed to fetch cafe');
   }
 };
 
@@ -309,15 +369,15 @@ export const getRestaurantByOwner = async (req, res) => {
       .lean();
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
-    return successResponse(res, 200, 'Restaurant retrieved successfully', {
+    return successResponse(res, 200, 'Cafe retrieved successfully', {
       restaurant,
     });
   } catch (error) {
-    console.error('Error fetching restaurant:', error);
-    return errorResponse(res, 500, 'Failed to fetch restaurant');
+    console.error('Error fetching cafe:', error);
+    return errorResponse(res, 500, 'Failed to fetch cafe');
   }
 };
 
@@ -332,14 +392,14 @@ export const createRestaurantFromOnboarding = async (onboardingData, restaurantI
 
     // Validate required fields
     if (!step1.restaurantName) {
-      throw new Error('Restaurant name is required');
+      throw new Error('Cafe name is required');
     }
 
     // Find existing restaurant
     const existing = await Restaurant.findById(restaurantId);
 
     if (!existing) {
-      throw new Error('Restaurant not found');
+      throw new Error('Cafe not found');
     }
 
     // Generate slug from restaurant name
@@ -427,7 +487,7 @@ export const createRestaurantFromOnboarding = async (onboardingData, restaurantI
         throw saveError;
       }
     }
-    console.log('✅ Restaurant updated successfully:', {
+    console.log('✅ Cafe updated successfully:', {
       restaurantId: existing.restaurantId,
       _id: existing._id,
       name: existing.name,
@@ -436,7 +496,7 @@ export const createRestaurantFromOnboarding = async (onboardingData, restaurantI
     return existing;
 
   } catch (error) {
-    console.error('Error creating restaurant from onboarding:', error);
+    console.error('Error creating cafe from onboarding:', error);
     console.error('Error stack:', error.stack);
     console.error('Onboarding data received:', {
       hasStep1: !!onboardingData?.step1,
@@ -460,7 +520,7 @@ export const updateRestaurantProfile = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(restaurantId);
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     const updateData = {};
@@ -537,7 +597,7 @@ export const updateRestaurantProfile = asyncHandler(async (req, res) => {
     Object.assign(restaurant, updateData);
     await restaurant.save();
 
-    return successResponse(res, 200, 'Restaurant profile updated successfully', {
+    return successResponse(res, 200, 'Cafe profile updated successfully', {
       restaurant: {
         id: restaurant._id,
         restaurantId: restaurant.restaurantId,
@@ -553,8 +613,8 @@ export const updateRestaurantProfile = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error updating restaurant profile:', error);
-    return errorResponse(res, 500, 'Failed to update restaurant profile');
+    console.error('Error updating cafe profile:', error);
+    return errorResponse(res, 500, 'Failed to update cafe profile');
   }
 });
 
@@ -575,7 +635,7 @@ export const uploadProfileImage = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(restaurantId);
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     // Upload to Cloudinary
@@ -639,7 +699,7 @@ export const uploadMenuImage = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(restaurantId);
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     console.log('📤 Uploading menu image to Cloudinary:', {
@@ -734,7 +794,7 @@ export const updateDeliveryStatus = asyncHandler(async (req, res) => {
     ).select('-password');
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     return successResponse(res, 200, 'Delivery status updated successfully', {
@@ -759,7 +819,7 @@ export const deleteRestaurantAccount = asyncHandler(async (req, res) => {
     const restaurant = await Restaurant.findById(restaurantId);
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     // Delete Cloudinary images if they exist
@@ -800,10 +860,10 @@ export const deleteRestaurantAccount = asyncHandler(async (req, res) => {
       name: restaurant.name
     });
 
-    return successResponse(res, 200, 'Restaurant account deleted successfully');
+    return successResponse(res, 200, 'Cafe account deleted successfully');
   } catch (error) {
-    console.error('Error deleting restaurant account:', error);
-    return errorResponse(res, 500, 'Failed to delete restaurant account');
+    console.error('Error deleting cafe account:', error);
+    return errorResponse(res, 500, 'Failed to delete cafe account');
   }
 });
 
@@ -951,13 +1011,13 @@ export const getRestaurantsWithDishesUnder250 = async (req, res) => {
       return b.menuItems.length - a.menuItems.length;
     });
 
-    return successResponse(res, 200, 'Restaurants with dishes under ₹250 retrieved successfully', {
+    return successResponse(res, 200, 'Cafes with dishes under ₹250 retrieved successfully', {
       restaurants: restaurantsWithDishes,
       total: restaurantsWithDishes.length,
     });
   } catch (error) {
-    console.error('Error fetching restaurants with dishes under ₹250:', error);
-    return errorResponse(res, 500, 'Failed to fetch restaurants with dishes under ₹250');
+    console.error('Error fetching cafes with dishes under ₹250:', error);
+    return errorResponse(res, 500, 'Failed to fetch cafes with dishes under ₹250');
   }
 };
 

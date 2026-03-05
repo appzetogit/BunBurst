@@ -1,6 +1,7 @@
 import Feedback from '../models/Feedback.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
+import mongoose from 'mongoose';
 
 /**
  * Create Feedback (Public - User)
@@ -10,14 +11,31 @@ export const createFeedback = asyncHandler(async (req, res) => {
   try {
     const { message } = req.body;
 
-    if (!message || !message.trim()) {
+    if (!req.user || !req.user._id) {
+      return errorResponse(res, 401, 'Authentication required');
+    }
+
+    if (typeof message !== 'string' || !message.trim()) {
       return errorResponse(res, 400, 'Feedback message is required');
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return errorResponse(res, 500, 'Something went wrong');
     }
 
     // Get user info from request (user is authenticated via middleware)
     const userId = req.user._id;
-    const userName = req.user.name || req.user.firstName || req.user.email?.split('@')[0] || 'User';
-    const userEmail = req.user.email || '';
+    const userName =
+      req.user.name ||
+      req.user.firstName ||
+      req.user.email?.split('@')[0] ||
+      req.user.phone ||
+      'User';
+    const userEmail =
+      req.user.email ||
+      req.user.googleEmail ||
+      req.user.phone ||
+      `user-${String(userId).slice(-6)}@unknown.local`;
 
     const feedback = await Feedback.create({
       userId,
@@ -29,8 +47,8 @@ export const createFeedback = asyncHandler(async (req, res) => {
 
     return successResponse(res, 201, 'Feedback submitted successfully', feedback);
   } catch (error) {
-    console.error('Error creating feedback:', error);
-    return errorResponse(res, 500, 'Failed to submit feedback');
+    console.error('Feedback Error:', error);
+    return errorResponse(res, 500, 'Something went wrong');
   }
 });
 

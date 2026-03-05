@@ -66,7 +66,7 @@ export default function PrivacyPolicyPage() {
               <p className="mb-3">
                 Welcome to {companyName}. We are committed to protecting your personal information and your right to privacy. 
                 This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our 
-                restaurant management platform and services.
+                cafe management platform and services.
               </p>
               <p>
                 Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, 
@@ -79,7 +79,7 @@ export default function PrivacyPolicyPage() {
               <p className="mb-2">We collect information that you provide directly to us, including:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Account information (name, email address, phone number, password)</li>
-                <li>Restaurant details (name, address, cuisine type, operating hours)</li>
+                <li>Cafe details (name, address, cuisine type, operating hours)</li>
                 <li>Payment information (billing address, payment method details)</li>
                 <li>Order and transaction history</li>
                 <li>Customer reviews and ratings</li>

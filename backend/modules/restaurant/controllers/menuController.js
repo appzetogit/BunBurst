@@ -38,7 +38,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
   const { sections } = req.body;
 
   console.log('=== UPDATE MENU REQUEST RECEIVED ===');
-  console.log('Restaurant ID:', restaurantId);
+  console.log('Cafe ID:', restaurantId);
   console.log('Sections count:', sections?.length || 0);
 
   // CRITICAL: Get existing menu FIRST to preserve approval status fields
@@ -607,7 +607,7 @@ export const getMenuByRestaurantId = async (req, res) => {
     });
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     // Find menu
@@ -626,7 +626,7 @@ export const getMenuByRestaurantId = async (req, res) => {
       });
     }
 
-    console.log('[USER MENU] Processing menu for restaurant:', restaurant._id);
+    console.log('[USER MENU] Processing menu for cafe:', restaurant._id);
     console.log('[USER MENU] Total sections:', menu.sections?.length || 0);
 
     // Fetch admin categories to link legacy items that don't have categoryId
@@ -746,7 +746,7 @@ export const getMenuByRestaurantId = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching menu by restaurant ID:', error);
+    console.error('Error fetching menu by cafe ID:', error);
     return errorResponse(res, 500, 'Failed to fetch menu');
   }
 };
@@ -858,7 +858,7 @@ export const getAddonsByRestaurantId = async (req, res) => {
 
     if (!restaurant) {
       console.log(`[ADDONS] Restaurant not found for ID: ${id}`);
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     console.log(`[ADDONS] Restaurant found: ${restaurant._id}, name: ${restaurant.name}, isActive: ${restaurant.isActive}`);
@@ -902,7 +902,7 @@ export const getAddonsByRestaurantId = async (req, res) => {
       addons: allAddons,
     });
   } catch (error) {
-    console.error('Error fetching addons by restaurant ID:', error);
+    console.error('Error fetching addons by cafe ID:', error);
     console.error('Error stack:', error.stack);
     return errorResponse(res, 500, 'Failed to fetch add-ons');
   }
@@ -1026,7 +1026,7 @@ export const getMenuByAdmin = asyncHandler(async (req, res) => {
 
   // Validate restaurant ID
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return errorResponse(res, 400, 'Invalid restaurant ID');
+    return errorResponse(res, 400, 'Invalid cafe ID');
   }
 
   // Find or create menu
@@ -1036,7 +1036,7 @@ export const getMenuByAdmin = asyncHandler(async (req, res) => {
     // Check if restaurant exists
     const restaurant = await Restaurant.findById(id);
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     // Create empty menu
@@ -1064,18 +1064,18 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
 
   // Validate restaurant ID
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    return errorResponse(res, 400, 'Invalid restaurant ID');
+    return errorResponse(res, 400, 'Invalid cafe ID');
   }
 
   console.log('=== UPDATE MENU BY ADMIN REQUEST RECEIVED ===');
-  console.log('Restaurant ID:', id);
+  console.log('Cafe ID:', id);
   console.log('Admin ID:', adminId);
   console.log('Sections count:', sections?.length || 0);
 
   // Check if restaurant exists
   const restaurant = await Restaurant.findById(id);
   if (!restaurant) {
-    return errorResponse(res, 404, 'Restaurant not found');
+    return errorResponse(res, 404, 'Cafe not found');
   }
 
   // Get existing menu

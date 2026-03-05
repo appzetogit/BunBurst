@@ -156,7 +156,7 @@ export const createZone = asyncHandler(async (req, res) => {
       const Restaurant = mongoose.model('Restaurant');
       const restaurant = await Restaurant.findById(restaurantId);
       if (!restaurant) {
-        return errorResponse(res, 404, 'Restaurant not found');
+        return errorResponse(res, 404, 'Cafe not found');
       }
     }
 
@@ -322,7 +322,7 @@ export const getZonesByRestaurant = asyncHandler(async (req, res) => {
       zones
     });
   } catch (error) {
-    console.error('Error fetching zones by restaurant:', error);
+    console.error('Error fetching zones by cafe:', error);
     return errorResponse(res, 500, 'Failed to fetch zones');
   }
 });
@@ -494,7 +494,7 @@ export const checkLocationInZone = asyncHandler(async (req, res) => {
     const { latitude, longitude, restaurantId } = req.body;
 
     if (!latitude || !longitude || !restaurantId) {
-      return errorResponse(res, 400, 'Latitude, longitude, and restaurant ID are required');
+      return errorResponse(res, 400, 'Latitude, longitude, and cafe ID are required');
     }
 
     // Find zones for the restaurant

@@ -28,7 +28,7 @@ export default function DiningReservations() {
                             setBookings(bookingsResponse.data.data)
                         }
                     } else {
-                        console.error("Restaurant ID not found in response:", resData)
+                        console.error("Cafe ID not found in response:", resData)
                     }
                 }
             } catch (error) {

@@ -26,7 +26,7 @@ const getMockOrderData = (orderId) => {
       status: "REJECTED",
       date: "19 Dec",
       time: "06:35 AM",
-      restaurant: "Kadhai Chammach Restaurant",
+      restaurant: "Kadhai Chammach Cafe",
       address: "By Pass Road (South), Indore",
       customer: {
         name: "Aryan baghel",
@@ -43,7 +43,7 @@ const getMockOrderData = (orderId) => {
         total: 199,
         paymentStatus: "PAID"
       },
-      reason: "Rejected by Restaurant: items were out of stock",
+      reason: "Rejected by Cafe: items were out of stock",
       timeline: [
         { event: "Order placed", timestamp: "19 Dec, 06:35 AM", status: "completed" },
         { event: "Rejected by manager", timestamp: "19 Dec, 06:37 AM", status: "rejected" }
@@ -54,7 +54,7 @@ const getMockOrderData = (orderId) => {
       status: "REJECTED",
       date: "18 Dec",
       time: "04:04 AM",
-      restaurant: "Kadhai Chammach Restaurant",
+      restaurant: "Kadhai Chammach Cafe",
       address: "By Pass Road (South), Indore",
       customer: {
         name: "Mantavya katkoria",
@@ -72,7 +72,7 @@ const getMockOrderData = (orderId) => {
         total: 238,
         paymentStatus: "PAID"
       },
-      reason: "Rejected by Restaurant: items were out of stock",
+      reason: "Rejected by Cafe: items were out of stock",
       timeline: [
         { event: "Order placed", timestamp: "18 Dec, 04:04 AM", status: "completed" },
         { event: "Rejected by manager", timestamp: "18 Dec, 04:06 AM", status: "rejected" }
@@ -83,7 +83,7 @@ const getMockOrderData = (orderId) => {
       status: "CANCELLED",
       date: "12 Dec",
       time: "04:27 AM",
-      restaurant: "Kadhai Chammach Restaurant",
+      restaurant: "Kadhai Chammach Cafe",
       address: "By Pass Road (South), Indore",
       customer: {
         name: "John Doe",

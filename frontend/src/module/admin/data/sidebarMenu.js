@@ -21,8 +21,8 @@ export const sidebarMenuData = [
         label: "Foods",
         icon: "Utensils",
         subItems: [
-          { label: "Restaurant Foods List", path: "/admin/foods" },
-          { label: "Restaurant Addons List", path: "/admin/addons" },
+          { label: "Cafe Foods List", path: "/admin/foods" },
+          { label: "Cafe Addons List", path: "/admin/addons" },
           { label: "Menu Setup", path: "/admin/food/menu-add" },
         ],
       },
@@ -36,7 +36,7 @@ export const sidebarMenuData = [
   },
   {
     type: "section",
-    label: "RESTAURANT MANAGEMENT",
+    label: "CAFE MANAGEMENT",
     items: [
       {
         type: "link",
@@ -46,12 +46,12 @@ export const sidebarMenuData = [
       },
       {
         type: "expandable",
-        label: "Restaurants",
+        label: "Cafes",
         icon: "UtensilsCrossed",
         subItems: [
-          { label: "Restaurants List", path: "/admin/restaurants" },
+          { label: "Cafes List", path: "/admin/restaurants" },
           {
-            label: "Restaurant Complaints",
+            label: "Cafe Complaints",
             path: "/admin/restaurants/complaints",
           },
         ],
@@ -77,7 +77,7 @@ export const sidebarMenuData = [
           { label: "Delivered", path: "/admin/orders/delivered" },
           { label: "Canceled", path: "/admin/orders/canceled" },
           {
-            label: "Restaurant cancelled",
+            label: "Cafe cancelled",
             path: "/admin/orders/restaurant-cancelled",
           },
           { label: "Payment Failed", path: "/admin/orders/payment-failed" },
@@ -99,7 +99,7 @@ export const sidebarMenuData = [
     items: [
       {
         type: "link",
-        label: "Restaurant Coupons & Offers",
+        label: "Cafe Coupons & Offers",
         path: "/admin/coupons",
         icon: "Gift",
       },
@@ -223,10 +223,10 @@ export const sidebarMenuData = [
       },
       {
         type: "expandable",
-        label: "Restaurant Report",
+        label: "Cafe Report",
         icon: "FileText",
         subItems: [
-          { label: "Restaurant Report", path: "/admin/restaurant-report" },
+          { label: "Cafe Report", path: "/admin/restaurant-report" },
         ],
       },
       {
@@ -248,7 +248,7 @@ export const sidebarMenuData = [
     items: [
       {
         type: "link",
-        label: "Restaurant Withdraws",
+        label: "Cafe Withdraws",
         path: "/admin/restaurant-withdraws",
         icon: "CreditCard",
       },

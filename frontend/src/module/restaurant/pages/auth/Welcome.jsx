@@ -13,7 +13,7 @@ const carouselData = [
   {
     id: 1,
     image: loginBanner2,
-    tagline: "Get powerful insights and analytics to grow your restaurant business"
+    tagline: "Get powerful insights and analytics to grow your cafe business"
   },
   {
     id: 2,

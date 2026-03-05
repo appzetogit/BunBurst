@@ -442,19 +442,19 @@ export const acceptOrder = asyncHandler(async (req, res) => {
             hasCoordinates: !!(restaurant?.location?.coordinates),
             locationType: typeof restaurant?.location
           });
-          return errorResponse(res, 400, 'Restaurant location not found');
+          return errorResponse(res, 400, 'Cafe location not found');
         }
       }
 
       // Validate coordinates
       if (!restaurantLat || !restaurantLng || isNaN(restaurantLat) || isNaN(restaurantLng)) {
         console.error(`❌ Invalid restaurant coordinates: lat=${restaurantLat}, lng=${restaurantLng}`);
-        return errorResponse(res, 400, 'Invalid restaurant location coordinates');
+        return errorResponse(res, 400, 'Invalid cafe location coordinates');
       }
     } catch (locationError) {
       console.error(`❌ Error getting restaurant location: ${locationError.message}`);
       console.error(`❌ Location error stack: ${locationError.stack}`);
-      return errorResponse(res, 500, 'Error getting restaurant location. Please try again.');
+      return errorResponse(res, 500, 'Error getting cafe location. Please try again.');
     }
 
     // Get delivery boy's current location
@@ -1741,8 +1741,8 @@ export const completeDelivery = asyncHandler(async (req, res) => {
         }
       }
     } catch (restaurantWalletError) {
-      logger.error('❌ Error processing restaurant wallet:', restaurantWalletError);
-      console.error('❌ Error processing restaurant wallet:', restaurantWalletError);
+      logger.error('❌ Error processing cafe wallet:', restaurantWalletError);
+      console.error('❌ Error processing cafe wallet:', restaurantWalletError);
     }
 
     // Send response first, then handle notifications asynchronously
@@ -1786,7 +1786,7 @@ export const completeDelivery = asyncHandler(async (req, res) => {
           const { notifyRestaurantOrderUpdate } = await import('../../order/services/restaurantNotificationService.js');
           await notifyRestaurantOrderUpdate(orderIdForNotification, 'delivered');
         } catch (notifError) {
-          console.error('Error sending restaurant notification:', notifError);
+          console.error('Error sending cafe notification:', notifError);
         }
       })(),
       // Notify user about delivery completion

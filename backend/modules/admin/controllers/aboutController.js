@@ -17,7 +17,7 @@ export const getAboutPublic = asyncHandler(async (req, res) => {
       return successResponse(res, 200, 'About page data retrieved successfully', {
         appName: 'Appzeto Food',
         version: '1.0.0',
-        description: 'Your trusted food delivery partner, bringing delicious meals right to your doorstep. Experience the convenience of ordering from your favorite restaurants with fast, reliable delivery.',
+        description: 'Your trusted food delivery partner, bringing delicious meals right to your doorstep. Experience the convenience of ordering from your favorite cafes with fast, reliable delivery.',
         logo: '',
         features: [
           {
@@ -39,7 +39,7 @@ export const getAboutPublic = asyncHandler(async (req, res) => {
           {
             icon: 'Shield',
             title: 'Quality Assured',
-            description: 'We partner with the best restaurants to ensure quality and freshness.',
+            description: 'We partner with the best cafes to ensure quality and freshness.',
             color: 'text-green-600 dark:text-green-400',
             bgColor: 'bg-green-100 dark:bg-green-900/30',
             order: 2
@@ -61,7 +61,7 @@ export const getAboutPublic = asyncHandler(async (req, res) => {
             order: 0
           },
           {
-            label: 'Restaurant Partners',
+            label: 'Cafe Partners',
             value: '10K+',
             icon: 'Award',
             order: 1
@@ -96,7 +96,7 @@ export const getAbout = asyncHandler(async (req, res) => {
       about = await About.create({
         appName: 'Appzeto Food',
         version: '1.0.0',
-        description: 'Your trusted food delivery partner, bringing delicious meals right to your doorstep. Experience the convenience of ordering from your favorite restaurants with fast, reliable delivery.',
+        description: 'Your trusted food delivery partner, bringing delicious meals right to your doorstep. Experience the convenience of ordering from your favorite cafes with fast, reliable delivery.',
         features: [
           {
             icon: 'Heart',
@@ -117,7 +117,7 @@ export const getAbout = asyncHandler(async (req, res) => {
           {
             icon: 'Shield',
             title: 'Quality Assured',
-            description: 'We partner with the best restaurants to ensure quality and freshness.',
+            description: 'We partner with the best cafes to ensure quality and freshness.',
             color: 'text-green-600 dark:text-green-400',
             bgColor: 'bg-green-100 dark:bg-green-900/30',
             order: 2
@@ -139,7 +139,7 @@ export const getAbout = asyncHandler(async (req, res) => {
             order: 0
           },
           {
-            label: 'Restaurant Partners',
+            label: 'Cafe Partners',
             value: '10K+',
             icon: 'Award',
             order: 1

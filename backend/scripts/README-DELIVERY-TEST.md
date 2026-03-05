@@ -66,7 +66,7 @@ Script ये steps follow करता है:
 
 1. **Setup** - MongoDB connect करता है और test order find करता है
 2. **Accept Order** - Delivery boy order accept करता है
-3. **Reached Pickup** - Restaurant पर पहुंचने की confirmation
+3. **Reached Pickup** - Cafe पर पहुंचने की confirmation
 4. **Confirm Order ID** - Order ID confirm करना
 5. **Reached Drop** - Customer location पर पहुंचने की confirmation
 6. **Complete Delivery** - Order delivery complete करना

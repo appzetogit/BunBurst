@@ -18,9 +18,9 @@ export default function Favorites() {
   const handleRemoveFavorite = (e, slug) => {
     e.preventDefault()
     e.stopPropagation()
-    if (window.confirm("Remove this restaurant from favorites?")) {
+    if (window.confirm("Remove this cafe from favorites?")) {
       removeFavorite(slug)
-      toast.success("Restaurant removed from favorites")
+      toast.success("Cafe removed from favorites")
     }
   }
 
@@ -55,7 +55,7 @@ export default function Favorites() {
               <p className="text-muted-foreground text-lg mb-4">You haven't added any favorites yet</p>
               <Link to="/user">
                 <Button className="bg-gradient-to-r bg-primary-orange hover:opacity-90 text-white">
-                  Explore Restaurants
+                  Explore Cafes
                 </Button>
               </Link>
             </CardContent>
@@ -95,7 +95,7 @@ export default function Favorites() {
                 : "text-gray-500 hover:text-gray-700"
               }`}
           >
-            Restaurants ({restaurantFavorites.length})
+            Cafes ({restaurantFavorites.length})
           </button>
           <button
             onClick={() => setActiveTab("dishes")}
@@ -114,10 +114,10 @@ export default function Favorites() {
             {restaurantFavorites.length === 0 ? (
               <div className="col-span-full text-center py-12">
                 <Heart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-lg mb-4">No restaurants saved yet</p>
+                <p className="text-muted-foreground text-lg mb-4">No cafes saved yet</p>
                 <Link to="/user">
                   <Button className="bg-gradient-to-r bg-primary-orange hover:opacity-90 text-white">
-                    Explore Restaurants
+                    Explore Cafes
                   </Button>
                 </Link>
               </div>
@@ -174,7 +174,7 @@ export default function Favorites() {
                           </div>
                         </div>
                         <Button className="w-full bg-gradient-to-r bg-primary-orange hover:opacity-90 text-white text-xs py-1.5 h-8">
-                          View Restaurant
+                          View Cafe
                           <ArrowRight className="h-3 w-3 ml-1" />
                         </Button>
                       </CardContent>

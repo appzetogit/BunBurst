@@ -16,7 +16,7 @@ export const subscriptionReportDummy = [
     sl: 2,
     transactionId: "849eb5a1-0954-4b7e-b0e1-6a2c6f2daaef",
     transactionDate: "19 Oct 2024 05:08 PM",
-    restaurantName: "Cheesy Restaurant",
+    restaurantName: "Cheesy Cafe",
     packageName: "Pro",
     duration: "365 Days",
     pricing: "$1,199.00",

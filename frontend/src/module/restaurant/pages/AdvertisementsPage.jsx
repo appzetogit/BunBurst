@@ -67,7 +67,7 @@ export default function AdvertisementsPage() {
     {
       id: "1000000",
       status: "Running",
-      type: "Restaurant Promotion",
+      type: "Cafe Promotion",
       adsPlaced: "03 Jul, 2024",
       duration: {
         start: "16 Jul 2025",
@@ -77,7 +77,7 @@ export default function AdvertisementsPage() {
     {
       id: "1000003",
       status: "Running",
-      type: "Restaurant Promotion",
+      type: "Cafe Promotion",
       adsPlaced: "03 Jul, 2024",
       duration: {
         start: "16 Jul 2025",

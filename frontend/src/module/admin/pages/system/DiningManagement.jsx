@@ -368,7 +368,7 @@ export default function DiningManagement() {
                                             value={bannerRestaurant}
                                             onChange={e => setBannerRestaurant(e.target.value)}
                                         >
-                                            <option value="">Select Restaurant</option>
+                                            <option value="">Select Cafe</option>
                                             {restaurantsList.map(r => (
                                                 <option key={r._id} value={r._id}>{r.name}</option>
                                             ))}

@@ -58,7 +58,7 @@ export const disbursementReportRestaurantsDummy = [
   {
     sl: 7,
     id: "#996",
-    restaurantName: "Pizza restaurant",
+    restaurantName: "Pizza cafe",
     createdAt: "15 Nov 2023 09:00 am",
     disburseAmount: "$ 2,750.00",
     paymentMethod: "6cash",

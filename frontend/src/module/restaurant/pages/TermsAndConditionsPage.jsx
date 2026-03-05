@@ -64,7 +64,7 @@ export default function TermsAndConditionsPage() {
             <section>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">1. Acceptance of Terms</h3>
               <p className="mb-3">
-                By accessing and using the {companyName} restaurant management platform, you accept and agree to be bound 
+                By accessing and using the {companyName} cafe management platform, you accept and agree to be bound 
                 by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use 
                 this service.
               </p>
@@ -88,8 +88,8 @@ export default function TermsAndConditionsPage() {
             </section>
 
             <section>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">3. Restaurant Services</h3>
-              <p className="mb-2">As a restaurant partner, you agree to:</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">3. Cafe Services</h3>
+              <p className="mb-2">As a cafe partner, you agree to:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Provide accurate menu information, pricing, and availability</li>
                 <li>Maintain food quality and safety standards as per local regulations</li>

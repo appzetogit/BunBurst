@@ -67,7 +67,7 @@ const mustTries = [
     { name: "Romantic Dining", image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500&h=300&fit=crop" },
     { name: "Great Cafes", image: "https://images.unsplash.com/photo-1501339847302-ac426a4c7cfe?w=500&h=300&fit=crop" },
     { name: "Local Favorite Places", image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&h=300&fit=crop" },
-    { name: "Pan Asian Restaurant", image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=500&h=300&fit=crop" },
+    { name: "Pan Asian Cafe", image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=500&h=300&fit=crop" },
     { name: "Sky High Sips", image: "https://images.unsplash.com/photo-1551218808-94e220e084d2?w=500&h=300&fit=crop" },
     { name: "Great Buffets", image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop" },
 ];

@@ -11,9 +11,12 @@ export const validate = (schema) => {
         message: detail.message
       }));
 
+      // Use the first specific error message as the top-level message
+      const topLevelMessage = errors[0]?.message || 'Validation Error';
+
       return res.status(400).json({
         success: false,
-        message: 'Validation Error',
+        message: topLevelMessage,
         errors
       });
     }
@@ -22,6 +25,7 @@ export const validate = (schema) => {
     next();
   };
 };
+
 
 export default validate;
 

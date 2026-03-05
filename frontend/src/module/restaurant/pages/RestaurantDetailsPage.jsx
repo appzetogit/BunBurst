@@ -132,7 +132,7 @@ export default function RestaurantDetailsPage() {
       <div className="relative w-full h-[250px] md:h-[300px] overflow-hidden">
         <img 
           src={restaurantData.cover || "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&h=400&fit=crop"}
-          alt="Restaurant Hero"
+          alt="Cafe Hero"
           className="w-full h-full object-cover"
         />
         
@@ -144,7 +144,7 @@ export default function RestaurantDetailsPage() {
                 {restaurantData.logo ? (
                   <img 
                     src={restaurantData.logo} 
-                    alt="Restaurant Logo" 
+                    alt="Cafe Logo" 
                     className="w-6 h-6 md:w-8 md:h-8 object-cover rounded"
                   />
                 ) : (

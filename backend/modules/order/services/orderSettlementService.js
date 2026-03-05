@@ -38,7 +38,7 @@ export const calculateOrderSettlement = async (orderId) => {
     }
 
     if (!restaurant) {
-      throw new Error('Restaurant not found');
+      throw new Error('Cafe not found');
     }
 
     // Calculate user payment breakdown

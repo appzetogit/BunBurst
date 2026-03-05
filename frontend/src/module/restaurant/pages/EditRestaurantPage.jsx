@@ -56,8 +56,8 @@ export default function EditRestaurantPage() {
       address: savedData.address || "House: 00, Road: 00, Test City",
       logo: savedData.logo || null,
       cover: savedData.cover || null,
-      metaTitle: savedData.metaTitle || "Hungry Puppets Restaurant: Where Fla",
-      metaDescription: savedData.metaDescription || "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Restaurant. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
+      metaTitle: savedData.metaTitle || "Hungry Puppets Cafe: Where Fla",
+      metaDescription: savedData.metaDescription || "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Cafe. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
       metaImage: savedData.metaImage || null
     }
   })
@@ -77,8 +77,8 @@ export default function EditRestaurantPage() {
         address: savedData.address || "House: 00, Road: 00, Test City",
         logo: savedData.logo || null,
         cover: savedData.cover || null,
-        metaTitle: savedData.metaTitle || "Hungry Puppets Restaurant: Where Fla",
-        metaDescription: savedData.metaDescription || "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Restaurant. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
+        metaTitle: savedData.metaTitle || "Hungry Puppets Cafe: Where Fla",
+        metaDescription: savedData.metaDescription || "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Cafe. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
         metaImage: savedData.metaImage || null
       })
     }
@@ -136,7 +136,7 @@ export default function EditRestaurantPage() {
     
     // Validate required fields
     if (!formData.restaurantName.english || !formData.address || !formData.phoneNumber) {
-      alert("Please fill in all required fields (Restaurant Name, Address, Phone Number)")
+      alert("Please fill in all required fields (Cafe Name, Address, Phone Number)")
       return
     }
 
@@ -146,8 +146,8 @@ export default function EditRestaurantPage() {
       // Navigate back to restaurant details page
       navigate("/restaurant/details")
     } catch (error) {
-      console.error("Error saving restaurant data:", error)
-      alert("Error saving restaurant data. Please try again.")
+      console.error("Error saving cafe data:", error)
+      alert("Error saving cafe data. Please try again.")
     }
   }
 
@@ -162,7 +162,7 @@ export default function EditRestaurantPage() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <h1 className="text-lg md:text-xl font-bold text-gray-900">Edit Restaurant</h1>
+          <h1 className="text-lg md:text-xl font-bold text-gray-900">Edit Cafe</h1>
         </div>
       </div>
 
@@ -172,7 +172,7 @@ export default function EditRestaurantPage() {
           {/* Restaurant Name */}
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
-              <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Restaurant Name</h2>
+              <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Cafe Name</h2>
               
               {/* Language Tabs */}
               <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
@@ -195,14 +195,14 @@ export default function EditRestaurantPage() {
               {/* Name Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Restaurant Name ({languages.find(l => l.id === activeLanguage)?.label.split(" - ")[0]})
+                  Cafe Name ({languages.find(l => l.id === activeLanguage)?.label.split(" - ")[0]})
                 </label>
                 <input
                   type="text"
                   value={formData.restaurantName[activeLanguage]}
                   onChange={(e) => handleInputChange("restaurantName", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none"
-                  placeholder="Enter restaurant name"
+                  placeholder="Enter cafe name"
                 />
               </div>
             </CardContent>
@@ -253,7 +253,7 @@ export default function EditRestaurantPage() {
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
-                Restaurant Logo<span className="text-red-500">*</span>
+                Cafe Logo<span className="text-red-500">*</span>
               </h2>
               <p className="text-xs md:text-sm text-gray-500 mb-4">
                 JPG, JPEG, PNG Less Than 1MB (Ratio 1:1)
@@ -263,7 +263,7 @@ export default function EditRestaurantPage() {
                   <div className="relative w-32 h-32 rounded-lg overflow-hidden">
                     <img 
                       src={formData.logo} 
-                      alt="Restaurant Logo" 
+                      alt="Cafe Logo" 
                       className="w-full h-full object-cover"
                     />
                     <button
@@ -298,7 +298,7 @@ export default function EditRestaurantPage() {
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
-                Restaurant Cover<span className="text-red-500">*</span>
+                Cafe Cover<span className="text-red-500">*</span>
               </h2>
               <p className="text-xs md:text-sm text-gray-500 mb-4">
                 JPG, JPEG, PNG Less Than 1MB (Ratio 2:1)
@@ -308,7 +308,7 @@ export default function EditRestaurantPage() {
                   <div className="relative w-full rounded-lg overflow-hidden">
                     <img 
                       src={formData.cover} 
-                      alt="Restaurant Cover" 
+                      alt="Cafe Cover" 
                       className="w-full h-auto object-cover"
                     />
                     <button

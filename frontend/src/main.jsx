@@ -133,7 +133,7 @@ console.error = (...args) => {
 
   // Suppress Restaurant Socket transport errors (handled by useRestaurantNotifications with throttled message)
   if (
-    errorStr.includes('Restaurant Socket connection error') ||
+    errorStr.includes('Cafe Socket connection error') ||
     errorStr.includes('xhr poll error') ||
     (typeof args[0] === 'object' && args[0]?.type === 'TransportError' && args[0]?.message?.includes('xhr poll error'))
   ) {

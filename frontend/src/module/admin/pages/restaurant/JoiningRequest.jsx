@@ -70,8 +70,8 @@ export default function JoiningRequest() {
         }
       }
     } catch (err) {
-      console.error("Error fetching restaurant requests:", err)
-      setError(err.message || "Failed to fetch restaurant requests")
+      console.error("Error fetching cafe requests:", err)
+      setError(err.message || "Failed to fetch cafe requests")
       if (activeTab === "pending") {
         setPendingRequests([])
       } else {
@@ -228,7 +228,7 @@ export default function JoiningRequest() {
             response = await adminAPI.getRestaurantById(restaurantId)
           }
         } catch (err) {
-          console.log("Admin API failed, trying restaurant API:", err)
+          console.log("Admin API failed, trying cafe API:", err)
         }
         
         // Fallback to regular restaurant API
@@ -236,7 +236,7 @@ export default function JoiningRequest() {
           try {
             response = await restaurantAPI.getRestaurantById(restaurantId)
           } catch (err) {
-            console.log("Restaurant API also failed:", err)
+            console.log("Cafe API also failed:", err)
           }
         }
       }
@@ -256,7 +256,7 @@ export default function JoiningRequest() {
         setRestaurantDetails(request)
       }
     } catch (err) {
-      console.error("Error fetching restaurant details:", err)
+      console.error("Error fetching cafe details:", err)
       // Use the request data we already have
       setRestaurantDetails(request)
     } finally {
@@ -278,7 +278,7 @@ export default function JoiningRequest() {
             <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
               <UtensilsCrossed className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">New Restaurant Join Request</h1>
+            <h1 className="text-2xl font-bold text-slate-900">New Cafe Join Request</h1>
           </div>
 
           {/* Tabs */}
@@ -310,7 +310,7 @@ export default function JoiningRequest() {
               <div className="relative flex-1 sm:flex-initial min-w-[250px]">
                 <input
                   type="text"
-                  placeholder="Ex: Search by restaurant na"
+                  placeholder="Ex: Search by cafe na"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -352,7 +352,7 @@ export default function JoiningRequest() {
                   </th>
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center gap-1">
-                      <span>Restaurant Info</span>
+                      <span>Cafe Info</span>
                       <ArrowUpDown className="w-3 h-3 text-slate-400" />
                     </div>
                   </th>
@@ -388,14 +388,14 @@ export default function JoiningRequest() {
                   <tr>
                     <td colSpan={7} className="px-6 py-20 text-center">
                       <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-                      <p className="text-lg font-semibold text-slate-700">Loading restaurant requests...</p>
+                      <p className="text-lg font-semibold text-slate-700">Loading cafe requests...</p>
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-20 text-center">
                       <p className="text-lg font-semibold text-red-600 mb-1">Error: {error}</p>
-                      <p className="text-sm text-slate-500">Failed to load restaurant requests. Please try again.</p>
+                      <p className="text-sm text-slate-500">Failed to load cafe requests. Please try again.</p>
                     </td>
                   </tr>
                 ) : filteredRequests.length === 0 ? (
@@ -403,7 +403,7 @@ export default function JoiningRequest() {
                     <td colSpan={7} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <p className="text-lg font-semibold text-slate-700 mb-1">No Data Found</p>
-                        <p className="text-sm text-slate-500">No restaurant requests match your search</p>
+                        <p className="text-sm text-slate-500">No cafe requests match your search</p>
                       </div>
                     </td>
                   </tr>
@@ -609,13 +609,13 @@ export default function JoiningRequest() {
                   <X className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Reject Restaurant Request</h3>
+                  <h3 className="text-lg font-bold text-slate-900">Reject Cafe Request</h3>
                   <p className="text-sm text-slate-600">{selectedRequest.restaurantName}</p>
                 </div>
               </div>
               
               <p className="text-sm text-slate-700 mb-4">
-                Are you sure you want to reject this restaurant request? Please provide a reason for rejection.
+                Are you sure you want to reject this cafe request? Please provide a reason for rejection.
               </p>
 
               <div className="mb-4">
@@ -669,7 +669,7 @@ export default function JoiningRequest() {
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
-              <h2 className="text-2xl font-bold text-slate-900">Restaurant Details - {selectedRequest.restaurantName || "N/A"}</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Cafe Details - {selectedRequest.restaurantName || "N/A"}</h2>
               <button
                 onClick={closeDetailsModal}
                 className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
@@ -1111,7 +1111,7 @@ export default function JoiningRequest() {
                         )}
                         {restaurantDetails.restaurantId && (
                           <div>
-                            <p className="text-xs text-slate-500 mb-1">Restaurant ID</p>
+                            <p className="text-xs text-slate-500 mb-1">Cafe ID</p>
                             <p className="font-medium text-slate-900">{restaurantDetails.restaurantId}</p>
                           </div>
                         )}
@@ -1162,7 +1162,7 @@ export default function JoiningRequest() {
               {!loadingDetails && !restaurantDetails && !selectedRequest && (
                 <div className="flex flex-col items-center justify-center py-20">
                   <p className="text-lg font-semibold text-slate-700 mb-2">No Details Available</p>
-                  <p className="text-sm text-slate-500">Unable to load restaurant details</p>
+                  <p className="text-sm text-slate-500">Unable to load cafe details</p>
                 </div>
               )}
             </div>

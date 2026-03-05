@@ -314,7 +314,7 @@ export default function PickupDirectionsPage() {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white text-lg mb-4">No restaurants selected</p>
+          <p className="text-white text-lg mb-4">No cafes selected</p>
           <button
             onClick={() => navigate("/delivery")}
             className="bg-[#ff8100] text-white px-6 py-2 rounded-lg"

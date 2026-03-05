@@ -80,7 +80,7 @@ export const createOrder = async (req, res) => {
     if (!restaurantId || restaurantId === 'unknown') {
       return res.status(400).json({
         success: false,
-        message: 'Restaurant ID is required. Please select a restaurant.'
+        message: 'Cafe ID is required. Please select a cafe.'
       });
     }
 
@@ -88,7 +88,7 @@ export const createOrder = async (req, res) => {
     let assignedRestaurantName = restaurantName;
 
     // Log incoming restaurant data for debugging
-    logger.info('🔍 Order creation - Restaurant lookup:', {
+    logger.info('🔍 Order creation - Cafe lookup:', {
       incomingRestaurantId: restaurantId,
       incomingRestaurantName: restaurantName,
       restaurantIdType: typeof restaurantId,
@@ -100,7 +100,7 @@ export const createOrder = async (req, res) => {
     // Try to find restaurant by restaurantId, _id, or slug
     if (mongoose.Types.ObjectId.isValid(restaurantId) && restaurantId.length === 24) {
       restaurant = await Restaurant.findById(restaurantId);
-      logger.info('🔍 Restaurant lookup by _id:', {
+      logger.info('🔍 Cafe lookup by _id:', {
         restaurantId: restaurantId,
         found: !!restaurant,
         restaurantName: restaurant?.name
@@ -113,7 +113,7 @@ export const createOrder = async (req, res) => {
           { slug: restaurantId }
         ]
       });
-      logger.info('🔍 Restaurant lookup by restaurantId/slug:', {
+      logger.info('🔍 Cafe lookup by restaurantId/slug:', {
         restaurantId: restaurantId,
         found: !!restaurant,
         restaurantName: restaurant?.name,
@@ -123,19 +123,19 @@ export const createOrder = async (req, res) => {
     }
 
     if (!restaurant) {
-      logger.error('❌ Restaurant not found:', {
+      logger.error('❌ Cafe not found:', {
         searchedRestaurantId: restaurantId,
         searchedRestaurantName: restaurantName
       });
       return res.status(404).json({
         success: false,
-        message: 'Restaurant not found'
+        message: 'Cafe not found'
       });
     }
 
     // CRITICAL: Validate restaurant name matches
     if (restaurantName && restaurant.name !== restaurantName) {
-      logger.warn('⚠️ Restaurant name mismatch:', {
+      logger.warn('⚠️ Cafe name mismatch:', {
         incomingName: restaurantName,
         foundRestaurantName: restaurant.name,
         incomingRestaurantId: restaurantId,
@@ -158,13 +158,13 @@ export const createOrder = async (req, res) => {
     // }
 
     if (!restaurant.isActive) {
-      logger.warn('⚠️ Restaurant is inactive:', {
+      logger.warn('⚠️ Cafe is inactive:', {
         restaurantId: restaurant._id?.toString() || restaurant.restaurantId,
         restaurantName: restaurant.name
       });
       return res.status(403).json({
         success: false,
-        message: 'Restaurant is currently inactive'
+        message: 'Cafe is currently inactive'
       });
     }
 
@@ -173,13 +173,13 @@ export const createOrder = async (req, res) => {
     const restaurantLng = restaurant.location?.longitude || restaurant.location?.coordinates?.[0];
 
     if (!restaurantLat || !restaurantLng) {
-      logger.error('❌ Restaurant location not found:', {
+      logger.error('❌ Cafe location not found:', {
         restaurantId: restaurant._id?.toString() || restaurant.restaurantId,
         restaurantName: restaurant.name
       });
       return res.status(400).json({
         success: false,
-        message: 'Restaurant location is not set. Please contact support.'
+        message: 'Cafe location is not set. Please contact support.'
       });
     }
 
@@ -222,7 +222,7 @@ export const createOrder = async (req, res) => {
     }
 
     if (!restaurantInZone) {
-      logger.warn('⚠️ Restaurant location is not within any active zone:', {
+      logger.warn('⚠️ Cafe location is not within any active zone:', {
         restaurantId: restaurant._id?.toString() || restaurant.restaurantId,
         restaurantName: restaurant.name,
         restaurantLat,
@@ -230,11 +230,11 @@ export const createOrder = async (req, res) => {
       });
       return res.status(403).json({
         success: false,
-        message: 'This restaurant is not available in your area. Only restaurants within active delivery zones can receive orders.'
+        message: 'This cafe is not available in your area. Only cafes within active delivery zones can receive orders.'
       });
     }
 
-    logger.info('✅ Restaurant validated - location is within active zone:', {
+    logger.info('✅ Cafe validated - location is within active zone:', {
       restaurantId: restaurant._id?.toString() || restaurant.restaurantId,
       restaurantName: restaurant.name,
       zoneId: restaurantZone?._id?.toString(),
@@ -248,7 +248,7 @@ export const createOrder = async (req, res) => {
       const restaurantZoneId = restaurantZone._id.toString();
 
       if (restaurantZoneId !== userZoneId) {
-        logger.warn('âš ï¸ Zone mismatch - user and restaurant are in different zones:', {
+        logger.warn('âš ï¸ Zone mismatch - user and cafe are in different zones:', {
           userZoneId,
           restaurantZoneId,
           restaurantId: restaurant._id?.toString() || restaurant.restaurantId,
@@ -256,11 +256,11 @@ export const createOrder = async (req, res) => {
         });
         return res.status(403).json({
           success: false,
-          message: 'This restaurant is not available in your zone. Please select a restaurant from your current delivery zone.'
+          message: 'This cafe is not available in your zone. Please select a cafe from your current delivery zone.'
         });
       }
 
-      logger.info('âœ… Zone match validated - user and restaurant are in the same zone:', {
+      logger.info('âœ… Zone match validated - user and cafe are in the same zone:', {
         zoneId: userZoneId,
         restaurantId: restaurant._id?.toString() || restaurant.restaurantId
       });
@@ -272,7 +272,7 @@ export const createOrder = async (req, res) => {
     assignedRestaurantName = restaurant.name;
 
     // Log restaurant assignment for debugging
-    logger.info('✅ Restaurant assigned to order:', {
+    logger.info('✅ Cafe assigned to order:', {
       assignedRestaurantId: assignedRestaurantId,
       assignedRestaurantName: assignedRestaurantName,
       restaurant_id: restaurant._id?.toString(),
@@ -511,13 +511,13 @@ export const createOrder = async (req, res) => {
         // Notify restaurant about new wallet payment order
         try {
           const notifyRestaurantResult = await notifyRestaurantNewOrder(order, assignedRestaurantId, 'wallet');
-          logger.info('✅ Wallet payment order notification sent to restaurant', {
+          logger.info('✅ Wallet payment order notification sent to cafe', {
             orderId: order.orderId,
             restaurantId: assignedRestaurantId,
             notifyRestaurantResult
           });
         } catch (notifyError) {
-          logger.error('❌ Error notifying restaurant about wallet payment order:', notifyError);
+          logger.error('❌ Error notifying cafe about wallet payment order:', notifyError);
         }
 
         // Respond to client
@@ -591,13 +591,13 @@ export const createOrder = async (req, res) => {
       // Notify restaurant about new COD order via Socket.IO (non-blocking)
       try {
         const notifyRestaurantResult = await notifyRestaurantNewOrder(order, assignedRestaurantId, 'cash');
-        logger.info('✅ COD order notification sent to restaurant', {
+        logger.info('✅ COD order notification sent to cafe', {
           orderId: order.orderId,
           restaurantId: assignedRestaurantId,
           notifyRestaurantResult
         });
       } catch (notifyError) {
-        logger.error('❌ Error notifying restaurant about COD order (order still created):', {
+        logger.error('❌ Error notifying cafe about COD order (order still created):', {
           error: notifyError.message,
           stack: notifyError.stack
         });
@@ -822,7 +822,7 @@ export const verifyOrderPayment = async (req, res) => {
       const restaurantName = order.restaurantName;
 
       // CRITICAL: Log detailed info before notification
-      logger.info('🔔 CRITICAL: Attempting to notify restaurant about confirmed order:', {
+      logger.info('🔔 CRITICAL: Attempting to notify cafe about confirmed order:', {
         orderId: order.orderId,
         orderMongoId: order._id.toString(),
         restaurantId: restaurantId,
@@ -837,7 +837,7 @@ export const verifyOrderPayment = async (req, res) => {
 
       // Verify order has restaurantId before notifying
       if (!restaurantId) {
-        logger.error('❌ CRITICAL: Cannot notify restaurant - order.restaurantId is missing!', {
+        logger.error('❌ CRITICAL: Cannot notify cafe - order.restaurantId is missing!', {
           orderId: order.orderId,
           order: {
             _id: order._id?.toString(),

@@ -29,7 +29,7 @@ export default function TableBooking() {
                     setRestaurant(actualRestaurant)
                 }
             } catch (error) {
-                console.error("Error fetching restaurant:", error)
+                console.error("Error fetching cafe:", error)
             } finally {
                 setLoading(false)
             }
@@ -91,7 +91,7 @@ export default function TableBooking() {
     }
 
     if (loading) return <Loader />
-    if (!restaurant) return <div>Restaurant not found</div>
+    if (!restaurant) return <div>Cafe not found</div>
 
     const handleProceed = () => {
         if (!selectedSlot) return
@@ -154,7 +154,7 @@ export default function TableBooking() {
                         <p className="font-bold text-foreground flex items-center gap-1">
                             Get an extra 10% cashback <span className="text-primary">on your final bill</span>
                         </p>
-                        <p className="text-xs text-muted-foreground font-medium">payment at the restaurant</p>
+                        <p className="text-xs text-muted-foreground font-medium">payment at the cafe</p>
                     </div>
                 </div>
 

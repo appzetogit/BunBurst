@@ -23,8 +23,8 @@ export const getRestaurantOrders = asyncHandler(async (req, res) => {
       restaurant.id?.toString();
 
     if (!restaurantIdString) {
-      console.error('❌ No restaurant ID found:', restaurant);
-      return errorResponse(res, 500, 'Restaurant ID not found');
+      console.error('❌ No cafe ID found:', restaurant);
+      return errorResponse(res, 500, 'Cafe ID not found');
     }
 
     // Query orders by restaurantId (stored as String in Order model)
@@ -70,7 +70,7 @@ export const getRestaurantOrders = asyncHandler(async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    console.log('🔍 Fetching orders for restaurant:', {
+    console.log('🔍 Fetching orders for cafe:', {
       restaurantId: restaurantIdString,
       restaurant_id: restaurant._id?.toString(),
       restaurant_restaurantId: restaurant.restaurantId,
@@ -118,7 +118,7 @@ export const getRestaurantOrders = asyncHandler(async (req, res) => {
 
     // If no orders found, log a warning with more details
     if (orders.length === 0 && total === 0) {
-      console.warn('⚠️ No orders found for restaurant:', {
+      console.warn('⚠️ No orders found for cafe:', {
         restaurantId: restaurantIdString,
         restaurant_id: restaurant._id?.toString(),
         variationsTried: restaurantIdVariations,
@@ -151,7 +151,7 @@ export const getRestaurantOrders = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching restaurant orders:', error);
+    console.error('Error fetching cafe orders:', error);
     return errorResponse(res, 500, 'Failed to fetch orders');
   }
 });
@@ -306,7 +306,7 @@ export const acceptOrder = asyncHandler(async (req, res) => {
       await etaEventService.handleRestaurantAccepted(order._id.toString(), new Date());
       console.log(`✅ ETA updated after restaurant accepted order ${order.orderId}`);
     } catch (etaError) {
-      console.error('Error updating ETA after restaurant accept:', etaError);
+      console.error('Error updating ETA after cafe accept:', etaError);
       // Continue even if ETA update fails
     }
 
@@ -439,7 +439,7 @@ export const rejectOrder = asyncHandler(async (req, res) => {
     }
 
     order.status = 'cancelled';
-    order.cancellationReason = reason || 'Cancelled by restaurant';
+    order.cancellationReason = reason || 'Cancelled by cafe';
     order.cancelledBy = 'restaurant';
     order.cancelledAt = new Date();
     await order.save();
@@ -448,7 +448,7 @@ export const rejectOrder = asyncHandler(async (req, res) => {
     // Admin will process refund manually via refund button
     try {
       const { calculateCancellationRefund } = await import('../../order/services/cancellationRefundService.js');
-      await calculateCancellationRefund(order._id, reason || 'Rejected by restaurant');
+      await calculateCancellationRefund(order._id, reason || 'Rejected by cafe');
       console.log(`✅ Cancellation refund calculated for order ${order.orderId} - awaiting admin approval`);
     } catch (refundError) {
       console.error(`❌ Error calculating cancellation refund for order ${order.orderId}:`, refundError);
@@ -637,7 +637,7 @@ export const markOrderReady = asyncHandler(async (req, res) => {
     try {
       await notifyRestaurantOrderUpdate(order._id.toString(), 'ready');
     } catch (notifError) {
-      console.error('Error sending restaurant notification:', notifError);
+      console.error('Error sending cafe notification:', notifError);
     }
 
     // Notify delivery boy that order is ready for pickup
@@ -706,7 +706,7 @@ export const resendDeliveryNotification = asyncHandler(async (req, res) => {
       .lean();
 
     if (!restaurantDoc || !restaurantDoc.location || !restaurantDoc.location.coordinates) {
-      return errorResponse(res, 400, 'Restaurant location not found. Please update restaurant location.');
+      return errorResponse(res, 400, 'Cafe location not found. Please update cafe location.');
     }
 
     const [restaurantLng, restaurantLat] = restaurantDoc.location.coordinates;

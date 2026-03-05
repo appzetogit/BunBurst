@@ -48,7 +48,7 @@ export default function AdDetailsPage() {
       start: "16 Jul, 2025",
       end: "05 Mar, 2028"
     },
-    adsDetails: "Restaurant Promotion",
+    adsDetails: "Cafe Promotion",
     paymentStatus: "Unpaid",
     title: "Taste the Flavor! Food Fest Extravaganza!",
     description: "Indulge in culinary delights at our Food Fest Extravaganza! From gourmet dishes to savory snacks, satisfy your cravings with irresistible flavors. Join us for a feast you won't forget!",

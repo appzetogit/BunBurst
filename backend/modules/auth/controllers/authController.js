@@ -18,6 +18,55 @@ const logger = winston.createLogger({
 });
 
 /**
+ * Validates a phone number (local part after country code) strictly:
+ * - Must be exactly 10 digits
+ * - Must contain only numeric digits (0-9)
+ * - Returns an object: { valid: true } or { valid: false, message: string }
+ */
+const validatePhoneNumber = (phone) => {
+  if (!phone) return { valid: false, message: 'Phone number is required.' };
+
+  const stripped = String(phone).trim();
+
+  // Extract local part after optional country code (e.g. "+91 9876543210" -> "9876543210")
+  const parts = stripped.split(' ');
+  let localPart;
+  if (parts.length >= 2) {
+    localPart = parts.slice(1).join('');
+  } else {
+    localPart = stripped.replace(/^\+\d{1,3}/, '');
+  }
+
+  // Reject if alphabets or special characters present
+  if (/[a-zA-Z!@#$%^&*()_+={}[\]|\\:;"'<>?,./`~-]/.test(localPart)) {
+    return {
+      valid: false,
+      message: 'Invalid phone number. Please enter a valid 10-digit mobile number.'
+    };
+  }
+
+  const digitsOnly = localPart.replace(/\D/g, '');
+
+  if (digitsOnly.length === 0) {
+    return { valid: false, message: 'Phone number is required.' };
+  }
+  if (digitsOnly.length > 10) {
+    return {
+      valid: false,
+      message: 'Invalid phone number. Please enter a valid 10-digit mobile number.'
+    };
+  }
+  if (digitsOnly.length < 10) {
+    return {
+      valid: false,
+      message: 'Invalid phone number. Please enter a valid 10-digit mobile number.'
+    };
+  }
+
+  return { valid: true };
+};
+
+/**
  * Send OTP for phone number or email
  * POST /api/auth/send-otp
  */
@@ -29,11 +78,11 @@ export const sendOTP = asyncHandler(async (req, res) => {
     return errorResponse(res, 400, 'Either phone number or email is required');
   }
 
-  // Validate phone number format if provided
+  // Validate phone number format if provided (strict 10-digit check)
   if (phone) {
-    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
-    if (!phoneRegex.test(phone)) {
-      return errorResponse(res, 400, 'Invalid phone number format');
+    const phoneValidation = validatePhoneNumber(phone);
+    if (!phoneValidation.valid) {
+      return errorResponse(res, 400, phoneValidation.message);
     }
   }
 
@@ -89,8 +138,8 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     if (purpose === 'register') {
       // Registration flow
       // Check if user already exists with same email/phone AND role
-      const findQuery = phone 
-        ? { phone, role: userRole } 
+      const findQuery = phone
+        ? { phone, role: userRole }
         : { email, role: userRole };
       user = await User.findOne(findQuery);
 
@@ -132,8 +181,8 @@ export const verifyOTP = asyncHandler(async (req, res) => {
         // Handle duplicate key error - user might have been created between findOne and create
         if (createError.code === 11000) {
           // Try to find the user again
-          const findQuery = phone 
-            ? { phone, role: userRole } 
+          const findQuery = phone
+            ? { phone, role: userRole }
             : { email, role: userRole };
           user = await User.findOne(findQuery);
           if (!user) {
@@ -146,16 +195,16 @@ export const verifyOTP = asyncHandler(async (req, res) => {
         }
       }
 
-      logger.info(`New user registered: ${user._id}`, { 
-        [identifierType]: identifier, 
-        userId: user._id, 
-        role: userRole 
+      logger.info(`New user registered: ${user._id}`, {
+        [identifierType]: identifier,
+        userId: user._id,
+        role: userRole
       });
     } else {
       // Login (with optional auto-registration)
       // Find user by email/phone AND role to ensure correct module access
-      const findQuery = phone 
-        ? { phone, role: userRole } 
+      const findQuery = phone
+        ? { phone, role: userRole }
         : { email, role: userRole };
       user = await User.findOne(findQuery);
 
@@ -217,8 +266,8 @@ export const verifyOTP = asyncHandler(async (req, res) => {
           // Handle duplicate key error - user might have been created between findOne and create
           if (createError.code === 11000) {
             // Try to find the user again
-            const findQuery = phone 
-              ? { phone, role: userRole } 
+            const findQuery = phone
+              ? { phone, role: userRole }
               : { email, role: userRole };
             user = await User.findOne(findQuery);
             if (!user) {
@@ -231,10 +280,10 @@ export const verifyOTP = asyncHandler(async (req, res) => {
           }
         }
 
-        logger.info(`New user auto-registered: ${user._id}`, { 
-          [identifierType]: identifier, 
-          userId: user._id, 
-          role: userRole 
+        logger.info(`New user auto-registered: ${user._id}`, {
+          [identifierType]: identifier,
+          userId: user._id,
+          role: userRole
         });
       } else {
         // Existing user login - update verification status if needed
@@ -356,9 +405,16 @@ export const register = asyncHandler(async (req, res) => {
   // Allow same email/phone for different roles
   const findQuery = {};
   if (email) findQuery.email = email;
-  if (phone) findQuery.phone = phone;
+  if (phone) {
+    // Validate phone if provided
+    const phoneValidation = validatePhoneNumber(phone);
+    if (!phoneValidation.valid) {
+      return errorResponse(res, 400, phoneValidation.message);
+    }
+    findQuery.phone = phone;
+  }
   findQuery.role = userRole;
-  
+
   const existingUser = await User.findOne(findQuery);
 
   if (existingUser) {
@@ -429,13 +485,13 @@ export const login = asyncHandler(async (req, res) => {
   if (role) {
     findQuery.role = role;
   }
-  
+
   const user = await User.findOne(findQuery).select('+password');
 
   if (!user) {
     return errorResponse(res, 401, 'Invalid email or password');
   }
-  
+
   // If role was provided but doesn't match, return error
   if (role && user.role !== role) {
     return errorResponse(res, 401, `No ${role} account found with this email. Please check your credentials.`);
@@ -509,15 +565,15 @@ export const resetPassword = asyncHandler(async (req, res) => {
   if (role) {
     findQuery.role = role;
   }
-  
+
   const user = await User.findOne(findQuery).select('+password');
 
   if (!user) {
-    return errorResponse(res, 404, role 
-      ? `No ${role} account found with this email.` 
+    return errorResponse(res, 404, role
+      ? `No ${role} account found with this email.`
       : 'User not found');
   }
-  
+
   // If role was provided but doesn't match, return error
   if (role && user.role !== role) {
     return errorResponse(res, 404, `No ${role} account found with this email.`);
@@ -642,7 +698,7 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
 
       // If this is a restaurant login, make sure role matches
       if (userRole === 'restaurant' && user.role !== 'restaurant') {
-        return errorResponse(res, 403, 'This account is not registered as a restaurant partner');
+        return errorResponse(res, 403, 'This account is not registered as a cafe partner');
       }
 
       // If user role doesn't match requested role, return error
@@ -752,11 +808,11 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
  */
 export const googleAuth = asyncHandler(async (req, res) => {
   const { role } = req.params;
-  
+
   // Validate role
   const allowedRoles = ['user', 'restaurant', 'delivery'];
   const userRole = role || 'restaurant';
-  
+
   if (!allowedRoles.includes(userRole)) {
     return errorResponse(res, 400, `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`);
   }
@@ -768,7 +824,7 @@ export const googleAuth = asyncHandler(async (req, res) => {
 
   try {
     const { authUrl, state } = googleAuthService.getAuthUrl(userRole);
-    
+
     // Store state in session/cookie for verification (optional, for extra security)
     res.cookie('oauth_state', state, {
       httpOnly: true,
@@ -796,7 +852,7 @@ export const googleCallback = asyncHandler(async (req, res) => {
   // Validate role
   const allowedRoles = ['user', 'restaurant', 'delivery'];
   const userRole = role || 'restaurant';
-  
+
   if (!allowedRoles.includes(userRole)) {
     return errorResponse(res, 400, `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`);
   }
@@ -821,7 +877,7 @@ export const googleCallback = asyncHandler(async (req, res) => {
   try {
     // Exchange code for tokens
     const tokens = await googleAuthService.getTokens(code);
-    
+
     // Get user info from Google
     const googleUser = await googleAuthService.getUserInfoFromToken(tokens);
 
@@ -869,10 +925,10 @@ export const googleCallback = asyncHandler(async (req, res) => {
       };
 
       user = await User.create(userData);
-      logger.info(`New user registered via Google: ${user._id}`, { 
-        email: googleUser.email, 
-        userId: user._id, 
-        role: userRole 
+      logger.info(`New user registered via Google: ${user._id}`, {
+        email: googleUser.email,
+        userId: user._id,
+        role: userRole
       });
     }
 
@@ -896,10 +952,10 @@ export const googleCallback = asyncHandler(async (req, res) => {
 
     // Redirect to frontend with access token as query param
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectPath = userRole === 'restaurant' ? '/restaurant/auth/google-callback' : 
-                        userRole === 'delivery' ? '/delivery/auth/google-callback' : 
-                        '/user/auth/google-callback';
-    
+    const redirectPath = userRole === 'restaurant' ? '/restaurant/auth/google-callback' :
+      userRole === 'delivery' ? '/delivery/auth/google-callback' :
+        '/user/auth/google-callback';
+
     const userData = {
       id: user._id,
       name: user.name,
@@ -910,7 +966,7 @@ export const googleCallback = asyncHandler(async (req, res) => {
       profileImage: user.profileImage,
       signupMethod: user.signupMethod
     };
-    
+
     const redirectUrl = `${frontendUrl}${redirectPath}?token=${jwtTokens.accessToken}&user=${encodeURIComponent(JSON.stringify(userData))}`;
 
     return res.redirect(redirectUrl);

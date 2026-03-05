@@ -29,7 +29,7 @@ export const useRestaurantNotifications = () => {
           setRestaurantId(id);
         }
       } catch (error) {
-        console.error('Error fetching restaurant:', error);
+        console.error('Error fetching cafe:', error);
       }
     };
     fetchRestaurantId();
@@ -178,7 +178,7 @@ export const useRestaurantNotifications = () => {
     console.log('🔌 Attempting to connect to Socket.IO:', socketUrl);
     console.log('🔌 Backend URL:', backendUrl);
     console.log('🔌 API_BASE_URL:', API_BASE_URL);
-    console.log('🔌 Restaurant ID:', restaurantId);
+    console.log('🔌 Cafe ID:', restaurantId);
     console.log('🔌 Environment:', import.meta.env.MODE);
     console.log('🔌 Is Production Build:', isProductionBuild);
     console.log('🔌 Is Production Deployment:', isProductionDeployment);
@@ -201,7 +201,7 @@ export const useRestaurantNotifications = () => {
     });
 
     socketRef.current.on('connect', () => {
-      console.log('✅ Restaurant Socket connected, restaurantId:', restaurantId);
+      console.log('✅ Cafe Socket connected, restaurantId:', restaurantId);
       console.log('✅ Socket ID:', socketRef.current.id);
       console.log('✅ Socket URL:', socketUrl);
       setIsConnected(true);
@@ -209,13 +209,13 @@ export const useRestaurantNotifications = () => {
       // Join restaurant room immediately after connection with retry
       if (restaurantId) {
         const joinRoom = () => {
-          console.log('📢 Joining restaurant room with ID:', restaurantId);
+          console.log('📢 Joining cafe room with ID:', restaurantId);
           socketRef.current.emit('join-restaurant', restaurantId);
           
           // Retry join after 2 seconds if no confirmation received
           setTimeout(() => {
             if (socketRef.current?.connected) {
-              console.log('🔄 Retrying restaurant room join...');
+              console.log('🔄 Retrying cafe room join...');
               socketRef.current.emit('join-restaurant', restaurantId);
             }
           }, 2000);
@@ -223,15 +223,15 @@ export const useRestaurantNotifications = () => {
         
         joinRoom();
       } else {
-        console.warn('⚠️ Cannot join restaurant room: restaurantId is missing');
+        console.warn('⚠️ Cannot join cafe room: restaurantId is missing');
       }
     });
 
     // Listen for room join confirmation
     socketRef.current.on('restaurant-room-joined', (data) => {
-      console.log('✅ Restaurant room joined successfully:', data);
+      console.log('✅ Cafe room joined successfully:', data);
       console.log('✅ Room:', data?.room);
-      console.log('✅ Restaurant ID in room:', data?.restaurantId);
+      console.log('✅ Cafe ID in room:', data?.restaurantId);
     });
 
     // Listen for connection errors (throttle logs to avoid console spam on reconnect loops)
@@ -242,7 +242,7 @@ export const useRestaurantNotifications = () => {
         lastConnectErrorLogRef.current = now;
         const isTransportError = error.type === 'TransportError' || error.message?.includes('xhr poll error');
         console.warn(
-          'Restaurant Socket:',
+          'Cafe Socket:',
           isTransportError
             ? `Cannot reach backend at ${backendUrl}. Ensure the backend is running (e.g. npm run dev in backend).`
             : error.message
@@ -259,7 +259,7 @@ export const useRestaurantNotifications = () => {
 
     // Listen for disconnection
     socketRef.current.on('disconnect', (reason) => {
-      console.log('❌ Restaurant Socket disconnected:', reason);
+      console.log('❌ Cafe Socket disconnected:', reason);
       setIsConnected(false);
       
       if (reason === 'io server disconnect') {

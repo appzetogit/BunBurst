@@ -70,7 +70,7 @@ export default function NewAdvertisementPage() {
 
   const categories = [
     "Video Promotion",
-    "Restaurant Promotion",
+    "Cafe Promotion",
     "Image Promotion",
     "Banner Promotion"
   ]

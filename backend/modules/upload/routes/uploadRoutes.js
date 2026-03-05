@@ -49,7 +49,7 @@ const authenticateFlexible = async (req, res, next) => {
       const restaurant = await Restaurant.findById(decoded.userId).select('-password');
       
       if (!restaurant) {
-        return errorResponse(res, 401, 'Restaurant not found');
+        return errorResponse(res, 401, 'Cafe not found');
       }
 
       // Allow inactive restaurants to access upload routes - they need to upload images during onboarding

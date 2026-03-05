@@ -368,7 +368,7 @@ export default function ExploreMore() {
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          console.error("Error fetching restaurant data:", error)
+          console.error("Error fetching cafe data:", error)
         }
         // Continue with default values if fetch fails
       } finally {
@@ -404,7 +404,7 @@ export default function ExploreMore() {
 
   // Get user data from restaurant data
   const userData = restaurantData ? {
-    name: restaurantData.ownerName || restaurantData.name || "Restaurant Owner",
+    name: restaurantData.ownerName || restaurantData.name || "Cafe Owner",
     phone: restaurantData.ownerPhone || restaurantData.phone || "N/A",
     email: restaurantData.ownerEmail || restaurantData.email || "N/A",
     role: "OWNER",
@@ -550,7 +550,7 @@ export default function ExploreMore() {
   }
 
   const scheduleOffReasons = [
-    "renovation or relocation of restaurant",
+    "renovation or relocation of cafe",
     "closed dur to festival",
     "permanently shut",
     "staff avaibility issues",
@@ -1434,7 +1434,7 @@ export default function ExploreMore() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Success!</h3>
                 <p className="text-sm text-gray-600 mb-6">
-                  Restaurant is marked offline
+                  Cafe is marked offline
                 </p>
                 <button
                   onClick={() => {
@@ -1500,10 +1500,10 @@ export default function ExploreMore() {
                 {/* Status Message */}
                 <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-base font-semibold text-gray-900 mb-1">
-                    Restaurant is scheduled off
+                    Cafe is scheduled off
                   </p>
                   <p className="text-sm text-gray-600">
-                    Your restaurant is currently marked as offline
+                    Your cafe is currently marked as offline
                   </p>
                 </div>
 

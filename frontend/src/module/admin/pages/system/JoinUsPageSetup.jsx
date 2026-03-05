@@ -2,12 +2,12 @@ import { useState } from "react"
 import { Plus, Trash2, Settings, ChevronDown } from "lucide-react"
 
 const defaultFields = [
-  "Restaurant Name", "Restaurant Logo", "Owner Last Name",
+  "Cafe Name", "Cafe Logo", "Owner Last Name",
   "Vat/Tax", "Cuisine", "Phone Number",
   "Delivery Address", "Zone", "Email",
   "Min Delivery Time", "Latitude & Longitude", "Password",
   "Max Delivery Time", "Map Location",
-  "Restaurant Cover", "Owner First Name"
+  "Cafe Cover", "Owner First Name"
 ]
 
 const fieldTypes = ["Text", "Date", "File Upload", "Number", "Email", "Phone"]
@@ -132,7 +132,7 @@ export default function JoinUsPageSetup() {
                   : "border-transparent text-slate-600 hover:text-slate-900"
               }`}
             >
-              Restaurant Registration Form
+              Cafe Registration Form
             </button>
             <button
               onClick={() => setActiveTab("deliveryman")}

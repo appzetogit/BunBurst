@@ -56,7 +56,7 @@ export default function UserOrderDetails() {
               setRestaurant(restaurantResponse.data.restaurant)
             }
           } catch (restaurantError) {
-            console.warn("Failed to fetch restaurant details:", restaurantError)
+            console.warn("Failed to fetch cafe details:", restaurantError)
             // Don't show error toast, just log it - order details can still be shown
           }
         }
@@ -243,7 +243,7 @@ export default function UserOrderDetails() {
 
       // Column 2: Restaurant & Delivery (Right Side)
       let rightY = 50
-      drawSectionHeader('Restaurant & Delivery', 110, rightY)
+      drawSectionHeader('Cafe & Delivery', 110, rightY)
       rightY += 10
 
       const deliveryLabels = [
@@ -663,7 +663,7 @@ export default function UserOrderDetails() {
             className="w-full bg-orange-50 border border-orange-200 text-orange-700 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-orange-100 transition-colors"
           >
             <FileText className="w-4 h-4" />
-            Restaurant Complaint
+            Cafe Complaint
           </button>
         </div>
       )}

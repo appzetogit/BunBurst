@@ -51,7 +51,7 @@ export default function FoodsList() {
                       priority: "Normal", // Default priority
                       status: item.isAvailable !== false && item.approvalStatus !== 'rejected',
                       restaurantId: restaurantId,
-                      restaurantName: restaurant.name || "Unknown Restaurant",
+                      restaurantName: restaurant.name || "Unknown Cafe",
                       sectionName: section.name || "Unknown Section",
                       price: item.price || 0,
                       foodType: item.foodType || "Non-Veg",
@@ -74,7 +74,7 @@ export default function FoodsList() {
                           priority: "Normal", // Default priority
                           status: item.isAvailable !== false && item.approvalStatus !== 'rejected',
                           restaurantId: restaurantId,
-                          restaurantName: restaurant.name || "Unknown Restaurant",
+                          restaurantName: restaurant.name || "Unknown Cafe",
                           sectionName: section.name || "Unknown Section",
                           subsectionName: subsection.name || "Unknown Subsection",
                           price: item.price || 0,
@@ -97,7 +97,7 @@ export default function FoodsList() {
         setFoods(allFoods)
       } catch (error) {
         console.error("Error fetching foods:", error)
-        toast.error("Failed to load foods from restaurants")
+        toast.error("Failed to load foods from cafes")
         setFoods([])
       } finally {
         setLoading(false)
@@ -233,7 +233,7 @@ export default function FoodsList() {
         // If direct API call fails, we need an admin endpoint
         // For now, show a helpful error message
         if (apiError.response?.status === 401 || apiError.response?.status === 403) {
-          throw new Error("Admin cannot directly update restaurant menus. Please contact developer to add admin menu update endpoint.")
+          throw new Error("Admin cannot directly update cafe menus. Please contact developer to add admin menu update endpoint.")
         }
         throw apiError
       }
@@ -314,7 +314,7 @@ export default function FoodsList() {
                   <td colSpan={4} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
-                      <p className="text-sm text-slate-500">Loading foods from restaurants...</p>
+                      <p className="text-sm text-slate-500">Loading foods from cafes...</p>
                     </div>
                   </td>
                 </tr>

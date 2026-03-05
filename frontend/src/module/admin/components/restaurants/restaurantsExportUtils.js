@@ -2,8 +2,8 @@
 export const exportRestaurantsToExcel = (restaurants, filename = "restaurants") => {
   const headers = [
     "SI",
-    "Restaurant ID",
-    "Restaurant Name",
+    "Cafe ID",
+    "Cafe Name",
     "Owner Name",
     "Owner Phone",
     "Zone",
@@ -43,8 +43,8 @@ export const exportRestaurantsToExcel = (restaurants, filename = "restaurants") 
 export const exportRestaurantsToPDF = (restaurants, filename = "restaurants") => {
   const headers = [
     "SI",
-    "Restaurant ID",
-    "Restaurant Name",
+    "Cafe ID",
+    "Cafe Name",
     "Owner Name",
     "Owner Phone",
     "Zone",

@@ -54,19 +54,16 @@ export default function DeliverySignIn() {
 
     const digitsOnly = phone.replace(/\D/g, "")
 
-    if (digitsOnly.length < 7) {
-      return "Phone number must be at least 7 digits"
+    if (digitsOnly.length === 0) {
+      return "Phone number is required"
     }
 
-    // India-specific validation
-    if (countryCode === "+91") {
-      if (digitsOnly.length !== 10) {
-        return "Indian phone number must be 10 digits"
-      }
-      const firstDigit = digitsOnly[0]
-      if (!["6", "7", "8", "9"].includes(firstDigit)) {
-        return "Invalid Indian mobile number"
-      }
+    if (digitsOnly.length > 10) {
+      return `Phone number too long (${digitsOnly.length} digits). Please enter exactly 10 digits`
+    }
+
+    if (digitsOnly.length < 10) {
+      return "Phone number must be exactly 10 digits"
     }
 
     return ""
@@ -198,9 +195,10 @@ export default function DeliverySignIn() {
               <input
                 type="tel"
                 inputMode="numeric"
-                placeholder="Enter mobile number"
+                placeholder="Enter 10-digit mobile number"
                 value={formData.phone}
                 onChange={handlePhoneChange}
+                maxLength={10}
                 autoComplete="off"
                 autoFocus={false}
                 className="flex-1 h-12 px-4 placeholder-gray-400 focus:outline-none text-base rounded-lg min-w-0"
@@ -213,7 +211,7 @@ export default function DeliverySignIn() {
 
             {/* Hint Text */}
             <p className="text-sm" style={{ color: '#1E1E1E', opacity: 0.5 }}>
-              Enter a valid 10 digit mobile number
+              Enter a valid 10-digit mobile number
             </p>
 
             {error && (

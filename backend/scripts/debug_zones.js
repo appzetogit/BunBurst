@@ -80,7 +80,7 @@ const checkZones = async () => {
         if (restaurantInZone) {
             console.log(`✅ Success! Restaurant is in zone: ${matchedZone.name}`);
         } else {
-            console.log('❌ Failure! Restaurant is NOT in any active zone.');
+            console.log('❌ Failure! Cafe is NOT in any active zone.');
         }
 
     } catch (error) {

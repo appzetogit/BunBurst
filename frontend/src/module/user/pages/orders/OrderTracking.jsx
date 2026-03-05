@@ -77,7 +77,7 @@ const DeliveryMap = ({ orderId, order, isVisible }) => {
 
   // Get coordinates from order or use defaults (Indore)
   const getRestaurantCoords = () => {
-    console.log('🔍 Getting restaurant coordinates from order:', {
+    console.log('🔍 Getting cafe coordinates from order:', {
       hasOrder: !!order,
       restaurantLocation: order?.restaurantLocation,
       coordinates: order?.restaurantLocation?.coordinates,
@@ -115,11 +115,11 @@ const DeliveryMap = ({ orderId, order, isVisible }) => {
         lat: coords[1], // Latitude is second element
         lng: coords[0]  // Longitude is first element
       };
-      console.log('✅ Final restaurant coordinates (lat, lng):', result, 'from GeoJSON:', coords);
+      console.log('✅ Final cafe coordinates (lat, lng):', result, 'from GeoJSON:', coords);
       return result;
     }
 
-    console.warn('⚠️ Restaurant coordinates not found, using default Indore coordinates');
+    console.warn('⚠️ Cafe coordinates not found, using default Indore coordinates');
     // Default Indore coordinates
     return { lat: 22.7196, lng: 75.8577 };
   };
@@ -293,7 +293,7 @@ export default function OrderTracking() {
                   }
                 }
               } catch (err) {
-                console.error('❌ Error fetching restaurant details:', err);
+                console.error('❌ Error fetching cafe details:', err);
               }
             }
 
@@ -384,27 +384,27 @@ export default function OrderTracking() {
           }
           // Priority 3: Check if restaurantId is a string ID and fetch restaurant details
           else if (typeof apiOrder.restaurantId === 'string') {
-            console.log('⚠️ restaurantId is a string ID, fetching restaurant details...', apiOrder.restaurantId);
+            console.log('⚠️ restaurantId is a string ID, fetching cafe details...', apiOrder.restaurantId);
             try {
               const restaurantResponse = await restaurantAPI.getRestaurantById(apiOrder.restaurantId);
               if (restaurantResponse?.data?.success && restaurantResponse.data.data?.restaurant) {
                 const restaurant = restaurantResponse.data.data.restaurant;
                 if (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) && restaurant.location.coordinates.length >= 2) {
                   restaurantCoords = restaurant.location.coordinates;
-                  console.log('✅ Fetched restaurant coordinates from API:', restaurantCoords);
+                  console.log('✅ Fetched cafe coordinates from API:', restaurantCoords);
                 }
               }
             } catch (err) {
-              console.error('❌ Error fetching restaurant details:', err);
+              console.error('❌ Error fetching cafe details:', err);
             }
           }
           // Priority 4: Check nested restaurant data
           else if (apiOrder.restaurant?.location?.coordinates) {
             restaurantCoords = apiOrder.restaurant.location.coordinates;
-            console.log('✅ Found coordinates in restaurant.location.coordinates:', restaurantCoords);
+            console.log('✅ Found coordinates in cafe.location.coordinates:', restaurantCoords);
           }
 
-          console.log('📍 Final restaurant coordinates:', restaurantCoords);
+          console.log('📍 Final cafe coordinates:', restaurantCoords);
           console.log('📍 Customer coordinates:', apiOrder.address?.location?.coordinates);
 
           // Transform API order to match component structure
@@ -620,18 +620,18 @@ export default function OrderTracking() {
         }
         // Priority 4: Check if restaurantId is a string ID and fetch restaurant details
         else if (typeof apiOrder.restaurantId === 'string') {
-          console.log('⚠️ restaurantId is a string ID, fetching restaurant details...', apiOrder.restaurantId);
+          console.log('⚠️ restaurantId is a string ID, fetching cafe details...', apiOrder.restaurantId);
           try {
             const restaurantResponse = await restaurantAPI.getRestaurantById(apiOrder.restaurantId);
             if (restaurantResponse?.data?.success && restaurantResponse.data.data?.restaurant) {
               const restaurant = restaurantResponse.data.data.restaurant;
               if (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) && restaurant.location.coordinates.length >= 2) {
                 restaurantCoords = restaurant.location.coordinates;
-                console.log('✅ Fetched restaurant coordinates from API:', restaurantCoords);
+                console.log('✅ Fetched cafe coordinates from API:', restaurantCoords);
               }
             }
           } catch (err) {
-            console.error('❌ Error fetching restaurant details:', err);
+            console.error('❌ Error fetching cafe details:', err);
           }
         }
 

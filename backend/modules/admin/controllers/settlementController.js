@@ -57,13 +57,13 @@ export const getRestaurantSettlements = asyncHandler(async (req, res) => {
       totalCommission: 0
     });
 
-    return successResponse(res, 200, 'Restaurant settlements retrieved', {
+    return successResponse(res, 200, 'Cafe settlements retrieved', {
       settlements,
       totals
     });
   } catch (error) {
-    console.error('Error getting restaurant settlements:', error);
-    return errorResponse(res, 500, 'Failed to get restaurant settlements');
+    console.error('Error getting cafe settlements:', error);
+    return errorResponse(res, 500, 'Failed to get cafe settlements');
   }
 });
 
@@ -128,7 +128,7 @@ export const getRestaurantSettlementReport = asyncHandler(async (req, res) => {
       report
     });
   } catch (error) {
-    console.error('Error generating restaurant settlement report:', error);
+    console.error('Error generating cafe settlement report:', error);
     return errorResponse(res, 500, 'Failed to generate settlement report');
   }
 });

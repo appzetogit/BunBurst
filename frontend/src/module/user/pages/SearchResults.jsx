@@ -352,7 +352,7 @@ export default function SearchResults() {
 
           setRestaurantsData(transformedRestaurants)
         } else {
-          console.warn('⚠️ No restaurants in API response. Response structure:', {
+          console.warn('⚠️ No cafes in API response. Response structure:', {
             hasData: !!response.data,
             hasSuccess: response.data?.success,
             hasDataField: !!response.data?.data,
@@ -362,7 +362,7 @@ export default function SearchResults() {
           setRestaurantsData([])
         }
       } catch (error) {
-        console.error('❌ Error fetching restaurants:', error)
+        console.error('❌ Error fetching cafes:', error)
         console.error('❌ Error response:', error.response?.data)
         setRestaurantsData([])
       } finally {
@@ -648,7 +648,7 @@ export default function SearchResults() {
             <form onSubmit={handleSearch} className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Restaurant name or a dish..."
+                placeholder="Cafe name or a dish..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-10 h-11 rounded-lg border-border bg-muted focus:bg-card focus:border-primary text-sm text-foreground placeholder:text-muted-foreground"
@@ -752,7 +752,7 @@ export default function SearchResults() {
         {loadingRestaurants && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-3 text-muted-foreground">Loading restaurants...</span>
+            <span className="ml-3 text-muted-foreground">Loading cafes...</span>
           </div>
         )}
 
@@ -960,7 +960,7 @@ export default function SearchResults() {
                 <p className="text-muted-foreground">
                   {query
                     ? `No restaurants found for "${query}"`
-                    : "No restaurants found with selected filters"}
+                    : "No cafes found with selected filters"}
                 </p>
                 <Button
                   variant="outline"

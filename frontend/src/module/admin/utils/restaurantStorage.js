@@ -14,7 +14,7 @@ export const getRestaurants = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(restaurantsDummy))
     return restaurantsDummy
   } catch (error) {
-    console.error("Error loading restaurants:", error)
+    console.error("Error loading cafes:", error)
     return restaurantsDummy
   }
 }
@@ -25,7 +25,7 @@ export const saveRestaurants = (restaurants) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(restaurants))
     return true
   } catch (error) {
-    console.error("Error saving restaurants:", error)
+    console.error("Error saving cafes:", error)
     return false
   }
 }

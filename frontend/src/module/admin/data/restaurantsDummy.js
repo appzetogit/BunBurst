@@ -42,7 +42,7 @@ export const restaurantsDummy = [
   },
   {
     id: 3,
-    name: "Pizza restaurant",
+    name: "Pizza cafe",
     ownerName: "David Johnson",
     ownerPhone: "+1 234-567-8903",
     zone: "All over the World",

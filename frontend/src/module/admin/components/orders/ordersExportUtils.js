@@ -82,7 +82,7 @@ export const exportToExcel = (orders, filename = "orders") => {
     ])
   } else if (isOrderDetectDelivery) {
     // OrderDetectDelivery format - includes delivery boy info and payment details
-    headers = ["SI", "Order ID", "Order Date", "Order Time", "Customer Name", "Customer Phone", "Restaurant Name", "Delivery Boy Name", "Delivery Boy Phone", "Status", "Total Amount", "Payment Status"]
+    headers = ["SI", "Order ID", "Order Date", "Order Time", "Customer Name", "Customer Phone", "Cafe Name", "Delivery Boy Name", "Delivery Boy Phone", "Status", "Total Amount", "Payment Status"]
     rows = orders.map((order, index) => {
       const originalOrder = order.originalOrder || {}
       const totalAmount = originalOrder.pricing?.total || originalOrder.totalAmount || originalOrder.total || 0
@@ -249,7 +249,7 @@ export const exportToPDF = async (orders, filename = "orders") => {
       ])
     } else if (isOrderDetectDelivery) {
       // OrderDetectDelivery format - includes delivery boy info and payment details
-      headers = [["SI", "Order ID", "Order Date", "Order Time", "Customer Name", "Customer Phone", "Restaurant Name", "Delivery Boy Name", "Delivery Boy Phone", "Status", "Total Amount", "Payment Status"]]
+      headers = [["SI", "Order ID", "Order Date", "Order Time", "Customer Name", "Customer Phone", "Cafe Name", "Delivery Boy Name", "Delivery Boy Phone", "Status", "Total Amount", "Payment Status"]]
       tableData = orders.map((order, index) => {
         const originalOrder = order.originalOrder || {}
         const totalAmount = originalOrder.pricing?.total || originalOrder.totalAmount || originalOrder.total || 0

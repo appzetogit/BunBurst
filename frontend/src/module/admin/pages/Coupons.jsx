@@ -51,14 +51,14 @@ export default function Coupons() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 mb-4">Restaurant Offers & Coupons</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">Cafe Offers & Coupons</h1>
 
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by restaurant name, dish name, or coupon code..."
+              placeholder="Search by cafe name, dish name, or coupon code..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

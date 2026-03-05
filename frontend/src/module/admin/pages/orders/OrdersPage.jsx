@@ -21,7 +21,7 @@ const statusConfig = {
   "food-on-the-way": { title: "Food On The Way Orders", color: "amber", icon: Package },
   "delivered": { title: "Delivered Orders", color: "emerald", icon: Package },
   "canceled": { title: "Canceled Orders", color: "rose", icon: Package },
-  "restaurant-cancelled": { title: "Restaurant Cancelled Orders", color: "red", icon: Package },
+  "restaurant-cancelled": { title: "Cafe Cancelled Orders", color: "red", icon: Package },
   "payment-failed": { title: "Payment Failed Orders", color: "red", icon: Package },
   "refunded": { title: "Refunded Orders", color: "sky", icon: Package },
   "offline-payments": { title: "Offline Payments", color: "slate", icon: Package },

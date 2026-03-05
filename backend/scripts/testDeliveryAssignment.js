@@ -42,14 +42,14 @@ async function testDeliveryAssignment() {
     log('✅ Database connected\n', 'green');
 
     // Step 1: Check for restaurants
-    log('📋 Step 1: Checking restaurants...', 'yellow');
+    log('📋 Step 1: Checking cafes...', 'yellow');
     const restaurants = await Restaurant.find({ isActive: true })
       .select('_id name location restaurantId')
       .limit(5)
       .lean();
     
     if (restaurants.length === 0) {
-      log('❌ No active restaurants found', 'red');
+      log('❌ No active cafes found', 'red');
       return;
     }
     log(`✅ Found ${restaurants.length} active restaurant(s)`, 'green');
@@ -114,7 +114,7 @@ async function testDeliveryAssignment() {
       // Use first restaurant
       const testRestaurant = restaurants[0];
       if (!testRestaurant.location?.coordinates) {
-        log('❌ Test restaurant has no location', 'red');
+        log('❌ Test cafe has no location', 'red');
         return;
       }
 
@@ -154,7 +154,7 @@ async function testDeliveryAssignment() {
         
         const restaurant = order.restaurantId;
         if (!restaurant?.location?.coordinates) {
-          log('   ❌ Restaurant has no location', 'red');
+          log('   ❌ Cafe has no location', 'red');
           continue;
         }
 

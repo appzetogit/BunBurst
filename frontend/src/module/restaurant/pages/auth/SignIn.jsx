@@ -67,7 +67,7 @@ export default function RestaurantSignIn() {
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
           src={loginBg}
-          alt="Restaurant background"
+          alt="Cafe background"
           className="w-full h-full object-cover"
         />
         {/* Orange half-circle text block attached to the left with animation */}
@@ -82,7 +82,7 @@ export default function RestaurantSignIn() {
               {companyName.toUpperCase()}
             </h1>
             <p className="text-base xl:text-lg opacity-95 max-w-xl">
-              Manage your restaurant, orders and website easily from a single dashboard.
+              Manage your cafe, orders and website easily from a single dashboard.
             </p>
           </div>
         </div>
@@ -104,7 +104,7 @@ export default function RestaurantSignIn() {
                 {companyName}
               </span>
               <span className="text-xs font-medium text-gray-500">
-                Restaurant Panel
+                Cafe Panel
               </span>
             </div>
           </div>
@@ -121,10 +121,10 @@ export default function RestaurantSignIn() {
           {/* Title */}
           <div className="mb-8 text-center">
             <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
-              Signin To Your Restaurant Panel
+              Signin To Your Cafe Panel
             </h2>
             <p className="text-sm text-gray-500">
-              Enter your credentials to access the restaurant dashboard.
+              Enter your credentials to access the cafe dashboard.
             </p>
           </div>
 
@@ -236,7 +236,7 @@ export default function RestaurantSignIn() {
             <div>
               <div className="font-semibold mb-1">Demo Credentials</div>
               <div>
-                <span className="font-semibold">Email :</span> test.restaurant@gmail.com
+                <span className="font-semibold">Email :</span> test.cafe@gmail.com
               </div>
               <div>
                 <span className="font-semibold">Password :</span> 12345678

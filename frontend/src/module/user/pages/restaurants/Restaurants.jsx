@@ -89,7 +89,7 @@ export default function Restaurants() {
             </Link>
             <TextReveal className="flex items-center gap-2 sm:gap-3 lg:gap-4">
               <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white">
-                All Restaurants
+                All Cafes
               </h1>
             </TextReveal>
           </div>

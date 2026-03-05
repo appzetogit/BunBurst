@@ -58,38 +58,48 @@ export default function RestaurantSignup() {
     if (!phone.trim()) {
       return "Phone number is required"
     }
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "")
-    const phoneRegex = /^\d{7,15}$/
-    if (!phoneRegex.test(cleanPhone)) {
-      return "Phone number must be 7-15 digits"
+    // Check for alphabets or special characters
+    if (/[a-zA-Z!@#$%^&*()_+={}\[\]|\\:;"'<>?,./`~]/.test(phone)) {
+      return "Invalid phone number. Only numeric digits (0\u20139) are allowed"
+    }
+    const digitsOnly = phone.replace(/\D/g, "")
+    if (digitsOnly.length > 10) {
+      return `Phone number too long (${digitsOnly.length} digits). Please enter exactly 10 digits`
+    }
+    if (digitsOnly.length < 10) {
+      return "Phone number must be exactly 10 digits"
     }
     return ""
   }
 
   const validateName = (name) => {
     if (!name.trim()) {
-      return "Restaurant name is required"
+      return "Cafe name is required"
     }
     if (name.trim().length < 2) {
-      return "Restaurant name must be at least 2 characters"
+      return "Cafe name must be at least 2 characters"
     }
     if (name.trim().length > 50) {
-      return "Restaurant name must be less than 50 characters"
+      return "Cafe name must be less than 50 characters"
     }
     return ""
   }
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
+
+    if (name === "phone") {
+      // Only allow numeric digits, cap at 10
+      const digitsOnly = value.replace(/\D/g, "").slice(0, 10)
+      setFormData({ ...formData, phone: digitsOnly })
+      setErrors({ ...errors, phone: validatePhone(digitsOnly) })
+      return
+    }
+
+    setFormData({ ...formData, [name]: value })
 
     // Real-time validation
-    if (name === "phone") {
-      setErrors({ ...errors, phone: validatePhone(value) })
-    } else if (name === "name") {
+    if (name === "name") {
       setErrors({ ...errors, name: validateName(value) })
     }
   }
@@ -160,7 +170,7 @@ export default function RestaurantSignup() {
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
           src={loginBg}
-          alt="Restaurant background"
+          alt="Cafe background"
           className="w-full h-full object-cover"
         />
         {/* Orange half-circle text block attached to the left with animation */}
@@ -175,7 +185,7 @@ export default function RestaurantSignup() {
               RESTAURANT PARTNER
             </h1>
             <p className="text-base xl:text-lg opacity-95 max-w-xl">
-              Register your restaurant and start serving customers.
+              Register your cafe and start serving customers.
             </p>
           </div>
         </div>
@@ -197,7 +207,7 @@ export default function RestaurantSignup() {
                 {companyName}
               </span>
               <span className="text-xs font-medium text-gray-500">
-                Restaurant Panel
+                Cafe Panel
               </span>
             </div>
           </div>
@@ -214,7 +224,7 @@ export default function RestaurantSignup() {
           {/* Title */}
           <div className="mb-8 text-center">
             <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
-              Register Your Restaurant
+              Register Your Cafe
             </h2>
             <p className="text-sm text-gray-500">
               Enter your details to get started.
@@ -229,7 +239,7 @@ export default function RestaurantSignup() {
             {/* Restaurant name input */}
             <div className="space-y-1.5">
               <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                Restaurant Name
+                Cafe Name
               </Label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
@@ -239,7 +249,7 @@ export default function RestaurantSignup() {
                   id="name"
                   name="name"
                   type="text"
-                  placeholder="Enter restaurant name"
+                  placeholder="Enter cafe name"
                   value={formData.name}
                   onChange={handleChange}
                   className={`h-11 pl-9 border-gray-300 rounded-md shadow-sm focus-visible:ring-primary-orange focus-visible:ring-2 transition-colors placeholder:text-gray-400 ${errors.name ? "border-red-500" : ""}`}
@@ -287,9 +297,11 @@ export default function RestaurantSignup() {
                       id="phone"
                       name="phone"
                       type="tel"
-                      placeholder="Enter phone number"
+                      inputMode="numeric"
+                      placeholder="Enter 10-digit mobile number"
                       value={formData.phone}
                       onChange={handleChange}
+                      maxLength={10}
                       className={`h-11 pl-9 border-gray-300 rounded-md shadow-sm focus-visible:ring-primary-orange focus-visible:ring-2 transition-colors placeholder:text-gray-400 ${errors.phone ? "border-red-500" : ""}`}
                       required
                     />

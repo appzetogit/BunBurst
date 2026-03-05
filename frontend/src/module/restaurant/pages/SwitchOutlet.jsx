@@ -17,7 +17,7 @@ export default function SwitchOutlet() {
   const outlets = [
     {
       id: 20959122,
-      name: "Kadhai Chammach Restaurant",
+      name: "Kadhai Chammach Cafe",
       address: "By Pass Road (South)",
       image: "/api/placeholder/80/80", // Replace with actual image URL
       status: "offline", // "online" or "offline"

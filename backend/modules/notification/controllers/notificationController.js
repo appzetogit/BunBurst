@@ -96,14 +96,14 @@ export const saveRestaurantFcmToken = async (req, res) => {
       { new: true, projection: { fcmTokenWeb: 1, fcmTokenMobile: 1 } }
     ).lean();
 
-    console.log('[Push] Saved restaurant token', {
+    console.log('[Push] Saved cafe token', {
       restaurantId: req.restaurant?._id?.toString(),
       platform,
       field,
       tokenPreview: `${token.trim().slice(0, 12)}...`
     });
 
-    return successResponse(res, 200, 'Restaurant FCM token saved successfully', {
+    return successResponse(res, 200, 'Cafe FCM token saved successfully', {
       platform,
       fcmTokenWeb: updated?.fcmTokenWeb || null,
       fcmTokenMobile: updated?.fcmTokenMobile || null

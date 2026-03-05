@@ -29,7 +29,7 @@ export default function DiningList() {
                     // Try admin API first
                     response = await adminAPI.getRestaurants()
                 } catch (adminErr) {
-                    console.log("Admin restaurants endpoint not available, using fallback")
+                    console.log("Admin cafes endpoint not available, using fallback")
                     response = await restaurantAPI.getRestaurants()
                 }
 
@@ -59,8 +59,8 @@ export default function DiningList() {
                     setRestaurants([])
                 }
             } catch (err) {
-                console.error("Error fetching restaurants:", err)
-                setError(err.message || "Failed to fetch restaurants")
+                console.error("Error fetching cafes:", err)
+                setError(err.message || "Failed to fetch cafes")
                 setRestaurants([])
             } finally {
                 setLoading(false)
@@ -187,10 +187,10 @@ export default function DiningList() {
                             className="px-4 py-2.5 text-sm font-medium rounded-lg bg-[#e53935] hover:bg-[#d32f2f] text-white flex items-center gap-2 transition-all shadow-sm hover:shadow"
                         >
                             <Plus className="w-4 h-4" />
-                            <span>Add Restaurant</span>
+                            <span>Add Cafe</span>
                         </button>
                     </div>
-                    <p className="text-[#1E1E1E]/70">Manage restaurants available for dining.</p>
+                    <p className="text-[#1E1E1E]/70">Manage cafes available for dining.</p>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
@@ -204,28 +204,28 @@ export default function DiningList() {
                             <div className="w-20 h-20 bg-[#F5F5F5] rounded-full flex items-center justify-center mb-6">
                                 <Building2 className="w-10 h-10 text-[#1E1E1E]/30" />
                             </div>
-                            <h2 className="text-xl font-bold text-[#1E1E1E] mb-2">No dining restaurants added yet</h2>
+                            <h2 className="text-xl font-bold text-[#1E1E1E] mb-2">No dining cafes added yet</h2>
                             <p className="text-[#1E1E1E]/70 max-w-sm mb-8">
-                                Get started by adding your first restaurant to the dining management system.
+                                Get started by adding your first cafe to the dining management system.
                             </p>
                             <button
                                 onClick={() => navigate("/admin/restaurants/add")}
                                 className="px-6 py-3 text-sm font-medium rounded-lg bg-[#e53935] hover:bg-[#d32f2f] text-white flex items-center gap-2 transition-all shadow-md"
                             >
                                 <Plus className="w-5 h-5" />
-                                <span>Register First Restaurant</span>
+                                <span>Register First Cafe</span>
                             </button>
                         </div>
                     ) : (
                         <>
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                                <h2 className="text-xl font-bold text-[#1E1E1E]">Registered Dining Restaurants</h2>
+                                <h2 className="text-xl font-bold text-[#1E1E1E]">Registered Dining Cafes</h2>
 
                                 <div className="flex flex-wrap items-center gap-3">
                                     <div className="relative flex-1 sm:flex-initial min-w-[250px]">
                                         <input
                                             type="text"
-                                            placeholder="Search dining restaurants..."
+                                            placeholder="Search dining cafes..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-[#F5F5F5] bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935] focus:border-[#e53935]"
@@ -285,7 +285,7 @@ export default function DiningList() {
                                                         <div className="w-16 h-16 bg-[#F5F5F5] rounded-full flex items-center justify-center mb-4">
                                                             <Search className="w-8 h-8 text-[#1E1E1E]/30" />
                                                         </div>
-                                                        <p className="text-lg font-semibold text-[#1E1E1E] mb-1">No dining restaurants found</p>
+                                                        <p className="text-lg font-semibold text-[#1E1E1E] mb-1">No dining cafes found</p>
                                                         <p className="text-sm text-[#1E1E1E]/70">
                                                             Try adjusting your search query or filters.
                                                         </p>
@@ -391,7 +391,7 @@ export default function DiningList() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-semibold text-[#1E1E1E]">Dining Status</p>
-                                    <p className="text-xs text-[#1E1E1E]/70">Enable or disable dining for this restaurant</p>
+                                    <p className="text-xs text-[#1E1E1E]/70">Enable or disable dining for this cafe</p>
                                 </div>
                                 <button
                                     onClick={() => setEditingRestaurant(prev => ({

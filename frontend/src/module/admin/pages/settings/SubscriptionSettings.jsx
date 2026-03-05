@@ -146,8 +146,8 @@ export default function SubscriptionSettings() {
               Return Money Restriction
             </h2>
             <p className="text-xs text-slate-500 mt-1 max-w-xl">
-              Setup the amount after which if any restaurant change / migrate
-              the subscription plan you won&apos;t return any money back
+              Setup the amount after which if any cafe change / migrate
+              the subscription plan you won't return any money back
             </p>
           </div>
 

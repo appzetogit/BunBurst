@@ -2243,7 +2243,7 @@ export default function DeliveryHome() {
             console.log('✅ Order accepted successfully')
             console.log('📍 Route data:', routeData)
             console.log('📋 Full order data from backend:', JSON.stringify(order, null, 2))
-            console.log('🏪 Restaurant name from backend:', {
+            console.log('🏪 Cafe name from backend:', {
               restaurantName: order.restaurantName,
               restaurantIdName: order.restaurantId?.name,
               restaurantIdType: typeof order.restaurantId,
@@ -2265,7 +2265,7 @@ export default function DeliveryHome() {
                 toFiniteCoordinate(selectedRestaurant?.lng)
 
               // Format restaurant address - check multiple possible locations
-              let restaurantAddress = 'Restaurant Address'
+              let restaurantAddress = 'Cafe Address'
               const restaurantLocation = order.restaurantId?.location
 
               // Debug: Log order structure to understand data format
@@ -2344,7 +2344,7 @@ export default function DeliveryHome() {
                 restaurantAddress = `${restaurantLat}, ${restaurantLng}`
                 console.log('⚠️ Using coordinates as address:', restaurantAddress)
               } else {
-                console.warn('⚠️ Restaurant address not found in order, will try to fetch from restaurant API')
+                console.warn('⚠️ Cafe address not found in order, will try to fetch from cafe API')
                 // Try to fetch restaurant address by ID if available
                 const restaurantId = order.restaurantId
                 if (restaurantId) {
@@ -2355,23 +2355,23 @@ export default function DeliveryHome() {
 
                   if (restaurantIdString) {
                     try {
-                      console.log('🔄 Fetching restaurant address by ID:', restaurantIdString)
+                      console.log('🔄 Fetching cafe address by ID:', restaurantIdString)
                       const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantIdString)
                       if (restaurantResponse.data?.success && restaurantResponse.data.data) {
                         const restaurant = restaurantResponse.data.data.restaurant || restaurantResponse.data.data
                         const restLocation = restaurant.location
-                        console.log('✅ Fetched restaurant data:', { restaurant, restLocation })
+                        console.log('✅ Fetched cafe data:', { restaurant, restLocation })
 
                         // Priority: location.formattedAddress (this is what user wants)
                         if (restLocation?.formattedAddress) {
                           restaurantAddress = restLocation.formattedAddress
-                          console.log('✅ Fetched restaurant.location.formattedAddress:', restaurantAddress)
+                          console.log('✅ Fetched cafe.location.formattedAddress:', restaurantAddress)
                         } else if (restaurant.address) {
                           restaurantAddress = restaurant.address
-                          console.log('✅ Fetched restaurant.address:', restaurantAddress)
+                          console.log('✅ Fetched cafe.address:', restaurantAddress)
                         } else if (restLocation?.address) {
                           restaurantAddress = restLocation.address
-                          console.log('✅ Fetched restaurant.location.address:', restaurantAddress)
+                          console.log('✅ Fetched cafe.location.address:', restaurantAddress)
                         } else if (restLocation?.addressLine1) {
                           const addressParts = [
                             restLocation.addressLine1,
@@ -2382,7 +2382,7 @@ export default function DeliveryHome() {
                             restLocation.pincode || restLocation.zipCode || restLocation.postalCode
                           ].filter(Boolean)
                           restaurantAddress = addressParts.join(', ')
-                          console.log('✅ Built address from restaurant location addressLine1 with zone and pin:', restaurantAddress)
+                          console.log('✅ Built address from cafe location addressLine1 with zone and pin:', restaurantAddress)
                         } else if (restLocation?.street) {
                           const addressParts = [
                             restLocation.street,
@@ -2392,17 +2392,17 @@ export default function DeliveryHome() {
                             restLocation.pincode || restLocation.zipCode || restLocation.postalCode
                           ].filter(Boolean)
                           restaurantAddress = addressParts.join(', ')
-                          console.log('✅ Built address from restaurant location components with zone and pin:', restaurantAddress)
+                          console.log('✅ Built address from cafe location components with zone and pin:', restaurantAddress)
                         }
                       }
                     } catch (restaurantError) {
-                      console.error('❌ Error fetching restaurant address:', restaurantError)
+                      console.error('❌ Error fetching cafe address:', restaurantError)
                     }
                   }
                 }
 
-                if (restaurantAddress === 'Restaurant Address') {
-                  console.warn('⚠️ Restaurant address not found in any location, using default')
+                if (restaurantAddress === 'Cafe Address') {
+                  console.warn('⚠️ Cafe address not found in any location, using default')
                 }
               }
 
@@ -2423,15 +2423,15 @@ export default function DeliveryHome() {
               // Priority 3: Fallback to existing selectedRestaurant name
               else if (selectedRestaurant?.name) {
                 restaurantName = selectedRestaurant.name
-                console.warn('⚠️ Restaurant name not found in order, using selectedRestaurant.name:', restaurantName)
+                console.warn('⚠️ Cafe name not found in order, using selectedRestaurant.name:', restaurantName)
               }
               // Final fallback
               else {
                 restaurantName = 'Restaurant'
-                console.error('❌ Restaurant name not found anywhere, using default:', restaurantName)
+                console.error('❌ Cafe name not found anywhere, using default:', restaurantName)
               }
 
-              console.log('🏪 Final extracted restaurant name:', restaurantName)
+              console.log('🏪 Final extracted cafe name:', restaurantName)
 
               // Extract earnings from backend response
               const backendEarnings = orderData.estimatedEarnings || response.data.data.estimatedEarnings;
@@ -2480,14 +2480,14 @@ export default function DeliveryHome() {
                 deliveryPhase: 'en_route_to_pickup' // CRITICAL: Set to en_route_to_pickup after order acceptance so Reached Pickup popup can show
               }
 
-              console.log('🏪 Updated restaurant info from backend:', restaurantInfo)
+              console.log('🏪 Updated cafe info from backend:', restaurantInfo)
               // Update state immediately
               setSelectedRestaurant(restaurantInfo)
             }
 
             // Ensure we have restaurantInfo before proceeding
             if (!restaurantInfo) {
-              console.error('❌ Restaurant info not available, cannot proceed');
+              console.error('❌ Cafe info not available, cannot proceed');
               return;
             }
 
@@ -2508,7 +2508,7 @@ export default function DeliveryHome() {
             if (restaurantInfo && hasValidCoordinates(restaurantInfo?.lat, restaurantInfo?.lng) && currentLocation) {
               console.log('🗺️ Calculating route with Google Maps Directions API...');
               console.log('📍 From (Delivery Boy Live Location):', currentLocation);
-              console.log('📍 To (Restaurant):', { lat: restaurantInfo.lat, lng: restaurantInfo.lng });
+              console.log('📍 To (Cafe):', { lat: restaurantInfo.lat, lng: restaurantInfo.lng });
 
               try {
                 // Calculate route immediately with current live location
@@ -2551,7 +2551,7 @@ export default function DeliveryHome() {
                     }
                   }
 
-                  console.log('✅ Route to restaurant initialized - polyline will update as delivery boy moves');
+                  console.log('✅ Route to cafe initialized - polyline will update as delivery boy moves');
                 } else {
                   // Fallback: Use backend route or OSRM
                   console.log('⚠️ Directions API failed, using fallback...');
@@ -2614,7 +2614,7 @@ export default function DeliveryHome() {
                 }
               }
             } else {
-              console.error('❌ Cannot calculate route: missing restaurant info or location', {
+              console.error('❌ Cannot calculate route: missing cafe info or location', {
                 restaurantInfo: !!restaurantInfo,
                 restaurantLat: restaurantInfo?.lat,
                 restaurantLng: restaurantInfo?.lng,
@@ -2657,8 +2657,8 @@ export default function DeliveryHome() {
 
             // Show route on main map instead of opening full-screen directions map
             setTimeout(() => {
-              console.log('✅ Showing route on main map from live location to restaurant');
-              console.log('📍 Flow: Order Accepted → Route to Restaurant → 500m Detection → Reached Pickup → Order ID → Route to Customer → 500m Detection → Reached Drop → Delivered → Review → Payment');
+              console.log('✅ Showing route on main map from live location to cafe');
+              console.log('📍 Flow: Order Accepted → Route to Cafe → 500m Detection → Reached Pickup → Order ID → Route to Customer → 500m Detection → Reached Drop → Delivered → Review → Payment');
 
               // Show route on main map using DirectionsRenderer or polyline
               if (window.deliveryMapInstance && restaurantInfo) {
@@ -2791,7 +2791,7 @@ export default function DeliveryHome() {
                     zIndex: 10
                   });
 
-                  console.log('✅ Restaurant marker added to main map');
+                  console.log('✅ Cafe marker added to main map');
                 }
               } else {
                 console.warn('⚠️ Main map not ready, will show route when map loads');
@@ -4216,7 +4216,7 @@ export default function DeliveryHome() {
 
       // Transform newOrder data to match selectedRestaurant format
       // Extract restaurant address with proper priority
-      let restaurantAddress = 'Restaurant address';
+      let restaurantAddress = 'Cafe address';
       if (newOrder.restaurantLocation?.address) {
         restaurantAddress = newOrder.restaurantLocation.address;
       } else if (newOrder.restaurantLocation?.formattedAddress) {
@@ -4366,7 +4366,7 @@ export default function DeliveryHome() {
     if (!isValidAddress(getRestaurantDisplayAddress(selectedRestaurant))) {
       // Address is missing, fetch order details to get restaurant address
       const orderId = selectedRestaurant.orderId || selectedRestaurant.id
-      console.log('🔄 Fetching restaurant address for order:', orderId)
+      console.log('🔄 Fetching cafe address for order:', orderId)
 
       const fetchAddress = async () => {
         try {
@@ -4382,11 +4382,11 @@ export default function DeliveryHome() {
                 ...prev,
                 address: restaurantAddress
               }))
-              console.log('✅ Restaurant address fetched and updated:', restaurantAddress)
+              console.log('✅ Cafe address fetched and updated:', restaurantAddress)
             }
           }
         } catch (error) {
-          console.error('❌ Error fetching restaurant address:', error)
+          console.error('❌ Error fetching cafe address:', error)
         }
       }
 
@@ -4630,7 +4630,7 @@ export default function DeliveryHome() {
 
           // Transform order data to match selectedRestaurant format
           // Fetch restaurant address with proper priority
-          let restaurantAddress = 'Restaurant address';
+          let restaurantAddress = 'Cafe address';
           if (firstOrder.restaurantId?.address) {
             restaurantAddress = firstOrder.restaurantId.address;
           } else if (firstOrder.restaurantId?.location?.formattedAddress) {
@@ -4641,10 +4641,10 @@ export default function DeliveryHome() {
             // Build address from location fields
             const loc = firstOrder.restaurantId.location;
             const parts = [loc.street, loc.city, loc.state, loc.pincode].filter(Boolean);
-            restaurantAddress = parts.join(', ') || 'Restaurant address';
+            restaurantAddress = parts.join(', ') || 'Cafe address';
           }
 
-          console.log('📍 Restaurant address extracted from assigned order:', {
+          console.log('📍 Cafe address extracted from assigned order:', {
             address: restaurantAddress,
             hasRestaurantId: !!firstOrder.restaurantId,
             hasLocation: !!firstOrder.restaurantId?.location
@@ -5320,7 +5320,7 @@ export default function DeliveryHome() {
           if (selectedRestaurant && selectedRestaurant.lat && selectedRestaurant.lng) {
             setTimeout(() => {
               if (!restaurantMarkerRef.current || restaurantMarkerRef.current.getMap() === null) {
-                console.log('📍 Re-adding restaurant marker after tiles loaded');
+                console.log('📍 Re-adding cafe marker after tiles loaded');
                 const restaurantLocation = {
                   lat: selectedRestaurant.lat,
                   lng: selectedRestaurant.lng
@@ -5554,7 +5554,7 @@ export default function DeliveryHome() {
         if (restaurantMarkerRef.current) {
           const markerMap = restaurantMarkerRef.current.getMap();
           if (markerMap === null || markerMap !== window.deliveryMapInstance) {
-            console.warn('⚠️ Restaurant marker lost map reference, re-adding...');
+            console.warn('⚠️ Cafe marker lost map reference, re-adding...');
             const restaurantLocation = {
               lat: selectedRestaurant.lat,
               lng: selectedRestaurant.lng
@@ -5565,7 +5565,7 @@ export default function DeliveryHome() {
           }
         } else {
           // Marker doesn't exist, create it
-          console.warn('⚠️ Restaurant marker missing, creating...');
+          console.warn('⚠️ Cafe marker missing, creating...');
           const restaurantLocation = {
             lat: selectedRestaurant.lat,
             lng: selectedRestaurant.lng
@@ -5635,7 +5635,7 @@ export default function DeliveryHome() {
         zIndex: 10
       });
 
-      console.log('✅ Restaurant marker created/updated on main map');
+      console.log('✅ Cafe marker created/updated on main map');
     } else {
       // Update position if marker exists
       restaurantMarkerRef.current.setPosition({
@@ -6812,7 +6812,7 @@ export default function DeliveryHome() {
     // Update selectedRestaurant with order data from orderReady if we don't have it
     if ((orderReady.orderId || order?.orderId) && order && !selectedRestaurant?.orderId) {
       // Extract restaurant address with multiple fallbacks
-      let restaurantAddress = selectedRestaurant?.address || 'Restaurant Address'
+      let restaurantAddress = selectedRestaurant?.address || 'Cafe Address'
       const restaurantLocation = order.restaurantId?.location
 
       if (order.restaurantId?.address) {
@@ -6874,7 +6874,7 @@ export default function DeliveryHome() {
         orderStatus: 'ready'
       }
       setSelectedRestaurant(restaurantInfo)
-      console.log('🏪 Updated restaurant info from orderReady event:', restaurantInfo)
+      console.log('🏪 Updated cafe info from orderReady event:', restaurantInfo)
     } else if (selectedRestaurant) {
       // Always set orderStatus to 'ready' so location monitor shows Reached Pickup when rider is within 500m
       setSelectedRestaurant(prev => ({ ...prev, orderStatus: 'ready' }))
@@ -6933,7 +6933,7 @@ export default function DeliveryHome() {
     // Always fetch to ensure we have the latest address (even if one exists, it might be incomplete)
     // Only skip if we have a valid non-default address
     if (selectedRestaurant?.address &&
-      selectedRestaurant.address !== 'Restaurant Address' &&
+      selectedRestaurant.address !== 'Cafe Address' &&
       selectedRestaurant.address.length > 20) { // Valid address should be longer than default
       console.log('⏭️ Skipping fetch - address already exists and seems valid:', selectedRestaurant.address)
       return
@@ -6941,7 +6941,7 @@ export default function DeliveryHome() {
 
     const fetchOrderDetails = async () => {
       try {
-        console.log('📋 Fetching order details for restaurant address, orderId:', orderId)
+        console.log('📋 Fetching order details for cafe address, orderId:', orderId)
 
         const response = await deliveryAPI.getOrderDetails(orderId)
 
@@ -6955,7 +6955,7 @@ export default function DeliveryHome() {
           console.log('🔍 order.restaurantId?.location:', order.restaurantId?.location)
 
           // Extract restaurant address with multiple fallbacks
-          let restaurantAddress = selectedRestaurant?.address || 'Restaurant Address'
+          let restaurantAddress = selectedRestaurant?.address || 'Cafe Address'
           const restaurantLocation = order.restaurantId?.location
 
           if (order.restaurantId?.address) {
@@ -7001,17 +7001,17 @@ export default function DeliveryHome() {
             console.log('✅ Fetched order.restaurantAddress:', restaurantAddress)
           } else if (order.restaurant?.address) {
             restaurantAddress = order.restaurant.address
-            console.log('✅ Fetched order.restaurant.address:', restaurantAddress)
+            console.log('✅ Fetched order.cafe.address:', restaurantAddress)
           } else if (order.restaurant?.location?.formattedAddress) {
             restaurantAddress = order.restaurant.location.formattedAddress
-            console.log('✅ Fetched order.restaurant.location.formattedAddress:', restaurantAddress)
+            console.log('✅ Fetched order.cafe.location.formattedAddress:', restaurantAddress)
           } else if (order.restaurant?.location?.address) {
             restaurantAddress = order.restaurant.location.address
-            console.log('✅ Fetched order.restaurant.location.address:', restaurantAddress)
+            console.log('✅ Fetched order.cafe.location.address:', restaurantAddress)
           }
 
           // Update selectedRestaurant with fetched address
-          if (restaurantAddress && restaurantAddress !== 'Restaurant Address') {
+          if (restaurantAddress && restaurantAddress !== 'Cafe Address') {
             setSelectedRestaurant(prev => {
               const updated = {
                 ...prev,
@@ -7029,27 +7029,27 @@ export default function DeliveryHome() {
             const restaurantId = order.restaurantId
             if (restaurantId && (typeof restaurantId === 'string' || typeof restaurantId === 'object')) {
               const restaurantIdString = typeof restaurantId === 'string' ? restaurantId : (restaurantId._id || restaurantId.id || restaurantId.toString())
-              console.log('🔄 Address not found in order, fetching restaurant details by ID:', restaurantIdString)
+              console.log('🔄 Address not found in order, fetching cafe details by ID:', restaurantIdString)
 
               try {
                 const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantIdString)
                 if (restaurantResponse.data?.success && restaurantResponse.data.data) {
                   const restaurant = restaurantResponse.data.data.restaurant || restaurantResponse.data.data
-                  console.log('✅ Fetched restaurant details:', restaurant)
+                  console.log('✅ Fetched cafe details:', restaurant)
 
                   // Extract address from restaurant location.formattedAddress (priority)
-                  let fetchedAddress = 'Restaurant Address'
+                  let fetchedAddress = 'Cafe Address'
                   const restLocation = restaurant.location
 
                   if (restLocation?.formattedAddress) {
                     fetchedAddress = restLocation.formattedAddress
-                    console.log('✅ Using restaurant.location.formattedAddress:', fetchedAddress)
+                    console.log('✅ Using cafe.location.formattedAddress:', fetchedAddress)
                   } else if (restaurant.address) {
                     fetchedAddress = restaurant.address
-                    console.log('✅ Using restaurant.address:', fetchedAddress)
+                    console.log('✅ Using cafe.address:', fetchedAddress)
                   } else if (restLocation?.address) {
                     fetchedAddress = restLocation.address
-                    console.log('✅ Using restaurant.location.address:', fetchedAddress)
+                    console.log('✅ Using cafe.location.address:', fetchedAddress)
                   } else if (restLocation?.street) {
                     const addressParts = [
                       restLocation.street,
@@ -7059,7 +7059,7 @@ export default function DeliveryHome() {
                       restLocation.zipCode || restLocation.pincode || restLocation.postalCode
                     ].filter(Boolean)
                     fetchedAddress = addressParts.join(', ')
-                    console.log('✅ Built address from restaurant location components:', fetchedAddress)
+                    console.log('✅ Built address from cafe location components:', fetchedAddress)
                   } else if (restLocation?.addressLine1) {
                     const addressParts = [
                       restLocation.addressLine1,
@@ -7068,7 +7068,7 @@ export default function DeliveryHome() {
                       restLocation.state
                     ].filter(Boolean)
                     fetchedAddress = addressParts.join(', ')
-                    console.log('✅ Built address from restaurant location addressLine1:', fetchedAddress)
+                    console.log('✅ Built address from cafe location addressLine1:', fetchedAddress)
                   } else if (restaurant.street || restaurant.city) {
                     const addressParts = [
                       restaurant.street,
@@ -7078,12 +7078,12 @@ export default function DeliveryHome() {
                       restaurant.zipCode || restaurant.pincode || restaurant.postalCode
                     ].filter(Boolean)
                     fetchedAddress = addressParts.join(', ')
-                    console.log('✅ Built address from restaurant fields:', fetchedAddress)
+                    console.log('✅ Built address from cafe fields:', fetchedAddress)
                   }
 
                   // Update selectedRestaurant with fetched address and phone
                   const updates = {}
-                  if (fetchedAddress && fetchedAddress !== 'Restaurant Address') {
+                  if (fetchedAddress && fetchedAddress !== 'Cafe Address') {
                     updates.address = fetchedAddress
                   }
 
@@ -7092,7 +7092,7 @@ export default function DeliveryHome() {
                   if (restaurantPhone) {
                     updates.phone = restaurantPhone
                     updates.ownerPhone = restaurant.ownerPhone || restaurantPhone
-                    console.log('✅ Fetched restaurant phone:', restaurantPhone)
+                    console.log('✅ Fetched cafe phone:', restaurantPhone)
                   }
 
                   if (Object.keys(updates).length > 0) {
@@ -7100,10 +7100,10 @@ export default function DeliveryHome() {
                       ...prev,
                       ...updates
                     }))
-                    console.log('✅ Updated selectedRestaurant with restaurant API data:', updates)
+                    console.log('✅ Updated selectedRestaurant with cafe API data:', updates)
                     return // Exit early since we got the data
                   } else {
-                    console.warn('⚠️ Could not extract address or phone from restaurant data:', {
+                    console.warn('⚠️ Could not extract address or phone from cafe data:', {
                       restaurantKeys: Object.keys(restaurant),
                       hasLocation: !!restLocation,
                       locationKeys: restLocation ? Object.keys(restLocation) : [],
@@ -7114,11 +7114,11 @@ export default function DeliveryHome() {
                   }
                 }
               } catch (restaurantError) {
-                console.error('❌ Error fetching restaurant details:', restaurantError)
+                console.error('❌ Error fetching cafe details:', restaurantError)
               }
             }
 
-            console.warn('⚠️ Could not extract restaurant address from order or restaurant API:', {
+            console.warn('⚠️ Could not extract cafe address from order or cafe API:', {
               orderKeys: Object.keys(order),
               hasRestaurantId: !!order.restaurantId,
               restaurantIdType: typeof order.restaurantId,
@@ -7127,7 +7127,7 @@ export default function DeliveryHome() {
           }
         }
       } catch (error) {
-        console.error('❌ Error fetching order details for restaurant address:', error)
+        console.error('❌ Error fetching order details for cafe address:', error)
       }
     }
 
@@ -7335,7 +7335,7 @@ export default function DeliveryHome() {
             if (riderLocation && window.deliveryMapInstance) {
               // Update live tracking polyline with route to customer (Restaurant → Customer)
               updateLiveTrackingPolyline(directionsResult, riderLocation);
-              console.log('✅ Live tracking polyline updated for delivery route (Restaurant → Customer)');
+              console.log('✅ Live tracking polyline updated for delivery route (Cafe → Customer)');
             } else {
               // Wait for map to be ready
               setTimeout(() => {
@@ -7843,8 +7843,8 @@ export default function DeliveryHome() {
     value &&
     typeof value === 'string' &&
     value.trim() &&
-    value !== 'Restaurant Address' &&
-    value !== 'Restaurant address' &&
+    value !== 'Cafe Address' &&
+    value !== 'Cafe address' &&
     value !== 'Address'
   )
 
@@ -9766,14 +9766,14 @@ export default function DeliveryHome() {
           {/* Restaurant Info */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-[#1E1E1E] mb-2">
-              {selectedRestaurant?.name || 'Restaurant Name'}
+              {selectedRestaurant?.name || 'Cafe Name'}
             </h2>
             <p className="text-gray-600 mb-2 leading-relaxed">
               {(() => {
                 const address = selectedRestaurant?.address;
 
                 // If address is default or missing, try to find it in other fields
-                if (!address || address === 'Restaurant Address' || address === 'Restaurant address') {
+                if (!address || address === 'Cafe Address' || address === 'Cafe address') {
                   // Check if address might be in a different field
                   const possibleAddress =
                     selectedRestaurant?.restaurantAddress ||
@@ -9784,12 +9784,12 @@ export default function DeliveryHome() {
                     selectedRestaurant?.location?.address ||
                     selectedRestaurant?.location?.formattedAddress;
 
-                  if (possibleAddress && possibleAddress !== 'Restaurant Address' && possibleAddress !== 'Restaurant address') {
+                  if (possibleAddress && possibleAddress !== 'Cafe Address' && possibleAddress !== 'Cafe address') {
                     return possibleAddress;
                   }
                 }
 
-                return address && address !== 'Restaurant Address' && address !== 'Restaurant address'
+                return address && address !== 'Cafe Address' && address !== 'Cafe address'
                   ? address
                   : 'Address will be updated...';
               })()}
@@ -9870,7 +9870,7 @@ export default function DeliveryHome() {
 
                         if (restaurantId) {
                           try {
-                            console.log('📞 [CALL] Trying restaurant API directly with ID:', restaurantId)
+                            console.log('📞 [CALL] Trying cafe API directly with ID:', restaurantId)
                             const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantId)
                             if (restaurantResponse.data?.success && restaurantResponse.data.data) {
                               const restaurant = restaurantResponse.data.data.restaurant || restaurantResponse.data.data
@@ -9882,11 +9882,11 @@ export default function DeliveryHome() {
                                   phone: restaurantPhone,
                                   ownerPhone: restaurant.ownerPhone || restaurantPhone
                                 })
-                                console.log('✅ [CALL] Updated selectedRestaurant with phone from restaurant API:', restaurantPhone)
+                                console.log('✅ [CALL] Updated selectedRestaurant with phone from cafe API:', restaurantPhone)
                               }
                             }
                           } catch (restaurantError) {
-                            console.error('❌ [CALL] Error fetching restaurant by ID:', restaurantError)
+                            console.error('❌ [CALL] Error fetching cafe by ID:', restaurantError)
                           }
                         }
                       }
@@ -9913,11 +9913,11 @@ export default function DeliveryHome() {
                 if (restaurantPhone) {
                   // Remove any spaces, dashes, or special characters except + and digits
                   const cleanPhone = restaurantPhone.replace(/[^\d+]/g, '')
-                  console.log('📞 Calling restaurant:', { original: restaurantPhone, clean: cleanPhone })
+                  console.log('📞 Calling cafe:', { original: restaurantPhone, clean: cleanPhone })
                   window.location.href = `tel:${cleanPhone}`
                 } else {
-                  toast.error('Restaurant phone number not available. Please contact support.')
-                  console.error('❌ Restaurant phone not found in any path:', {
+                  toast.error('Cafe phone number not available. Please contact support.')
+                  console.error('❌ Cafe phone not found in any path:', {
                     selectedRestaurant,
                     hasPhone: !!selectedRestaurant?.phone,
                     hasRestaurantIdPhone: !!selectedRestaurant?.restaurantId?.phone,
@@ -9974,8 +9974,8 @@ export default function DeliveryHome() {
                   routeRestaurantLng
 
                 if (!hasValidCoordinates(restaurantLat, restaurantLng)) {
-                  toast.error('Restaurant location not available')
-                  console.error('❌ Restaurant coordinates not found:', {
+                  toast.error('Cafe location not available')
+                  console.error('❌ Cafe coordinates not found:', {
                     lat: restaurantLat,
                     lng: restaurantLng,
                     selectedRestaurant
@@ -9983,7 +9983,7 @@ export default function DeliveryHome() {
                   return
                 }
 
-                console.log('🗺️ Opening Google Maps navigation to restaurant:', {
+                console.log('🗺️ Opening Google Maps navigation to cafe:', {
                   lat: restaurantLat,
                   lng: restaurantLng,
                   name: selectedRestaurant?.name
@@ -10131,7 +10131,7 @@ export default function DeliveryHome() {
               Confirm Order ID
             </h2>
             <p className="text-gray-600 text-sm mb-4">
-              Please verify the order ID with the restaurant before pickup
+              Please verify the order ID with the cafe before pickup
             </p>
 
             {/* Order ID Display - single line, scroll horizontally if needed */}
@@ -11221,7 +11221,17 @@ export default function DeliveryHome() {
                   <div className="flex items-center justify-between pt-3" style={{ borderTop: '1.5px solid #F5F5F5' }}>
                     <p className="text-sm" style={{ color: '#555' }}>Payment Method</p>
                     <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
-                      {digitalBillData.payment?.method === 'cash' ? 'Cash on Delivery' : 'Online Payment'}
+                      {(() => {
+                        const method = (digitalBillData.payment?.method || '').toLowerCase().trim();
+                        if (method === 'cash' || method === 'cod') return 'Cash on Delivery';
+                        if (method === 'wallet') return 'Wallet';
+                        if (method === 'upi') return 'UPI';
+                        if (method === 'card') return 'Card';
+                        if (method === 'razorpay') return 'Online Payment';
+                        if (method) return method.charAt(0).toUpperCase() + method.slice(1);
+                        return 'Online Payment';
+                      })()}
+
                     </p>
                   </div>
 

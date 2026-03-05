@@ -26,7 +26,7 @@ import { exportReportsToCSV, exportReportsToExcel, exportReportsToPDF, exportRep
 export default function CampaignOrderReport() {
   const [filters, setFilters] = useState({
     campaign: "All Campaignes",
-    restaurant: "All restaurants",
+    restaurant: "All cafes",
     customer: "All customers",
     time: "All Time",
   })
@@ -51,7 +51,7 @@ export default function CampaignOrderReport() {
       // Filter by campaign if needed
     }
 
-    if (filters.restaurant !== "All restaurants") {
+    if (filters.restaurant !== "All cafes") {
       result = result.filter(o => o.restaurant === filters.restaurant)
     }
 
@@ -91,13 +91,13 @@ export default function CampaignOrderReport() {
   const handleResetFilters = () => {
     setFilters({
       campaign: "All Campaignes",
-      restaurant: "All restaurants",
+      restaurant: "All cafes",
       customer: "All customers",
       time: "All Time",
     })
   }
 
-  const activeFiltersCount = (filters.campaign !== "All Campaignes" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.campaign !== "All Campaignes" ? 1 : 0) + (filters.restaurant !== "All cafes" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   const getStatusBadge = (status) => {
     const statusColors = {
@@ -143,14 +143,14 @@ export default function CampaignOrderReport() {
 
               <div className="relative flex-1 min-w-[180px]">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Restaurant
+                  Cafe
                 </label>
                 <select
                   value={filters.restaurant}
                   onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
                   className="w-full px-3 py-2 pr-8 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="All restaurants">All restaurants</option>
+                  <option value="All cafes">All cafes</option>
                   <option value="Hungry Puppets">Hungry Puppets</option>
                   <option value="Café Monarch">Café Monarch</option>
                 </select>
@@ -307,7 +307,7 @@ export default function CampaignOrderReport() {
               <div className="relative flex-1 sm:flex-initial min-w-[220px]">
                 <input
                   type="text"
-                  placeholder="Search by Order ID, Restaurant, Customer"
+                  placeholder="Search by Order ID, Cafe, Customer"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-3 pr-9 py-2 w-full text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -365,7 +365,7 @@ export default function CampaignOrderReport() {
                     Order Id
                   </th>
                   <th className="px-3 py-2 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">
-                    Restaurant
+                    Cafe
                   </th>
                   <th className="px-3 py-2 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">
                     Customer Name

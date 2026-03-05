@@ -49,7 +49,7 @@ export default function RestaurantStatus() {
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          console.error("Error fetching restaurant data:", error)
+          console.error("Error fetching cafe data:", error)
         }
         // Continue with default values if fetch fails
       } finally {
@@ -405,8 +405,8 @@ export default function RestaurantStatus() {
             <ArrowLeft className="w-6 h-6 text-gray-900" />
           </button>
           <div className="flex-1">
-            <h1 className="text-lg font-bold text-gray-900">Restaurant status</h1>
-            <p className="text-sm text-gray-500 mt-0.5">You are mapped to 1 restaurant</p>
+            <h1 className="text-lg font-bold text-gray-900">Cafe status</h1>
+            <p className="text-sm text-gray-500 mt-0.5">You are mapped to 1 cafe</p>
           </div>
         </div>
       </div>

@@ -33,11 +33,11 @@ const checkData = async () => {
         const restaurant = await Restaurant.findOne({ restaurantId });
 
         if (!restaurant) {
-            console.log("❌ Restaurant not found!");
+            console.log("❌ Cafe not found!");
             process.exit(1);
         }
 
-        console.log("✅ Restaurant found:");
+        console.log("✅ Cafe found:");
         console.log(`   - Name: ${restaurant.name}`);
         console.log(`   - ID: ${restaurant._id}`);
         console.log(`   - Active: ${restaurant.isActive}`);

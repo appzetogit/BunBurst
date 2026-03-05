@@ -1,6 +1,7 @@
 import SafetyEmergency from '../models/SafetyEmergency.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
+import mongoose from 'mongoose';
 
 /**
  * Create Safety Emergency Report (Public - User)
@@ -10,14 +11,33 @@ export const createSafetyEmergency = asyncHandler(async (req, res) => {
   try {
     const { message } = req.body;
 
-    if (!message || !message.trim()) {
+    if (!req.user || !req.user._id) {
+      return errorResponse(res, 401, 'Authentication required');
+    }
+
+    if (typeof message !== 'string' || !message.trim()) {
       return errorResponse(res, 400, 'Safety emergency message is required');
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return errorResponse(res, 500, 'Something went wrong');
     }
 
     // Get user info from request (user is authenticated via middleware)
     const userId = req.user._id;
-    const userName = req.user.name || req.user.firstName || req.user.email?.split('@')[0] || 'User';
-    const userEmail = req.user.email || '';
+    const userName =
+      req.user.name ||
+      req.user.firstName ||
+      req.user.email?.split('@')[0] ||
+      req.user.phone ||
+      'User';
+    // SafetyEmergency schema requires userEmail, but phone-only users may not have email.
+    // Store the best available contact identifier to avoid validation failures.
+    const userEmail =
+      req.user.email ||
+      req.user.googleEmail ||
+      req.user.phone ||
+      `user-${String(userId).slice(-6)}@unknown.local`;
 
     // Auto-detect priority based on keywords
     const messageLower = message.toLowerCase();
@@ -39,8 +59,8 @@ export const createSafetyEmergency = asyncHandler(async (req, res) => {
 
     return successResponse(res, 201, 'Safety emergency report submitted successfully', safetyEmergency);
   } catch (error) {
-    console.error('Error creating safety emergency report:', error);
-    return errorResponse(res, 500, 'Failed to submit safety emergency report');
+    console.error('Safety Emergency Error:', error);
+    return errorResponse(res, 500, 'Something went wrong');
   }
 });
 

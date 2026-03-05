@@ -33,7 +33,7 @@ export default function RestaurantSignupEmail() {
     setError("")
 
     if (!formData.name.trim()) {
-      setError("Restaurant name is required")
+      setError("Cafe name is required")
       return
     }
 
@@ -200,7 +200,7 @@ export default function RestaurantSignupEmail() {
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
           src={loginBg}
-          alt="Restaurant background"
+          alt="Cafe background"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 flex items-center text-white pointer-events-none">
@@ -211,7 +211,7 @@ export default function RestaurantSignupEmail() {
               FOOD PLATFORM
             </h1>
             <p className="text-base xl:text-lg opacity-95 max-w-xl">
-              Create your restaurant account and start managing your business today.
+              Create your cafe account and start managing your business today.
             </p>
           </div>
         </div>
@@ -230,7 +230,7 @@ export default function RestaurantSignupEmail() {
                 {companyName}
               </span>
               <span className="text-xs font-medium text-gray-500">
-                Restaurant Panel
+                Cafe Panel
               </span>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function RestaurantSignupEmail() {
               </CardTitle>
               <CardDescription className="text-sm text-gray-500">
                 {step === 1
-                  ? "Sign up to start managing your restaurant"
+                  ? "Sign up to start managing your cafe"
                   : "Enter the verification code sent to your email"}
               </CardDescription>
             </CardHeader>
@@ -261,7 +261,7 @@ export default function RestaurantSignupEmail() {
                 <form onSubmit={handleFormSubmit} className="space-y-5">
                   <div className="space-y-1.5">
                     <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                      Restaurant Name
+                      Cafe Name
                     </Label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
@@ -270,7 +270,7 @@ export default function RestaurantSignupEmail() {
                       <Input
                         id="name"
                         type="text"
-                        placeholder="Your Restaurant Name"
+                        placeholder="Your Cafe Name"
                         value={formData.name}
                         onChange={(e) =>
                           setFormData({ ...formData, name: e.target.value })

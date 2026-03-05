@@ -112,7 +112,7 @@ export default function RestaurantDetails() {
         setLoadingRestaurant(true)
         setRestaurantError(null)
 
-        console.log('Fetching restaurant with slug:', slug)
+        console.log('Fetching cafe with slug:', slug)
         let response = null
         let apiRestaurant = null
 
@@ -121,12 +121,12 @@ export default function RestaurantDetails() {
           response = await diningAPI.getRestaurantBySlug(slug)
           if (response.data && response.data.success && response.data.data) {
             apiRestaurant = response.data.data
-            console.log('✅ Found restaurant in dining API:', apiRestaurant)
+            console.log('✅ Found cafe in dining API:', apiRestaurant)
           }
         } catch (diningError) {
           // If dining API fails with 404, try restaurant API
           if (diningError.response?.status === 404) {
-            console.log('⚠️ Restaurant not found in dining API, trying restaurant API...')
+            console.log('⚠️ Cafe not found in dining API, trying cafe API...')
             try {
               // First, try to get restaurant directly by slug (getRestaurantById supports both ID and slug)
               // This doesn't require zoneId, so it works even if zone is not detected
@@ -134,7 +134,7 @@ export default function RestaurantDetails() {
                 response = await restaurantAPI.getRestaurantById(slug)
                 if (response.data && response.data.success && response.data.data) {
                   apiRestaurant = response.data.data
-                  console.log('✅ Found restaurant in restaurant API by slug/ID:', apiRestaurant)
+                  console.log('✅ Found cafe in cafe API by slug/ID:', apiRestaurant)
                 }
               } catch (directLookupError) {
                 // If direct lookup fails, try searching by name (requires zoneId)
@@ -142,7 +142,7 @@ export default function RestaurantDetails() {
 
                 // Only search if zoneId is available (zoneId is required by backend for search)
                 if (!zoneId) {
-                  console.warn('⚠️ User zone not available, cannot search restaurants. Restaurant may not be found.')
+                  console.warn('⚠️ User zone not available, cannot search cafes. Cafe may not be found.')
                   // Don't throw error - let it fall through to show "Restaurant not found" message
                 } else {
                   // Include zoneId for zone-based filtering
@@ -163,13 +163,13 @@ export default function RestaurantDetails() {
                     const fullResponse = await restaurantAPI.getRestaurantById(matchingRestaurant._id || matchingRestaurant.restaurantId)
                     if (fullResponse.data && fullResponse.data.success && fullResponse.data.data) {
                       apiRestaurant = fullResponse.data.data
-                      console.log('✅ Found restaurant in restaurant API by name search:', apiRestaurant)
+                      console.log('✅ Found cafe in cafe API by name search:', apiRestaurant)
                     }
                   }
                 }
               }
             } catch (restaurantError) {
-              console.error('❌ Restaurant not found in restaurant API either:', restaurantError)
+              console.error('❌ Cafe not found in cafe API either:', restaurantError)
               // Only throw if we haven't found the restaurant yet
               if (!apiRestaurant) {
                 throw diningError // Throw original error to show "Restaurant not found"
@@ -181,12 +181,12 @@ export default function RestaurantDetails() {
         }
 
         if (apiRestaurant) {
-          console.log('✅ Fetched restaurant from API:', apiRestaurant)
-          console.log('📋 Restaurant data keys:', Object.keys(apiRestaurant))
-          console.log('📋 Restaurant name field:', apiRestaurant?.name)
-          console.log('📋 Restaurant restaurantId:', apiRestaurant?.restaurantId)
-          console.log('📋 Restaurant _id:', apiRestaurant?._id)
-          console.log('📋 Restaurant.restaurant:', apiRestaurant?.restaurant)
+          console.log('✅ Fetched cafe from API:', apiRestaurant)
+          console.log('📋 Cafe data keys:', Object.keys(apiRestaurant))
+          console.log('📋 Cafe name field:', apiRestaurant?.name)
+          console.log('📋 Cafe restaurantId:', apiRestaurant?.restaurantId)
+          console.log('📋 Cafe _id:', apiRestaurant?._id)
+          console.log('📋 Cafe.cafe:', apiRestaurant?.restaurant)
 
           // Check if this is a dining restaurant with nested restaurant data
           const actualRestaurant = apiRestaurant?.restaurant || apiRestaurant
@@ -310,7 +310,7 @@ export default function RestaurantDetails() {
           const restaurantLat = locationObj?.latitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[1] : null)
           const restaurantLng = locationObj?.longitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[0] : null)
 
-          console.log('📍 Restaurant coordinates:', { restaurantLat, restaurantLng, locationObj })
+          console.log('📍 Cafe coordinates:', { restaurantLat, restaurantLng, locationObj })
 
           // Get user coordinates
           const userLat = userLocation?.latitude
@@ -330,7 +330,7 @@ export default function RestaurantDetails() {
               const distanceInMeters = Math.round(distanceInKm * 1000)
               calculatedDistance = `${distanceInMeters} m`
             }
-            console.log('✅ Calculated distance from user to restaurant:', calculatedDistance, 'km:', distanceInKm)
+            console.log('✅ Calculated distance from user to cafe:', calculatedDistance, 'km:', distanceInKm)
           } else {
             console.warn('⚠️ Cannot calculate distance - missing coordinates:', {
               hasUserLocation: !!(userLat && userLng),
@@ -346,7 +346,7 @@ export default function RestaurantDetails() {
           // Handle both dining restaurant and regular restaurant data structures
           const transformedRestaurant = {
             id: actualRestaurant?.restaurantId || actualRestaurant?._id || actualRestaurant?.id || apiRestaurant?.restaurantId || apiRestaurant?._id || null,
-            name: actualRestaurant?.name || apiRestaurant?.name || apiRestaurant?.restaurantName || "Unknown Restaurant",
+            name: actualRestaurant?.name || apiRestaurant?.name || apiRestaurant?.restaurantName || "Unknown Cafe",
             cuisine: (actualRestaurant?.cuisines && Array.isArray(actualRestaurant.cuisines) && actualRestaurant.cuisines.length > 0)
               ? actualRestaurant.cuisines[0]
               : (apiRestaurant?.cuisines && Array.isArray(apiRestaurant.cuisines) && apiRestaurant.cuisines.length > 0)
@@ -410,11 +410,11 @@ export default function RestaurantDetails() {
             isAcceptingOrders: actualRestaurant?.isAcceptingOrders !== false, // Default to true if not specified
           }
 
-          console.log('✅ Transformed restaurant:', transformedRestaurant)
-          console.log('✅ Restaurant ID for menu fetch:', transformedRestaurant.id)
+          console.log('✅ Transformed cafe:', transformedRestaurant)
+          console.log('✅ Cafe ID for menu fetch:', transformedRestaurant.id)
 
           if (!transformedRestaurant.id) {
-            console.error('❌ No restaurant ID found! Cannot fetch menu.')
+            console.error('❌ No cafe ID found! Cannot fetch menu.')
           }
 
           setRestaurant(transformedRestaurant)
@@ -425,11 +425,11 @@ export default function RestaurantDetails() {
           let restaurantIdForMenu = transformedRestaurant.id
 
           if (!restaurantIdForMenu) {
-            console.warn('⚠️ No restaurant ID available, searching for restaurant by name...')
+            console.warn('⚠️ No cafe ID available, searching for cafe by name...')
             try {
               // CRITICAL: Only search if zoneId is available (zoneId is required by backend)
               if (!zoneId) {
-                console.warn('⚠️ User zone not available, cannot search restaurants. Menu may not load.')
+                console.warn('⚠️ User zone not available, cannot search cafes. Menu may not load.')
                 // Continue without menu - restaurant details are still available
                 return
               }
@@ -446,7 +446,7 @@ export default function RestaurantDetails() {
 
               if (matchingRestaurant) {
                 restaurantIdForMenu = matchingRestaurant._id || matchingRestaurant.restaurantId || matchingRestaurant.id
-                console.log('✅ Found matching restaurant by name, ID:', restaurantIdForMenu)
+                console.log('✅ Found matching cafe by name, ID:', restaurantIdForMenu)
 
                 // Update the restaurant ID in state
                 setRestaurant(prev => ({
@@ -455,16 +455,16 @@ export default function RestaurantDetails() {
                   restaurantId: restaurantIdForMenu
                 }))
               } else {
-                console.warn('⚠️ No matching restaurant found by name')
+                console.warn('⚠️ No matching cafe found by name')
               }
             } catch (searchError) {
-              console.error('❌ Error searching for restaurant:', searchError)
+              console.error('❌ Error searching for cafe:', searchError)
             }
           }
 
           if (restaurantIdForMenu) {
             try {
-              console.log('📋 Fetching menu for restaurant ID:', restaurantIdForMenu)
+              console.log('📋 Fetching menu for cafe ID:', restaurantIdForMenu)
               const menuResponse = await restaurantAPI.getMenuByRestaurantId(restaurantIdForMenu)
               if (menuResponse.data && menuResponse.data.success && menuResponse.data.data && menuResponse.data.data.menu) {
                 const menuSections = menuResponse.data.data.menu.sections || []
@@ -553,14 +553,14 @@ export default function RestaurantDetails() {
               }
             } catch (menuError) {
               if (menuError.response && menuError.response.status === 404) {
-                console.log('⚠️ Menu not found for this restaurant (might be a dining-only listing).')
+                console.log('⚠️ Menu not found for this cafe (might be a dining-only listing).')
               } else {
                 console.error('❌ Error fetching menu:', menuError)
               }
             }
 
             try {
-              console.log('📋 Fetching inventory for restaurant ID:', restaurantIdForMenu)
+              console.log('📋 Fetching inventory for cafe ID:', restaurantIdForMenu)
               const inventoryResponse = await restaurantAPI.getInventoryByRestaurantId(restaurantIdForMenu)
               if (inventoryResponse.data && inventoryResponse.data.success && inventoryResponse.data.data && inventoryResponse.data.data.inventory) {
                 const inventoryCategories = inventoryResponse.data.data.inventory.categories || []
@@ -593,17 +593,17 @@ export default function RestaurantDetails() {
               }
             } catch (inventoryError) {
               if (inventoryError.response && inventoryError.response.status === 404) {
-                console.log('⚠️ Inventory not found for this restaurant (might be a dining-only listing).')
+                console.log('⚠️ Inventory not found for this cafe (might be a dining-only listing).')
               } else {
                 console.error('❌ Error fetching inventory:', inventoryError)
               }
             }
           }
         } else {
-          console.error('❌ No restaurant data found in API response')
+          console.error('❌ No cafe data found in API response')
           console.error('❌ Response:', response)
           console.error('❌ apiRestaurant:', apiRestaurant)
-          setRestaurantError('Restaurant not found')
+          setRestaurantError('Cafe not found')
           setRestaurant(null)
         }
       } catch (error) {
@@ -617,18 +617,18 @@ export default function RestaurantDetails() {
           // Network error - backend is not running
           // Don't show "Restaurant not found" for network errors
           // The axios interceptor will show a toast notification
-          console.error('Network error fetching restaurant (backend may not be running):', error)
+          console.error('Network error fetching cafe (backend may not be running):', error)
           setRestaurantError('Backend server is not connected. Please make sure the backend is running.')
           setRestaurant(null)
         } else if (is404Error) {
           // 404 error - restaurant doesn't exist in database
           console.log(`Restaurant "${slug}" not found in database`)
-          setRestaurantError('Restaurant not found')
+          setRestaurantError('Cafe not found')
           setRestaurant(null)
         } else {
           // Other errors
-          console.error('Error fetching restaurant:', error)
-          setRestaurantError(error.message || 'Failed to load restaurant')
+          console.error('Error fetching cafe:', error)
+          setRestaurantError(error.message || 'Failed to load cafe')
           setRestaurant(null)
         }
       } finally {
@@ -644,7 +644,7 @@ export default function RestaurantDetails() {
     // Wait for zone to load before fetching (if zone-based search might be needed)
     // But don't block if we're fetching by direct ID
     if (loadingZone) {
-      console.log('⏳ Waiting for zone detection before fetching restaurant...')
+      console.log('⏳ Waiting for zone detection before fetching cafe...')
       return
     }
 
@@ -717,7 +717,7 @@ export default function RestaurantDetails() {
 
       // Only update if distance actually changed
       if (calculatedDistance !== prevDistanceRef.current) {
-        console.log('🔄 Recalculated distance from user to restaurant:', calculatedDistance, 'km:', distanceInKm)
+        console.log('🔄 Recalculated distance from user to cafe:', calculatedDistance, 'km:', distanceInKm)
         prevDistanceRef.current = calculatedDistance
 
         // Update restaurant distance
@@ -777,16 +777,16 @@ export default function RestaurantDetails() {
 
     // CRITICAL: Validate restaurant data before adding to cart
     if (!restaurant || !restaurant.name) {
-      console.error('❌ Cannot add item to cart: Restaurant data is missing!');
-      toast.error('Restaurant information is missing. Please refresh the page.');
+      console.error('❌ Cannot add item to cart: Cafe data is missing!');
+      toast.error('Cafe information is missing. Please refresh the page.');
       return;
     }
 
     // Ensure we have a valid restaurantId
     const validRestaurantId = restaurant?.restaurantId || restaurant?._id || restaurant?.id;
     if (!validRestaurantId) {
-      console.error('❌ Cannot add item to cart: Restaurant ID is missing!');
-      toast.error('Restaurant ID is missing. Please refresh the page.');
+      console.error('❌ Cannot add item to cart: Cafe ID is missing!');
+      toast.error('Cafe ID is missing. Please refresh the page.');
       return;
     }
 
@@ -893,7 +893,7 @@ export default function RestaurantDetails() {
   const handleBookmarkClick = (item) => {
     const restaurantId = restaurant?.restaurantId || restaurant?._id || restaurant?.id
     if (!restaurantId) {
-      toast.error("Restaurant information is missing")
+      toast.error("Cafe information is missing")
       return
     }
 
@@ -935,12 +935,12 @@ export default function RestaurantDetails() {
     const restaurantSlug = restaurant?.slug || slug || ""
 
     if (!restaurantSlug) {
-      toast.error("Restaurant information is missing")
+      toast.error("Cafe information is missing")
       return
     }
 
     if (!restaurant) {
-      toast.error("Restaurant data not available")
+      toast.error("Cafe data not available")
       return
     }
 
@@ -949,7 +949,7 @@ export default function RestaurantDetails() {
     if (isAlreadyFavorite) {
       // Remove from collection
       removeFavorite(restaurantSlug)
-      toast.success("Restaurant removed from collection")
+      toast.success("Cafe removed from collection")
     } else {
       // Add to collection
       addFavorite({
@@ -962,7 +962,7 @@ export default function RestaurantDetails() {
         priceRange: restaurant.priceRange || "",
         image: restaurant.profileImageUrl?.url || restaurant.image || ""
       })
-      toast.success("Restaurant added to collection")
+      toast.success("Cafe added to collection")
     }
 
     setShowMenuOptionsSheet(false)
@@ -972,7 +972,7 @@ export default function RestaurantDetails() {
   const handleShareRestaurant = async () => {
     const companyName = await getCompanyNameAsync()
     const restaurantSlug = restaurant?.slug || slug || ""
-    const restaurantName = restaurant?.name || "this restaurant"
+    const restaurantName = restaurant?.name || "this cafe"
 
     // Create share URL
     const shareUrl = `${window.location.origin}/user/restaurants/${restaurantSlug}`
@@ -986,7 +986,7 @@ export default function RestaurantDetails() {
           text: shareText,
           url: shareUrl,
         })
-        toast.success("Restaurant shared successfully")
+        toast.success("Cafe shared successfully")
         setShowMenuOptionsSheet(false)
       } catch (error) {
         // User cancelled or error occurred
@@ -1011,7 +1011,7 @@ export default function RestaurantDetails() {
 
     // Create share URL
     const shareUrl = `${window.location.origin}/user/restaurants/${restaurantSlug}?dish=${dishId}`
-    const shareText = `Check out ${item.name} from ${restaurant?.name || "this restaurant"}! ${shareUrl}`
+    const shareText = `Check out ${item.name} from ${restaurant?.name || "this cafe"}! ${shareUrl}`
 
     // Try Web Share API first (mobile)
     if (navigator.share) {
@@ -1256,7 +1256,7 @@ export default function RestaurantDetails() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 text-green-600 animate-spin" />
-            <span className="text-sm text-gray-600">Loading restaurant...</span>
+            <span className="text-sm text-gray-600">Loading cafe...</span>
           </div>
         </div>
       </AnimatedPage>
@@ -1266,7 +1266,7 @@ export default function RestaurantDetails() {
   // Show error state if restaurant not found or network error
   if (restaurantError && !restaurant) {
     const isNetworkError = restaurantError.includes('Backend server is not connected')
-    const isNotFoundError = restaurantError === 'Restaurant not found'
+    const isNotFoundError = restaurantError === 'Cafe not found'
 
     return (
       <AnimatedPage>
@@ -1275,7 +1275,7 @@ export default function RestaurantDetails() {
             <AlertCircle className={`h-12 w-12 ${isNetworkError ? 'text-orange-500' : 'text-red-500'}`} />
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                {isNetworkError ? 'Connection Error' : isNotFoundError ? 'Restaurant not found' : 'Error'}
+                {isNetworkError ? 'Connection Error' : isNotFoundError ? 'Cafe not found' : 'Error'}
               </h2>
               <p className="text-sm text-gray-600 mb-4 max-w-md">{restaurantError}</p>
               {isNetworkError && (
@@ -1300,7 +1300,7 @@ export default function RestaurantDetails() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <AlertCircle className="h-12 w-12 text-red-500" />
-            <span className="text-sm text-gray-600">Restaurant not found</span>
+            <span className="text-sm text-gray-600">Cafe not found</span>
             <Button onClick={() => navigate(-1)} variant="outline">
               Go Back
             </Button>
@@ -1392,7 +1392,7 @@ export default function RestaurantDetails() {
           {/* Restaurant Name and Rating */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{restaurant?.name || "Unknown Restaurant"}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{restaurant?.name || "Unknown Cafe"}</h1>
               <Info className="h-5 w-5 text-gray-400" />
             </div>
             <div className="flex flex-col items-end">
@@ -2324,7 +2324,7 @@ export default function RestaurantDetails() {
                       <div className="w-8 h-8 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center">
                         <span className="text-white font-bold text-base">{(restaurant.name || "R").charAt(0).toUpperCase()}</span>
                       </div>
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">{restaurant?.name || "Unknown Restaurant"}</h2>
+                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">{restaurant?.name || "Unknown Cafe"}</h2>
                     </div>
                   </div>
 
@@ -2469,7 +2469,7 @@ export default function RestaurantDetails() {
                           )}
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {getDishFavorites().length} dishes • {getFavorites().length} restaurant
+                          {getDishFavorites().length} dishes • {getFavorites().length} cafe
                         </p>
                       </div>
                     </button>
@@ -2912,7 +2912,7 @@ export default function RestaurantDetails() {
                   {/* Header */}
                   <div className="px-4 pt-6 pb-4 border-b border-gray-200 dark:border-gray-800">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      Offers at {restaurant?.name || "Unknown Restaurant"}
+                      Offers at {restaurant?.name || "Unknown Cafe"}
                     </h2>
                   </div>
 
@@ -2952,7 +2952,7 @@ export default function RestaurantDetails() {
                     {restaurant?.restaurantOffers?.coupons && Array.isArray(restaurant.restaurantOffers.coupons) && restaurant.restaurantOffers.coupons.length > 0 && (
                       <div>
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                          Restaurant coupons
+                          Cafe coupons
                         </h3>
                         <div className="space-y-3">
                           {restaurant.restaurantOffers.coupons.map((coupon) => {
@@ -3064,7 +3064,7 @@ export default function RestaurantDetails() {
                   {/* Header */}
                   <div className="px-4 pt-6 pb-4 border-b border-gray-200 dark:border-gray-800">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      {restaurant?.name || "Unknown Restaurant"}
+                      {restaurant?.name || "Unknown Cafe"}
                     </h2>
                   </div>
 
@@ -3089,7 +3089,7 @@ export default function RestaurantDetails() {
                         onClick={handleShareRestaurant}
                       >
                         <Share2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                        <span className="text-base text-gray-900 dark:text-white">Share this restaurant</span>
+                        <span className="text-base text-gray-900 dark:text-white">Share this cafe</span>
                       </button>
 
                     </div>
@@ -3097,7 +3097,7 @@ export default function RestaurantDetails() {
                     {/* Disclaimer Text */}
                     <div className="mt-6 px-2">
                       <p className="text-xs text-gray-500 leading-relaxed">
-                        Menu items, prices, photos and descriptions are set directly by the restaurant. In case you see any incorrect information, please report it to us.
+                        Menu items, prices, photos and descriptions are set directly by the cafe. In case you see any incorrect information, please report it to us.
                       </p>
                     </div>
                   </div>

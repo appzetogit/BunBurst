@@ -33,7 +33,7 @@ export const getPendingRestaurantSettlements = async (restaurantId = null, start
 
     return settlements;
   } catch (error) {
-    console.error('Error getting pending restaurant settlements:', error);
+    console.error('Error getting pending cafe settlements:', error);
     throw error;
   }
 };
@@ -117,7 +117,7 @@ export const generateRestaurantSettlementReport = async (restaurantId, startDate
       }))
     };
   } catch (error) {
-    console.error('Error generating restaurant settlement report:', error);
+    console.error('Error generating cafe settlement report:', error);
     throw error;
   }
 };

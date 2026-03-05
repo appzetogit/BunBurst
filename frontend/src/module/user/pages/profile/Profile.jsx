@@ -923,7 +923,7 @@ export default function Profile() {
           <DialogHeader className="p-5 pb-3">
             <DialogTitle className="text-lg font-bold text-foreground">Veg Mode</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Filter restaurants and dishes based on your dietary preferences
+              Filter cafes and dishes based on your dietary preferences
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 px-5 pb-5">

@@ -94,7 +94,7 @@ export default function MenuAdd() {
         if (restaurants.length > 0 && location.state?.restaurantId && !selectedRestaurant) {
             const found = restaurants.find(r => r._id === location.state.restaurantId || r.id === location.state.restaurantId)
             if (found) {
-                console.log("Auto-selecting restaurant:", found.name)
+                console.log("Auto-selecting cafe:", found.name)
                 setSelectedRestaurant(found)
             }
         }
@@ -130,8 +130,8 @@ export default function MenuAdd() {
                 setRestaurants(restaurantsData)
             }
         } catch (error) {
-            console.error("Error fetching restaurants:", error)
-            toast.error("Failed to load restaurants")
+            console.error("Error fetching cafes:", error)
+            toast.error("Failed to load cafes")
         } finally {
             setLoading(false)
         }
@@ -284,7 +284,7 @@ export default function MenuAdd() {
         }
 
         if (!selectedRestaurant?._id) {
-            toast.error("Please select a restaurant")
+            toast.error("Please select a cafe")
             return
         }
 
@@ -331,7 +331,7 @@ export default function MenuAdd() {
         }
 
         if (!selectedRestaurant?._id) {
-            toast.error("Please select a restaurant first")
+            toast.error("Please select a cafe first")
             return
         }
 
@@ -429,7 +429,7 @@ export default function MenuAdd() {
         }
 
         if (!selectedRestaurant?._id) {
-            toast.error("Please select a restaurant")
+            toast.error("Please select a cafe")
             return
         }
 
@@ -604,7 +604,7 @@ export default function MenuAdd() {
                     </button>
                     <div>
                         <h1 className="text-xl font-bold text-[#1E1E1E]">Menu Add</h1>
-                        <p className="text-sm text-[#1E1E1E]">Add dishes to restaurant menus</p>
+                        <p className="text-sm text-[#1E1E1E]">Add dishes to cafe menus</p>
                     </div>
                 </div>
             </div>
@@ -612,14 +612,14 @@ export default function MenuAdd() {
             <div className="p-4 max-w-7xl mx-auto">
                 {/* Restaurant Selection */}
                 <div className="bg-white rounded-lg shadow-sm border border-[#F5F5F5] p-4 mb-6">
-                    <h2 className="text-lg font-semibold text-[#1E1E1E] mb-4">Select Restaurant</h2>
+                    <h2 className="text-lg font-semibold text-[#1E1E1E] mb-4">Select Cafe</h2>
 
                     {/* Search */}
                     <div className="relative mb-4">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#1E1E1E]" />
                         <input
                             type="text"
-                            placeholder="Search restaurants..."
+                            placeholder="Search cafes..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
@@ -806,10 +806,10 @@ export default function MenuAdd() {
                     <div className="bg-white rounded-lg shadow-sm border border-[#F5F5F5] p-12 text-center">
                         <Utensils className="w-16 h-16 text-[#1E1E1E] mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-[#1E1E1E] mb-2">
-                            Select a Restaurant
+                            Select a Cafe
                         </h3>
                         <p className="text-[#1E1E1E]">
-                            Choose a restaurant from the list above to view and manage its menu
+                            Choose a cafe from the list above to view and manage its menu
                         </p>
                     </div>
                 )}

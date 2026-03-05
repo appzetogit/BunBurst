@@ -46,11 +46,11 @@ export default function DiningRestaurantDetails() {
                     // Fallback: search by name if slug lookup fails directly (though getRestaurantById usually handles slugs)
                     // For now, assuming direct slug work or we might need the search logic from RestaurantDetails.jsx
                     setRestaurant(null)
-                    setError("Restaurant not found")
+                    setError("Cafe not found")
                 }
             } catch (err) {
                 // If 404, we might need to search list. For now, simple error.
-                console.error("Failed to load restaurant", err)
+                console.error("Failed to load cafe", err)
 
                 // FAILSAFE: If API by slug fails, let's try to get list and find match (temporary fix for development if slug isn't unique ID)
                 // In a real app, backend should support slug lookup reliably.
@@ -66,11 +66,11 @@ export default function DiningRestaurantDetails() {
                             setRestaurant(actualMatch)
                             setError(null)
                         } else {
-                            setError("Restaurant not found")
+                            setError("Cafe not found")
                         }
                     }
                 } catch (e) {
-                    setError("Restaurant not found")
+                    setError("Cafe not found")
                 }
             } finally {
                 setLoading(false)
@@ -90,7 +90,7 @@ export default function DiningRestaurantDetails() {
     if (error || !restaurant) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-                <h2 className="text-xl font-bold text-foreground">Restaurant not found</h2>
+                <h2 className="text-xl font-bold text-foreground">Cafe not found</h2>
                 <Button onClick={() => navigate(-1)} className="mt-4" variant="outline">Go Back</Button>
             </div>
         )
@@ -109,7 +109,7 @@ export default function DiningRestaurantDetails() {
                     <UtensilsCrossed className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h2 className="text-xl font-bold text-foreground mb-2">Dining Unavailable</h2>
-                <p className="text-muted-foreground mb-6">Dining is currently unavailable for this restaurant.</p>
+                <p className="text-muted-foreground mb-6">Dining is currently unavailable for this cafe.</p>
                 <Button onClick={() => navigate(-1)} variant="outline">Go Back</Button>
             </div>
         )
@@ -266,7 +266,7 @@ export default function DiningRestaurantDetails() {
                 </div>
             ) : (
                 <div className="fixed bottom-0 left-0 w-full bg-muted border-t border-border p-4 z-50 text-center">
-                    <p className="text-muted-foreground font-medium">Dining is currently unavailable for this restaurant.</p>
+                    <p className="text-muted-foreground font-medium">Dining is currently unavailable for this cafe.</p>
                 </div>
             )}
 

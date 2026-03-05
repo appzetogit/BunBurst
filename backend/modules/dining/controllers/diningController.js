@@ -51,7 +51,7 @@ export const getRestaurantBySlug = async (req, res) => {
     if (!actualRestaurant) {
       return res.status(404).json({
         success: false,
-        message: "Restaurant not found",
+        message: "Cafe not found",
       });
     }
 
@@ -294,7 +294,7 @@ export const getRestaurantBookings = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Failed to fetch restaurant bookings",
+      message: "Failed to fetch cafe bookings",
       error: error.message,
     });
   }

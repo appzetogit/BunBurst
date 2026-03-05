@@ -34,11 +34,11 @@ export default function LandingPageSettings({ type = "admin" }) {
   const [reactActiveLanguage, setReactActiveLanguage] = useState("default");
   const [reactHeaderContent, setReactHeaderContent] = useState({
     title: "Your Next Experience Awaits",
-    subtitle: "Discover Restaurants Near You",
+    subtitle: "Discover Cafes Near You",
     backgroundImage: null,
   });
   const [reactLocationPicker, setReactLocationPicker] = useState({
-    placeholder: "Enter location to search restaurant",
+    placeholder: "Enter location to search cafe",
   });
   const [reactBusinessStats, setReactBusinessStats] = useState({
     restaurant: "200",
@@ -121,11 +121,11 @@ export default function LandingPageSettings({ type = "admin" }) {
     } else {
       setReactHeaderContent({
         title: "Your Next Experience Awaits",
-        subtitle: "Discover Restaurants Near You",
+        subtitle: "Discover Cafes Near You",
         backgroundImage: null,
       });
       setReactLocationPicker({
-        placeholder: "Enter location to search restaurant",
+        placeholder: "Enter location to search cafe",
       });
       setReactBusinessStats({
         restaurant: "200",
@@ -1215,7 +1215,7 @@ export default function LandingPageSettings({ type = "admin" }) {
                 Location picker section
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 mb-3">
-                Customize location search bar and placeholder text to help users find nearby restaurants.
+                Customize location search bar and placeholder text to help users find nearby cafes.
               </p>
 
               {/* Language Tabs */}
@@ -1282,13 +1282,13 @@ export default function LandingPageSettings({ type = "admin" }) {
                 Business Statistics Section
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 mb-3">
-                Display key business statistics like total restaurants, happy customers, and average delivery time.
+                Display key business statistics like total cafes, happy customers, and average delivery time.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-1.5">
-                    Restaurant*
+                    Cafe*
                   </label>
                   <input
                     type="number"

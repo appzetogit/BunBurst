@@ -163,7 +163,7 @@ export const initializeRoute = asyncHandler(async (req, res) => {
       : null;
     
     if (!restaurantCoords || !customerCoords) {
-      return errorResponse(res, 400, 'Restaurant or customer coordinates missing');
+      return errorResponse(res, 400, 'Cafe or customer coordinates missing');
     }
     
     const riderCoords = riderLat && riderLng 

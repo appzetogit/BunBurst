@@ -11,12 +11,12 @@
   - Updates order with `eta.min`, `eta.max`, `estimatedDeliveryTime`
 - **Line**: ~202-244
 
-### 2. Restaurant Accepts Order
-- **File**: `modules/restaurant/controllers/restaurantOrderController.js`
+### 2. Cafe Accepts Order
+- **File**: `modules/cafe/controllers/restaurantOrderController.js`
 - **Status**: ✅ Integrated
 - **What it does**:
-  - Calls `etaEventService.handleRestaurantAccepted()` when restaurant accepts
-  - Triggers ETA recalculation if restaurant accepted late
+  - Calls `etaEventService.handleRestaurantAccepted()` when cafe accepts
+  - Triggers ETA recalculation if cafe accepted late
   - Creates RESTAURANT_ACCEPTED or RESTAURANT_ACCEPTED_LATE event
 - **Line**: ~251-258
 
@@ -36,7 +36,7 @@
   - `/api/order/api/orders/:orderId/eta` - Get live ETA
   - `/api/order/api/orders/:orderId/eta/history` - Get ETA history
   - `/api/order/api/orders/:orderId/events` - Get order events
-  - `/api/order/api/orders/:orderId/events/restaurant-accepted` - Restaurant accept event
+  - `/api/order/api/orders/:orderId/events/cafe-accepted` - Cafe accept event
   - `/api/order/api/orders/:orderId/events/rider-assigned` - Rider assign event
   - And more...
 
@@ -60,7 +60,7 @@
    ↓
    WebSocket: ETA_UPDATED emitted
 
-2. Restaurant accepts order
+2. Cafe accepts order
    ↓
    handleRestaurantAccepted() called
    ↓
@@ -80,7 +80,7 @@
    ↓
    WebSocket: ETA_UPDATED + RIDER_ASSIGNED emitted
 
-4. Rider reaches restaurant
+4. Rider reaches cafe
    ↓
    handleRiderReachedRestaurant() called
    ↓
@@ -94,7 +94,7 @@
    ↓
    handleRiderStartedDelivery() called
    ↓
-   ETA recalculated (restaurant to user only)
+   ETA recalculated (cafe to user only)
    ↓
    RIDER_STARTED_DELIVERY event logged
    ↓
@@ -105,9 +105,9 @@
 
 ### Manual Testing
 1. ✅ Create order - Check ETA is calculated
-2. ✅ Restaurant accepts - Check ETA updates
+2. ✅ Cafe accepts - Check ETA updates
 3. ✅ Rider assigned - Check ETA updates with rider location
-4. ✅ Rider reaches restaurant - Check ETA updates
+4. ✅ Rider reaches cafe - Check ETA updates
 5. ✅ Rider starts delivery - Check ETA updates
 6. ✅ Get live ETA - Check API returns correct data
 7. ✅ Get ETA history - Check logs are created
@@ -122,9 +122,9 @@ node scripts/test-eta-system.js
 This will test:
 - Initial ETA calculation
 - Order creation with ETA
-- Restaurant accept event
+- Cafe accept event
 - Rider assignment event
-- Rider reaches restaurant event
+- Rider reaches cafe event
 - Rider starts delivery event
 - Live ETA retrieval
 - ETA history retrieval
@@ -143,7 +143,7 @@ This will test:
 
 3. **WebSocket**: Real-time updates require Socket.IO connection
    - User must join `order:${orderId}` room
-   - Restaurant must join `restaurant:${restaurantId}` room
+   - Cafe must join `cafe:${restaurantId}` room
    - Delivery partner must join `delivery:${deliveryPartnerId}` room
 
 4. **Error Handling**: All ETA operations have try-catch blocks

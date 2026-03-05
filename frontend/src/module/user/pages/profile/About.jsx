@@ -26,7 +26,7 @@ export default function About() {
   const [aboutData, setAboutData] = useState({
     appName: 'Appzeto Food',
     version: '1.0.0',
-    description: 'Your trusted food delivery partner, bringing delicious meals right to your doorstep. Experience the convenience of ordering from your favorite restaurants with fast, reliable delivery.',
+    description: 'Your trusted food delivery partner, bringing delicious meals right to your doorstep. Experience the convenience of ordering from your favorite cafes with fast, reliable delivery.',
     logo: '',
     features: [],
     stats: []

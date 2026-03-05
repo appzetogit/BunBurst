@@ -158,7 +158,7 @@ export default function Feedback() {
           setRestaurantData(response.data.data.restaurant)
         }
       } catch (error) {
-        console.error("Error fetching restaurant data:", error)
+        console.error("Error fetching cafe data:", error)
       } finally {
         setIsLoadingRestaurant(false)
       }

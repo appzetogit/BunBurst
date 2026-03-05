@@ -22,9 +22,11 @@ export default function ReportSafetyEmergency() {
 
     try {
       setIsSubmitting(true)
-      const response = await api.post(API_ENDPOINTS.ADMIN.SAFETY_EMERGENCY_CREATE, {
+      const formData = {
         message: report.trim()
-      })
+      }
+      console.log("Submitting safety report:", formData)
+      const response = await api.post(API_ENDPOINTS.ADMIN.SAFETY_EMERGENCY_CREATE, formData)
       
       if (response.data.success) {
         setIsSubmitted(true)
@@ -36,6 +38,9 @@ export default function ReportSafetyEmergency() {
       }
     } catch (error) {
       console.error('Error submitting safety emergency report:', error)
+      if (error.response) {
+        console.error("Server Error:", error.response.data)
+      }
       toast.error(error.response?.data?.message || 'Failed to submit safety emergency report. Please try again.')
     } finally {
       setIsSubmitting(false)

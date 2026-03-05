@@ -100,7 +100,7 @@ export const getInventoryByRestaurantId = async (req, res) => {
     });
 
     if (!restaurant) {
-      return errorResponse(res, 404, 'Restaurant not found');
+      return errorResponse(res, 404, 'Cafe not found');
     }
 
     // Find inventory
@@ -126,7 +126,7 @@ export const getInventoryByRestaurantId = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching inventory by restaurant ID:', error);
+    console.error('Error fetching inventory by cafe ID:', error);
     return errorResponse(res, 500, 'Failed to fetch inventory');
   }
 };

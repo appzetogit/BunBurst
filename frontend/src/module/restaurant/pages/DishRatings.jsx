@@ -5,7 +5,7 @@ export default function DishRatings() {
   const navigate = useNavigate()
   
   // Restaurant information - in a real app, this would come from state/context/API
-  const restaurantName = "Kadhai Chammach Restaurant"
+  const restaurantName = "Kadhai Chammach Cafe"
   const restaurantId = "20959122"
   const restaurantLocation = "Musakhedi, Idrish Nagar, By Pass Road (South), Indore"
 

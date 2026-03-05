@@ -230,7 +230,7 @@ export const getReviewsByRestaurant = asyncHandler(async (req, res) => {
     
     const avgRating = avgRatingResult.length > 0 ? (avgRatingResult[0].avgRating || 0) : 0;
     
-    return successResponse(res, 200, 'Restaurant reviews fetched successfully', {
+    return successResponse(res, 200, 'Cafe reviews fetched successfully', {
       reviews: reviews.map(review => ({
         orderId: review.orderId,
         orderMongoId: review._id,
@@ -257,7 +257,7 @@ export const getReviewsByRestaurant = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching restaurant reviews:', error);
+    console.error('Error fetching cafe reviews:', error);
     return errorResponse(res, 500, `Failed to fetch restaurant reviews: ${error.message}`);
   }
 });

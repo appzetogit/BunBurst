@@ -5,6 +5,7 @@ import AnimatedPage from "../../components/AnimatedPage"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   Select,
   SelectContent,
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { authAPI } from "@/lib/api"
+import api, { API_ENDPOINTS, authAPI } from "@/lib/api"
 import { firebaseAuth, googleProvider, ensureFirebaseInitialized } from "@/lib/firebase"
 import { setAuthData } from "@/lib/utils/auth"
 import loginBanner from "@/assets/loginbanner.png"
@@ -63,29 +64,84 @@ export default function SignIn() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [apiError, setApiError] = useState("")
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false)
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false)
+  const [legalContentLoading, setLegalContentLoading] = useState({ terms: false, privacy: false })
+  const [termsData, setTermsData] = useState({
+    title: "Terms and Conditions",
+    content: "<p>Loading...</p>",
+  })
+  const [privacyData, setPrivacyData] = useState({
+    title: "Privacy Policy",
+    content: "<p>Loading...</p>",
+  })
   const redirectHandledRef = useRef(false)
+  const hasLoadedTermsRef = useRef(false)
+  const hasLoadedPrivacyRef = useRef(false)
 
   useEffect(() => {
+    // Priority 1: Restore "remember me" data from localStorage
     try {
       const saved = localStorage.getItem(USER_SIGNIN_REMEMBER_KEY)
-      if (!saved) return
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        const savedAuthMethod = parsed?.authMethod === "email" ? "email" : "phone"
 
-      const parsed = JSON.parse(saved)
-      const savedAuthMethod = parsed?.authMethod === "email" ? "email" : "phone"
-
-      setAuthMethod(savedAuthMethod)
-      setFormData((prev) => ({
-        ...prev,
-        phone: typeof parsed?.phone === "string" ? parsed.phone : "",
-        countryCode: typeof parsed?.countryCode === "string" ? parsed.countryCode : "+91",
-        email: typeof parsed?.email === "string" ? parsed.email : "",
-        name: typeof parsed?.name === "string" ? parsed.name : "",
-        rememberMe: true,
-      }))
+        setAuthMethod(savedAuthMethod)
+        setFormData((prev) => ({
+          ...prev,
+          phone: typeof parsed?.phone === "string" ? parsed.phone : "",
+          countryCode: typeof parsed?.countryCode === "string" ? parsed.countryCode : "+91",
+          email: typeof parsed?.email === "string" ? parsed.email : "",
+          name: typeof parsed?.name === "string" ? parsed.name : "",
+          rememberMe: true,
+        }))
+        // If remember-me data found, skip sessionStorage pre-fill
+        return
+      }
     } catch (error) {
       console.warn("Failed to restore remembered sign-in data:", error)
     }
+
+    // Priority 2: Pre-fill from sessionStorage when user navigates back from OTP page
+    try {
+      const storedAuthData = sessionStorage.getItem("userAuthData")
+      if (storedAuthData) {
+        const parsed = JSON.parse(storedAuthData)
+        const method = parsed?.method === "email" ? "email" : "phone"
+        setAuthMethod(method)
+
+        if (method === "phone" && parsed?.phone) {
+          // Full phone stored as "+91 9876543210" — split into country code + local number
+          const fullPhone = String(parsed.phone).trim()
+          const spaceIdx = fullPhone.indexOf(" ")
+          if (spaceIdx !== -1) {
+            const cc = fullPhone.slice(0, spaceIdx)           // e.g. "+91"
+            const local = fullPhone.slice(spaceIdx + 1).replace(/\D/g, "") // e.g. "9876543210"
+            setFormData((prev) => ({
+              ...prev,
+              countryCode: cc || "+91",
+              phone: local,
+            }))
+          } else {
+            // No space — strip any country code prefix and use rest as local
+            const local = fullPhone.replace(/^\+\d{1,3}/, "").replace(/\D/g, "")
+            setFormData((prev) => ({ ...prev, phone: local }))
+          }
+        } else if (method === "email" && parsed?.email) {
+          setFormData((prev) => ({ ...prev, email: String(parsed.email) }))
+        }
+
+        // Pre-fill name if stored (sign-up flow)
+        if (parsed?.name) {
+          setFormData((prev) => ({ ...prev, name: String(parsed.name) }))
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to restore auth data from sessionStorage:", error)
+    }
   }, [])
+
 
   // Helper function to process signed-in user
   const processSignedInUser = async (user, source = "unknown") => {
@@ -473,10 +529,16 @@ export default function SignIn() {
     if (!phone.trim()) {
       return "Phone number is required"
     }
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "")
-    const phoneRegex = /^\d{7,15}$/
-    if (!phoneRegex.test(cleanPhone)) {
-      return "Phone number must be 7-15 digits"
+    // Check for alphabets or special characters
+    if (/[a-zA-Z!@#$%^&*()_+={}[\]|\\:;"'<>?,./`~]/.test(phone)) {
+      return "Invalid phone number. Only numeric digits (0–9) are allowed"
+    }
+    const digitsOnly = phone.replace(/\D/g, "")
+    if (digitsOnly.length > 10) {
+      return `Phone number too long (${digitsOnly.length} digits). Please enter exactly 10 digits`
+    }
+    if (digitsOnly.length < 10) {
+      return "Phone number must be exactly 10 digits"
     }
     return ""
   }
@@ -500,6 +562,18 @@ export default function SignIn() {
 
   const handleChange = (e) => {
     const { name, value } = e.target
+
+    // For phone: only allow numeric digits and enforce max 10 digits
+    if (name === "phone") {
+      const digitsOnly = value.replace(/\D/g, "").slice(0, 10)
+      setFormData({
+        ...formData,
+        phone: digitsOnly,
+      })
+      setErrors({ ...errors, phone: validatePhone(digitsOnly) })
+      return
+    }
+
     setFormData({
       ...formData,
       [name]: value,
@@ -508,8 +582,6 @@ export default function SignIn() {
     // Real-time validation
     if (name === "email") {
       setErrors({ ...errors, email: validateEmail(value) })
-    } else if (name === "phone") {
-      setErrors({ ...errors, phone: validatePhone(value) })
     } else if (name === "name") {
       setErrors({ ...errors, name: validateName(value) })
     }
@@ -678,6 +750,68 @@ export default function SignIn() {
     setAuthMethod(authMethod === "email" ? "phone" : "email")
   }
 
+  const fetchTermsData = async () => {
+    if (hasLoadedTermsRef.current) return
+
+    try {
+      setLegalContentLoading((prev) => ({ ...prev, terms: true }))
+      const response = await api.get(API_ENDPOINTS.ADMIN.TERMS_PUBLIC)
+      if (response?.data?.success && response?.data?.data) {
+        setTermsData(response.data.data)
+      } else {
+        setTermsData({
+          title: "Terms and Conditions",
+          content: "<p>Unable to load terms and conditions at the moment. Please try again later.</p>",
+        })
+      }
+      hasLoadedTermsRef.current = true
+    } catch (error) {
+      console.error("Error fetching terms data:", error)
+      setTermsData({
+        title: "Terms and Conditions",
+        content: "<p>Unable to load terms and conditions at the moment. Please try again later.</p>",
+      })
+    } finally {
+      setLegalContentLoading((prev) => ({ ...prev, terms: false }))
+    }
+  }
+
+  const fetchPrivacyData = async () => {
+    if (hasLoadedPrivacyRef.current) return
+
+    try {
+      setLegalContentLoading((prev) => ({ ...prev, privacy: true }))
+      const response = await api.get(API_ENDPOINTS.ADMIN.PRIVACY_PUBLIC)
+      if (response?.data?.success && response?.data?.data) {
+        setPrivacyData(response.data.data)
+      } else {
+        setPrivacyData({
+          title: "Privacy Policy",
+          content: "<p>Unable to load privacy policy at the moment. Please try again later.</p>",
+        })
+      }
+      hasLoadedPrivacyRef.current = true
+    } catch (error) {
+      console.error("Error fetching privacy data:", error)
+      setPrivacyData({
+        title: "Privacy Policy",
+        content: "<p>Unable to load privacy policy at the moment. Please try again later.</p>",
+      })
+    } finally {
+      setLegalContentLoading((prev) => ({ ...prev, privacy: false }))
+    }
+  }
+
+  const handleOpenTermsModal = () => {
+    setIsTermsModalOpen(true)
+    fetchTermsData()
+  }
+
+  const handleOpenPrivacyModal = () => {
+    setIsPrivacyModalOpen(true)
+    fetchPrivacyData()
+  }
+
   return (
     <AnimatedPage className="max-h-screen flex flex-col bg-white dark:bg-[#0a0a0a] overflow-hidden !pb-0 md:flex-row md:overflow-hidden">
 
@@ -773,9 +907,11 @@ export default function SignIn() {
                     id="phone"
                     name="phone"
                     type="tel"
-                    placeholder="Enter Phone Number"
+                    inputMode="numeric"
+                    placeholder="Enter 10-digit mobile number"
                     value={formData.phone}
                     onChange={handleChange}
+                    maxLength={10}
                     className={`flex-1 h-12 md:h-14 text-base md:text-lg bg-white dark:bg-[#1a1a1a] text-black dark:text-white border-gray-300 dark:border-gray-700 rounded-lg ${errors.phone ? "border-red-500" : ""} transition-colors`}
                     aria-invalid={errors.phone ? "true" : "false"}
                   />
@@ -930,13 +1066,71 @@ export default function SignIn() {
               By continuing, you agree to our
             </p>
             <div className="flex justify-center gap-2 flex-wrap">
-              <a href="/admin/pages-social-media/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Terms of Service</a>
-              <span>•</span>
-              <a href="/admin/pages-social-media/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors">Privacy Policy</a>
+              <button
+                type="button"
+                onClick={handleOpenTermsModal}
+                className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Terms of Service
+              </button>
+              <span>|</span>
+              <button
+                type="button"
+                onClick={handleOpenPrivacyModal}
+                className="underline hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Privacy Policy
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      <Dialog open={isTermsModalOpen} onOpenChange={setIsTermsModalOpen}>
+        <DialogContent className="w-[calc(100%-1.5rem)] max-w-md sm:max-w-2xl p-0 bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
+          <DialogHeader className="px-5 sm:px-6 py-4 border-b border-gray-200 pr-14">
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 text-center">
+              Terms and Conditions
+            </DialogTitle>
+          </DialogHeader>
+          <div className="px-5 sm:px-6 py-5 max-h-[70vh] overflow-y-auto">
+            {legalContentLoading.terms ? (
+              <div className="flex items-center justify-center py-10 text-gray-600">
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                Loading...
+              </div>
+            ) : (
+              <div
+                className="prose prose-slate max-w-none text-gray-700"
+                dangerouslySetInnerHTML={{ __html: termsData.content }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPrivacyModalOpen} onOpenChange={setIsPrivacyModalOpen}>
+        <DialogContent className="w-[calc(100%-1.5rem)] max-w-md sm:max-w-2xl p-0 bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
+          <DialogHeader className="px-5 sm:px-6 py-4 border-b border-gray-200 pr-14">
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 text-center">
+              Privacy Policy
+            </DialogTitle>
+          </DialogHeader>
+          <div className="px-5 sm:px-6 py-5 max-h-[70vh] overflow-y-auto">
+            {legalContentLoading.privacy ? (
+              <div className="flex items-center justify-center py-10 text-gray-600">
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                Loading...
+              </div>
+            ) : (
+              <div
+                className="prose prose-slate max-w-none text-gray-700"
+                dangerouslySetInnerHTML={{ __html: privacyData.content }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AnimatedPage>
   )
 }

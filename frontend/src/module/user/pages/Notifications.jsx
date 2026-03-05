@@ -30,8 +30,8 @@ const notifications = [
   {
     id: 3,
     type: "promotion",
-    title: "New Restaurant Added",
-    message: "Check out the new Italian restaurant in your area",
+    title: "New Cafe Added",
+    message: "Check out the new Italian cafe in your area",
     time: "3 hours ago",
     read: true,
     icon: Gift,

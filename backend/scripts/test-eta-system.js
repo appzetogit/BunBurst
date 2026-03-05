@@ -74,14 +74,14 @@ async function setupTestData() {
     // Get first restaurant
     const restaurant = await Restaurant.findOne({ isActive: true, isAcceptingOrders: true });
     if (!restaurant) {
-      throw new Error('No active restaurant found. Please create a restaurant first.');
+      throw new Error('No active cafe found. Please create a cafe first.');
     }
     TEST_CONFIG.restaurantId = restaurant._id.toString();
     logSuccess(`Found restaurant: ${restaurant.name} (${restaurant.restaurantId})`);
 
     // Check restaurant location
     if (!restaurant.location || !restaurant.location.latitude || !restaurant.location.longitude) {
-      throw new Error('Restaurant location not set. Please set restaurant location first.');
+      throw new Error('Cafe location not set. Please set cafe location first.');
     }
     logInfo(`Restaurant location: ${restaurant.location.latitude}, ${restaurant.location.longitude}`);
 
@@ -122,7 +122,7 @@ async function testInitialETA() {
   try {
     const restaurant = await Restaurant.findById(TEST_CONFIG.restaurantId);
     if (!restaurant) {
-      throw new Error('Restaurant not found');
+      throw new Error('Cafe not found');
     }
 
     const restaurantLocation = {
@@ -167,7 +167,7 @@ async function testCreateOrder() {
   try {
     const restaurant = await Restaurant.findById(TEST_CONFIG.restaurantId);
     if (!restaurant) {
-      throw new Error('Restaurant not found');
+      throw new Error('Cafe not found');
     }
 
     const order = new Order({
@@ -266,7 +266,7 @@ async function testCreateOrder() {
  * Test 4: Restaurant Accepts Order
  */
 async function testRestaurantAccepts() {
-  logStep(4, 'Testing restaurant accept (ETA update)...');
+  logStep(4, 'Testing cafe accept (ETA update)...');
 
   try {
     const order = await Order.findById(TEST_CONFIG.orderId);
@@ -358,7 +358,7 @@ async function testRiderAssignment() {
  * Test 6: Rider Reaches Restaurant
  */
 async function testRiderReachesRestaurant() {
-  logStep(6, 'Testing rider reaches restaurant (ETA update)...');
+  logStep(6, 'Testing rider reaches cafe (ETA update)...');
 
   try {
     const order = await Order.findById(TEST_CONFIG.orderId);

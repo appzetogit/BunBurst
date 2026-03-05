@@ -22,7 +22,7 @@ export const getWallet = asyncHandler(async (req, res) => {
     const restaurant = req.restaurant;
     
     if (!restaurant || !restaurant._id) {
-      return errorResponse(res, 401, 'Restaurant authentication required');
+      return errorResponse(res, 401, 'Cafe authentication required');
     }
 
     // Find or create wallet
@@ -71,7 +71,7 @@ export const getWalletTransactions = asyncHandler(async (req, res) => {
     const { page = 1, limit = 20, type, status } = req.query;
 
     if (!restaurant || !restaurant._id) {
-      return errorResponse(res, 401, 'Restaurant authentication required');
+      return errorResponse(res, 401, 'Cafe authentication required');
     }
 
     const wallet = await RestaurantWallet.findOne({ restaurantId: restaurant._id });
@@ -141,7 +141,7 @@ export const getWalletStats = asyncHandler(async (req, res) => {
     const { startDate, endDate } = req.query;
 
     if (!restaurant || !restaurant._id) {
-      return errorResponse(res, 401, 'Restaurant authentication required');
+      return errorResponse(res, 401, 'Cafe authentication required');
     }
 
     const wallet = await RestaurantWallet.findOne({ restaurantId: restaurant._id });

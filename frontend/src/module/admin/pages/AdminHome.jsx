@@ -238,15 +238,15 @@ export default function AdminHome() {
               onClick={() => navigate("/admin/transaction-report")}
             />
             <MetricCard
-              title="Total restaurants"
+              title="Total cafes"
               value={totalRestaurants.toLocaleString("en-IN")}
-              helper="All registered restaurants"
+              helper="All registered cafes"
               icon={<Store className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
               onClick={() => navigate("/admin/restaurants")}
             />
             <MetricCard
-              title="Restaurant request pending"
+              title="Cafe request pending"
               value={pendingRestaurantRequests.toLocaleString("en-IN")}
               helper="Awaiting approval"
               icon={<UserCheck className="h-5 w-5 text-orange-600" />}

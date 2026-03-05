@@ -403,7 +403,7 @@ export default function RestaurantOTP() {
           {showNameInput && (
             <div className="mt-6 max-w-sm mx-auto text-left">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {authData?.method === "phone" ? "Restaurant name" : "Your name"}
+                {authData?.method === "phone" ? "Cafe name" : "Your name"}
               </label>
               <input
                 type="text"
@@ -421,7 +421,7 @@ export default function RestaurantOTP() {
                 disabled={isLoading}
               />
               <p className="mt-1 text-xs text-gray-500">
-                If you&apos;re new, we&apos;ll use this to create your restaurant account.
+                If you're new, we'll use this to create your cafe account.
               </p>
               {nameError && (
                 <p className="mt-1 text-xs text-red-600">

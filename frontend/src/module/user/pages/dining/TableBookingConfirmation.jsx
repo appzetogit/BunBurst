@@ -76,7 +76,7 @@ export default function TableBookingConfirmation() {
                     <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/10 rounded-full transition-colors">
                         <ArrowLeft className="w-6 h-6" />
                     </button>
-                    <p className="font-semibold text-sm">Reach the restaurant 15 minutes before your booking time for a hassle-free experience</p>
+                    <p className="font-semibold text-sm">Reach the cafe 15 minutes before your booking time for a hassle-free experience</p>
                 </div>
             </div>
 
@@ -196,12 +196,12 @@ export default function TableBookingConfirmation() {
                             {[
                                 "Please arrive 15 minutes prior to your reservation time.",
                                 "Booking valid for the specified number of guests entered during reservation",
-                                "Cover charges upon entry are subject to the discretion of the restaurant",
+                                "Cover charges upon entry are subject to the discretion of the cafe",
                                 "House rules are to be observed at all times",
-                                "Special requests will be accommodated at the restaurant's discretion",
+                                "Special requests will be accommodated at the cafe's discretion",
                                 "Offers can be availed only by paying via Tastizo",
                                 "Cover charges cannot be refunded if slot is cancelled within 30 minutes of slot start time",
-                                "Additional service charges on the bill are at the restaurant's discretion"
+                                "Additional service charges on the bill are at the cafe's discretion"
                             ].map((term, i) => (
                                 <li key={i} className="flex gap-3">
                                     <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-2 flex-shrink-0"></div>

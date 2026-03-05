@@ -32,11 +32,11 @@ const checkMenuDetails = async () => {
         const restaurant = await Restaurant.findOne({ restaurantId });
 
         if (!restaurant) {
-            console.log("❌ Restaurant not found!");
+            console.log("❌ Cafe not found!");
             process.exit(1);
         }
 
-        console.log("✅ Restaurant found:");
+        console.log("✅ Cafe found:");
         console.log(`   - _id: ${restaurant._id}`);
         console.log(`   - Name: ${restaurant.name}`);
 

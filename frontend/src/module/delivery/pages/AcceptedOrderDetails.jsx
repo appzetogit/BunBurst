@@ -189,7 +189,7 @@ export default function AcceptedOrderDetails() {
 
         {/* Restaurant Details */}
         <div>
-          <h3 className="text-gray-900 font-semibold mb-3">Restaurant Details</h3>
+          <h3 className="text-gray-900 font-semibold mb-3">Cafe Details</h3>
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-[#ff8100] rounded-lg flex items-center justify-center">

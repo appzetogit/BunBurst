@@ -348,7 +348,7 @@ export default function Orders() {
     if (order.restaurantId) {
       navigate(`/user/restaurants/${order.restaurantId}`)
     } else {
-      toast.info('Restaurant information not available')
+      toast.info('Cafe information not available')
     }
   }
 
@@ -375,14 +375,14 @@ Order again from this restaurant in the ${companyName} app.`
         })
       } else if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(shareText)
-        toast.success("Restaurant details copied to clipboard")
+        toast.success("Cafe details copied to clipboard")
       } else {
         toast.info("Sharing is not supported on this device")
       }
     } catch (error) {
       if (error?.name !== "AbortError") {
-        console.error("Error sharing restaurant:", error)
-        toast.error("Failed to share restaurant")
+        console.error("Error sharing cafe:", error)
+        toast.error("Failed to share cafe")
       }
     } finally {
       setActiveMenuOrderId(null)
@@ -515,7 +515,7 @@ Order again from this restaurant in the ${companyName} app.`
             <Search className="w-5 h-5 text-red-500" />
             <input 
               type="text" 
-              placeholder="Search by restaurant or dish" 
+              placeholder="Search by cafe or dish" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 ml-3 outline-none text-gray-600 placeholder-gray-400"
@@ -613,7 +613,7 @@ Order again from this restaurant in the ${companyName} app.`
                       onClick={() => handleShareRestaurant(order)}
                       className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-800"
                     >
-                      Share restaurant
+                      Share cafe
                     </button>
                     <button
                       type="button"
@@ -758,7 +758,7 @@ Order again from this restaurant in the ${companyName} app.`
                       <p className="text-xs font-medium text-green-600 mt-1">✓ Delivered</p>
                     )}
                     {isRestaurantCancelled && (
-                      <p className="text-xs font-medium text-red-500 mt-1">✗ Restaurant Cancelled</p>
+                      <p className="text-xs font-medium text-red-500 mt-1">✗ Cafe Cancelled</p>
                     )}
                     {isUserCancelled && (
                       <p className="text-xs font-medium text-gray-500 mt-1">✗ Cancelled by you</p>
@@ -789,7 +789,7 @@ Order again from this restaurant in the ${companyName} app.`
                         <div className="bg-red-100 p-1 rounded-full">
                           <AlertCircle className="w-4 h-4 text-red-500" />
                         </div>
-                        <span className="text-xs font-semibold text-red-500">Restaurant Cancelled</span>
+                        <span className="text-xs font-semibold text-red-500">Cafe Cancelled</span>
                       </div>
                       <p className="text-xs text-gray-600 ml-7">Refund will be processed in 24-48 hours</p>
                     </div>

@@ -512,7 +512,7 @@ export default function Dining() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4 px-1">
               <h3 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-                Popular Restaurants Around You
+                Popular Cafes Around You
               </h3>
             </div>
           </div>
@@ -1088,7 +1088,7 @@ export default function Dining() {
                 {/* Rating Tab */}
                 {activeFilterTab === 'rating' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Restaurant Rating</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Cafe Rating</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter('rating-35-plus')}

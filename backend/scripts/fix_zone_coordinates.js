@@ -62,7 +62,7 @@ const fixZoneCoordinates = async () => {
         // Check if point is inside strictly
         // Simple manual check: 22.6 < 22.719 < 22.8 AND 75.7 < 75.857 < 76.0
         if (testLat > 22.6 && testLat < 22.8 && testLng > 75.7 && testLng < 76.0) {
-            console.log('✅ Test point (Soham restaurant) is effectively INSIDE the new zone.');
+            console.log('✅ Test point (Soham cafe) is effectively INSIDE the new zone.');
         } else {
             console.log('❌ Test point is OUTSIDE the new zone (Something is wrong with logic).');
         }

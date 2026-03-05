@@ -61,7 +61,7 @@ export default function Checkout() {
         deliveryFee,
         tax,
         total,
-        restaurant: cart[0]?.restaurant || cart[0]?.name || "Multiple Restaurants"
+        restaurant: cart[0]?.restaurant || cart[0]?.name || "Multiple Cafes"
       })
 
       clearCart()

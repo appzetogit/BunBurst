@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const diningRestaurantSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Restaurant name is required'],
+        required: [true, 'Cafe name is required'],
         trim: true
     },
     rating: {

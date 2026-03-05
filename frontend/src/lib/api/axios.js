@@ -611,7 +611,7 @@ apiClient.interceptors.response.use(
             url.includes("/restaurant/list")
           ) {
             toast.error(
-              "Restaurant API endpoint not found. Check backend routes.",
+              "Cafe API endpoint not found. Check backend routes.",
               {
                 duration: 5000,
                 style: {

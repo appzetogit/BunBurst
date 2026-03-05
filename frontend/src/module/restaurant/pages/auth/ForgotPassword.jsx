@@ -199,7 +199,7 @@ export default function RestaurantForgotPassword() {
       <div className="hidden lg:flex lg:w-1/2 relative">
         <img
           src={loginBg}
-          alt="Restaurant background"
+          alt="Cafe background"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 flex items-center text-white pointer-events-none">
@@ -210,7 +210,7 @@ export default function RestaurantForgotPassword() {
               PASSWORD
             </h1>
             <p className="text-base xl:text-lg opacity-95 max-w-xl">
-              Follow the steps to securely reset your restaurant panel password.
+              Follow the steps to securely reset your cafe panel password.
             </p>
           </div>
         </div>

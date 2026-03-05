@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom"
 import { useState, useMemo, useCallback, useEffect, useRef } from "react"
-import { Star, Clock, MapPin, ArrowDownUp, Timer, ArrowRight, ChevronDown, Bookmark, Share2, Plus, Minus, X, Search, Mic } from "lucide-react"
+import { Star, Clock, MapPin, ArrowDownUp, Timer, ArrowRight, ChevronDown, Bookmark, Share2, Plus, Minus, X, Search, Mic, UtensilsCrossed } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import AnimatedPage from "../components/AnimatedPage"
@@ -15,7 +15,6 @@ import { useCart } from "../context/CartContext"
 import PageNavbar from "../components/PageNavbar"
 import { foodImages } from "@/constants/images"
 import appzetoFoodLogo from "@/assets/appzetologo.png"
-import offerImage from "@/assets/offerimage.png"
 import AddToCartAnimation from "../components/AddToCartAnimation"
 import OptimizedImage from "@/components/OptimizedImage"
 import api from "@/lib/api"
@@ -42,8 +41,9 @@ export default function Under250() {
   const { openSearch } = useSearchOverlay()
   const { vegMode, handleVegModeChange } = useProfile()
   const { addToCart, updateQuantity, removeFromCart, getCartItem, cart } = useCart()
-  const [activeCategory, setActiveCategory] = useState(null)
+  const [activeCategory, setActiveCategory] = useState("all")
   const [showSortPopup, setShowSortPopup] = useState(false)
+  const [showAllCategoriesPopup, setShowAllCategoriesPopup] = useState(false)
   const [selectedSort, setSelectedSort] = useState(null)
   const [under30MinsFilter, setUnder30MinsFilter] = useState(false)
   const [showItemDetail, setShowItemDetail] = useState(false)
@@ -81,6 +81,11 @@ export default function Under250() {
 
   const handleApply = () => {
     setShowSortPopup(false)
+  }
+
+  const handleAllCategoriesClick = () => {
+    setActiveCategory("all")
+    setShowAllCategoriesPopup(true)
   }
 
   // Helper function to parse delivery time (e.g., "12-15 mins" -> 12 or average)
@@ -159,6 +164,41 @@ export default function Under250() {
     return filtered
   }, [under250Restaurants, selectedSort, under30MinsFilter])
 
+  // Keep existing sorting/filtering and additionally filter menu items by selected category
+  const restaurantsByCategory = useMemo(() => {
+    if (activeCategory === "all") return sortedAndFilteredRestaurants
+
+    const selectedCategoryObj = categories.find((cat) => cat.id === activeCategory)
+    if (!selectedCategoryObj) return sortedAndFilteredRestaurants
+
+    const normalizeCategory = (value) =>
+      String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim()
+
+    const selectedName = normalizeCategory(selectedCategoryObj.name)
+    const selectedSlug = normalizeCategory(selectedCategoryObj.slug || selectedCategoryObj.name)
+
+    const matchesCategory = (itemCategoryRaw) => {
+      const itemCategory = normalizeCategory(itemCategoryRaw)
+      if (!itemCategory) return false
+      return (
+        itemCategory === selectedName ||
+        itemCategory === selectedSlug ||
+        itemCategory.includes(selectedName) ||
+        selectedName.includes(itemCategory)
+      )
+    }
+
+    return sortedAndFilteredRestaurants
+      .map((restaurant) => ({
+        ...restaurant,
+        menuItems: (restaurant.menuItems || []).filter((item) => matchesCategory(item.category)),
+      }))
+      .filter((restaurant) => restaurant.menuItems.length > 0)
+  }, [sortedAndFilteredRestaurants, activeCategory, categories])
+
   // State to handle multiple banners if array returned
   const [bannersData, setBannersData] = useState([])
 
@@ -196,7 +236,7 @@ export default function Under250() {
           setUnder250Restaurants([])
         }
       } catch (error) {
-        console.error('Error fetching restaurants under 250:', error)
+        console.error('Error fetching cafes under 250:', error)
         setUnder250Restaurants([])
       } finally {
         setLoadingRestaurants(false)
@@ -480,53 +520,50 @@ export default function Under250() {
             <div className="flex-shrink-0">
               <motion.div
                 className="flex flex-col items-center gap-1.5 w-[56px] sm:w-20 md:w-24"
+                onClick={handleAllCategoriesClick}
                 whileHover={{ scale: 1.1, y: -4 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
               >
-                <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-md transition-all">
-                  <OptimizedImage
-                    src={offerImage}
-                    alt="All"
-                    className="w-full h-full bg-white rounded-full"
-                    objectFit="cover"
-                    sizes="(max-width: 640px) 48px, (max-width: 768px) 64px, 80px"
-                    placeholder="blur"
-                  />
+                <div
+                  className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-md transition-all flex items-center justify-center ${activeCategory === "all"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-white text-gray-700"
+                    }`}
+                >
+                  <UtensilsCrossed className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
                 </div>
-                <span className="text-[10px] sm:text-xs md:text-sm font-semibold text-foreground/80 text-center pb-1">
+                <span className={`text-[10px] sm:text-xs md:text-sm font-semibold text-foreground/80 text-center pb-1 ${activeCategory === "all" ? 'border-b-2 border-primary' : ''}`}>
                   All
                 </span>
               </motion.div>
             </div>
-            {categories.map((category, index) => {
+            {categories.map((category) => {
               const isActive = activeCategory === category.id
-              const categorySlug = category.slug || category.name.toLowerCase().replace(/\s+/g, '-')
               return (
                 <div key={category.id} className="flex-shrink-0">
-                  <Link to={`/user/category/${categorySlug}`}>
-                    <motion.div
-                      className="flex flex-col items-center gap-1.5 w-[56px] sm:w-20 md:w-24"
-                      onClick={() => setActiveCategory(category.id)}
-                      whileHover={{ scale: 1.1, y: -4 }}
-                      whileTap={{ scale: 0.95 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    >
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-md transition-all">
-                        <OptimizedImage
-                          src={category.image}
-                          alt={category.name}
-                          className="w-full h-full bg-white rounded-full"
-                          objectFit="cover"
-                          sizes="(max-width: 640px) 48px, (max-width: 768px) 64px, 80px"
-                          placeholder="blur"
-                        />
-                      </div>
-                      <span className={`text-[10px] sm:text-xs md:text-sm font-semibold text-foreground/80 text-center pb-1 ${isActive ? 'border-b-2 border-primary' : ''}`}>
-                        {category.name.length > 7 ? `${category.name.slice(0, 7)}...` : category.name}
-                      </span>
-                    </motion.div>
-                  </Link>
+                  <motion.button
+                    type="button"
+                    className="flex flex-col items-center gap-1.5 w-[56px] sm:w-20 md:w-24"
+                    onClick={() => setActiveCategory(category.id)}
+                    whileHover={{ scale: 1.1, y: -4 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-md transition-all">
+                      <OptimizedImage
+                        src={category.image}
+                        alt={category.name}
+                        className="w-full h-full bg-white rounded-full"
+                        objectFit="cover"
+                        sizes="(max-width: 640px) 48px, (max-width: 768px) 64px, 80px"
+                        placeholder="blur"
+                      />
+                    </div>
+                    <span className={`text-[10px] sm:text-xs md:text-sm font-semibold text-foreground/80 text-center pb-1 ${isActive ? 'border-b-2 border-primary' : ''}`}>
+                      {category.name.length > 7 ? `${category.name.slice(0, 7)}...` : category.name}
+                    </span>
+                  </motion.button>
                 </div>
               )
             })}
@@ -564,18 +601,20 @@ export default function Under250() {
         {/* Restaurant Menu Sections */}
         {loadingRestaurants ? (
           <div className="flex justify-center items-center py-12">
-            <div className="text-gray-500 dark:text-gray-400">Loading restaurants...</div>
+            <div className="text-gray-500 dark:text-gray-400">Loading cafes...</div>
           </div>
-        ) : sortedAndFilteredRestaurants.length === 0 ? (
+        ) : restaurantsByCategory.length === 0 ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-gray-500 dark:text-gray-400">
               {under250Restaurants.length === 0
-                ? "No restaurants with dishes under ₹250 found."
-                : "No restaurants match the selected filters."}
+                ? "No cafes with dishes under ₹250 found."
+                : activeCategory === "all"
+                  ? "No cafes match the selected filters."
+                  : "No items found in this category for current filters."}
             </div>
           </div>
         ) : (
-          sortedAndFilteredRestaurants.map((restaurant) => {
+          restaurantsByCategory.map((restaurant) => {
             const restaurantSlug = restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, "-")
             return (
               <section key={restaurant.id} className="pt-4 sm:pt-6 md:pt-8 lg:pt-10">
@@ -736,6 +775,73 @@ export default function Under250() {
             )
           }))}
       </div>
+
+      {/* All Categories Popup */}
+      <AnimatePresence>
+        {showAllCategoriesPopup && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setShowAllCategoriesPopup(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-[115]"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-1.5rem)] max-w-sm sm:max-w-md bg-card rounded-2xl border border-border shadow-2xl z-[120] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 py-4 border-b border-border">
+                <h2 className="text-xl font-semibold text-foreground">All Categories</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowAllCategoriesPopup(false)}
+                  className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Close all categories"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="px-4 py-4 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-3 gap-x-4 gap-y-5">
+                  {categories.map((category) => (
+                    <button
+                      key={`all-category-${category.id}`}
+                      type="button"
+                      onClick={() => {
+                        setActiveCategory(category.id)
+                        setShowAllCategoriesPopup(false)
+                      }}
+                      className="flex flex-col items-center gap-2 text-center"
+                    >
+                      <div className="w-14 h-14 rounded-full overflow-hidden shadow-sm bg-white">
+                        <OptimizedImage
+                          src={category.image}
+                          alt={category.name}
+                          className="w-full h-full rounded-full"
+                          objectFit="cover"
+                          sizes="56px"
+                          placeholder="blur"
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-foreground/90 leading-tight">
+                        {category.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Sort Popup - Bottom Sheet */}
       <AnimatePresence>

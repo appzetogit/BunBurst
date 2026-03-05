@@ -31,7 +31,7 @@ export default function Home() {
             <Link to="/restaurant/auth/sign-in" className="block">
               <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center border-2 border-primary hover:bg-primary/10">
                 <span className="text-2xl mb-2">🔐</span>
-                <span className="font-semibold text-foreground">Restaurant Login</span>
+                <span className="font-semibold text-foreground">Cafe Login</span>
               </Button>
             </Link>
             <Link to="/delivery" className="block">

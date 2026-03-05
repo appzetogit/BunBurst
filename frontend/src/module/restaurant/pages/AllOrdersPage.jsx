@@ -22,21 +22,21 @@ const mockOrders = [
     status: "REJECTED",
     date: "19 Dec",
     time: "06:35 AM",
-    restaurant: "Kadhai Chammach Restaurant",
+    restaurant: "Kadhai Chammach Cafe",
     address: "By Pass Road (South), Indore",
     customer: "Aryan baghel",
     items: [
       { name: "Egg Biryani", quantity: 1, price: 199 }
     ],
     totalPrice: 199,
-    reason: "Rejected by Restaurant: items were out of stock"
+    reason: "Rejected by Cafe: items were out of stock"
   },
   {
     id: "7591372071",
     status: "REJECTED",
     date: "18 Dec",
     time: "04:04 AM",
-    restaurant: "Kadhai Chammach Restaurant",
+    restaurant: "Kadhai Chammach Cafe",
     address: "By Pass Road (South), Indore",
     customer: "Mantavya katkoria",
     items: [
@@ -44,7 +44,7 @@ const mockOrders = [
       { name: "Chicken Curry", quantity: 1, price: 39 }
     ],
     totalPrice: 238,
-    reason: "Rejected by Restaurant: items were out of stock"
+    reason: "Rejected by Cafe: items were out of stock"
   },
   {
     id: "7560307359",
@@ -52,7 +52,7 @@ const mockOrders = [
     tags: ["VEG ONLY"],
     date: "12 Dec",
     time: "04:27 AM",
-    restaurant: "Kadhai Chammach Restaurant",
+    restaurant: "Kadhai Chammach Cafe",
     address: "By Pass Road (South), Indore",
     customer: "John Doe",
     items: [
@@ -67,7 +67,7 @@ const mockOrders = [
     tags: ["SELF DELIVERY"],
     date: "19 Dec",
     time: "08:15 AM",
-    restaurant: "Kadhai Chammach Restaurant",
+    restaurant: "Kadhai Chammach Cafe",
     address: "By Pass Road (South), Indore",
     customer: "Priya Sharma",
     items: [
@@ -82,7 +82,7 @@ const mockOrders = [
     tags: ["LARGE ORDER"],
     date: "19 Dec",
     time: "09:30 AM",
-    restaurant: "Kadhai Chammach Restaurant",
+    restaurant: "Kadhai Chammach Cafe",
     address: "By Pass Road (South), Indore",
     customer: "Rahul Verma",
     items: [
@@ -95,7 +95,7 @@ const mockOrders = [
     status: "READY",
     date: "19 Dec",
     time: "10:00 AM",
-    restaurant: "Kadhai Chammach Restaurant",
+    restaurant: "Kadhai Chammach Cafe",
     address: "By Pass Road (South), Indore",
     customer: "Sneha Patel",
     items: [
@@ -109,7 +109,7 @@ const mockOrders = [
     tags: ["FOOD RESCUE"],
     date: "19 Dec",
     time: "10:45 AM",
-    restaurant: "Kadhai Chammach Restaurant",
+    restaurant: "Kadhai Chammach Cafe",
     address: "By Pass Road (South), Indore",
     customer: "Amit Kumar",
     items: [
@@ -123,7 +123,7 @@ const mockOrders = [
     tags: ["IRCTC"],
     date: "19 Dec",
     time: "11:20 AM",
-    restaurant: "Kadhai Chammach Restaurant",
+    restaurant: "Kadhai Chammach Cafe",
     address: "By Pass Road (South), Indore",
     customer: "Neha Singh",
     items: [
@@ -272,7 +272,7 @@ export default function AllOrdersPage() {
       } catch (err) {
         // Suppress 401 errors as they're handled by axios interceptor
         if (err.response?.status !== 401) {
-          console.error('Error fetching restaurant data:', err)
+          console.error('Error fetching cafe data:', err)
         }
       }
     }
@@ -320,7 +320,7 @@ export default function AllOrdersPage() {
     } else if (status === 'CANCELLED' && order.cancellationReason) {
       reason = `Cancelled by ${order.cancelledBy === 'customer' ? 'customer' : 'restaurant'}: ${order.cancellationReason}`
     } else if (status === 'REJECTED') {
-      reason = 'Rejected by Restaurant'
+      reason = 'Rejected by Cafe'
     } else if (status === 'CANCELLED') {
       reason = 'Cancelled by customer'
     }

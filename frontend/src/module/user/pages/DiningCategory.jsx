@@ -57,8 +57,8 @@ export default function DiningCategory() {
           setRestaurants(mappedData)
         }
       } catch (err) {
-        console.error("Failed to fetch restaurants", err)
-        setError("Failed to load restaurants")
+        console.error("Failed to fetch cafes", err)
+        setError("Failed to load cafes")
       } finally {
         setIsLoading(false)
       }
@@ -489,7 +489,7 @@ export default function DiningCategory() {
                 {/* Rating Tab */}
                 {activeFilterTab === 'rating' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Restaurant Rating</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Cafe Rating</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter('rating-35-plus')}

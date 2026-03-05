@@ -10,7 +10,7 @@ const getStatusColor = (orderStatus) => {
     "Processing": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Food On The Way": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Canceled": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
-    "Cancelled by Restaurant": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
+    "Cancelled by Cafe": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Cancelled by User": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Payment Failed": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
     "Refunded": "bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]",
@@ -292,7 +292,7 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                         <div className="text-xs text-red-600 mt-1">
                           <span className="font-medium">
                             {order.cancelledBy === 'user' ? 'Cancelled by User - ' : 
-                             order.cancelledBy === 'restaurant' ? 'Cancelled by Restaurant - ' : 
+                             order.cancelledBy === 'restaurant' ? 'Cancelled by Cafe - ' : 
                              'Reason: '}
                           </span>
                           {order.cancellationReason}
@@ -321,7 +321,7 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                       {/* Show Refund button or Refunded status for cancelled orders with Online/Wallet payment (restaurant or user cancelled) */}
                       {(() => {
                         // Check if order is cancelled by restaurant or user
-                        const isCancelled = order.orderStatus === "Cancelled by Restaurant" || 
+                        const isCancelled = order.orderStatus === "Cancelled by Cafe" || 
                                           order.orderStatus === "Cancelled" || 
                                           order.orderStatus === "Cancelled by User" ||
                                           (order.status === "cancelled" && (order.cancelledBy === "user" || order.cancelledBy === "restaurant"));

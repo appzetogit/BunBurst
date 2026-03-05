@@ -6,7 +6,7 @@ Backend API for Appzeto Food Delivery Platform built with Node.js, Express, and 
 
 - ✅ JWT-based authentication with refresh tokens
 - ✅ OTP-based phone authentication via SMSHub
-- ✅ Role-based access control (user, restaurant, delivery, admin)
+- ✅ Role-based access control (user, cafe, delivery, admin)
 - ✅ MongoDB database integration
 - ✅ Redis caching support
 - ✅ Socket.IO for real-time communication
@@ -99,7 +99,7 @@ backend/
 │   │   ├── routes/
 │   │   └── services/
 │   ├── user/           # User management (to be implemented)
-│   ├── restaurant/     # Restaurant management (to be implemented)
+│   ├── cafe/     # Cafe management (to be implemented)
 │   ├── delivery/       # Delivery partner management (to be implemented)
 │   ├── order/          # Order lifecycle (to be implemented)
 │   ├── payment/        # Payment processing (to be implemented)

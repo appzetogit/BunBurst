@@ -413,7 +413,7 @@ export default function RestaurantOnboarding() {
     const errors = []
     
     if (!step1.restaurantName?.trim()) {
-      errors.push("Restaurant name is required")
+      errors.push("Cafe name is required")
     }
     if (!step1.ownerName?.trim()) {
       errors.push("Owner name is required")
@@ -461,7 +461,7 @@ export default function RestaurantOnboarding() {
     
     // Check profile image - must be a File or existing URL
     if (!step2.profileImage) {
-      errors.push("Restaurant profile image is required")
+      errors.push("Cafe profile image is required")
     } else {
       // Verify profile image is either a File or has a valid URL
       const isValidProfileImage = 
@@ -469,7 +469,7 @@ export default function RestaurantOnboarding() {
         (step2.profileImage?.url && typeof step2.profileImage.url === 'string') ||
         (typeof step2.profileImage === 'string' && step2.profileImage.startsWith('http'))
       if (!isValidProfileImage) {
-        errors.push("Please upload a valid restaurant profile image")
+        errors.push("Please upload a valid cafe profile image")
       }
     }
     
@@ -598,7 +598,7 @@ export default function RestaurantOnboarding() {
   const fillDummyData = () => {
     if (step === 1) {
       setStep1({
-        restaurantName: "Test Restaurant",
+        restaurantName: "Test Cafe",
         ownerName: "John Doe",
         ownerEmail: "john.doe@example.com",
         ownerPhone: "+91 9876543210",
@@ -634,7 +634,7 @@ export default function RestaurantOnboarding() {
           panImage: null,
           gstRegistered: true,
           gstNumber: "27ABCDE1234F1Z5",
-          gstLegalName: "Test Restaurant Private Limited",
+          gstLegalName: "Test Cafe Private Limited",
           gstAddress: "123 Main Street, Mumbai, Maharashtra 400001",
           gstImage: null,
           fssaiNumber: "12345678901234",
@@ -786,7 +786,7 @@ export default function RestaurantOnboarding() {
         // After step2, also update restaurant schema with step2 data
         // This ensures data is saved immediately, not just in onboarding subdocument
         if (response?.data?.data?.restaurant) {
-          console.log('✅ Step2 data saved and restaurant updated')
+          console.log('✅ Step2 data saved and cafe updated')
         }
         
         // Only proceed to step 3 if save was successful
@@ -943,12 +943,12 @@ export default function RestaurantOnboarding() {
         clearOnboardingFromLocalStorage()
         
         // Show success message briefly, then navigate
-        console.log('✅ Onboarding completed successfully, redirecting to restaurant home...')
+        console.log('✅ Onboarding completed successfully, redirecting to cafe home...')
         
         // Wait a moment to ensure data is saved, then navigate
         setTimeout(() => {
           // Navigate to restaurant home page after onboarding completion
-          console.log('🚀 Navigating to restaurant home page...')
+          console.log('🚀 Navigating to cafe home page...')
           navigate("/restaurant", { replace: true })
         }, 800)
       }
@@ -988,11 +988,11 @@ export default function RestaurantOnboarding() {
   const renderStep1 = () => (
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md">
-        <h2 className="text-lg font-semibold text-black mb-4">Restaurant information</h2>
-        <p className="text-sm text-gray-600 mb-4">Restaurant name</p>
+        <h2 className="text-lg font-semibold text-black mb-4">Cafe information</h2>
+        <p className="text-sm text-gray-600 mb-4">Cafe name</p>
         <div className="space-y-3">
           <div>
-            <Label className="text-xs text-gray-700">Restaurant name*</Label>
+            <Label className="text-xs text-gray-700">Cafe name*</Label>
             <Input
               value={step1.restaurantName || ""}
               onChange={(e) => setStep1({ ...step1, restaurantName: e.target.value })}
@@ -1041,7 +1041,7 @@ export default function RestaurantOnboarding() {
       </section>
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
-        <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
+        <h2 className="text-lg font-semibold text-black">Cafe contact & location</h2>
         <div>
           <Label className="text-xs text-gray-700">Primary contact number*</Label>
           <Input
@@ -1050,7 +1050,7 @@ export default function RestaurantOnboarding() {
               setStep1({ ...step1, primaryContactNumber: e.target.value })
             }
             className="mt-1 bg-white text-sm text-black placeholder-black"
-            placeholder="Restaurant's primary contact number"
+            placeholder="Cafe's primary contact number"
           />
           <p className="text-[11px] text-gray-500 mt-1">
             Customers, delivery partners and {companyName} may call on this number for order
@@ -1059,7 +1059,7 @@ export default function RestaurantOnboarding() {
         </div>
         <div className="space-y-3">
           <p className="text-sm text-gray-700">
-            Add your restaurant's location for order pick-up.
+            Add your cafe's location for order pick-up.
           </p>
           <Input
             value={step1.location?.area || ""}
@@ -1226,7 +1226,7 @@ export default function RestaurantOnboarding() {
 
         {/* Profile image */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-gray-700">Restaurant profile image</Label>
+          <Label className="text-xs font-medium text-gray-700">Cafe profile image</Label>
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
               {step2.profileImage ? (
@@ -1246,7 +1246,7 @@ export default function RestaurantOnboarding() {
                   return imageSrc ? (
                     <img
                       src={imageSrc}
-                      alt="Restaurant profile"
+                      alt="Cafe profile"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -1261,7 +1261,7 @@ export default function RestaurantOnboarding() {
               <div className="flex flex-col">
                 <span className="text-xs font-medium text-gray-900">Upload profile image</span>
                 <span className="text-[11px] text-gray-500">
-                  This will be shown on your listing card and restaurant page.
+                  This will be shown on your listing card and cafe page.
                 </span>
               </div>
              
@@ -1344,7 +1344,7 @@ export default function RestaurantOnboarding() {
             <span>Open days</span>
           </Label>
           <p className="text-[11px] text-gray-500">
-            Select the days your restaurant accepts delivery orders.
+            Select the days your cafe accepts delivery orders.
           </p>
           <div className="mt-1 grid grid-cols-7 gap-1.5 sm:gap-2">
             {daysOfWeek.map((day) => {
@@ -1563,7 +1563,7 @@ export default function RestaurantOnboarding() {
   const renderStep4 = () => (
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
-        <h2 className="text-lg font-semibold text-black">Restaurant Display Information</h2>
+        <h2 className="text-lg font-semibold text-black">Cafe Display Information</h2>
         <p className="text-sm text-gray-600">
           Add information that will be displayed to customers on the home page
         </p>
@@ -1624,7 +1624,7 @@ export default function RestaurantOnboarding() {
     <LocalizationProvider dateAdapter={AdapterDateFns}>
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <header className="px-4 py-4 sm:px-6 sm:py-5 bg-white flex items-center justify-between">
-        <div className="text-sm font-semibold text-black">Restaurant onboarding</div>
+        <div className="text-sm font-semibold text-black">Cafe onboarding</div>
         <div className="flex items-center gap-3">
           {import.meta.env.DEV && (
             <Button

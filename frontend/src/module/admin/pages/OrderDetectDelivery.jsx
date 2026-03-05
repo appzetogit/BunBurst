@@ -44,9 +44,9 @@ const mapOrderStatus = (order) => {
   // Map backend status to frontend status
   const statusMap = {
     'pending': 'Ordered',
-    'confirmed': 'Restaurant Accepted',
-    'preparing': 'Restaurant Accepted',
-    'ready': 'Restaurant Accepted',
+    'confirmed': 'Cafe Accepted',
+    'preparing': 'Cafe Accepted',
+    'ready': 'Cafe Accepted',
     'out_for_delivery': 'Order ID Accepted',
   }
 
@@ -90,12 +90,12 @@ const buildStatusHistory = (order) => {
   // Restaurant Accepted (confirmed)
   if (tracking?.confirmed?.status && tracking?.confirmed?.timestamp) {
     history.push({
-      status: "Restaurant Accepted",
+      status: "Cafe Accepted",
       timestamp: formatTimestamp(tracking.confirmed.timestamp)
     })
   } else if (status === 'confirmed' || status === 'preparing' || status === 'ready') {
     history.push({
-      status: "Restaurant Accepted",
+      status: "Cafe Accepted",
       timestamp: formatTimestamp(order.updatedAt) || "N/A"
     })
   }
@@ -201,7 +201,7 @@ const transformOrder = (order, index) => {
     orderId: order.orderId,
     userName: order.customerName || order.userId?.name || 'Unknown',
     userNumber: order.customerPhone || order.userId?.phone || 'N/A',
-    restaurantName: order.restaurant || order.restaurantName || 'Unknown Restaurant',
+    restaurantName: order.restaurant || order.restaurantName || 'Unknown Cafe',
     deliveryBoyName: order.deliveryPartnerName || order.deliveryPartnerId?.name || null,
     deliveryBoyNumber: order.deliveryPartnerPhone || order.deliveryPartnerId?.phone || null,
     status: displayStatus,
@@ -296,7 +296,7 @@ export default function OrderDetectDelivery() {
   const stats = useMemo(() => {
     const total = orders.length
     const ordered = filteredData.filter(o => o.status === "Ordered").length
-    const restaurantAccepted = filteredData.filter(o => o.status === "Restaurant Accepted" || o.status === "Accepted").length
+    const restaurantAccepted = filteredData.filter(o => o.status === "Cafe Accepted" || o.status === "Accepted").length
     const rejected = filteredData.filter(o => o.status === "Rejected").length
     const deliveryBoyAssigned = filteredData.filter(o => o.status === "Delivery Boy Assigned").length
     const reachedPickup = filteredData.filter(o => o.status === "Delivery Boy Reached Pickup" || o.status === "Reached Pickup").length
@@ -392,7 +392,7 @@ export default function OrderDetectDelivery() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500 mb-1">Restaurant Accepted</p>
+              <p className="text-sm text-slate-500 mb-1">Cafe Accepted</p>
               <p className="text-2xl font-bold text-emerald-600">{stats.restaurantAccepted}</p>
             </div>
             <div className="p-3 bg-emerald-50 rounded-lg">
@@ -478,7 +478,7 @@ export default function OrderDetectDelivery() {
           si: "Serial Number",
           orderId: "Order ID",
           userInfo: "User Name & Number",
-          restaurantName: "Restaurant Name",
+          restaurantName: "Cafe Name",
           deliveryBoy: "Delivery Boy Name & Number",
           status: "Status",
           actions: "Actions",

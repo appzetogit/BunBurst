@@ -42,7 +42,7 @@ export const restaurantReportDummy = [
   },
   {
     sl: 3,
-    restaurantName: "Cheesy Restaurant",
+    restaurantName: "Cheesy Cafe",
     icon: icon3,
     totalFood: 3,
     totalOrder: 1,
@@ -146,7 +146,7 @@ export const restaurantReportDummy = [
   },
   {
     sl: 11,
-    restaurantName: "Pizza restaurant",
+    restaurantName: "Pizza cafe",
     icon: icon11,
     totalFood: 5,
     totalOrder: 1,

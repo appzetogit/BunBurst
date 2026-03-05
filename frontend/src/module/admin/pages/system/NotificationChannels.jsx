@@ -23,8 +23,8 @@ const adminNotifications = [
   },
   {
     id: 3,
-    topic: "Restaurant Self Registration",
-    description: "Choose How Admin Will Get Notified About Sent Notification On Restaurant Self Registration.",
+    topic: "Cafe Self Registration",
+    description: "Choose How Admin Will Get Notified About Sent Notification On Cafe Self Registration.",
     pushNotification: "N/A",
     mail: true,
     sms: false
@@ -75,7 +75,7 @@ const restaurantNotifications = [
   {
     id: 1,
     topic: "New Order Received",
-    description: "Choose How Restaurant Will Get Notified About New Order Received.",
+    description: "Choose How Cafe Will Get Notified About New Order Received.",
     pushNotification: "N/A",
     mail: true,
     sms: true
@@ -83,7 +83,7 @@ const restaurantNotifications = [
   {
     id: 2,
     topic: "Order Status Update",
-    description: "Choose How Restaurant Will Get Notified About Order Status Updates.",
+    description: "Choose How Cafe Will Get Notified About Order Status Updates.",
     pushNotification: "N/A",
     mail: true,
     sms: false
@@ -91,7 +91,7 @@ const restaurantNotifications = [
   {
     id: 3,
     topic: "Payment Received",
-    description: "Choose How Restaurant Will Get Notified About Payment Received.",
+    description: "Choose How Cafe Will Get Notified About Payment Received.",
     pushNotification: "N/A",
     mail: true,
     sms: true
@@ -99,7 +99,7 @@ const restaurantNotifications = [
   {
     id: 4,
     topic: "Review Received",
-    description: "Choose How Restaurant Will Get Notified About Customer Reviews.",
+    description: "Choose How Cafe Will Get Notified About Customer Reviews.",
     pushNotification: "N/A",
     mail: true,
     sms: false
@@ -107,7 +107,7 @@ const restaurantNotifications = [
   {
     id: 5,
     topic: "Withdrawal Request Status",
-    description: "Choose How Restaurant Will Get Notified About Withdrawal Request Status.",
+    description: "Choose How Cafe Will Get Notified About Withdrawal Request Status.",
     pushNotification: "N/A",
     mail: true,
     sms: false
@@ -115,7 +115,7 @@ const restaurantNotifications = [
   {
     id: 6,
     topic: "Campaign Invitation",
-    description: "Choose How Restaurant Will Get Notified About Campaign Invitations.",
+    description: "Choose How Cafe Will Get Notified About Campaign Invitations.",
     pushNotification: "N/A",
     mail: true,
     sms: false
@@ -123,7 +123,7 @@ const restaurantNotifications = [
   {
     id: 7,
     topic: "Order Cancelled",
-    description: "Choose How Restaurant Will Get Notified About Order Cancellations.",
+    description: "Choose How Cafe Will Get Notified About Order Cancellations.",
     pushNotification: "N/A",
     mail: true,
     sms: true
@@ -131,7 +131,7 @@ const restaurantNotifications = [
   {
     id: 8,
     topic: "Food Out of Stock",
-    description: "Choose How Restaurant Will Get Notified About Food Items Out of Stock.",
+    description: "Choose How Cafe Will Get Notified About Food Items Out of Stock.",
     pushNotification: "N/A",
     mail: true,
     sms: false

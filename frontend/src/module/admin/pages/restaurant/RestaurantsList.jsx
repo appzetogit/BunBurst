@@ -99,7 +99,7 @@ export default function RestaurantsList() {
           zonesResponse = zonesRes
         } catch (adminErr) {
           // Fallback to regular restaurant API if admin endpoint doesn't exist
-          console.log("Admin restaurants endpoint not available, using fallback")
+          console.log("Admin cafes endpoint not available, using fallback")
           response = await restaurantAPI.getRestaurants()
         }
 
@@ -143,8 +143,8 @@ export default function RestaurantsList() {
           setRestaurants([])
         }
       } catch (err) {
-        console.error("Error fetching restaurants:", err)
-        setError(err.message || "Failed to fetch restaurants")
+        console.error("Error fetching cafes:", err)
+        setError(err.message || "Failed to fetch cafes")
         setRestaurants([])
       } finally {
         setLoading(false)
@@ -208,7 +208,7 @@ export default function RestaurantsList() {
       // Call API
       await adminAPI.updateRestaurantStatus(restaurant._id, newStatus)
     } catch (err) {
-      console.error("Error updating restaurant status:", err)
+      console.error("Error updating cafe status:", err)
       // Revert on error
       const revertedRestaurants = restaurants.map(r =>
         r.id === id ? { ...r, status: !newStatus } : r
@@ -250,7 +250,7 @@ export default function RestaurantsList() {
     try {
       // First, use original data if available (has all details)
       if (restaurant.originalData) {
-        console.log("Using original restaurant data:", restaurant.originalData)
+        console.log("Using original cafe data:", restaurant.originalData)
         setRestaurantDetails(restaurant.originalData)
         setLoadingDetails(false)
         return
@@ -268,7 +268,7 @@ export default function RestaurantsList() {
             response = await adminAPI.getRestaurantById(restaurantId)
           }
         } catch (err) {
-          console.log("Admin API failed, trying restaurant API:", err)
+          console.log("Admin API failed, trying cafe API:", err)
         }
 
         // Fallback to regular restaurant API
@@ -276,7 +276,7 @@ export default function RestaurantsList() {
           try {
             response = await restaurantAPI.getRestaurantById(restaurantId)
           } catch (err) {
-            console.log("Restaurant API also failed:", err)
+            console.log("Cafe API also failed:", err)
           }
         }
       }
@@ -295,11 +295,11 @@ export default function RestaurantsList() {
         }
       } else {
         // Use the restaurant data we already have
-        console.log("Using restaurant data from list:", restaurant)
+        console.log("Using cafe data from list:", restaurant)
         setRestaurantDetails(restaurant)
       }
     } catch (err) {
-      console.error("Error fetching restaurant details:", err)
+      console.error("Error fetching cafe details:", err)
       // Use the restaurant data we already have
       setRestaurantDetails(restaurant)
     } finally {
@@ -365,7 +365,7 @@ export default function RestaurantsList() {
       }
 
     } catch (err) {
-      console.error("Error banning/unbanning restaurant:", err)
+      console.error("Error banning/unbanning cafe:", err)
       alert(`Failed to ${action} restaurant. Please try again.`)
     } finally {
       setBanning(false)
@@ -408,12 +408,12 @@ export default function RestaurantsList() {
         alert(`Restaurant "${restaurant.name}" deleted successfully!`)
       } catch (apiErr) {
         console.error("API Error:", apiErr)
-        alert(apiErr.response?.data?.message || "Failed to delete restaurant. Please try again.")
+        alert(apiErr.response?.data?.message || "Failed to delete cafe. Please try again.")
       }
 
     } catch (err) {
-      console.error("Error deleting restaurant:", err)
-      alert("Failed to delete restaurant. Please try again.")
+      console.error("Error deleting cafe:", err)
+      alert("Failed to delete cafe. Please try again.")
     } finally {
       setDeleting(false)
     }
@@ -469,7 +469,7 @@ export default function RestaurantsList() {
       // alert("Restaurant zone updated successfully!")
     } catch (error) {
       console.error("Error updating zone:", error)
-      alert(error.response?.data?.message || "Failed to update restaurant zone.")
+      alert(error.response?.data?.message || "Failed to update cafe zone.")
     } finally {
       setUpdatingZone(false)
     }
@@ -507,7 +507,7 @@ export default function RestaurantsList() {
         <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-[#1E1E1E]">Restaurants List</h1>
+              <h1 className="text-2xl font-bold text-[#1E1E1E]">Cafes List</h1>
             </div>
 
           </div>
@@ -519,7 +519,7 @@ export default function RestaurantsList() {
           <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">Total restaurants</p>
+                <p className="text-sm font-medium text-slate-600 mb-1">Total cafes</p>
                 <p className="text-2xl font-bold text-[#1E1E1E]">{totalRestaurants}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -532,7 +532,7 @@ export default function RestaurantsList() {
           <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">Active restaurants</p>
+                <p className="text-sm font-medium text-slate-600 mb-1">Active cafes</p>
                 <p className="text-2xl font-bold text-[#1E1E1E]">{activeRestaurants}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
@@ -545,7 +545,7 @@ export default function RestaurantsList() {
           <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">Inactive restaurants</p>
+                <p className="text-sm font-medium text-slate-600 mb-1">Inactive cafes</p>
                 <p className="text-2xl font-bold text-[#1E1E1E]">{inactiveRestaurants}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
@@ -558,7 +558,7 @@ export default function RestaurantsList() {
         {/* Restaurants List Section */}
         <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="text-xl font-bold text-[#1E1E1E]">Restaurants List</h2>
+            <h2 className="text-xl font-bold text-[#1E1E1E]">Cafes List</h2>
 
             <div className="flex items-center gap-3">
               <button
@@ -566,12 +566,12 @@ export default function RestaurantsList() {
                 className="px-4 py-2.5 text-sm font-medium rounded-lg bg-[#e53935] hover:bg-[#d32f2f] text-white flex items-center gap-2 transition-all shadow-sm hover:shadow-md"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Restaurant</span>
+                <span>Add Cafe</span>
               </button>
               <div className="relative flex-1 sm:flex-initial min-w-[250px]">
                 <input
                   type="text"
-                  placeholder="Ex: search by Restaurant n"
+                  placeholder="Ex: search by Cafe n"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-[#F5F5F5] bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935] focus:border-transparent shadow-sm"
@@ -610,7 +610,7 @@ export default function RestaurantsList() {
                     SL
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem checked={visibleColumns.restaurantInfo} onCheckedChange={() => handleToggleColumn("restaurantInfo")}>
-                    Restaurant Info
+                    Cafe Info
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem checked={visibleColumns.ownerInfo} onCheckedChange={() => handleToggleColumn("ownerInfo")}>
                     Owner Info
@@ -637,7 +637,7 @@ export default function RestaurantsList() {
             {loading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 animate-spin text-[#e53935]" />
-                <span className="ml-3 text-slate-600">Loading restaurants...</span>
+                <span className="ml-3 text-slate-600">Loading cafes...</span>
               </div>
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-20">
@@ -656,7 +656,7 @@ export default function RestaurantsList() {
                     </th>}
                     {visibleColumns.restaurantInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
                       <div className="flex items-center gap-1">
-                        <span>Restaurant Info</span>
+                        <span>Cafe Info</span>
                         <ArrowUpDown className="w-3 h-3 text-slate-400" />
                       </div>
                     </th>}
@@ -693,7 +693,7 @@ export default function RestaurantsList() {
                       <td colSpan={tableVisibleColumnCount} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center justify-center">
                           <p className="text-lg font-semibold text-[#1E1E1E] mb-1">No Data Found</p>
-                          <p className="text-sm text-slate-500">No restaurants match your search</p>
+                          <p className="text-sm text-slate-500">No cafes match your search</p>
                         </div>
                       </td>
                     </tr>
@@ -770,7 +770,7 @@ export default function RestaurantsList() {
                             <button
                               onClick={() => navigate(`/admin/restaurants/edit/${restaurant._id || restaurant.id}`)}
                               className="p-1.5 rounded text-indigo-600 hover:bg-indigo-50 transition-colors"
-                              title="Edit Restaurant"
+                              title="Edit Cafe"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
@@ -787,14 +787,14 @@ export default function RestaurantsList() {
                                 ? "text-green-600 hover:bg-green-50"
                                 : "text-red-600 hover:bg-red-50"
                                 }`}
-                              title={!restaurant.status ? "Unban Restaurant" : "Ban Restaurant"}
+                              title={!restaurant.status ? "Unban Cafe" : "Ban Cafe"}
                             >
                               <ShieldX className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteRestaurant(restaurant)}
                               className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
-                              title="Delete Restaurant"
+                              title="Delete Cafe"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -816,7 +816,7 @@ export default function RestaurantsList() {
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b border-[#F5F5F5] px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-[#1E1E1E]">Restaurant Details</h2>
+              <h2 className="text-2xl font-bold text-[#1E1E1E]">Cafe Details</h2>
               <button
                 onClick={closeDetailsModal}
                 className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
@@ -935,7 +935,7 @@ export default function RestaurantsList() {
                           <div className="flex items-center gap-3">
                             <Mail className="w-5 h-5 text-slate-400" />
                             <div>
-                              <p className="text-xs text-slate-500">Restaurant Email</p>
+                              <p className="text-xs text-slate-500">Cafe Email</p>
                               <p className="text-sm font-medium text-slate-900">{restaurantDetails.email}</p>
                             </div>
                           </div>
@@ -1046,7 +1046,7 @@ export default function RestaurantsList() {
                         )}
                         {restaurantDetails.restaurantId && (
                           <div>
-                            <p className="text-xs text-slate-500 mb-1">Restaurant ID</p>
+                            <p className="text-xs text-slate-500 mb-1">Cafe ID</p>
                             <p className="font-medium text-slate-900">{formatRestaurantId(restaurantDetails.restaurantId)}</p>
                           </div>
                         )}
@@ -1079,7 +1079,7 @@ export default function RestaurantsList() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         {restaurantDetails.onboarding.step1.restaurantName && (
                           <div>
-                            <p className="text-xs text-slate-500 mb-1">Restaurant Name (at registration)</p>
+                            <p className="text-xs text-slate-500 mb-1">Cafe Name (at registration)</p>
                             <p className="font-medium text-slate-900">{restaurantDetails.onboarding.step1.restaurantName}</p>
                           </div>
                         )}
@@ -1416,7 +1416,7 @@ export default function RestaurantsList() {
                         )}
                         {restaurantDetails?.restaurantId && (
                           <div>
-                            <p className="text-xs text-slate-500 mb-1">Restaurant ID</p>
+                            <p className="text-xs text-slate-500 mb-1">Cafe ID</p>
                             <p className="font-medium text-slate-900">{formatRestaurantId(restaurantDetails.restaurantId)}</p>
                           </div>
                         )}
@@ -1446,7 +1446,7 @@ export default function RestaurantsList() {
               {!loadingDetails && !restaurantDetails && !selectedRestaurant && (
                 <div className="flex flex-col items-center justify-center py-20">
                   <p className="text-lg font-semibold text-[#1E1E1E] mb-2">No Details Available</p>
-                  <p className="text-sm text-slate-500">Unable to load restaurant details</p>
+                  <p className="text-sm text-slate-500">Unable to load cafe details</p>
                 </div>
               )}
             </div>
@@ -1467,7 +1467,7 @@ export default function RestaurantsList() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-[#1E1E1E]">
-                    {banConfirmDialog.action === 'ban' ? 'Ban Restaurant' : 'Unban Restaurant'}
+                    {banConfirmDialog.action === 'ban' ? 'Ban Cafe' : 'Unban Cafe'}
                   </h3>
                   <p className="text-sm text-slate-600">
                     {banConfirmDialog.restaurant.name}
@@ -1477,8 +1477,8 @@ export default function RestaurantsList() {
 
               <p className="text-sm text-slate-700 mb-6">
                 {banConfirmDialog.action === 'ban'
-                  ? 'Are you sure you want to ban this restaurant? They will not be able to receive orders or access their account.'
-                  : 'Are you sure you want to unban this restaurant? They will be able to receive orders and access their account again.'
+                  ? 'Are you sure you want to ban this cafe? They will not be able to receive orders or access their account.'
+                  : 'Are you sure you want to unban this cafe? They will be able to receive orders and access their account again.'
                 }
               </p>
 
@@ -1504,7 +1504,7 @@ export default function RestaurantsList() {
                       {banConfirmDialog.action === 'ban' ? 'Banning...' : 'Unbanning...'}
                     </span>
                   ) : (
-                    banConfirmDialog.action === 'ban' ? 'Ban Restaurant' : 'Unban Restaurant'
+                    banConfirmDialog.action === 'ban' ? 'Ban Cafe' : 'Unban Cafe'
                   )}
                 </button>
               </div>
@@ -1523,7 +1523,7 @@ export default function RestaurantsList() {
                   <Trash2 className="w-6 h-6 text-[#e53935]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[#1E1E1E]">Delete Restaurant</h3>
+                  <h3 className="text-lg font-bold text-[#1E1E1E]">Delete Cafe</h3>
                   <p className="text-sm text-slate-600">
                     {deleteConfirmDialog.restaurant.name}
                   </p>
@@ -1531,7 +1531,7 @@ export default function RestaurantsList() {
               </div>
 
               <p className="text-sm text-slate-700 mb-6">
-                Are you sure you want to delete this restaurant? This action cannot be undone and will permanently remove all restaurant data, including orders, menu items, and settings.
+                Are you sure you want to delete this cafe? This action cannot be undone and will permanently remove all cafe data, including orders, menu items, and settings.
               </p>
 
               <div className="flex items-center gap-3">
@@ -1553,7 +1553,7 @@ export default function RestaurantsList() {
                       Deleting...
                     </span>
                   ) : (
-                    "Delete Restaurant"
+                    "Delete Cafe"
                   )}
                 </button>
               </div>
@@ -1571,7 +1571,7 @@ export default function RestaurantsList() {
                   <MapPin className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-[#1E1E1E]">Set Restaurant Zone</h3>
+                  <h3 className="text-lg font-bold text-[#1E1E1E]">Set Cafe Zone</h3>
                   <p className="text-sm text-slate-600">{zoneDialog.restaurant.name}</p>
                 </div>
               </div>

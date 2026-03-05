@@ -31,7 +31,7 @@ export default function RestaurantGoogleCallback() {
             no_code: "No authorization code received from Google.",
             invalid_state: "Security verification failed. Please try again.",
             no_email: "Google account email not found. Please use a different account.",
-            wrong_role: "This account is not registered as a restaurant partner.",
+            wrong_role: "This account is not registered as a cafe partner.",
             auth_failed: "Authentication failed. Please try again."
           }
           setError(errorMessages[errorParam] || "Authentication failed. Please try again.")
@@ -68,7 +68,7 @@ export default function RestaurantGoogleCallback() {
           navigate("/restaurant")
         }, 1200)
       } catch (err) {
-        console.error("Restaurant Google auth error:", err)
+        console.error("Cafe Google auth error:", err)
         setStatus("error")
         setError(
           err.message || "An error occurred during Google authentication. Please try again."
@@ -99,7 +99,7 @@ export default function RestaurantGoogleCallback() {
           <p className="text-sm text-gray-600">
             {status === "loading" &&
               `Connecting your ${provider || "Google"} account to ${companyName} Restaurant Panel...`}
-            {status === "success" && "You will be redirected to your restaurant panel shortly."}
+            {status === "success" && "You will be redirected to your cafe panel shortly."}
             {status === "error" && "We could not complete the Google sign-in process."}
           </p>
         </div>
@@ -115,7 +115,7 @@ export default function RestaurantGoogleCallback() {
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <CheckCircle2 className="h-14 w-14 text-green-500" />
             <p className="text-sm text-gray-700">
-              Your Google account has been linked to your restaurant profile.
+              Your Google account has been linked to your cafe profile.
             </p>
           </div>
         )}

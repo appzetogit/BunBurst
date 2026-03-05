@@ -102,7 +102,7 @@ export default function ZoneSetup() {
         setRestaurantData(data)
       }
     } catch (error) {
-      console.error("Error fetching restaurant data:", error)
+      console.error("Error fetching cafe data:", error)
     }
   }
 
@@ -268,7 +268,7 @@ export default function ZoneSetup() {
       map: mapInstanceRef.current,
       draggable: true,
       animation: window.google.maps.Animation.DROP,
-      title: address || "Restaurant Location"
+      title: address || "Cafe Location"
     })
 
     // Add info window
@@ -391,7 +391,7 @@ export default function ZoneSetup() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Zone Setup</h1>
-              <p className="text-sm text-gray-600">Set your restaurant location on the map</p>
+              <p className="text-sm text-gray-600">Set your cafe location on the map</p>
             </div>
           </div>
         </div>
@@ -406,7 +406,7 @@ export default function ZoneSetup() {
                 type="text"
                 value={locationSearch}
                 onChange={(e) => setLocationSearch(e.target.value)}
-                placeholder="Search for your restaurant location..."
+                placeholder="Search for your cafe location..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
@@ -447,7 +447,7 @@ export default function ZoneSetup() {
             <li>Search for your location using the search bar above, or</li>
             <li>Click anywhere on the map to place a pin at that location</li>
             <li>You can drag the pin to adjust the exact position</li>
-            <li>Click "Save Location" to save your restaurant location</li>
+            <li>Click "Save Location" to save your cafe location</li>
           </ul>
         </div>
 

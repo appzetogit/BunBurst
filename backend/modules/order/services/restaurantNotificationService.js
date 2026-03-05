@@ -25,7 +25,7 @@ export async function notifyRestaurantNewOrder(order, restaurantId, paymentMetho
     const io = await getIOInstance();
 
     if (!io) {
-      console.warn('Socket.IO not initialized, skipping restaurant notification');
+      console.warn('Socket.IO not initialized, skipping cafe notification');
       return;
     }
 
@@ -60,7 +60,7 @@ export async function notifyRestaurantNewOrder(order, restaurantId, paymentMetho
     
     // Validate restaurant name matches order
     if (restaurant && order.restaurantName && restaurant.name !== order.restaurantName) {
-      console.warn('⚠️ Restaurant name mismatch:', {
+      console.warn('⚠️ Cafe name mismatch:', {
         orderRestaurantName: order.restaurantName,
         foundRestaurantName: restaurant.name,
         restaurantId: restaurantId
@@ -102,7 +102,7 @@ export async function notifyRestaurantNewOrder(order, restaurantId, paymentMetho
       sendCutlery: order.sendCutlery,
       paymentMethod: resolvedPaymentMethod
     };
-    console.log('📢 Restaurant notification payload paymentMethod:', orderNotification.paymentMethod, { override: paymentMethodOverride, orderPaymentMethod: order.payment?.method });
+    console.log('📢 Cafe notification payload paymentMethod:', orderNotification.paymentMethod, { override: paymentMethodOverride, orderPaymentMethod: order.payment?.method });
 
     // Get restaurant namespace
     const restaurantNamespace = io.of('/restaurant');
@@ -197,7 +197,7 @@ export async function notifyRestaurantNewOrder(order, restaurantId, paymentMetho
         success: false,
         restaurantId,
         orderId: order.orderId,
-        error: 'Restaurant not connected to Socket.IO',
+        error: 'Cafe not connected to Socket.IO',
         message: `Restaurant ${normalizedRestaurantId} (${order.restaurantName}) is not connected. Order notification not sent.`
       };
     }
@@ -208,7 +208,7 @@ export async function notifyRestaurantNewOrder(order, restaurantId, paymentMetho
       orderId: order.orderId
     };
   } catch (error) {
-    console.error('Error notifying restaurant:', error);
+    console.error('Error notifying cafe:', error);
     throw error;
   }
 }
@@ -242,7 +242,7 @@ export async function notifyRestaurantOrderUpdate(orderId, status) {
 
     console.log(`📢 Notified restaurant ${order.restaurantId} about order ${order.orderId} status: ${status}`);
   } catch (error) {
-    console.error('Error notifying restaurant about order update:', error);
+    console.error('Error notifying cafe about order update:', error);
     throw error;
   }
 }

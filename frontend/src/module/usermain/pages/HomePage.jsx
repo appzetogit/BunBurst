@@ -290,14 +290,14 @@ export default function HomePage() {
     "Are you hungry !!",
     "Search for delicious food...",
     "What would you like to eat?",
-    "Find your favorite restaurant",
+    "Find your favorite cafe",
     "Craving something special?",
     "Discover amazing dishes",
     "Order your favorite meal",
     "Explore new flavors",
     "Find the best deals",
     "What's cooking today?",
-    "Search restaurants nearby",
+    "Search cafes nearby",
     "Hungry? We've got you!",
   ]
 
@@ -719,7 +719,7 @@ export default function HomePage() {
       {/* Popular Restaurants Section */}
       <div className="px-4 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-foreground">Popular Restaurants</h3>
+          <h3 className="text-lg font-bold text-foreground">Popular Cafes</h3>
           <button className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
             <ArrowRight className="w-4 h-4 text-foreground" />
           </button>
@@ -856,7 +856,7 @@ export default function HomePage() {
             {/* Center - Text Content */}
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <h3 className="text-base md:text-2xl font-bold text-foreground mb-0.5 md:mb-2 whitespace-nowrap">Find Nearby</h3>
-              <p className="text-[10px] md:text-sm text-muted-foreground leading-tight">Restaurant Near from You</p>
+              <p className="text-[10px] md:text-sm text-muted-foreground leading-tight">Cafe Near from You</p>
             </div>
 
             {/* Right Side - Button with Map Pin */}

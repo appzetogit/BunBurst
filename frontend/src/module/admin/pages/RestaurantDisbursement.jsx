@@ -7,7 +7,7 @@ export default function RestaurantDisbursement() {
   
   return (
     <DisbursementPage
-      title="Restaurant Disbursement"
+      title="Cafe Disbursement"
       icon={Building}
       tabs={tabs}
       disbursements={restaurantDisbursementsDummy}

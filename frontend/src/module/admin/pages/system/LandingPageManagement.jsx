@@ -340,7 +340,7 @@ export default function LandingPageManagement() {
       )
 
       if (response.data.success) {
-        setSuccess('Restaurants linked to banner successfully!')
+        setSuccess('Cafes linked to banner successfully!')
         setShowRestaurantModal(false)
         setSelectedBannerId(null)
         setSelectedRestaurantIds([])
@@ -349,7 +349,7 @@ export default function LandingPageManagement() {
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
-      setErrorSafely(err.response?.data?.message || 'Failed to link restaurants to banner.')
+      setErrorSafely(err.response?.data?.message || 'Failed to link cafes to banner.')
     } finally {
       setLinkingRestaurants(false)
     }
@@ -1003,7 +1003,7 @@ export default function LandingPageManagement() {
         setAllRestaurants([])
         setError(null)
       } else {
-        const errorMessage = err.response?.data?.message || 'Failed to load restaurants'
+        const errorMessage = err.response?.data?.message || 'Failed to load cafes'
         setErrorSafely(errorMessage)
       }
     } finally {
@@ -1025,7 +1025,7 @@ export default function LandingPageManagement() {
         setTop10Restaurants([])
         setError(null)
       } else {
-        const errorMessage = err.response?.data?.message || 'Failed to load Top 10 restaurants'
+        const errorMessage = err.response?.data?.message || 'Failed to load Top 10 cafes'
         setErrorSafely(errorMessage)
       }
     } finally {
@@ -1035,7 +1035,7 @@ export default function LandingPageManagement() {
 
   const handleAddTop10Restaurant = async () => {
     if (!selectedRestaurantTop10 || !selectedRank) {
-      setError('Please select a restaurant and rank')
+      setError('Please select a cafe and rank')
       return
     }
 
@@ -1047,31 +1047,31 @@ export default function LandingPageManagement() {
         rank: parseInt(selectedRank)
       }, getAuthConfig())
       if (response.data.success) {
-        setSuccess('Restaurant added to Top 10 successfully!')
+        setSuccess('Cafe added to Top 10 successfully!')
         setSelectedRestaurantTop10("")
         setSelectedRank(1)
         await fetchTop10Restaurants()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
-      setErrorSafely(err.response?.data?.message || 'Failed to add restaurant to Top 10.')
+      setErrorSafely(err.response?.data?.message || 'Failed to add cafe to Top 10.')
     }
   }
 
   const handleDeleteTop10Restaurant = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this restaurant from Top 10?')) return
+    if (!window.confirm('Are you sure you want to remove this cafe from Top 10?')) return
     try {
       setTop10Deleting(id)
       setError(null)
       setSuccess(null)
       const response = await api.delete(`/hero-banners/top-10/${id}`, getAuthConfig())
       if (response.data.success) {
-        setSuccess('Restaurant removed from Top 10 successfully!')
+        setSuccess('Cafe removed from Top 10 successfully!')
         await fetchTop10Restaurants()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
-      setErrorSafely(err.response?.data?.message || 'Failed to remove restaurant.')
+      setErrorSafely(err.response?.data?.message || 'Failed to remove cafe.')
     } finally {
       setTop10Deleting(null)
     }
@@ -1091,7 +1091,7 @@ export default function LandingPageManagement() {
       }
       await fetchTop10Restaurants()
     } catch (err) {
-      setErrorSafely('Failed to update Top 10 restaurant order.')
+      setErrorSafely('Failed to update Top 10 cafe order.')
     }
   }
 
@@ -1101,7 +1101,7 @@ export default function LandingPageManagement() {
       await api.patch(`/hero-banners/top-10/${id}/rank`, { rank: parseInt(newRank) }, getAuthConfig())
       await fetchTop10Restaurants()
     } catch (err) {
-      setErrorSafely('Failed to update Top 10 restaurant rank.')
+      setErrorSafely('Failed to update Top 10 cafe rank.')
     }
   }
 
@@ -1116,7 +1116,7 @@ export default function LandingPageManagement() {
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
-      setErrorSafely(err.response?.data?.message || 'Failed to update restaurant status.')
+      setErrorSafely(err.response?.data?.message || 'Failed to update cafe status.')
     }
   }
 
@@ -1134,7 +1134,7 @@ export default function LandingPageManagement() {
         setGourmetRestaurants([])
         setError(null)
       } else {
-        const errorMessage = err.response?.data?.message || 'Failed to load Gourmet restaurants'
+        const errorMessage = err.response?.data?.message || 'Failed to load Gourmet cafes'
         setErrorSafely(errorMessage)
       }
     } finally {
@@ -1144,7 +1144,7 @@ export default function LandingPageManagement() {
 
   const handleAddGourmetRestaurant = async () => {
     if (!selectedRestaurantGourmet) {
-      setError('Please select a restaurant')
+      setError('Please select a cafe')
       return
     }
 
@@ -1155,30 +1155,30 @@ export default function LandingPageManagement() {
         restaurantId: selectedRestaurantGourmet
       }, getAuthConfig())
       if (response.data.success) {
-        setSuccess('Restaurant added to Gourmet successfully!')
+        setSuccess('Cafe added to Gourmet successfully!')
         setSelectedRestaurantGourmet("")
         await fetchGourmetRestaurants()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
-      setErrorSafely(err.response?.data?.message || 'Failed to add restaurant to Gourmet.')
+      setErrorSafely(err.response?.data?.message || 'Failed to add cafe to Gourmet.')
     }
   }
 
   const handleDeleteGourmetRestaurant = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this restaurant from Gourmet?')) return
+    if (!window.confirm('Are you sure you want to remove this cafe from Gourmet?')) return
     try {
       setGourmetDeleting(id)
       setError(null)
       setSuccess(null)
       const response = await api.delete(`/hero-banners/gourmet/${id}`, getAuthConfig())
       if (response.data.success) {
-        setSuccess('Restaurant removed from Gourmet successfully!')
+        setSuccess('Cafe removed from Gourmet successfully!')
         await fetchGourmetRestaurants()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
-      setErrorSafely(err.response?.data?.message || 'Failed to remove restaurant.')
+      setErrorSafely(err.response?.data?.message || 'Failed to remove cafe.')
     } finally {
       setGourmetDeleting(null)
     }
@@ -1198,7 +1198,7 @@ export default function LandingPageManagement() {
       }
       await fetchGourmetRestaurants()
     } catch (err) {
-      setErrorSafely('Failed to update Gourmet restaurant order.')
+      setErrorSafely('Failed to update Gourmet cafe order.')
     }
   }
 
@@ -1213,7 +1213,7 @@ export default function LandingPageManagement() {
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
-      setErrorSafely(err.response?.data?.message || 'Failed to update restaurant status.')
+      setErrorSafely(err.response?.data?.message || 'Failed to update cafe status.')
     }
   }
 
@@ -1405,7 +1405,7 @@ export default function LandingPageManagement() {
                         </div>
                         {banner.linkedRestaurants && banner.linkedRestaurants.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-slate-200">
-                            <p className="text-xs text-slate-600 mb-1">Linked Restaurants ({banner.linkedRestaurants.length}):</p>
+                            <p className="text-xs text-slate-600 mb-1">Linked Cafes ({banner.linkedRestaurants.length}):</p>
                             <div className="flex flex-wrap gap-1">
                               {banner.linkedRestaurants.slice(0, 3).map((restaurant) => (
                                 <span key={restaurant._id || restaurant} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
@@ -1692,10 +1692,10 @@ export default function LandingPageManagement() {
             {exploreMoreSubTab === 'top-10' && (
               <>
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4">Add Restaurant to Top 10</h2>
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">Add Cafe to Top 10</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="restaurant-top10">Select Restaurant</Label>
+                      <Label htmlFor="restaurant-top10">Select Cafe</Label>
                       <select
                         id="restaurant-top10"
                         value={selectedRestaurantTop10}
@@ -1703,7 +1703,7 @@ export default function LandingPageManagement() {
                         className="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         disabled={restaurantsLoading}
                       >
-                        <option value="">Select a restaurant...</option>
+                        <option value="">Select a cafe...</option>
                         {allRestaurants
                           .filter(r => !top10Restaurants.some(tr => tr.restaurant?._id === r._id))
                           .map((restaurant) => (
@@ -1736,7 +1736,7 @@ export default function LandingPageManagement() {
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4">Top 10 Restaurants ({top10Restaurants.length})</h2>
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">Top 10 Cafes ({top10Restaurants.length})</h2>
                   {top10Loading ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
@@ -1744,7 +1744,7 @@ export default function LandingPageManagement() {
                   ) : top10Restaurants.length === 0 ? (
                     <div className="text-center py-12 text-slate-500">
                       <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-                      <p>No restaurants added to Top 10 yet.</p>
+                      <p>No cafes added to Top 10 yet.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -1801,10 +1801,10 @@ export default function LandingPageManagement() {
             {exploreMoreSubTab === 'gourmet' && (
               <>
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4">Add Restaurant to Gourmet</h2>
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">Add Cafe to Gourmet</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="restaurant-gourmet">Select Restaurant</Label>
+                      <Label htmlFor="restaurant-gourmet">Select Cafe</Label>
                       <select
                         id="restaurant-gourmet"
                         value={selectedRestaurantGourmet}
@@ -1812,7 +1812,7 @@ export default function LandingPageManagement() {
                         className="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         disabled={restaurantsLoading}
                       >
-                        <option value="">Select a restaurant...</option>
+                        <option value="">Select a cafe...</option>
                         {allRestaurants
                           .filter(r => !gourmetRestaurants.some(gr => gr.restaurant?._id === r._id))
                           .map((restaurant) => (
@@ -1833,7 +1833,7 @@ export default function LandingPageManagement() {
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4">Gourmet Restaurants ({gourmetRestaurants.length})</h2>
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">Gourmet Cafes ({gourmetRestaurants.length})</h2>
                   {gourmetLoading ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
@@ -1841,7 +1841,7 @@ export default function LandingPageManagement() {
                   ) : gourmetRestaurants.length === 0 ? (
                     <div className="text-center py-12 text-slate-500">
                       <ChefHat className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-                      <p>No restaurants added to Gourmet yet.</p>
+                      <p>No cafes added to Gourmet yet.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -1908,9 +1908,9 @@ export default function LandingPageManagement() {
         <Dialog open={showRestaurantModal} onOpenChange={setShowRestaurantModal}>
           <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col p-0">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200">
-              <DialogTitle className="text-2xl font-bold text-slate-900">Select Restaurants to Link with Banner</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-slate-900">Select Cafes to Link with Banner</DialogTitle>
               <DialogDescription className="text-slate-600 mt-2">
-                Select restaurants that will be linked to this banner. When users click on this banner, they will be redirected to the selected restaurants.
+                Select cafes that will be linked to this banner. When users click on this banner, they will be redirected to the selected cafes.
               </DialogDescription>
             </DialogHeader>
             
@@ -1921,7 +1921,7 @@ export default function LandingPageManagement() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <Input
                     type="text"
-                    placeholder="Search restaurants by name or ID..."
+                    placeholder="Search cafes by name or ID..."
                     value={restaurantSearchQuery}
                     onChange={(e) => setRestaurantSearchQuery(e.target.value)}
                     className="pl-10 h-11 bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500"
@@ -1930,7 +1930,7 @@ export default function LandingPageManagement() {
                 {selectedRestaurantIds.length > 0 && (
                   <div className="flex items-center gap-2">
                     <div className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
-                      {selectedRestaurantIds.length} restaurant{selectedRestaurantIds.length > 1 ? 's' : ''} selected
+                      {selectedRestaurantIds.length} cafe{selectedRestaurantIds.length > 1 ? 's' : ''} selected
                     </div>
                     <Button
                       variant="ghost"
@@ -1949,14 +1949,14 @@ export default function LandingPageManagement() {
                 {restaurantsLoading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-3" />
-                    <p className="text-slate-500">Loading restaurants...</p>
+                    <p className="text-slate-500">Loading cafes...</p>
                   </div>
                 ) : filteredRestaurantsForModal.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center px-6">
                     <ImageIcon className="w-16 h-16 text-slate-300 mb-4" />
-                    <p className="text-slate-600 font-medium mb-1">No restaurants found</p>
+                    <p className="text-slate-600 font-medium mb-1">No cafes found</p>
                     <p className="text-sm text-slate-500">
-                      {restaurantSearchQuery ? 'Try a different search term' : 'No restaurants available'}
+                      {restaurantSearchQuery ? 'Try a different search term' : 'No cafes available'}
                     </p>
                   </div>
                 ) : (
@@ -2012,7 +2012,7 @@ export default function LandingPageManagement() {
                               <h3 className={`font-semibold text-base mb-1 ${
                                 isSelected ? 'text-blue-900' : 'text-slate-900'
                               }`}>
-                                {restaurant.name || 'Unnamed Restaurant'}
+                                {restaurant.name || 'Unnamed Cafe'}
                               </h3>
                               <p className="text-sm text-slate-500 truncate">
                                 ID: {restaurant.restaurantId || restaurant._id}
@@ -2044,7 +2044,7 @@ export default function LandingPageManagement() {
               {/* Action Buttons */}
               <div className="flex items-center justify-between gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200">
                 <div className="text-sm text-slate-600">
-                  {filteredRestaurantsForModal.length} restaurant{filteredRestaurantsForModal.length !== 1 ? 's' : ''} available
+                  {filteredRestaurantsForModal.length} cafe{filteredRestaurantsForModal.length !== 1 ? 's' : ''} available
                 </div>
                 <div className="flex items-center gap-3">
                   <Button
@@ -2072,7 +2072,7 @@ export default function LandingPageManagement() {
                     ) : (
                       <>
                         <Megaphone className="w-4 h-4 mr-2" />
-                        Link {selectedRestaurantIds.length > 0 ? `(${selectedRestaurantIds.length})` : ''} Restaurant{selectedRestaurantIds.length !== 1 ? 's' : ''}
+                        Link {selectedRestaurantIds.length > 0 ? `(${selectedRestaurantIds.length})` : ''} Cafe{selectedRestaurantIds.length !== 1 ? 's' : ''}
                       </>
                     )}
                   </Button>

@@ -86,7 +86,7 @@ export default function AllZonesMap() {
         setRestaurants(response.data.data.restaurants)
       }
     } catch (error) {
-      console.error("Error fetching restaurants:", error)
+      console.error("Error fetching cafes:", error)
     }
   }
 
@@ -336,7 +336,7 @@ export default function AllZonesMap() {
         content: `
           <div style="padding: 12px; min-width: 200px;">
             <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1e293b;">
-              ${restaurant.name || 'Unnamed Restaurant'}
+              ${restaurant.name || 'Unnamed Cafe'}
             </h3>
             <div style="font-size: 13px; color: #64748b; line-height: 1.6;">
               ${restaurant.location?.formattedAddress || restaurant.location?.address || restaurant.location?.area || 'Location not specified'}
@@ -382,7 +382,7 @@ export default function AllZonesMap() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">All Zones Map</h1>
-              <p className="text-sm text-slate-600">View all restaurant delivery zones on map</p>
+              <p className="text-sm text-slate-600">View all cafe delivery zones on map</p>
             </div>
           </div>
         </div>
@@ -456,7 +456,7 @@ export default function AllZonesMap() {
                 )}
                 {restaurants.length > 0 && (
                   <p>
-                    Click on any <span className="font-semibold text-red-600">red marker</span> to view restaurant name and details. Total restaurants: <strong>{restaurants.length}</strong>
+                    Click on any <span className="font-semibold text-red-600">red marker</span> to view cafe name and details. Total cafes: <strong>{restaurants.length}</strong>
                   </p>
                 )}
               </div>

@@ -35,7 +35,7 @@ export const couponsDummy = [
     sl: 3,
     title: "50% Off",
     code: "free50",
-    type: "Restaurant wise",
+    type: "Cafe wise",
     totalUses: 0,
     minPurchase: 100.00,
     maxDiscount: 500.00,

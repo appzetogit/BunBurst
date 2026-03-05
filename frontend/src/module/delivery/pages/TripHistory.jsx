@@ -338,7 +338,7 @@ export default function TripHistory() {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <p className="text-base font-semibold text-[#1E1E1E]">{trip.orderId}</p>
-                    <p className="text-sm text-gray-600 mt-1">{trip.restaurant || trip.restaurantName || 'Unknown Restaurant'}</p>
+                    <p className="text-sm text-gray-600 mt-1">{trip.restaurant || trip.restaurantName || 'Unknown Cafe'}</p>
                     {/* Payment Method Badge */}
                     {(() => {
                       const paymentMethod = trip.paymentMethod || trip.payment?.method || 'razorpay';

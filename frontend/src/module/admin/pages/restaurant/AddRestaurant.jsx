@@ -317,8 +317,8 @@ export default function AddRestaurant() {
             })
           }
         } catch (error) {
-          console.error("Error fetching restaurant:", error)
-          toast.error("Failed to fetch restaurant details")
+          console.error("Error fetching cafe:", error)
+          toast.error("Failed to fetch cafe details")
         } finally {
           setLoadingConfig(false)
         }
@@ -441,7 +441,7 @@ export default function AddRestaurant() {
         position,
         map,
         draggable: true,
-        title: "Restaurant location",
+        title: "Cafe location",
       })
 
       markerRef.current.addListener("dragend", (event) => {
@@ -609,7 +609,7 @@ export default function AddRestaurant() {
       <div className="flex h-screen items-center justify-center bg-slate-50">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
-          <p className="mt-2 text-sm text-slate-500">Loading restaurant details...</p>
+          <p className="mt-2 text-sm text-slate-500">Loading cafe details...</p>
         </div>
       </div>
     )
@@ -631,7 +631,7 @@ export default function AddRestaurant() {
   // Validation functions
   const validateStep1 = () => {
     const errors = []
-    if (!step1.restaurantName?.trim()) errors.push("Restaurant name is required")
+    if (!step1.restaurantName?.trim()) errors.push("Cafe name is required")
     if (!step1.ownerName?.trim()) errors.push("Owner name is required")
     if (!step1.ownerEmail?.trim()) errors.push("Owner email is required")
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(step1.ownerEmail)) errors.push("Please enter a valid email address")
@@ -645,7 +645,7 @@ export default function AddRestaurant() {
   const validateStep2 = () => {
     const errors = []
     if (!step2.menuImages || step2.menuImages.length === 0) errors.push("At least one menu image is required")
-    if (!step2.profileImage) errors.push("Restaurant profile image is required")
+    if (!step2.profileImage) errors.push("Cafe profile image is required")
     if (!step2.cuisines || step2.cuisines.length === 0) errors.push("Please select at least one cuisine")
     if (!step2.openingTime?.trim()) errors.push("Opening time is required")
     if (!step2.closingTime?.trim()) errors.push("Closing time is required")
@@ -847,14 +847,14 @@ export default function AddRestaurant() {
       }
 
       if (response.data.success) {
-        toast.success(isEditMode ? "Restaurant updated successfully!" : "Restaurant created successfully!")
+        toast.success(isEditMode ? "Cafe updated successfully!" : "Cafe created successfully!")
         navigate("/admin/restaurants")
       } else {
-        throw new Error(response.data.message || "Failed to create restaurant")
+        throw new Error(response.data.message || "Failed to create cafe")
       }
     } catch (error) {
-      console.error("Error creating restaurant:", error)
-      const errorMsg = error?.response?.data?.message || error?.message || "Failed to create restaurant. Please try again."
+      console.error("Error creating cafe:", error)
+      const errorMsg = error?.response?.data?.message || error?.message || "Failed to create cafe. Please try again."
       toast.error(errorMsg)
       setFormErrors({ submit: errorMsg })
     } finally {
@@ -866,10 +866,10 @@ export default function AddRestaurant() {
   const renderStep1 = () => (
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md">
-        <h2 className="text-lg font-semibold text-black mb-4">Restaurant information</h2>
+        <h2 className="text-lg font-semibold text-black mb-4">Cafe information</h2>
         <div className="space-y-3">
           <div>
-            <Label className="text-xs text-gray-700">Restaurant name*</Label>
+            <Label className="text-xs text-gray-700">Cafe name*</Label>
             <Input
               value={step1.restaurantName || ""}
               onChange={(e) => setStep1({ ...step1, restaurantName: e.target.value })}
@@ -915,14 +915,14 @@ export default function AddRestaurant() {
       </section>
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
-        <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
+        <h2 className="text-lg font-semibold text-black">Cafe contact & location</h2>
         <div>
           <Label className="text-xs text-gray-700">Primary contact number*</Label>
           <Input
             value={step1.primaryContactNumber || ""}
             onChange={(e) => setStep1({ ...step1, primaryContactNumber: e.target.value })}
             className="mt-1 bg-white text-sm text-black placeholder-black"
-            placeholder="Restaurant's primary contact number"
+            placeholder="Cafe's primary contact number"
           />
         </div>
         <div className="space-y-3">
@@ -986,7 +986,7 @@ export default function AddRestaurant() {
           </div>
           <div className="rounded-md border border-slate-200 overflow-hidden bg-slate-50">
             <div className="px-3 py-2 text-xs text-slate-600 border-b border-slate-200">
-              Click on map to pin restaurant location. Drag marker for fine adjustment.
+              Click on map to pin cafe location. Drag marker for fine adjustment.
             </div>
             <div ref={mapRef} className="h-72 w-full" />
             {mapLoading && (
@@ -1075,7 +1075,7 @@ export default function AddRestaurant() {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-gray-700">Restaurant profile image*</Label>
+          <Label className="text-xs font-medium text-gray-700">Cafe profile image*</Label>
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
               {step2.profileImage ? (
@@ -1285,7 +1285,7 @@ export default function AddRestaurant() {
   const renderStep4 = () => (
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
-        <h2 className="text-lg font-semibold text-black">Restaurant Display Information</h2>
+        <h2 className="text-lg font-semibold text-black">Cafe Display Information</h2>
         <div>
           <Label className="text-xs text-gray-700">Estimated Delivery Time*</Label>
           <Input value={step4.estimatedDeliveryTime || ""} onChange={(e) => setStep4({ ...step4, estimatedDeliveryTime: e.target.value })} className="mt-1 bg-white text-sm" placeholder="e.g., 25-30 mins" />
@@ -1362,7 +1362,7 @@ export default function AddRestaurant() {
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <h2 className="text-lg font-semibold text-black">Authentication Details</h2>
-        <p className="text-sm text-gray-600">Set up login credentials for the restaurant</p>
+        <p className="text-sm text-gray-600">Set up login credentials for the cafe</p>
         <div>
           <Label className="text-xs text-gray-700">Email*</Label>
           <Input
@@ -1401,7 +1401,7 @@ export default function AddRestaurant() {
       <header className="px-4 py-4 sm:px-6 sm:py-5 bg-white flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Building2 className="w-5 h-5 text-blue-600" />
-          <div className="text-sm font-semibold text-black">{isEditMode ? "Edit Restaurant" : "Add New Restaurant"}</div>
+          <div className="text-sm font-semibold text-black">{isEditMode ? "Edit Cafe" : "Add New Cafe"}</div>
         </div>
         <div className="text-xs text-gray-600">Step {step} of 5</div>
       </header>
@@ -1429,7 +1429,7 @@ export default function AddRestaurant() {
             disabled={isSubmitting}
             className="text-sm bg-black text-white px-6"
           >
-            {step === 5 ? (isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {isEditMode ? "Updating..." : "Creating..."} </> : (isEditMode ? "Update Restaurant" : "Create Restaurant")) : isSubmitting ? "Saving..." : "Continue"}
+            {step === 5 ? (isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {isEditMode ? "Updating..." : "Creating..."} </> : (isEditMode ? "Update Cafe" : "Create Cafe")) : isSubmitting ? "Saving..." : "Continue"}
           </Button>
         </div>
       </footer>

@@ -351,7 +351,7 @@ function CancelledOrders({ onSelectOrder }) {
             const cancelledByText = order.cancelledBy === 'user'
               ? 'Cancelled by User'
               : order.cancelledBy === 'restaurant'
-                ? 'Cancelled by Restaurant'
+                ? 'Cancelled by Cafe'
                 : 'Cancelled'
 
             return (
@@ -588,7 +588,7 @@ export default function OrdersMain() {
   const { newOrder, clearNewOrder, isConnected } = useRestaurantNotifications()
 
   const rejectReasons = [
-    "Restaurant is too busy",
+    "Cafe is too busy",
     "Item not available",
     "Outside delivery area",
     "Kitchen closing soon",
@@ -624,7 +624,7 @@ export default function OrdersMain() {
       } catch (error) {
         // Only log error if it's not a network/timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          console.error("Error fetching restaurant status:", error)
+          console.error("Error fetching cafe status:", error)
         }
         // Set loading to false so UI doesn't stay in loading state
         setRestaurantStatus(prev => ({ ...prev, isLoading: false }))
@@ -666,11 +666,11 @@ export default function OrdersMain() {
       // Trigger profile refresh event
       window.dispatchEvent(new Event('restaurantProfileRefresh'))
 
-      alert('Restaurant reverified successfully! Verification will be done in 24 hours.')
+      alert('Cafe reverified successfully! Verification will be done in 24 hours.')
     } catch (error) {
       // Don't log network/timeout errors (backend might be down)
       if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-        console.error("Error reverifying restaurant:", error)
+        console.error("Error reverifying cafe:", error)
       }
 
       // Handle 401 Unauthorized errors (token expired/invalid)
@@ -687,7 +687,7 @@ export default function OrdersMain() {
         }
       } else {
         // Other errors (400, 500, etc.)
-        const errorMessage = error.response?.data?.message || "Failed to reverify restaurant. Please try again."
+        const errorMessage = error.response?.data?.message || "Failed to reverify cafe. Please try again."
         alert(errorMessage)
       }
     } finally {

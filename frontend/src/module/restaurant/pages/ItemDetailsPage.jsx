@@ -255,14 +255,14 @@ export default function ItemDetailsPage() {
             name: cat.name
           }))
 
-          console.log('Formatted restaurant categories:', formattedCategories)
+          console.log('Formatted cafe categories:', formattedCategories)
           setCategories(formattedCategories)
         } else {
           // If no categories exist, show empty array (user can add categories)
           setCategories([])
         }
       } catch (error) {
-        console.error('Error fetching restaurant categories:', error)
+        console.error('Error fetching cafe categories:', error)
         // Show empty array on error - user can add categories
         setCategories([])
       } finally {

@@ -1102,7 +1102,7 @@ const DeliveryTrackingMap = ({
       console.log('🚴 Delivery partner detected by phase, creating bike marker:', currentPhase);
       // DO NOT show bike at restaurant - wait for real location from socket
       // Bike will be created when real location is received via socket
-      console.log('⏳ Waiting for real location from socket - NOT showing at restaurant');
+      console.log('⏳ Waiting for real location from socket - NOT showing at cafe');
       if (socketRef.current && socketRef.current.connected) {
         socketRef.current.emit('request-current-location', orderId);
       }
@@ -1265,7 +1265,7 @@ const DeliveryTrackingMap = ({
       // Priority 2: DO NOT show at restaurant - ONLY wait for real location from socket
       // Bike should ONLY show at real delivery boy location, NEVER at restaurant
       else if (restaurantLat && restaurantLng) {
-        console.log('⏳⏳⏳ WAITING for REAL location from socket - NOT showing at restaurant');
+        console.log('⏳⏳⏳ WAITING for REAL location from socket - NOT showing at cafe');
         console.log('📡 Requesting current location from backend immediately...');
         // Request location immediately
         if (socketRef.current && socketRef.current.connected) {

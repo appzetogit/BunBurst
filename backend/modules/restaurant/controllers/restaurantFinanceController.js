@@ -19,7 +19,7 @@ export const getRestaurantFinance = asyncHandler(async (req, res) => {
     const restaurantId = restaurant._id?.toString() || restaurant.restaurantId || restaurant.id;
 
     if (!restaurantId) {
-      return errorResponse(res, 500, 'Restaurant ID not found');
+      return errorResponse(res, 500, 'Cafe ID not found');
     }
 
     // Calculate current cycle dates (default: Monday to Sunday of current week)
@@ -441,7 +441,7 @@ export const getRestaurantFinance = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching restaurant finance:', error);
+    console.error('Error fetching cafe finance:', error);
     return errorResponse(res, 500, 'Failed to fetch finance data');
   }
 });

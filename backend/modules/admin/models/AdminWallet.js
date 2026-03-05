@@ -56,7 +56,7 @@ const adminWalletSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0,
-    comment: 'Total commission from restaurants'
+    comment: 'Total commission from cafes'
   },
   totalPlatformFee: {
     type: Number,

@@ -160,7 +160,7 @@ export default function Collections() {
                 <div className="absolute bottom-4 left-4 right-4">
                   <h3 className="text-white font-bold text-lg mb-1">{collection.name}</h3>
                   <p className="text-white/80 text-sm">
-                    {collection.dishes} dish • {collection.restaurants} restaurant
+                    {collection.dishes} dish • {collection.restaurants} cafe
                   </p>
                 </div>
               </div>

@@ -47,7 +47,7 @@ export async function processAutoRejectOrders() {
 
           // Update order status to cancelled
           currentOrder.status = 'cancelled';
-          currentOrder.cancellationReason = 'Order not accepted within time limit. Restaurant did not respond in time.';
+          currentOrder.cancellationReason = 'Order not accepted within time limit. Cafe did not respond in time.';
           currentOrder.cancelledBy = 'restaurant';
           currentOrder.cancelledAt = now;
 
@@ -66,7 +66,7 @@ export async function processAutoRejectOrders() {
           try {
             await calculateCancellationRefund(
               currentOrder._id,
-              'Order not accepted within time limit. Restaurant did not respond in time.'
+              'Order not accepted within time limit. Cafe did not respond in time.'
             );
             console.log(`✅ Cancellation refund calculated for order ${currentOrder.orderId} - awaiting admin approval`);
           } catch (refundError) {

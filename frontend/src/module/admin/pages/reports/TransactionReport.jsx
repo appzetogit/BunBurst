@@ -30,7 +30,7 @@ export default function TransactionReport() {
   })
   const [filters, setFilters] = useState({
     zone: "All Zones",
-    restaurant: "All restaurants",
+    restaurant: "All cafes",
     time: "All Time",
   })
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -86,7 +86,7 @@ export default function TransactionReport() {
         const params = {
           search: searchQuery || undefined,
           zone: filters.zone !== "All Zones" ? filters.zone : undefined,
-          restaurant: filters.restaurant !== "All restaurants" ? filters.restaurant : undefined,
+          restaurant: filters.restaurant !== "All cafes" ? filters.restaurant : undefined,
           fromDate: fromDate ? fromDate.toISOString() : undefined,
           toDate: toDate ? toDate.toISOString() : undefined,
           limit: 1000
@@ -145,12 +145,12 @@ export default function TransactionReport() {
   const handleResetFilters = () => {
     setFilters({
       zone: "All Zones",
-      restaurant: "All restaurants",
+      restaurant: "All cafes",
       time: "All Time",
     })
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All cafes" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   const formatCurrency = (amount) => {
     if (amount >= 1000) {
@@ -210,7 +210,7 @@ export default function TransactionReport() {
                 onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs appearance-none cursor-pointer"
               >
-                <option value="All restaurants">All restaurants</option>
+                <option value="All cafes">All cafes</option>
                 {restaurants.map(restaurant => (
                   <option key={restaurant._id} value={restaurant.name}>{restaurant.name}</option>
                 ))}
@@ -315,10 +315,10 @@ export default function TransactionReport() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <img src={restaurantEarningIcon} alt="Restaurant Earning" className="w-6 h-6" />
+                    <img src={restaurantEarningIcon} alt="Cafe Earning" className="w-6 h-6" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900">Restaurant Earning</p>
+                    <p className="text-sm font-semibold text-slate-900">Cafe Earning</p>
                     <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
                       <Info className="w-3 h-3 text-white" />
                     </div>

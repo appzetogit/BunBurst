@@ -22,19 +22,19 @@ export const authenticate = async (req, res, next) => {
 
     // Ensure it's a restaurant token
     if (decoded.role !== 'restaurant') {
-      return errorResponse(res, 403, 'Invalid token. Restaurant access required.');
+      return errorResponse(res, 403, 'Invalid token. Cafe access required.');
     }
 
     // Get restaurant from database
     const restaurant = await Restaurant.findById(decoded.userId).select('-password');
     
     if (!restaurant) {
-      console.error('❌ Restaurant not found in database:', {
+      console.error('❌ Cafe not found in database:', {
         userId: decoded.userId,
         role: decoded.role,
         email: decoded.email,
       });
-      return errorResponse(res, 401, 'Restaurant not found');
+      return errorResponse(res, 401, 'Cafe not found');
     }
 
     // Allow inactive restaurants to access onboarding and profile routes
@@ -74,7 +74,7 @@ export const authenticate = async (req, res, next) => {
     
     // Debug logging for inactive restaurants
     if (!restaurant.isActive) {
-      console.log('🔍 Inactive restaurant route check:', {
+      console.log('🔍 Inactive cafe route check:', {
         restaurantId: restaurant._id,
         restaurantName: restaurant.name,
         isActive: restaurant.isActive,
@@ -95,7 +95,7 @@ export const authenticate = async (req, res, next) => {
     // These are essential for restaurant setup and management
     // Also allow access to getCurrentRestaurant endpoint (used to check status)
     if (!restaurant.isActive && !isOnboardingRoute && !isProfileRoute && !isMenuRoute && !isInventoryRoute) {
-      console.error('❌ Restaurant account is inactive - access denied:', {
+      console.error('❌ Cafe account is inactive - access denied:', {
         restaurantId: restaurant._id,
         restaurantName: restaurant.name,
         isActive: restaurant.isActive,
@@ -111,7 +111,7 @@ export const authenticate = async (req, res, next) => {
           isInventoryRoute
         }
       });
-      return errorResponse(res, 401, 'Restaurant account is inactive. Please wait for admin approval.');
+      return errorResponse(res, 401, 'Cafe account is inactive. Please wait for admin approval.');
     }
 
     // Attach restaurant to request

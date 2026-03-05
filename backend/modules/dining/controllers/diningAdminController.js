@@ -175,10 +175,10 @@ export const getActiveRestaurants = async (req, res) => {
         // Fetch restaurants that are active (assuming isServiceable or similar flag, or just all)
         // For now fetching all with just name and id
         const restaurants = await Restaurant.find().select('name _id').lean();
-        return successResponse(res, 200, 'Restaurants retrieved successfully', { restaurants });
+        return successResponse(res, 200, 'Cafes retrieved successfully', { restaurants });
     } catch (error) {
-        console.error('Error fetching restaurants:', error);
-        return errorResponse(res, 500, 'Failed to fetch restaurants');
+        console.error('Error fetching cafes:', error);
+        return errorResponse(res, 500, 'Failed to fetch cafes');
     }
 }
 

@@ -155,7 +155,7 @@ export async function findNearestRestaurant(deliveryLat, deliveryLng, orderItems
 
     // Step 3: If no restaurants found, return null (strict zone-based assignment)
     if (restaurantsInZones.length === 0) {
-      console.log('⚠️ No restaurants found whose location is within active zones for delivery location:', deliveryLat, deliveryLng);
+      console.log('⚠️ No cafes found whose location is within active zones for delivery location:', deliveryLat, deliveryLng);
       return null;
     }
 
@@ -171,7 +171,7 @@ export async function findNearestRestaurant(deliveryLat, deliveryLng, orderItems
       assignedBy: 'zone_based'
     };
   } catch (error) {
-    console.error('Error finding nearest restaurant:', error);
+    console.error('Error finding nearest cafe:', error);
     throw error;
   }
 }
@@ -201,13 +201,13 @@ export async function assignOrderToNearestRestaurant(orderData) {
     );
 
     if (!nearestRestaurant) {
-      throw new Error('No available restaurant found for this delivery location');
+      throw new Error('No available cafe found for this delivery location');
     }
 
     return {
       ...orderData,
       restaurantId: nearestRestaurant.restaurantId,
-      restaurantName: nearestRestaurant.restaurant.name || 'Unknown Restaurant',
+      restaurantName: nearestRestaurant.restaurant.name || 'Unknown Cafe',
       assignedRestaurant: {
         restaurantId: nearestRestaurant.restaurantId,
         distance: nearestRestaurant.distance,
@@ -217,7 +217,7 @@ export async function assignOrderToNearestRestaurant(orderData) {
       }
     };
   } catch (error) {
-    console.error('Error assigning order to restaurant:', error);
+    console.error('Error assigning order to cafe:', error);
     throw error;
   }
 }

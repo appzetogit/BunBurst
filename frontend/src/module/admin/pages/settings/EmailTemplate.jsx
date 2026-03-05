@@ -42,9 +42,9 @@ export default function EmailTemplate() {
     },
     "new-restaurant": {
       icon: null,
-      mainTitle: "New Restaurant Registration",
-      mailBody: "A new restaurant has been registered on the platform. Restaurant Name: {restaurantName}, Owner: {ownerName}, Email: {email}, Phone: {phone}",
-      footerText: "Please review and approve the restaurant registration. Contact us for any queries.",
+      mainTitle: "New Cafe Registration",
+      mailBody: "A new cafe has been registered on the platform. Cafe Name: {restaurantName}, Owner: {ownerName}, Email: {email}, Phone: {phone}",
+      footerText: "Please review and approve the cafe registration. Contact us for any queries.",
       pageLinks: {
         privacyPolicy: true,
         refundPolicy: true,
@@ -103,7 +103,7 @@ export default function EmailTemplate() {
     "campaign-join": {
       icon: null,
       mainTitle: "Campaign Join Request",
-      mailBody: "A new campaign join request has been received. Campaign: {campaignName}, Restaurant: {restaurantName}, Requested By: {requestedBy}",
+      mailBody: "A new campaign join request has been received. Campaign: {campaignName}, Cafe: {restaurantName}, Requested By: {requestedBy}",
       footerText: "Please review and approve the campaign join request. Contact us for any queries.",
       pageLinks: {
         privacyPolicy: true,
@@ -166,7 +166,7 @@ export default function EmailTemplate() {
 
   const templates = [
     { id: "forgot-password", label: "Forgot Password" },
-    { id: "new-restaurant", label: "New Restaurant Registration" },
+    { id: "new-restaurant", label: "New Cafe Registration" },
     { id: "new-deliveryman", label: "New Deliveryman Registration" },
     { id: "withdraw-request", label: "Withdraw Request" },
     { id: "campaign-join", label: "Campaign Join Request" },
@@ -242,7 +242,7 @@ export default function EmailTemplate() {
       .replace(/{vehicleType}/g, "Motorcycle")
       .replace(/{requestId}/g, "REQ-12345")
       .replace(/{amount}/g, "$500.00")
-      .replace(/{requestedBy}/g, "Restaurant Owner")
+      .replace(/{requestedBy}/g, "Cafe Owner")
       .replace(/{accountDetails}/g, "Account: ****1234")
       .replace(/{campaignName}/g, "Summer Special")
       .replace(/{orderId}/g, "ORD-100156")
@@ -285,7 +285,7 @@ export default function EmailTemplate() {
             <div className="flex items-center gap-2">
               <label className="text-sm font-semibold text-slate-700">
                 {activeTemplate === "forgot-password" && "Send Mail On Forget Password"}
-                {activeTemplate === "new-restaurant" && "Send Mail On New Restaurant Registration"}
+                {activeTemplate === "new-restaurant" && "Send Mail On New Cafe Registration"}
                 {activeTemplate === "new-deliveryman" && "Send Mail On New Deliveryman Registration"}
                 {activeTemplate === "withdraw-request" && "Send Mail On Withdraw Request"}
                 {activeTemplate === "campaign-join" && "Send Mail On Campaign Join Request"}

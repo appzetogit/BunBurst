@@ -113,7 +113,7 @@ export function CartProvider({ children }) {
         // If names match, allow it even if IDs differ (same restaurant, different ID format)
         if (firstRestaurantNameNormalized && newRestaurantNameNormalized) {
           if (firstRestaurantNameNormalized !== newRestaurantNameNormalized) {
-            console.error('❌ Cannot add item: Restaurant name mismatch!', {
+            console.error('❌ Cannot add item: Cafe name mismatch!', {
               cartRestaurantId: firstItemRestaurantId,
               cartRestaurantName: firstItemRestaurantName,
               newItemRestaurantId: newItemRestaurantId,
@@ -125,13 +125,13 @@ export function CartProvider({ children }) {
         } else if (firstItemRestaurantId && newItemRestaurantId) {
           // If names are not available, fallback to ID comparison
           if (firstItemRestaurantId !== newItemRestaurantId) {
-            console.error('❌ Cannot add item: Cart contains items from different restaurant!', {
+            console.error('❌ Cannot add item: Cart contains items from different cafe!', {
               cartRestaurantId: firstItemRestaurantId,
               cartRestaurantName: firstItemRestaurantName,
               newItemRestaurantId: newItemRestaurantId,
               newItemRestaurantName: newItemRestaurantName
             });
-            throw new Error(`Cart already contains items from "${firstItemRestaurantName || 'another restaurant'}". Please clear cart or complete order first.`);
+            throw new Error(`Cart already contains items from "${firstItemRestaurantName || 'another cafe'}". Please clear cart or complete order first.`);
           }
         }
       }
@@ -158,8 +158,8 @@ export function CartProvider({ children }) {
 
       // Validate item has required restaurant info
       if (!item.restaurantId && !item.restaurant) {
-        console.error('❌ Cannot add item: Missing restaurant information!', item);
-        throw new Error('Item is missing restaurant information. Please refresh the page.');
+        console.error('❌ Cannot add item: Missing cafe information!', item);
+        throw new Error('Item is missing cafe information. Please refresh the page.');
       }
 
       const newItem = { ...item, quantity: 1 }
@@ -288,7 +288,7 @@ export function CartProvider({ children }) {
       });
 
       if (cleanedCart.length !== prev.length) {
-        console.warn('🧹 Cleaned cart: Removed items from different restaurants', {
+        console.warn('🧹 Cleaned cart: Removed items from different cafes', {
           before: prev.length,
           after: cleanedCart.length,
           removed: prev.length - cleanedCart.length
@@ -317,7 +317,7 @@ export function CartProvider({ children }) {
 
     // Check if cart has items from multiple restaurants
     if (uniqueRestaurantIds.length > 1 || uniqueRestaurantNamesSet.size > 1) {
-      console.warn('⚠️ Cart contains items from multiple restaurants. Cleaning cart...', {
+      console.warn('⚠️ Cart contains items from multiple cafes. Cleaning cart...', {
         restaurantIds: uniqueRestaurantIds,
         restaurantNames: uniqueRestaurantNames
       });

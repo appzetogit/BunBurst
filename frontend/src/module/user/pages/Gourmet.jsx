@@ -29,8 +29,8 @@ export default function Gourmet() {
         setGourmetRestaurants([])
       }
     } catch (err) {
-      console.error('Error fetching Gourmet restaurants:', err)
-      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load Gourmet restaurants'
+      console.error('Error fetching Gourmet cafes:', err)
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load Gourmet cafes'
       setError(errorMessage)
       toast.error(errorMessage)
       setGourmetRestaurants([])
@@ -87,7 +87,7 @@ export default function Gourmet() {
         <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
           {/* Header */}
           <div className="mb-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Premium Gourmet Restaurants</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Premium Gourmet Cafes</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Exquisite dining experiences delivered to your doorstep</p>
           </div>
 
@@ -100,7 +100,7 @@ export default function Gourmet() {
           {loading && (
             <div className="flex flex-col items-center justify-center py-20">
               <Loader2 className="h-10 w-10 animate-spin text-gray-400" />
-              <p className="mt-4 text-gray-500 dark:text-gray-400">Loading Gourmet restaurants...</p>
+              <p className="mt-4 text-gray-500 dark:text-gray-400">Loading Gourmet cafes...</p>
             </div>
           )}
 
@@ -117,7 +117,7 @@ export default function Gourmet() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {gourmetRestaurants.length === 0 ? (
                 <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400">No Gourmet restaurants available at the moment</p>
+                  <p className="text-gray-500 dark:text-gray-400">No Gourmet cafes available at the moment</p>
                 </div>
               ) : (
                 gourmetRestaurants.map((restaurant) => {

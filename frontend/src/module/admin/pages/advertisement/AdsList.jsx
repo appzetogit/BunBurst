@@ -38,7 +38,7 @@ export default function AdsList() {
     si: "Serial Number",
     adsId: "Ads ID",
     adsTitle: "Ads Title",
-    restaurantInfo: "Restaurant Info",
+    restaurantInfo: "Cafe Info",
     adsType: "Ads Type",
     duration: "Duration",
     status: "Status",
@@ -193,14 +193,14 @@ export default function AdsList() {
             className="px-4 py-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
           >
             <option value="all">All Ads</option>
-            <option value="Restaurant Promotion">Restaurant Promotion</option>
+            <option value="Cafe Promotion">Cafe Promotion</option>
             <option value="Video promotion">Video promotion</option>
           </select>
 
           <div className="relative flex-1 sm:flex-initial min-w-[250px]">
             <input
               type="text"
-              placeholder="Search by ads ID or restaurant"
+              placeholder="Search by ads ID or cafe"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
@@ -271,7 +271,7 @@ export default function AdsList() {
                 {visibleColumns.si && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">SI</th>}
                 {visibleColumns.adsId && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads ID</th>}
                 {visibleColumns.adsTitle && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Title</th>}
-                {visibleColumns.restaurantInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Restaurant Info</th>}
+                {visibleColumns.restaurantInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Cafe Info</th>}
                 {visibleColumns.adsType && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Type</th>}
                 {visibleColumns.duration && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Duration</th>}
                 {visibleColumns.status && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Status</th>}
@@ -427,14 +427,14 @@ export default function AdsList() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Restaurant
+                Cafe
               </label>
               <select
                 value={filters.restaurant}
                 onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               >
-                <option value="">All Restaurants</option>
+                <option value="">All Cafes</option>
                 {restaurants.map(restaurant => (
                   <option key={restaurant} value={restaurant}>{restaurant}</option>
                 ))}
@@ -501,11 +501,11 @@ export default function AdsList() {
                   <p className="text-sm text-slate-900">{selectedAd.adsTitle}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Restaurant Name</p>
+                  <p className="text-sm font-semibold text-slate-700">Cafe Name</p>
                   <p className="text-sm text-slate-900">{selectedAd.restaurantName}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Restaurant Email</p>
+                  <p className="text-sm font-semibold text-slate-700">Cafe Email</p>
                   <p className="text-sm text-slate-900">{selectedAd.restaurantEmail}</p>
                 </div>
                 <div>

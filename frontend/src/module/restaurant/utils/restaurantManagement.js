@@ -15,8 +15,8 @@ const DEFAULT_RESTAURANT_DATA = {
   address: "House: 00, Road: 00, Test City",
   logo: null,
   cover: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&h=400&fit=crop",
-  metaTitle: "Hungry Puppets Restaurant: Where Fla",
-  metaDescription: "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Restaurant. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
+  metaTitle: "Hungry Puppets Cafe: Where Fla",
+  metaDescription: "Satisfy your cravings and indulge in a culinary adventure at Hungry Puppets Cafe. Our menu is a symphony of taste, offering a delightful fusion of flavors that excite both palate and",
   metaImage: null,
   rating: 4.7,
   totalRatings: 3
@@ -38,7 +38,7 @@ export const getRestaurantData = () => {
     setRestaurantData(DEFAULT_RESTAURANT_DATA)
     return DEFAULT_RESTAURANT_DATA
   } catch (error) {
-    console.error('Error reading restaurant data from localStorage:', error)
+    console.error('Error reading cafe data from localStorage:', error)
     return DEFAULT_RESTAURANT_DATA
   }
 }
@@ -55,7 +55,7 @@ export const setRestaurantData = (restaurantData) => {
     // Trigger storage event for cross-tab updates
     window.dispatchEvent(new Event('storage'))
   } catch (error) {
-    console.error('Error saving restaurant data to localStorage:', error)
+    console.error('Error saving cafe data to localStorage:', error)
   }
 }
 

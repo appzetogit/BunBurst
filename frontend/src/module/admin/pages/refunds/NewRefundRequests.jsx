@@ -230,7 +230,7 @@ export default function NewRefundRequests() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-red-600 max-w-xs">
-                          {order.cancellationReason || "Rejected by restaurant"}
+                          {order.cancellationReason || "Rejected by cafe"}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

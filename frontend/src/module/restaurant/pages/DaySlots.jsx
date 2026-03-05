@@ -620,7 +620,7 @@ export default function DaySlots() {
         
         <div className="bg-gray-50 p-2">
           <p className="text-sm text-gray-700">
-            Add or modify your restaurant timings here. You can create maximum up to 3 time slots in a day.
+            Add or modify your cafe timings here. You can create maximum up to 3 time slots in a day.
           </p>
         </div>
 
