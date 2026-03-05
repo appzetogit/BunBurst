@@ -10,44 +10,43 @@ export default function LocationPrompt() {
   const cardRef = useRef(null)
 
   useEffect(() => {
-    // Check if location permission was already granted
-    const storedLocation = localStorage.getItem("userLocation")
-    const promptDismissed = localStorage.getItem("locationPromptDismissed")
+    const checkPersistence = () => {
+      const storedLocationStr = localStorage.getItem("userLocation")
+      const promptDismissed = localStorage.getItem("locationPromptDismissed") === "true"
 
-    // The useLocation hook will automatically try to get location on app start
-    // We only show the prompt if:
-    // 1. No location is stored (first time user)
-    // 2. Prompt hasn't been dismissed
-    // 3. Location permission was denied (we'll detect this after a delay)
-    
-    if (!storedLocation && !promptDismissed) {
-      // Wait a bit to let the hook try to get location automatically
-      // If it fails, we'll show the prompt
-      const timer = setTimeout(() => {
-        // Check again if location was set (hook might have succeeded)
-        const currentLocation = localStorage.getItem("userLocation")
-        if (!currentLocation && !permissionGranted) {
-          setShowPrompt(true)
-          // Prevent body scroll when popup is open
-          document.body.style.overflow = "hidden"
-          // CSS animation will handle the fade-in
-          if (cardRef.current) {
-            cardRef.current.style.opacity = '0'
-            cardRef.current.style.transform = 'translateY(20px)'
-            requestAnimationFrame(() => {
-              if (cardRef.current) {
-                cardRef.current.style.opacity = '1'
-                cardRef.current.style.transform = 'translateY(0)'
-              }
-            })
+      let hasValidLocation = false
+      if (storedLocationStr) {
+        try {
+          const parsed = JSON.parse(storedLocationStr)
+          if (parsed && (parsed.latitude || parsed.lat)) {
+            hasValidLocation = true
           }
+        } catch (e) {
+          console.error("LocationPrompt: Error parsing stored location", e)
         }
-      }, 2000) // Wait 2 seconds for automatic location request to complete
-
-      return () => {
-        clearTimeout(timer)
-        document.body.style.overflow = ""
       }
+
+      if (hasValidLocation || promptDismissed || permissionGranted) {
+        setShowPrompt(false)
+        return true
+      }
+      return false
+    }
+
+    if (checkPersistence()) return
+
+    // If no persistence found, set a timer to show prompt
+    const timer = setTimeout(() => {
+      // Re-check one last time before showing
+      if (!checkPersistence()) {
+        setShowPrompt(true)
+        document.body.style.overflow = "hidden"
+      }
+    }, 2000)
+
+    return () => {
+      clearTimeout(timer)
+      document.body.style.overflow = ""
     }
   }, [permissionGranted])
 
