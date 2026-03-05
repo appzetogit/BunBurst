@@ -87,12 +87,6 @@ import {
   getEnvVariables,
   saveEnvVariables,
 } from "../controllers/envVariablesController.js";
-
-import {
-  getDeliveryCashLimit,
-  updateDeliveryCashLimit,
-} from "../controllers/deliveryCashLimitController.js";
-import { getCashLimitSettlements } from "../controllers/cashLimitSettlementController.js";
 import {
   getDeliveryWithdrawalRequests,
   approveDeliveryWithdrawal,
@@ -246,11 +240,6 @@ router.use((req, res, next) => {
 // Dashboard
 router.get("/dashboard/stats", getDashboardStats);
 
-// Delivery Partner global cash limit (applies to all delivery boys)
-router.get("/delivery-cash-limit", getDeliveryCashLimit);
-router.put("/delivery-cash-limit", updateDeliveryCashLimit);
-router.get("/cash-limit-settlement", getCashLimitSettlements);
-
 // Delivery withdrawal requests (admin)
 router.get("/delivery-withdrawal/requests", getDeliveryWithdrawalRequests);
 router.post("/delivery-withdrawal/:id/approve", approveDeliveryWithdrawal);
@@ -357,6 +346,9 @@ router.patch("/earning-addon-history/:id/cancel", cancelEarningAddonHistory);
 router.get("/env-variables", getEnvVariables);
 router.post("/env-variables", saveEnvVariables);
 
+// Delivery Boy Wallet Management
+router.get("/delivery-boy-wallet", getDeliveryBoyWallets);
+router.post("/delivery-boy-wallet/adjustment", addWalletAdjustment);
 
 // Delivery Emergency Help Management
 router.get("/delivery-emergency-help", getEmergencyHelp);

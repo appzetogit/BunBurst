@@ -9,7 +9,6 @@ import RestaurantWallet from '../../restaurant/models/RestaurantWallet.js';
 import { calculateRoute } from '../../order/services/routeCalculationService.js';
 import mongoose from 'mongoose';
 import winston from 'winston';
-import { canDeliveryPartnerTakeCodOrder, resolveOrderPaymentMethod } from '../../../shared/utils/deliveryCashLimitGuard.js';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -233,20 +232,7 @@ export const acceptOrder = asyncHandler(async (req, res) => {
       return errorResponse(res, 404, 'Order not found');
     }
 
-    // COD guard: block COD acceptance when available cash limit is exhausted.
-    const paymentMethodForAcceptance = await resolveOrderPaymentMethod(order);
-    if (paymentMethodForAcceptance === 'cash') {
-      const codEligibility = await canDeliveryPartnerTakeCodOrder(delivery._id);
-      if (!codEligibility.allowed) {
-        return errorResponse(
-          res,
-          400,
-          `Cash limit reached. Settle with admin to accept COD orders. (cash in hand INR ${codEligibility.cashInHand.toFixed(2)} / limit INR ${codEligibility.totalCashLimit.toFixed(2)})`
-        );
-      }
-    }
-
-    // Check if order is assigned to this delivery partner
+    // Salary model: unrestricted COD acceptance
     const orderDeliveryPartnerId = order.deliveryPartnerId?.toString();
     const currentDeliveryId = delivery._id.toString();
 
@@ -1456,18 +1442,10 @@ export const completeDelivery = asyncHandler(async (req, res) => {
             transactionId: existingTransaction._id?.toString() || existingTransaction.id
           };
         } else {
-          // Calculate earnings even if order is already delivered (for consistency)
-          let deliveryDistance = 0;
-          if (order.deliveryState?.routeToDelivery?.distance) {
-            deliveryDistance = order.deliveryState.routeToDelivery.distance;
-          } else if (order.assignmentInfo?.distance) {
-            deliveryDistance = order.assignmentInfo.distance;
-          }
-
-          if (deliveryDistance > 0) {
-            // Salaried delivery partner — no per-order commission
-            earnings = { amount: 0, breakdown: null };
-          }
+          earnings = {
+            amount: 0,
+            breakdown: 'Salaried model'
+          };
         }
       } catch (earningsError) {
         console.error('⚠️ Error calculating earnings for already delivered order:', earningsError.message);
@@ -1597,10 +1575,18 @@ export const completeDelivery = asyncHandler(async (req, res) => {
       deliveryDistance = R * c;
     }
 
-    // Salaried delivery partner — no per-order commission calculated
+    console.log(`📏 Delivery distance: ${deliveryDistance.toFixed(2)} km for order ${orderIdForLog}`);
+
+    // Salaried model: no per-order earnings
     let totalEarning = 0;
-    let commissionBreakdown = null;
-    console.log(`📏 Delivery distance: ${deliveryDistance.toFixed(2)} km for order ${orderIdForLog} (salaried partner, no commission)`);
+    let commissionBreakdown = {
+      basePayout: 0,
+      distance: 0,
+      commissionPerKm: 0,
+      distanceCommission: 0,
+      total: 0,
+      isSalaried: true
+    };
 
     // Add earning to delivery boy's wallet
     let walletTransaction = null;

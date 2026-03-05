@@ -24,7 +24,6 @@ const modulePermissions = [
   { id: "customersSection", label: "Customers section" },
   { id: "employee", label: "Employee" },
   { id: "restaurants", label: "Restaurants" },
-  { id: "posSystem", label: "Pos system" },
   { id: "advertisement", label: "Advertisement" },
   // Column 4
   { id: "campaign", label: "Campaign" },
@@ -39,7 +38,7 @@ const employeeRolesDummy = [
   {
     id: 1,
     roleName: "Manager",
-    modules: ["Addon", "Banner", "Campaign", "Category", "Coupon", "Custom Role", "CustomerList", "Deliveryman", "Employee", "Food", "Notification", "Order", "Report", "Settings", "Pos", "Contact Message"],
+    modules: ["Addon", "Banner", "Campaign", "Category", "Coupon", "Custom Role", "CustomerList", "Deliveryman", "Employee", "Food", "Notification", "Order", "Report", "Settings", "Contact Message"],
     createdAt: "07 Feb 2023",
   },
   {
@@ -121,7 +120,7 @@ export default function EmployeeRole() {
       alert("No data to export")
       return
     }
-    }
+  }
 
   const toggleColumn = (columnKey) => {
     setVisibleColumns(prev => ({ ...prev, [columnKey]: !prev[columnKey] }))
@@ -170,11 +169,10 @@ export default function EmployeeRole() {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveLanguage(tab.key)}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeLanguage === tab.key
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-slate-600 hover:text-slate-900"
-                }`}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeLanguage === tab.key
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+                  }`}
               >
                 {tab.label}
               </button>
@@ -363,7 +361,7 @@ export default function EmployeeRole() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <button 
+              <button
                 onClick={() => setIsSettingsOpen(true)}
                 className="p-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-all"
               >

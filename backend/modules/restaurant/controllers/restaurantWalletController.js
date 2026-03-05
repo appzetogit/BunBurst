@@ -1,4 +1,5 @@
 import RestaurantWallet from '../models/RestaurantWallet.js';
+import RestaurantTransaction from '../models/RestaurantTransaction.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
 import winston from 'winston';
@@ -20,7 +21,7 @@ const logger = winston.createLogger({
 export const getWallet = asyncHandler(async (req, res) => {
   try {
     const restaurant = req.restaurant;
-    
+
     if (!restaurant || !restaurant._id) {
       return errorResponse(res, 401, 'Cafe authentication required');
     }
@@ -29,19 +30,21 @@ export const getWallet = asyncHandler(async (req, res) => {
     const wallet = await RestaurantWallet.findOrCreateByRestaurantId(restaurant._id);
 
     // Get recent transactions (last 50)
-    const recentTransactions = wallet.transactions
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 50)
-      .map(t => ({
-        id: t._id,
-        amount: t.amount,
-        type: t.type,
-        status: t.status,
-        description: t.description,
-        orderId: t.orderId,
-        createdAt: t.createdAt,
-        processedAt: t.processedAt
-      }));
+    const recentTransactions = await RestaurantTransaction.find({ walletId: wallet._id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    const formattedTransactions = recentTransactions.map(t => ({
+      id: t._id,
+      amount: t.amount,
+      type: t.type,
+      status: t.status,
+      description: t.description,
+      orderId: t.orderId,
+      createdAt: t.createdAt,
+      processedAt: t.processedAt
+    }));
 
     return successResponse(res, 200, 'Wallet retrieved successfully', {
       wallet: {
@@ -52,7 +55,7 @@ export const getWallet = asyncHandler(async (req, res) => {
         isActive: wallet.isActive,
         lastTransactionAt: wallet.lastTransactionAt
       },
-      transactions: recentTransactions
+      transactions: formattedTransactions
     });
   } catch (error) {
     logger.error(`Error fetching restaurant wallet: ${error.message}`);
@@ -88,26 +91,22 @@ export const getWalletTransactions = asyncHandler(async (req, res) => {
       });
     }
 
-    // Filter transactions
-    let transactions = wallet.transactions || [];
-    
-    if (type) {
-      transactions = transactions.filter(t => t.type === type);
-    }
-    
-    if (status) {
-      transactions = transactions.filter(t => t.status === status);
-    }
+    const query = { walletId: wallet._id };
+    if (type) query.type = type;
+    if (status) query.status = status;
 
-    // Sort by date (newest first)
-    transactions = transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    // Paginate
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const paginatedTransactions = transactions.slice(skip, skip + parseInt(limit));
+
+    const transactions = await RestaurantTransaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await RestaurantTransaction.countDocuments(query);
 
     return successResponse(res, 200, 'Transactions retrieved successfully', {
-      transactions: paginatedTransactions.map(t => ({
+      transactions: transactions.map(t => ({
         id: t._id,
         amount: t.amount,
         type: t.type,
@@ -120,8 +119,8 @@ export const getWalletTransactions = asyncHandler(async (req, res) => {
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: transactions.length,
-        pages: Math.ceil(transactions.length / parseInt(limit))
+        total,
+        pages: Math.ceil(total / parseInt(limit))
       }
     });
   } catch (error) {
@@ -157,46 +156,63 @@ export const getWalletStats = asyncHandler(async (req, res) => {
       });
     }
 
-    // Filter transactions by date range if provided
-    let transactions = wallet.transactions || [];
-    
+    const query = { walletId: wallet._id };
     if (startDate || endDate) {
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-      
-      transactions = transactions.filter(t => {
-        const tDate = new Date(t.createdAt);
-        if (start && tDate < start) return false;
-        if (end && tDate > end) return false;
-        return true;
-      });
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
     }
 
-    // Calculate period stats
-    const periodEarnings = transactions
-      .filter(t => t.type === 'payment' && t.status === 'Completed')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const periodWithdrawals = transactions
-      .filter(t => t.type === 'withdrawal' && t.status === 'Completed')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const periodOrders = transactions
-      .filter(t => t.type === 'payment' && t.status === 'Completed')
-      .length;
+    // Calculate period stats via aggregation for better performance
+    const stats = await RestaurantTransaction.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: null,
+          periodEarnings: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ['$type', 'payment'] }, { $eq: ['$status', 'Completed'] }] },
+                '$amount',
+                0
+              ]
+            }
+          },
+          periodWithdrawals: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ['$type', 'withdrawal'] }, { $eq: ['$status', 'Completed'] }] },
+                '$amount',
+                0
+              ]
+            }
+          },
+          periodOrders: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ['$type', 'payment'] }, { $eq: ['$status', 'Completed'] }] },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    const result = stats[0] || { periodEarnings: 0, periodWithdrawals: 0, periodOrders: 0 };
 
     return successResponse(res, 200, 'Wallet stats retrieved successfully', {
       totalEarned: wallet.totalEarned || 0,
       totalWithdrawn: wallet.totalWithdrawn || 0,
       totalBalance: wallet.totalBalance || 0,
       pendingBalance: (wallet.totalEarned || 0) - (wallet.totalWithdrawn || 0),
-      periodEarnings,
-      periodWithdrawals,
-      periodOrders
+      periodEarnings: result.periodEarnings,
+      periodWithdrawals: result.periodWithdrawals,
+      periodOrders: result.periodOrders
     });
   } catch (error) {
     logger.error(`Error fetching wallet stats: ${error.message}`);
     return errorResponse(res, 500, 'Failed to fetch wallet stats');
   }
 });
-

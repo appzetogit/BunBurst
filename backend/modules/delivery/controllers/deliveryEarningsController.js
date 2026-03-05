@@ -3,6 +3,7 @@ import { successResponse, errorResponse } from '../../../shared/utils/response.j
 import Delivery from '../models/Delivery.js';
 import Order from '../../order/models/Order.js';
 import DeliveryWallet from '../models/DeliveryWallet.js';
+import DeliveryTransaction from '../models/DeliveryTransaction.js';
 import EarningAddon from '../../admin/models/EarningAddon.js';
 import EarningAddonHistory from '../../admin/models/EarningAddonHistory.js';
 import winston from 'winston';
@@ -71,28 +72,19 @@ export const getEarnings = asyncHandler(async (req, res) => {
     const wallet = await DeliveryWallet.findOrCreateByDeliveryId(delivery._id);
 
     // Filter transactions based on period and type
-    let transactions = wallet.transactions || [];
+    const query = {
+      deliveryId: delivery._id,
+      type: 'payment',
+      status: 'Completed'
+    };
 
-    // Filter by transaction type (only 'payment' type for earnings)
-    transactions = transactions.filter(t =>
-      t.type === 'payment' &&
-      t.status === 'Completed'
-    );
-
-    // Filter by date range if period is specified
     if (startDate) {
-      transactions = transactions.filter(t => {
-        const transactionDate = t.createdAt || t.processedAt || new Date();
-        return transactionDate >= startDate && transactionDate <= endDate;
-      });
+      query.createdAt = { $gte: startDate, $lte: endDate };
     }
 
-    // Sort by date (newest first)
-    transactions.sort((a, b) => {
-      const dateA = a.createdAt || a.processedAt || new Date(0);
-      const dateB = b.createdAt || b.processedAt || new Date(0);
-      return dateB - dateA;
-    });
+    const transactions = await DeliveryTransaction.find(query)
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Get order details for each transaction
     const orderIds = transactions

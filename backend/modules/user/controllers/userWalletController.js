@@ -1,6 +1,7 @@
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import UserWallet from '../models/UserWallet.js';
+import UserTransaction from '../models/UserTransaction.js';
 import User from '../../auth/models/User.js';
 import { validate } from '../../../shared/middleware/validate.js';
 import Joi from 'joi';
@@ -42,8 +43,9 @@ export const getWallet = asyncHandler(async (req, res) => {
     }
 
     // Get all transactions (sorted by date, newest first)
-    const allTransactions = wallet.transactions
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const allTransactions = await UserTransaction.find({ walletId: wallet._id })
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Map transactions for frontend
     const transactions = allTransactions.map(t => ({
@@ -68,7 +70,7 @@ export const getWallet = asyncHandler(async (req, res) => {
       totalSpent: wallet.totalSpent || 0,
       totalRefunded: wallet.totalRefunded || 0,
       transactions: transactions,
-      totalTransactions: wallet.transactions.length
+      totalTransactions: transactions.length
     };
 
     logger.info(`Wallet retrieved for user: ${user._id}`, {
@@ -109,8 +111,7 @@ export const getTransactions = asyncHandler(async (req, res) => {
       });
     }
 
-    // Filter transactions
-    let transactions = wallet.transactions || [];
+    const query = { walletId: wallet._id };
 
     if (type) {
       // Map frontend filter types to backend types
@@ -122,24 +123,25 @@ export const getTransactions = asyncHandler(async (req, res) => {
       };
       const backendType = typeMap[type];
       if (backendType) {
-        transactions = transactions.filter(t => t.type === backendType);
+        query.type = backendType;
       }
     }
 
     if (status) {
-      transactions = transactions.filter(t => t.status === status);
+      query.status = status;
     }
 
-    // Sort by date (newest first)
-    transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    // Pagination
-    const total = transactions.length;
+    const total = await UserTransaction.countDocuments(query);
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const paginatedTransactions = transactions.slice(skip, skip + parseInt(limit));
+
+    const transactions = await UserTransaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
 
     return successResponse(res, 200, 'Transactions retrieved successfully', {
-      transactions: paginatedTransactions.map(t => ({
+      transactions: transactions.map(t => ({
         id: t._id,
         _id: t._id,
         amount: t.amount,
@@ -222,14 +224,14 @@ export const createTopupOrder = asyncHandler(async (req, res) => {
     try {
       logger.info('Fetching Razorpay credentials from database...');
       credentials = await getRazorpayCredentials();
-      
+
       logger.info('Razorpay credentials check:', {
         hasKeyId: !!credentials.keyId,
         hasKeySecret: !!credentials.keySecret,
         keyIdLength: credentials.keyId?.length || 0,
         keySecretLength: credentials.keySecret?.length || 0
       });
-      
+
       if (!credentials || !credentials.keyId || !credentials.keySecret) {
         logger.error('Razorpay credentials are missing or empty in database');
         return errorResponse(res, 500, 'Payment gateway is not configured. Please configure Razorpay API Key and Secret Key in admin panel → System Settings.');
@@ -250,13 +252,11 @@ export const createTopupOrder = asyncHandler(async (req, res) => {
     }
 
     // Create Razorpay order
-    // Receipt ID must be max 40 characters (Razorpay requirement)
-    // Format: wt_{userId_short}_{timestamp_short}
-    const userIdShort = user._id.toString().slice(-8); // Last 8 chars of ObjectId
-    const timestampShort = Date.now().toString().slice(-10); // Last 10 digits
-    const receiptId = `wt_${userIdShort}_${timestampShort}`; // Max ~20 chars
+    const userIdShort = user._id.toString().slice(-8);
+    const timestampShort = Date.now().toString().slice(-10);
+    const receiptId = `wt_${userIdShort}_${timestampShort}`;
     let razorpayOrder = null;
-    
+
     try {
       logger.info(`Attempting to create Razorpay order for amount: ${amount}`);
       razorpayOrder = await createRazorpayOrder({
@@ -278,10 +278,9 @@ export const createTopupOrder = asyncHandler(async (req, res) => {
         amount: amount,
         errorType: razorpayError.constructor.name
       });
-      
-      // Check if it's a credentials issue
+
       if (razorpayError.message && (
-        razorpayError.message.includes('not initialized') || 
+        razorpayError.message.includes('not initialized') ||
         razorpayError.message.includes('credentials') ||
         razorpayError.message.includes('key_id') ||
         razorpayError.message.includes('key_secret') ||
@@ -289,8 +288,7 @@ export const createTopupOrder = asyncHandler(async (req, res) => {
       )) {
         return errorResponse(res, 500, 'Payment gateway configuration error. Please check Razorpay credentials in admin panel.');
       }
-      
-      // Return the error message to frontend
+
       return errorResponse(res, 500, razorpayError.message || 'Failed to create payment order. Please try again.');
     }
 
@@ -338,8 +336,7 @@ export const createTopupOrder = asyncHandler(async (req, res) => {
       amount: req.body?.amount,
       errorType: error.constructor.name
     });
-    
-    // Return more specific error message
+
     const errorMessage = error.message || 'Failed to create payment order. Please try again.';
     return errorResponse(res, 500, errorMessage);
   }
@@ -369,7 +366,7 @@ export const verifyTopupPayment = asyncHandler(async (req, res) => {
 
     // Verify payment signature
     const isValid = await verifyPayment(razorpayOrderId, razorpayPaymentId, razorpaySignature);
-    
+
     if (!isValid) {
       logger.warn(`Invalid payment signature for wallet top-up: ${user._id}`, {
         razorpayOrderId,
@@ -382,26 +379,22 @@ export const verifyTopupPayment = asyncHandler(async (req, res) => {
     let wallet = await UserWallet.findOrCreateByUserId(user._id);
 
     // Check if transaction already exists for this payment
-    const existingTransaction = wallet.transactions.find(
-      t => t.paymentId && t.paymentId === razorpayPaymentId
-    );
+    const existingTransaction = await UserTransaction.findOne({ paymentId: razorpayPaymentId });
 
     if (existingTransaction) {
       return errorResponse(res, 400, 'Payment already processed');
     }
 
     // Add money transaction
-    const transaction = wallet.addTransaction({
+    const transaction = await wallet.addTransaction({
       amount: amount,
       type: 'addition',
       status: 'Completed',
       description: `Added money via Razorpay`,
-      paymentMethod: 'card', // Default, actual method will be in Razorpay
+      paymentMethod: 'card',
       paymentGateway: 'razorpay',
       paymentId: razorpayPaymentId
     });
-
-    await wallet.save();
 
     // Update user's wallet balance in User model (for backward compatibility)
     await User.findByIdAndUpdate(user._id, {
@@ -471,7 +464,7 @@ export const addMoney = asyncHandler(async (req, res) => {
     let wallet = await UserWallet.findOrCreateByUserId(user._id);
 
     // Add money transaction
-    const transaction = wallet.addTransaction({
+    const transaction = await wallet.addTransaction({
       amount: amount,
       type: 'addition',
       status: 'Completed',
@@ -480,8 +473,6 @@ export const addMoney = asyncHandler(async (req, res) => {
       paymentGateway: paymentGateway || null,
       paymentId: paymentId || null
     });
-
-    await wallet.save();
 
     // Update user's wallet balance in User model (for backward compatibility)
     await User.findByIdAndUpdate(user._id, {
@@ -549,24 +540,24 @@ export const deductMoney = asyncHandler(async (req, res) => {
     }
 
     // Check if transaction already exists for this order
-    const existingTransaction = wallet.transactions.find(
-      t => t.orderId && t.orderId.toString() === orderId.toString() && t.type === 'deduction'
-    );
+    const existingTransaction = await UserTransaction.findOne({
+      walletId: wallet._id,
+      orderId: orderId,
+      type: 'deduction'
+    });
 
     if (existingTransaction) {
       return errorResponse(res, 400, 'Payment already processed for this order');
     }
 
     // Deduct money transaction
-    const transaction = wallet.addTransaction({
+    const transaction = await wallet.addTransaction({
       amount: amount,
       type: 'deduction',
       status: 'Completed',
       description: description || `Order payment - Order #${orderId}`,
       orderId: orderId
     });
-
-    await wallet.save();
 
     // Update user's wallet balance in User model (for backward compatibility)
     await User.findByIdAndUpdate(user._id, {
@@ -632,24 +623,24 @@ export const addRefund = asyncHandler(async (req, res) => {
     let wallet = await UserWallet.findOrCreateByUserId(user._id);
 
     // Check if refund already exists for this order
-    const existingTransaction = wallet.transactions.find(
-      t => t.orderId && t.orderId.toString() === orderId.toString() && t.type === 'refund'
-    );
+    const existingTransaction = await UserTransaction.findOne({
+      walletId: wallet._id,
+      orderId: orderId,
+      type: 'refund'
+    });
 
     if (existingTransaction) {
       return errorResponse(res, 400, 'Refund already processed for this order');
     }
 
     // Add refund transaction
-    const transaction = wallet.addTransaction({
+    const transaction = await wallet.addTransaction({
       amount: amount,
       type: 'refund',
       status: 'Completed',
       description: description || `Refund - Order #${orderId}`,
       orderId: orderId
     });
-
-    await wallet.save();
 
     // Update user's wallet balance in User model (for backward compatibility)
     await User.findByIdAndUpdate(user._id, {
@@ -685,4 +676,3 @@ export const addRefund = asyncHandler(async (req, res) => {
     return errorResponse(res, 500, 'Failed to add refund to wallet');
   }
 });
-

@@ -22,21 +22,38 @@ const EMPTY_WALLET_STATE = {
  */
 export const fetchDeliveryWallet = async () => {
   try {
+    console.log('🚀 Starting wallet fetch...')
     const response = await deliveryAPI.getWallet()
+    console.log('🔍 Full API Response:', JSON.stringify(response, null, 2))
+    console.log('🔍 Response Status:', response?.status)
+    console.log('🔍 Response Data:', response?.data)
+    console.log('🔍 Response Data Type:', typeof response?.data)
+    
     // Check multiple possible response structures
     let walletData = null
     
     if (response?.data?.success && response?.data?.data?.wallet) {
       walletData = response.data.data.wallet
-      } else if (response?.data?.wallet) {
+      console.log('✅ Found wallet in: response.data.data.wallet')
+    } else if (response?.data?.wallet) {
       walletData = response.data.wallet
-      } else if (response?.data?.data) {
+      console.log('✅ Found wallet in: response.data.wallet')
+    } else if (response?.data?.data) {
       walletData = response.data.data
-      } else if (response?.data) {
+      console.log('✅ Found wallet in: response.data.data')
+    } else if (response?.data) {
       walletData = response.data
-      }
+      console.log('✅ Found wallet in: response.data')
+    }
     
     if (walletData) {
+      console.log('💰 Wallet Data from API:', JSON.stringify(walletData, null, 2))
+      console.log('💰 Total Balance:', walletData.totalBalance)
+      console.log('💰 Cash In Hand:', walletData.cashInHand)
+      console.log('💰 Total Earned:', walletData.totalEarned)
+      console.log('💰 Transactions Count:', walletData.transactions?.length || walletData.recentTransactions?.length || 0)
+      console.log('💰 Transactions:', walletData.transactions || walletData.recentTransactions || [])
+      
       // Transform API response to match expected format (support both camelCase and snake_case)
       const transformedData = {
         totalBalance: Number(walletData.totalBalance) || 0,
@@ -56,6 +73,7 @@ export const fetchDeliveryWallet = async () => {
         totalTransactions: walletData.totalTransactions || 0
       }
       
+      console.log('✅ Transformed Wallet Data:', JSON.stringify(transformedData, null, 2))
       return transformedData
     } else {
       console.warn('⚠️ No wallet data found in response')
@@ -63,6 +81,7 @@ export const fetchDeliveryWallet = async () => {
       console.warn('⚠️ Full response:', response)
     }
     
+    console.log('⚠️ Returning empty wallet state')
     return EMPTY_WALLET_STATE
   } catch (error) {
     // Skip logging network errors - they're handled by axios interceptor
@@ -103,6 +122,8 @@ export const setDeliveryWalletState = (state) => {
  * @returns {Object} - Calculated balances
  */
 export const calculateDeliveryBalances = (state) => {
+  console.log('📊 calculateDeliveryBalances called with state:', state)
+  
   if (!state) {
     console.warn('⚠️ No state provided to calculateDeliveryBalances')
     return {
@@ -120,6 +141,8 @@ export const calculateDeliveryBalances = (state) => {
   const cashInHand = state.cashInHand || 0
   const totalWithdrawn = state.totalWithdrawn || 0
   const totalEarned = state.totalEarned || 0
+  
+  console.log('📊 Balance values:', { totalBalance, cashInHand, totalWithdrawn, totalEarned })
   
   // Calculate pending withdrawals from transactions if available
   let pendingWithdrawals = state.pendingWithdrawals || 0
@@ -151,6 +174,7 @@ export const calculateDeliveryBalances = (state) => {
     totalEarnings: totalEarningsFromTransactions || totalEarned || totalBalance || 0
   }
   
+  console.log('📊 Calculated balances:', balances)
   return balances
 }
 

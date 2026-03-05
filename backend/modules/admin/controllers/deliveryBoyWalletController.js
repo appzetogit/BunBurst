@@ -2,6 +2,7 @@ import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import Delivery from '../../delivery/models/Delivery.js';
 import DeliveryWallet from '../../delivery/models/DeliveryWallet.js';
+import DeliveryTransaction from '../../delivery/models/DeliveryTransaction.js';
 import BusinessSettings from '../models/BusinessSettings.js';
 
 /**
@@ -36,8 +37,21 @@ export const getDeliveryBoyWallets = asyncHandler(async (req, res) => {
 
   for (const d of deliveries) {
     const wallet = await DeliveryWallet.findOrCreateByDeliveryId(d._id);
-    const bonusTx = (wallet.transactions || []).filter((t) => t.type === 'bonus');
-    const bonusTotal = (wallet.joiningBonusAmount || 0) + bonusTx.reduce((s, t) => s + (t.amount || 0), 0);
+
+    // Get bonus total from transactions
+    const bonusResult = await DeliveryTransaction.aggregate([
+      { $match: { walletId: wallet._id, type: 'bonus', status: 'Completed' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const bonusTotal = (wallet.joiningBonusAmount || 0) + (bonusResult[0]?.total || 0);
+
+    // Get withdrawal total from transactions
+    const withdrawalResult = await DeliveryTransaction.aggregate([
+      { $match: { walletId: wallet._id, type: 'withdrawal', status: 'Completed' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const totalWithdrawn = withdrawalResult[0]?.total || 0;
+
     const cashCollected = Number(wallet.cashInHand) || 0;
     const remainingCashLimit = Math.max(0, availableCashLimit - cashCollected);
 
@@ -53,7 +67,7 @@ export const getDeliveryBoyWallets = asyncHandler(async (req, res) => {
       cashCollected,
       totalEarning: Number(wallet.totalEarned) || 0,
       bonus: bonusTotal,
-      totalWithdrawn: Number(wallet.totalWithdrawn) || 0
+      totalWithdrawn: totalWithdrawn
     });
   }
 
@@ -107,7 +121,7 @@ export const addWalletAdjustment = asyncHandler(async (req, res) => {
     ? (description ? `Admin Bonus: ${String(description).trim()}` : 'Admin Bonus')
     : (description ? `Admin Deduction: ${String(description).trim()}` : 'Admin Deduction');
 
-  wallet.addTransaction({
+  await wallet.addTransaction({
     amount: amt,
     type,
     status: 'Completed',
@@ -116,9 +130,6 @@ export const addWalletAdjustment = asyncHandler(async (req, res) => {
     processedBy: admin._id,
     metadata: { adjustment: true, description: String(description || '').trim() || undefined }
   });
-
-  wallet.markModified('transactions');
-  await wallet.save();
 
   return successResponse(res, 200, `${type === 'bonus' ? 'Bonus' : 'Deduction'} applied successfully`, {
     walletId: wallet._id,
