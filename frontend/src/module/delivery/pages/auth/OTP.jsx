@@ -19,6 +19,7 @@ export default function DeliveryOTP() {
   const [name, setName] = useState("")
   const [nameError, setNameError] = useState("")
   const [verifiedOtp, setVerifiedOtp] = useState("")
+  const [showBackConfirm, setShowBackConfirm] = useState(false)
   const inputRefs = useRef([])
 
   useEffect(() => {
@@ -202,7 +203,7 @@ export default function DeliveryOTP() {
         // Store auth data using utility function
         try {
           storeAuthData("delivery", accessToken, user)
-          } catch (storageError) {
+        } catch (storageError) {
           console.error("Failed to store authentication data:", storageError)
           setError("Failed to save authentication. Please try again or clear your browser storage.")
           setIsLoading(false)
@@ -235,7 +236,7 @@ export default function DeliveryOTP() {
       // The setAuthData function includes error handling and verification
       try {
         storeAuthData("delivery", accessToken, user)
-        } catch (storageError) {
+      } catch (storageError) {
         console.error("Failed to store authentication data:", storageError)
         setError("Failed to save authentication. Please try again or clear your browser storage.")
         setIsLoading(false)
@@ -325,7 +326,7 @@ export default function DeliveryOTP() {
       // The setAuthData function includes error handling and verification
       try {
         storeAuthData("delivery", accessToken, user)
-        } catch (storageError) {
+      } catch (storageError) {
         console.error("Failed to store authentication data:", storageError)
         setError("Failed to save authentication. Please try again or clear your browser storage.")
         setIsLoading(false)
@@ -424,17 +425,35 @@ export default function DeliveryOTP() {
   const getPhoneNumber = () => {
     if (!authData) return ""
     if (authData.method === "phone") {
-      // Format phone number as +91-9098569620
       const phone = authData.phone || ""
-      // Remove spaces and format
       const cleaned = phone.replace(/\s/g, "")
-      // Add hyphen after country code if not present
       if (cleaned.startsWith("+91") && cleaned.length > 3) {
         return cleaned.slice(0, 3) + "-" + cleaned.slice(3)
       }
       return cleaned
     }
     return authData.email || ""
+  }
+
+  // Show confirmation popup instead of immediately going back
+  const handleBackAttempt = () => {
+    setShowBackConfirm(true)
+  }
+
+  // Clear all delivery session data and redirect to sign-in
+  const handleConfirmGoBack = () => {
+    // Clear delivery tokens from localStorage
+    localStorage.removeItem("delivery_accessToken")
+    localStorage.removeItem("delivery_refreshToken")
+    localStorage.removeItem("delivery_authenticated")
+    localStorage.removeItem("delivery_user")
+    // Clear session storage
+    sessionStorage.removeItem("deliveryAuthData")
+    sessionStorage.removeItem("deliverySignupStep1")
+    // Dispatch auth changed event
+    window.dispatchEvent(new Event("deliveryAuthChanged"))
+    // Navigate to sign-in
+    navigate("/delivery/sign-in", { replace: true })
   }
 
   if (!authData) {
@@ -446,7 +465,7 @@ export default function DeliveryOTP() {
       {/* Header */}
       <div className="relative flex items-center justify-center py-4 px-4 border-b border-gray-200">
         <button
-          onClick={() => navigate("/delivery/sign-in")}
+          onClick={handleBackAttempt}
           className="absolute left-4 top-1/2 -translate-y-1/2"
           aria-label="Go back"
         >
@@ -570,16 +589,58 @@ export default function DeliveryOTP() {
         </div>
       </div>
 
-      {/* Go back to login methods */}
       <div className="pt-4 mt-auto px-6 text-center pb-8">
         <button
           type="button"
-          onClick={() => navigate("/delivery/sign-in")}
+          onClick={handleBackAttempt}
           className="text-sm text-[#E23744] hover:underline"
         >
           Go back to login methods
         </button>
       </div>
+
+      {/* Back Confirmation Popup */}
+      {showBackConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: '#FFF0F0' }}
+              >
+                <ArrowLeft className="w-7 h-7" style={{ color: '#e53935' }} />
+              </div>
+            </div>
+            {/* Title */}
+            <h2 className="text-lg font-bold text-center mb-2" style={{ color: '#1E1E1E' }}>
+              Leave signup?
+            </h2>
+            {/* Message */}
+            <p className="text-sm text-center mb-6" style={{ color: '#1E1E1E', opacity: 0.6 }}>
+              Are you sure you want to go back without completing the signup process?
+            </p>
+            {/* Buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowBackConfirm(false)}
+                className="w-full py-3.5 rounded-xl font-bold text-base"
+                style={{ backgroundColor: '#e53935', color: '#fff' }}
+              >
+                Continue Signup
+              </button>
+              <button
+                onClick={handleConfirmGoBack}
+                className="w-full py-3.5 rounded-xl font-semibold text-base"
+                style={{ backgroundColor: '#F5F5F5', color: '#1E1E1E' }}
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AnimatedPage>
   )
 }

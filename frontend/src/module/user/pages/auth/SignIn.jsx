@@ -17,6 +17,7 @@ import api, { API_ENDPOINTS, authAPI } from "@/lib/api"
 import { firebaseAuth, googleProvider, ensureFirebaseInitialized } from "@/lib/firebase"
 import { setAuthData } from "@/lib/utils/auth"
 import loginBanner from "@/assets/loginbanner.png"
+import loginBannerDesktop from "@/assets/loginbanner-desktop.png"
 import bunburstLogo from "@/assets/appzetologo.png"
 
 // Common country codes
@@ -816,9 +817,9 @@ export default function SignIn() {
   return (
     <AnimatedPage className="min-h-screen flex flex-col items-center justify-center !p-0 !pb-0 overflow-hidden">
 
-      {/* Full-page Background Image with dark overlay */}
+      {/* Mobile background — dark food photo + dark overlay (unchanged) */}
       <div
-        className="fixed inset-0 w-full h-full"
+        className="fixed inset-0 w-full h-full md:hidden"
         style={{
           backgroundImage: `url(${loginBanner})`,
           backgroundSize: "cover",
@@ -827,7 +828,6 @@ export default function SignIn() {
           zIndex: 0,
         }}
       >
-        {/* Dark gradient overlay */}
         <div
           className="absolute inset-0"
           style={{
@@ -835,6 +835,18 @@ export default function SignIn() {
           }}
         />
       </div>
+
+      {/* Desktop background — light cream food-border image, no overlay */}
+      <div
+        className="fixed inset-0 w-full h-full hidden md:block"
+        style={{
+          backgroundImage: `url(${loginBannerDesktop})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          zIndex: 0,
+        }}
+      />
 
       {/* Logo above the card */}
       <div className="relative z-10 flex justify-center mb-2 px-4">
@@ -848,10 +860,10 @@ export default function SignIn() {
 
       {/* Heading text above card */}
       <div className="relative z-10 text-center px-4 mb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight drop-shadow-lg">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white md:text-gray-900 leading-tight drop-shadow-lg md:drop-shadow-none">
           Login to Bun Burst Café
         </h1>
-        <p className="text-sm sm:text-base text-amber-200 mt-1 drop-shadow">
+        <p className="text-sm sm:text-base text-amber-200 md:text-gray-500 mt-1 drop-shadow md:drop-shadow-none">
           Delicious pizzas, burgers &amp; shakes
         </p>
       </div>
