@@ -1,5 +1,5 @@
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import {
@@ -231,97 +231,105 @@ export default function OrderTracking() {
 
   const defaultAddress = getDefaultAddress()
 
-  // Poll for order updates (especially when delivery partner accepts)
-  // Only poll if delivery partner is not yet assigned to avoid unnecessary updates
+  // Keep a ref to the latest order so the polling interval can read current state
+  // without needing `order` as an effect dependency (which would restart the interval
+  // every time order updates — causing an infinite cascade of new intervals).
+  const orderRef = useRef(order)
+  useEffect(() => { orderRef.current = order }, [order])
+
+  // Poll for order status updates
   useEffect(() => {
-    if (!orderId || !order) return;
+    if (!orderId) return
 
-    // Skip polling if delivery partner is already assigned and accepted
-    const currentDeliveryStatus = order?.deliveryState?.status;
-    const currentPhase = order?.deliveryState?.currentPhase;
-    const hasDeliveryPartner = currentDeliveryStatus === 'accepted' ||
-      currentPhase === 'en_route_to_pickup' ||
-      currentPhase === 'at_pickup' ||
-      currentPhase === 'en_route_to_delivery';
+    const tick = async () => {
+      const currentOrder = orderRef.current
+      if (!currentOrder) return
 
-    // If delivery partner is assigned, reduce polling frequency to 30 seconds
-    // If not assigned, poll every 5 seconds to detect assignment
-    const pollInterval = hasDeliveryPartner ? 30000 : 5000;
+      // Stop polling entirely for terminal states — no point continuing
+      const terminalStatuses = ['delivered', 'cancelled', 'rejected']
+      if (terminalStatuses.includes(currentOrder.status)) return
 
-    const interval = setInterval(async () => {
       try {
-        const response = await orderAPI.getOrderDetails(orderId);
-        if (response.data?.success && response.data.data?.order) {
-          const apiOrder = response.data.data.order;
+        const response = await orderAPI.getOrderDetails(orderId)
+        if (!response.data?.success || !response.data.data?.order) return
 
-          // Check if delivery state changed (e.g., status became 'accepted')
-          const newDeliveryStatus = apiOrder.deliveryState?.status;
-          const newPhase = apiOrder.deliveryState?.currentPhase;
-          const newOrderStatus = apiOrder.status;
-          const currentOrderStatus = order?.status;
+        const apiOrder = response.data.data.order
+        const newDeliveryStatus = apiOrder.deliveryState?.status
+        const newPhase = apiOrder.deliveryState?.currentPhase
+        const newOrderStatus = apiOrder.status
+        const prevDeliveryStatus = currentOrder?.deliveryState?.status
+        const prevPhase = currentOrder?.deliveryState?.currentPhase
+        const prevOrderStatus = currentOrder?.status
 
-          // Check if order was cancelled
-          if (newOrderStatus === 'cancelled' && currentOrderStatus !== 'cancelled') {
-            setOrderStatus('cancelled');
-          }
+        // Only update state if something actually changed — avoids noisy re-renders
+        const hasChanged =
+          newDeliveryStatus !== prevDeliveryStatus ||
+          newPhase !== prevPhase ||
+          newOrderStatus !== prevOrderStatus
 
-          // Only update if status actually changed
-          if (newDeliveryStatus === 'accepted' ||
-            (newDeliveryStatus !== currentDeliveryStatus) ||
-            (newPhase !== currentPhase) ||
-            (newOrderStatus !== currentOrderStatus)) {
-            console.log('🔄 Order status updated:', {
-              oldStatus: currentDeliveryStatus,
-              newStatus: newDeliveryStatus,
-              oldPhase: currentPhase,
-              newPhase: newPhase
-            });
+        if (!hasChanged) return
 
-            // Re-fetch and update order (same logic as initial fetch)
-            let restaurantCoords = null;
-            if (apiOrder.restaurantId?.location?.coordinates &&
-              Array.isArray(apiOrder.restaurantId.location.coordinates) &&
-              apiOrder.restaurantId.location.coordinates.length >= 2) {
-              restaurantCoords = apiOrder.restaurantId.location.coordinates;
-            } else if (typeof apiOrder.restaurantId === 'string') {
-              try {
-                const restaurantResponse = await restaurantAPI.getRestaurantById(apiOrder.restaurantId);
-                if (restaurantResponse?.data?.success && restaurantResponse.data.data?.restaurant) {
-                  const restaurant = restaurantResponse.data.data.restaurant;
-                  if (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) && restaurant.location.coordinates.length >= 2) {
-                    restaurantCoords = restaurant.location.coordinates;
-                  }
-                }
-              } catch (err) {
-                console.error('❌ Error fetching cafe details:', err);
-              }
+        // Resolve restaurant coords from the refreshed order
+        let restaurantCoords = null
+        if (apiOrder.restaurantId?.location?.coordinates?.length >= 2) {
+          restaurantCoords = apiOrder.restaurantId.location.coordinates
+        } else if (apiOrder.restaurantId?.location?.latitude && apiOrder.restaurantId?.location?.longitude) {
+          restaurantCoords = [apiOrder.restaurantId.location.longitude, apiOrder.restaurantId.location.latitude]
+        } else if (typeof apiOrder.restaurantId === 'string') {
+          try {
+            const res = await restaurantAPI.getRestaurantById(apiOrder.restaurantId)
+            const rest = res?.data?.data?.restaurant
+            if (rest?.location?.coordinates?.length >= 2) {
+              restaurantCoords = rest.location.coordinates
             }
-
-            const transformedOrder = {
-              ...apiOrder,
-              restaurantLocation: restaurantCoords ? {
-                coordinates: restaurantCoords
-              } : order.restaurantLocation,
-              deliveryPartner: apiOrder.deliveryPartnerId ? {
-                name: apiOrder.deliveryPartnerId.name || 'Delivery Partner',
-                phone: apiOrder.deliveryPartnerId.phone || '',
-                avatar: null
-              } : null,
-              deliveryPartnerId: apiOrder.deliveryPartnerId?._id || apiOrder.deliveryPartnerId || apiOrder.assignmentInfo?.deliveryPartnerId || null,
-              assignmentInfo: apiOrder.assignmentInfo || null,
-              deliveryState: apiOrder.deliveryState || null
-            };
-
-            setOrder(transformedOrder);
-          }
+          } catch { /* silently ignore */ }
         }
-      } catch (err) {
-        console.error('Error polling order updates:', err);
-      }
-    }, pollInterval);
 
-    return () => clearInterval(interval);
-  }, [orderId, order?.deliveryState?.status, order?.deliveryState?.currentPhase]);
+        setOrder(prev => ({
+          ...prev,
+          ...apiOrder,
+          restaurantLocation: restaurantCoords
+            ? { coordinates: restaurantCoords }
+            : prev?.restaurantLocation,
+          deliveryPartner: apiOrder.deliveryPartnerId ? {
+            name: apiOrder.deliveryPartnerId.name || 'Delivery Partner',
+            phone: apiOrder.deliveryPartnerId.phone || '',
+            avatar: null
+          } : prev?.deliveryPartner,
+          deliveryPartnerId: apiOrder.deliveryPartnerId?._id || apiOrder.deliveryPartnerId || apiOrder.assignmentInfo?.deliveryPartnerId || prev?.deliveryPartnerId,
+          assignmentInfo: apiOrder.assignmentInfo || prev?.assignmentInfo,
+          deliveryState: apiOrder.deliveryState || prev?.deliveryState
+        }))
+
+        // Sync UI status label
+        if (newOrderStatus === 'cancelled') setOrderStatus('cancelled')
+        else if (newOrderStatus === 'delivered') setOrderStatus('delivered')
+        else if (newOrderStatus === 'out_for_delivery') setOrderStatus('on_way')
+        else if (newOrderStatus === 'ready') setOrderStatus('pickup')
+        else if (newOrderStatus === 'preparing') setOrderStatus('preparing')
+
+      } catch (err) {
+        // Silently ignore 429 / network errors — interval will retry next tick
+        if (err?.response?.status !== 429) {
+          console.error('Error polling order updates:', err)
+        }
+      }
+    }
+
+    // Determine poll interval based on current order state
+    // Delivered/cancelled orders: no polling (handled by terminal check above)
+    // Delivery partner assigned: 30s (location updates come via socket anyway)
+    // Waiting for assignment: 15s (was 5s — reduced to avoid rate limits)
+    const currentOrder = orderRef.current
+    const phase = currentOrder?.deliveryState?.currentPhase
+    const isEnRoute = phase === 'en_route_to_pickup' || phase === 'at_pickup' || phase === 'en_route_to_delivery'
+    const pollInterval = isEnRoute ? 30000 : 15000
+
+    const interval = setInterval(tick, pollInterval)
+    return () => clearInterval(interval)
+    // Only depends on orderId — order state is read via ref, not deps
+    // This prevents the interval from being destroyed/recreated on every order update
+  }, [orderId])
 
   // Fetch order from API if not found in context
   useEffect(() => {

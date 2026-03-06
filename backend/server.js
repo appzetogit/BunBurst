@@ -353,6 +353,9 @@ app.use(cookieParser());
 app.use(mongoSanitize());
 
 // ─────────────────────────────── Rate Limiting ───────────────────────────────
+// Provide proxy trust so `express-rate-limit` tracks REAL client IPs, not the load balancer IP
+app.set('trust proxy', 1);
+
 // Tiered strategy: different endpoints get different limits.
 //
 // /api/order/calculate  — read-only pricing endpoint, legitimately called many
