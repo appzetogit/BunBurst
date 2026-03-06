@@ -1,30 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Menu,
   Search,
   User,
-  MessageCircle,
   ChevronDown,
-  UtensilsCrossed,
-  Mail,
   LogOut,
   Settings,
-  FileText,
-  Package,
-  Users,
-  AlertCircle,
-  ArrowRight,
-  Wallet,
-  ShoppingCart,
-  MapPin,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,14 +22,43 @@ import appzetoLogo from "@/assets/appzetologo.png";
 import { adminAPI } from "@/lib/api";
 import { clearModuleAuth } from "@/lib/utils/auth";
 import { getCachedSettings, loadBusinessSettings } from "@/lib/utils/businessSettings";
+import { sidebarMenuData } from "@/module/admin/data/sidebarMenu";
+
+const collectSearchableRoutes = (menuData) => {
+  const routes = [];
+
+  for (const entry of menuData || []) {
+    if (entry?.type === "link" && entry?.path) {
+      routes.push({ label: entry.label || entry.path, path: entry.path });
+    }
+
+    if (Array.isArray(entry?.items)) {
+      for (const item of entry.items) {
+        if (item?.type === "link" && item?.path) {
+          routes.push({ label: item.label || item.path, path: item.path });
+        }
+
+        if (item?.type === "expandable" && Array.isArray(item?.subItems)) {
+          for (const subItem of item.subItems) {
+            if (subItem?.path) {
+              routes.push({ label: subItem.label || subItem.path, path: subItem.path });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return routes;
+};
+
+const searchableAdminRoutes = collectSearchableRoutes(sidebarMenuData);
 
 export default function AdminNavbar({ onMenuClick }) {
   const navigate = useNavigate();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [adminData, setAdminData] = useState(null);
   const [businessSettings, setBusinessSettings] = useState(null);
-  const searchInputRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Load admin data from localStorage
   useEffect(() => {
@@ -107,56 +119,6 @@ export default function AdminNavbar({ onMenuClick }) {
     };
   }, []);
 
-  // Keyboard shortcut for search (Ctrl+K)
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        setSearchOpen(true);
-      }
-      if (e.key === "Escape" && searchOpen) {
-        setSearchOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchOpen]);
-
-  // Focus search input when modal opens
-  useEffect(() => {
-    if (searchOpen && searchInputRef.current) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 100);
-    }
-  }, [searchOpen]);
-
-  // Mock search results - replace with actual search logic
-  const searchResults = [
-    { type: "Order", title: "Order #12345", description: "Pending delivery", icon: Package },
-    { type: "User", title: "Sumit Jaiswal", description: "Customer profile", icon: Users },
-    { type: "Product", title: "Chicken Biryani", description: "Food item", icon: UtensilsCrossed },
-    { type: "Report", title: "Sales Report", description: "Monthly analytics", icon: FileText },
-  ].filter((item) =>
-    searchQuery.trim() === "" ||
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Mock data for dropdowns
-  const messages = [
-    { id: 1, sender: "Sarah Johnson", message: "Order #12345 needs attention", time: "2m ago", unread: true },
-    { id: 2, sender: "Mike Chen", message: "New cafe registration", time: "15m ago", unread: true },
-    { id: 3, sender: "Emma Wilson", message: "Payment issue resolved", time: "1h ago", unread: false },
-  ];
-
-  const emails = [
-    { id: 1, subject: "Weekly Report Ready", from: "reports@appzeto.com", time: "5m ago", unread: true },
-    { id: 2, subject: "New Order Notification", from: "orders@appzeto.com", time: "1h ago", unread: true },
-    { id: 3, subject: "System Update", from: "admin@appzeto.com", time: "2h ago", unread: false },
-  ];
-
   // Handle logout
   const handleLogout = async () => {
     try {
@@ -196,6 +158,27 @@ export default function AdminNavbar({ onMenuClick }) {
 
       // Navigate to login
       navigate('/admin/login', { replace: true });
+    }
+  };
+
+  const handleSearch = () => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return;
+
+    // Allow direct admin path search
+    if (query.startsWith("/admin")) {
+      navigate(query);
+      return;
+    }
+
+    // Prefer exact label match, then partial match, then path match
+    const exactMatch = searchableAdminRoutes.find((item) => item.label?.toLowerCase() === query);
+    const partialLabelMatch = searchableAdminRoutes.find((item) => item.label?.toLowerCase().includes(query));
+    const partialPathMatch = searchableAdminRoutes.find((item) => item.path?.toLowerCase().includes(query));
+    const target = exactMatch || partialLabelMatch || partialPathMatch;
+
+    if (target?.path) {
+      navigate(target.path);
     }
   };
 
@@ -240,129 +223,35 @@ export default function AdminNavbar({ onMenuClick }) {
             </div>
           </div>
 
-          {/* Center: Search Bar */}
+          {/* Center: Search Bar (Display only) */}
           <div className="flex-1 flex justify-center max-w-md mx-8">
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 text-neutral-400 cursor-pointer hover:bg-neutral-800 transition-colors w-full border border-neutral-800"
-            >
-              <Search className="w-4 h-4 text-neutral-500" />
-              <span className="text-sm flex-1 text-left text-neutral-400">Search</span>
-              <span className="text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
-                Ctrl+K
-              </span>
-            </button>
+            <div className="relative w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
+                placeholder="Search"
+                className="pl-10 pr-20 py-2 rounded-full bg-neutral-900 text-neutral-200 border-neutral-800 focus-visible:ring-neutral-700 focus-visible:ring-1"
+              />
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700 hover:bg-neutral-700 transition-colors"
+              >
+                Enter
+              </button>
+            </div>
           </div>
 
-          {/* Right: Notifications and User Profile */}
+          {/* Right: User Profile */}
           <div className="flex items-center gap-3">
-            {/* Chat/MessageCircle */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="relative p-2 rounded-md text-neutral-400 hover:bg-neutral-900 hover:text-white transition-colors">
-                  <MessageCircle className="w-5 h-5" />
-                  {messages.filter((m) => m.unread).length > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-600 text-white text-[10px] rounded-full flex items-center justify-center font-semibold px-1">
-                      {messages.filter((m) => m.unread).length}
-                    </span>
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-80 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 text-neutral-900 animate-in fade-in-0 zoom-in-95 duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
-              >
-                <DropdownMenuLabel className="flex items-center justify-between">
-                  <span>Messages</span>
-                  <span className="text-xs text-neutral-500 font-normal">
-                    {messages.filter((m) => m.unread).length} new
-                  </span>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <div className="max-h-96 overflow-y-auto">
-                  {messages.map((msg) => (
-                    <DropdownMenuItem
-                      key={msg.id}
-                      className="flex flex-col items-start p-3 cursor-pointer hover:bg-neutral-50"
-                    >
-                      <div className="flex items-start justify-between w-full">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-neutral-900">{msg.sender}</p>
-                            {msg.unread && (
-                              <span className="w-2 h-2 bg-black rounded-full"></span>
-                            )}
-                          </div>
-                          <p className="text-xs text-neutral-600 mt-1">{msg.message}</p>
-                          <p className="text-xs text-neutral-400 mt-1">{msg.time}</p>
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="justify-center cursor-pointer text-neutral-900 hover:text-black"
-                  onClick={() => navigate("/admin/chattings")}
-                >
-                  View all conversations
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Messages/Mail */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="relative p-2 rounded-md text-neutral-400 hover:bg-neutral-900 hover:text-white transition-colors">
-                  <Mail className="w-5 h-5" />
-                  {emails.filter((e) => e.unread).length > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-600 text-white text-[10px] rounded-full flex items-center justify-center font-semibold px-1">
-                      {emails.filter((e) => e.unread).length}
-                    </span>
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-80 bg-white border border-neutral-200 rounded-lg shadow-lg z-50 text-neutral-900 animate-in fade-in-0 zoom-in-95 duration-200 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
-              >
-                <DropdownMenuLabel className="flex items-center justify-between">
-                  <span>Emails</span>
-                  <span className="text-xs text-neutral-500 font-normal">
-                    {emails.filter((e) => e.unread).length} new
-                  </span>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <div className="max-h-96 overflow-y-auto">
-                  {emails.map((email) => (
-                    <DropdownMenuItem
-                      key={email.id}
-                      className="flex flex-col items-start p-3 cursor-pointer hover:bg-neutral-50"
-                    >
-                      <div className="flex items-start justify-between w-full">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-neutral-900">{email.subject}</p>
-                            {email.unread && (
-                              <span className="w-2 h-2 bg-black rounded-full"></span>
-                            )}
-                          </div>
-                          <p className="text-xs text-neutral-600 mt-1">{email.from}</p>
-                          <p className="text-xs text-neutral-400 mt-1">{email.time}</p>
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="justify-center cursor-pointer text-neutral-900 hover:text-black">
-                  View all emails
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             {/* User Profile */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -465,99 +354,6 @@ export default function AdminNavbar({ onMenuClick }) {
         </div>
       </header>
 
-      {/* Search Modal */}
-      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent className="max-w-2xl p-0 bg-white opacity-0 data-[state=open]:opacity-100 data-[state=closed]:opacity-0 transition-opacity duration-200 ease-in-out data-[state=open]:scale-100 data-[state=closed]:scale-100 border border-neutral-200">
-          <DialogHeader className="p-6 pb-4 border-b border-neutral-200">
-            <DialogTitle className="text-xl font-semibold text-neutral-900">
-              Universal Search
-            </DialogTitle>
-          </DialogHeader>
-          <div className="p-6">
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-              <Input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search orders, users, products, reports..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-3 text-base border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-500 focus:border-black focus:ring-black"
-              />
-            </div>
-
-            {searchQuery.trim() === "" ? (
-              <div className="space-y-4">
-                <div className="text-sm text-neutral-500 mb-4">Quick Actions</div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { icon: Package, label: "Orders" },
-                    { icon: Users, label: "Users" },
-                    { icon: UtensilsCrossed, label: "Products" },
-                    { icon: FileText, label: "Reports" },
-                  ].map((action, idx) => (
-                    <button
-                      key={idx}
-                      className="flex items-center gap-3 p-4 rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50 transition-all"
-                    >
-                      <div className="p-2 rounded-md bg-black text-white">
-                        <action.icon className="w-5 h-5" />
-                      </div>
-                      <span className="text-sm font-medium text-neutral-900">{action.label}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-6 pt-4 border-t border-neutral-200">
-                  <p className="text-xs text-neutral-500 mb-2">Recent Searches</p>
-                  <div className="flex flex-wrap gap-2">
-                    {["Order #12345", "Sumit Jaiswal", "Chicken Biryani"].map((term, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSearchQuery(term)}
-                        className="px-3 py-1 text-xs bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-700 transition-colors"
-                      >
-                        {term}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {searchResults.length === 0 ? (
-                  <div className="text-center py-12">
-                    <AlertCircle className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
-                    <p className="text-sm text-neutral-500">No results found for "{searchQuery}"</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-sm text-neutral-600 mb-3">
-                      {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} found
-                    </div>
-                    {searchResults.map((result, idx) => (
-                      <button
-                        key={idx}
-                        className="w-full flex items-center gap-4 p-4 rounded-lg border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 transition-all text-left"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-neutral-900">{result.title}</p>
-                            <span className="text-xs px-2 py-0.5 bg-neutral-100 text-neutral-700 rounded">
-                              {result.type}
-                            </span>
-                          </div>
-                          <p className="text-xs text-neutral-600 mt-1">{result.description}</p>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-neutral-400" />
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

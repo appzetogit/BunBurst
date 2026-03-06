@@ -44,7 +44,6 @@ const AdRequests = lazy(() => import("../pages/advertisement/AdRequests"));
 const AdsList = lazy(() => import("../pages/advertisement/AdsList"));
 const PushNotification = lazy(() => import("../pages/PushNotification"));
 // Help & Support
-const Chattings = lazy(() => import("../pages/Chattings"));
 const ContactMessages = lazy(() => import("../pages/ContactMessages"));
 const SafetyEmergencyReports = lazy(() => import("../pages/SafetyEmergencyReports"));
 // Customer Management
@@ -52,7 +51,6 @@ const Customers = lazy(() => import("../pages/Customers"));
 const AddFund = lazy(() => import("../pages/wallet/AddFund"));
 const Bonus = lazy(() => import("../pages/wallet/Bonus"));
 const LoyaltyPointReport = lazy(() => import("../pages/loyalty-point/Report"));
-const SubscribedMailList = lazy(() => import("../pages/SubscribedMailList"));
 // Deliveryman Management
 // Deliveryman Management
 
@@ -210,7 +208,7 @@ export default function AdminRouter() {
           <Route path="push-notification" element={<PushNotification />} />
 
           {/* HELP & SUPPORT */}
-          <Route path="chattings" element={<Chattings />} />
+          <Route path="chattings" element={<Navigate to="/admin" replace />} />
           <Route path="contact-messages" element={<ContactMessages />} />
           <Route path="safety-emergency-reports" element={<SafetyEmergencyReports />} />
 
@@ -221,7 +219,7 @@ export default function AdminRouter() {
           <Route path="wallet/bonus" element={<Bonus />} />
           {/* Loyalty Point */}
           <Route path="loyalty-point/report" element={<LoyaltyPointReport />} />
-          <Route path="subscribed-mail-list" element={<SubscribedMailList />} />
+          <Route path="subscribed-mail-list" element={<Navigate to="/admin" replace />} />
 
           {/* DELIVERYMAN MANAGEMENT */}
 

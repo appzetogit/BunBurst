@@ -116,7 +116,6 @@ export default function AdminHome() {
 
   // Additional stats
   const totalRestaurants = dashboardData?.restaurants?.total || 0
-  const pendingRestaurantRequests = dashboardData?.restaurants?.pendingRequests || 0
   const totalDeliveryBoys = dashboardData?.deliveryBoys?.total || 0
   const pendingDeliveryBoyRequests = dashboardData?.deliveryBoys?.pendingRequests || 0
   const totalFoods = dashboardData?.foods?.total || 0
@@ -238,14 +237,6 @@ export default function AdminHome() {
               icon={<Store className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
               onClick={() => navigate("/admin/restaurants")}
-            />
-            <MetricCard
-              title="Cafe request pending"
-              value={pendingRestaurantRequests.toLocaleString("en-IN")}
-              helper="Awaiting approval"
-              icon={<UserCheck className="h-5 w-5 text-orange-600" />}
-              accent="bg-orange-200/40"
-              onClick={() => navigate("/admin/restaurants/joining-request")}
             />
             <MetricCard
               title="Total delivery boy"

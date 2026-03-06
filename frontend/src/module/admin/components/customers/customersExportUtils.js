@@ -1,4 +1,12 @@
 // Export utility functions for customers
+const formatCurrencyINR = (amount = 0) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(amount) || 0)
+
 export const exportCustomersToCSV = (customers, filename = "customers") => {
   if (!customers || customers.length === 0) {
     alert("No customers to export")
@@ -12,7 +20,7 @@ export const exportCustomersToCSV = (customers, filename = "customers") => {
     customer.email || "N/A",
     customer.phone || "N/A",
     customer.totalOrder || 0,
-    `$${(customer.totalOrderAmount || 0).toFixed(2)}`,
+    formatCurrencyINR(customer.totalOrderAmount),
     customer.joiningDate || "N/A",
     customer.status ? "Active" : "Inactive"
   ])
@@ -60,7 +68,7 @@ export const exportCustomersToExcel = (customers, filename = "customers") => {
     customer.email || "N/A",
     customer.phone || "N/A",
     customer.totalOrder || 0,
-    (customer.totalOrderAmount || 0).toFixed(2),
+    formatCurrencyINR(customer.totalOrderAmount),
     customer.joiningDate || "N/A",
     customer.status ? "Active" : "Inactive"
   ])
@@ -142,7 +150,7 @@ export const exportCustomersToPDF = (customers, filename = "customers") => {
           customer.email || "N/A",
           customer.phone || "N/A",
           customer.totalOrder || 0,
-          `$${(customer.totalOrderAmount || 0).toFixed(2)}`,
+          formatCurrencyINR(customer.totalOrderAmount),
           customer.joiningDate || "N/A",
           customer.status ? "Active" : "Inactive"
         ])
