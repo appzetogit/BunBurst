@@ -26,7 +26,7 @@ import { exportReportsToCSV, exportReportsToExcel, exportReportsToPDF, exportRep
 export default function CampaignOrderReport() {
   const [filters, setFilters] = useState({
     campaign: "All Campaignes",
-    restaurant: "All cafes",
+    cafe: "All cafes",
     customer: "All customers",
     time: "All Time",
   })
@@ -42,7 +42,7 @@ export default function CampaignOrderReport() {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(order =>
         order.orderId.toLowerCase().includes(query) ||
-        order.restaurant.toLowerCase().includes(query) ||
+        order.cafe.toLowerCase().includes(query) ||
         order.customerName.toLowerCase().includes(query)
       )
     }
@@ -51,8 +51,8 @@ export default function CampaignOrderReport() {
       // Filter by campaign if needed
     }
 
-    if (filters.restaurant !== "All cafes") {
-      result = result.filter(o => o.restaurant === filters.restaurant)
+    if (filters.cafe !== "All cafes") {
+      result = result.filter(o => o.cafe === filters.cafe)
     }
 
     if (filters.customer !== "All customers") {
@@ -70,7 +70,7 @@ export default function CampaignOrderReport() {
     const headers = [
       { key: "sl", label: "SI" },
       { key: "orderId", label: "Order ID" },
-      { key: "restaurant", label: "Restaurant" },
+      { key: "cafe", label: "Cafe" },
       { key: "customerName", label: "Customer Name" },
       { key: "orderAmount", label: "Order Amount" },
       { key: "paymentMethod", label: "Payment Method" },
@@ -91,13 +91,13 @@ export default function CampaignOrderReport() {
   const handleResetFilters = () => {
     setFilters({
       campaign: "All Campaignes",
-      restaurant: "All cafes",
+      cafe: "All cafes",
       customer: "All customers",
       time: "All Time",
     })
   }
 
-  const activeFiltersCount = (filters.campaign !== "All Campaignes" ? 1 : 0) + (filters.restaurant !== "All cafes" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.campaign !== "All Campaignes" ? 1 : 0) + (filters.cafe !== "All cafes" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   const getStatusBadge = (status) => {
     const statusColors = {
@@ -146,8 +146,8 @@ export default function CampaignOrderReport() {
                   Cafe
                 </label>
                 <select
-                  value={filters.restaurant}
-                  onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
+                  value={filters.cafe}
+                  onChange={(e) => setFilters(prev => ({ ...prev, cafe: e.target.value }))}
                   className="w-full px-3 py-2 pr-8 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="All cafes">All cafes</option>
@@ -394,7 +394,7 @@ export default function CampaignOrderReport() {
                       <span className="text-xs font-medium text-slate-700">{order.orderId}</span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <span className="text-xs text-slate-700">{order.restaurant}</span>
+                      <span className="text-xs text-slate-700">{order.cafe}</span>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
                       <span className={`text-xs ${order.customerNameError ? "text-red-600 font-medium" : "text-slate-700"}`}>

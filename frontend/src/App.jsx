@@ -19,8 +19,8 @@ const OrdersPage = lazy(() => import("@/module/usermain/pages/OrdersPage"))
 const OrderDetailsPage = lazy(() => import("@/module/usermain/pages/OrderDetailsPage"))
 const WishlistPage = lazy(() => import("@/module/usermain/pages/WishlistPage"))
 
-// Restaurant Module - Disabled
-// All restaurant management is now handled via Admin Panel
+// Cafe Module - Disabled
+// All cafe management is now handled via Admin Panel
 
 
 // Admin Module
@@ -53,8 +53,8 @@ export default function App() {
         <Route path="/user/*" element={<UserPathRedirect />} />
         {/* Removed /routes route - Home should be accessed through UserRouter */}
 
-        {/* Restaurant Routes - Disabled & Redirected to Admin */}
-        <Route path="/restaurant/*" element={<Navigate to="/admin/login" replace />} />
+        {/* Cafe Routes - Disabled & Redirected to Admin */}
+        <Route path="/cafe/*" element={<Navigate to="/admin/login" replace />} />
         {/* Delivery Public Routes */}
         <Route path="/delivery/sign-in" element={<DeliverySignIn />} />
         <Route path="/delivery/signup" element={<DeliverySignup />} />

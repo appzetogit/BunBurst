@@ -4,7 +4,7 @@ const auditLogSchema = new mongoose.Schema({
   // Entity Information
   entityType: {
     type: String,
-    enum: ['order', 'restaurant', 'delivery', 'user', 'commission', 'settlement', 'refund', 'wallet'],
+    enum: ['order', 'cafe', 'delivery', 'user', 'commission', 'settlement', 'refund', 'wallet'],
     required: true,
     index: true
   },
@@ -31,7 +31,7 @@ const auditLogSchema = new mongoose.Schema({
   performedBy: {
     type: {
       type: String,
-      enum: ['user', 'restaurant', 'delivery', 'admin', 'system'],
+      enum: ['user', 'cafe', 'delivery', 'admin', 'system'],
       required: true
     },
     userId: {
@@ -62,16 +62,16 @@ const auditLogSchema = new mongoose.Schema({
     },
     walletType: {
       type: String,
-      enum: ['user', 'restaurant', 'delivery', 'admin'],
+      enum: ['user', 'cafe', 'delivery', 'admin'],
       sparse: true
     }
   },
   
   // Commission Change Details
   commissionChange: {
-    restaurantId: {
+    cafeId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Restaurant',
+      ref: 'Cafe',
       sparse: true
     },
     oldValue: Number,

@@ -40,7 +40,7 @@ export default function Coupons() {
 
     const query = searchQuery.toLowerCase().trim()
     return offers.filter(offer =>
-      offer.restaurantName?.toLowerCase().includes(query) ||
+      offer.cafeName?.toLowerCase().includes(query) ||
       offer.dishName?.toLowerCase().includes(query) ||
       offer.couponCode?.toLowerCase().includes(query)
     )
@@ -100,7 +100,7 @@ export default function Coupons() {
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">SI</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Restaurant</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Cafe</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Dish</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Coupon Code</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Discount</th>
@@ -116,7 +116,7 @@ export default function Coupons() {
                         <span className="text-sm font-medium text-slate-700">{offer.sl}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-slate-900">{offer.restaurantName}</span>
+                        <span className="text-sm font-medium text-slate-900">{offer.cafeName}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-slate-700">{offer.dishName}</span>

@@ -2,7 +2,7 @@ import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import Order from '../../order/models/Order.js';
 import Payment from '../../payment/models/Payment.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import mongoose from 'mongoose';
 import winston from 'winston';
 
@@ -118,45 +118,45 @@ export const getTripHistory = asyncHandler(async (req, res) => {
       logger.warn('Could not fetch payment records for COD check:', e.message);
     }
 
-    // Get unique restaurant IDs that need name lookup (where restaurantName is missing/empty)
-    const restaurantIdsToLookup = [...new Set(
+    // Get unique cafe IDs that need name lookup (where cafeName is missing/empty)
+    const cafeIdsToLookup = [...new Set(
       orders
-        .filter(o => !o.restaurantName || o.restaurantName === 'Unknown Cafe' || o.restaurantName.trim() === '')
-        .map(o => o.restaurantId)
+        .filter(o => !o.cafeName || o.cafeName === 'Unknown Cafe' || o.cafeName.trim() === '')
+        .map(o => o.cafeId)
         .filter(id => id)
     )];
 
-    // Fetch restaurant names for orders missing restaurantName
-    const restaurantNameMap = new Map();
-    if (restaurantIdsToLookup.length > 0) {
+    // Fetch cafe names for orders missing cafeName
+    const cafeNameMap = new Map();
+    if (cafeIdsToLookup.length > 0) {
       try {
-        // Try to find restaurants by restaurantId (String) or _id (ObjectId)
-        const restaurantQueries = restaurantIdsToLookup.map(id => {
+        // Try to find cafes by cafeId (String) or _id (ObjectId)
+        const cafeQueries = cafeIdsToLookup.map(id => {
           // Check if it's a valid ObjectId
           if (mongoose.Types.ObjectId.isValid(id) && id.length === 24) {
             return {
               $or: [
-                { restaurantId: id },
+                { cafeId: id },
                 { _id: new mongoose.Types.ObjectId(id) }
               ]
             };
           } else {
-            return { restaurantId: id };
+            return { cafeId: id };
           }
         });
 
-        const restaurants = await Restaurant.find({
-          $or: restaurantQueries
-        }).select('restaurantId name _id').lean();
+        const cafes = await Cafe.find({
+          $or: cafeQueries
+        }).select('cafeId name _id').lean();
 
-        restaurants.forEach(rest => {
-          // Map by restaurantId string
-          if (rest.restaurantId) {
-            restaurantNameMap.set(rest.restaurantId, rest.name);
+        cafes.forEach(rest => {
+          // Map by cafeId string
+          if (rest.cafeId) {
+            cafeNameMap.set(rest.cafeId, rest.name);
           }
           // Also map by _id string
           if (rest._id) {
-            restaurantNameMap.set(rest._id.toString(), rest.name);
+            cafeNameMap.set(rest._id.toString(), rest.name);
           }
         });
       } catch (e) {
@@ -185,12 +185,12 @@ export const getTripHistory = asyncHandler(async (req, res) => {
       const minutes = orderDate.getMinutes();
       const time = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 
-      // Get restaurant name - use restaurantName field, fallback to Restaurant collection lookup
-      let restaurantName = order.restaurantName;
-      if (!restaurantName || restaurantName === 'Unknown Cafe' || restaurantName.trim() === '') {
+      // Get cafe name - use cafeName field, fallback to Cafe collection lookup
+      let cafeName = order.cafeName;
+      if (!cafeName || cafeName === 'Unknown Cafe' || cafeName.trim() === '') {
         // Try to get from lookup map
-        restaurantName = restaurantNameMap.get(order.restaurantId) || 
-                        restaurantNameMap.get(order.restaurantId?.toString()) ||
+        cafeName = cafeNameMap.get(order.cafeId) || 
+                        cafeNameMap.get(order.cafeId?.toString()) ||
                         'Unknown Cafe';
       }
 
@@ -207,8 +207,8 @@ export const getTripHistory = asyncHandler(async (req, res) => {
       return {
         id: order._id.toString(),
         orderId: order.orderId,
-        restaurant: restaurantName,
-        restaurantName: restaurantName, // Also include for compatibility
+        cafe: cafeName,
+        cafeName: cafeName, // Also include for compatibility
         customer: order.userId?.name || 'Unknown Customer',
         status: displayStatus,
         time,

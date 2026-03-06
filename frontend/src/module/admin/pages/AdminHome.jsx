@@ -115,8 +115,8 @@ export default function AdminHome() {
   const totalAdminEarnings = commissionTotal + platformFeeTotal + deliveryFeeTotal + gstTotal
 
   // Additional stats
-  const totalRestaurants = dashboardData?.restaurants?.total || 0
-  const pendingRestaurantRequests = dashboardData?.restaurants?.pendingRequests || 0
+  const totalCafes = dashboardData?.cafes?.total || 0
+  const pendingCafeRequests = dashboardData?.cafes?.pendingRequests || 0
   const totalDeliveryBoys = dashboardData?.deliveryBoys?.total || 0
   const pendingDeliveryBoyRequests = dashboardData?.deliveryBoys?.pendingRequests || 0
   const totalFoods = dashboardData?.foods?.total || 0
@@ -233,19 +233,19 @@ export default function AdminHome() {
             />
             <MetricCard
               title="Total cafes"
-              value={totalRestaurants.toLocaleString("en-IN")}
+              value={totalCafes.toLocaleString("en-IN")}
               helper="All registered cafes"
               icon={<Store className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
-              onClick={() => navigate("/admin/restaurants")}
+              onClick={() => navigate("/admin/cafes")}
             />
             <MetricCard
               title="Cafe request pending"
-              value={pendingRestaurantRequests.toLocaleString("en-IN")}
+              value={pendingCafeRequests.toLocaleString("en-IN")}
               helper="Awaiting approval"
               icon={<UserCheck className="h-5 w-5 text-orange-600" />}
               accent="bg-orange-200/40"
-              onClick={() => navigate("/admin/restaurants/joining-request")}
+              onClick={() => navigate("/admin/cafes/joining-request")}
             />
             <MetricCard
               title="Total delivery boy"

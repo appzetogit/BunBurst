@@ -67,17 +67,17 @@ export const releaseEscrow = async (orderId) => {
     settlement.escrowReleasedAt = new Date();
     await settlement.save();
 
-    // Credit restaurant wallet with full food price earning (no commission deducted)
-    if (settlement.restaurantEarning.netEarning > 0) {
-      await creditRestaurantWallet(
-        settlement.restaurantId,
+    // Credit cafe wallet with full food price earning (no commission deducted)
+    if (settlement.cafeEarning.netEarning > 0) {
+      await creditCafeWallet(
+        settlement.cafeId,
         settlement.orderId,
-        settlement.restaurantEarning.netEarning,
+        settlement.cafeEarning.netEarning,
         settlement.orderNumber
       );
-      settlement.restaurantEarning.status = 'credited';
-      settlement.restaurantEarning.creditedAt = new Date();
-      settlement.restaurantSettled = true;
+      settlement.cafeEarning.status = 'credited';
+      settlement.cafeEarning.creditedAt = new Date();
+      settlement.cafeSettled = true;
     }
 
     // Credit delivery partner wallet
@@ -98,7 +98,7 @@ export const releaseEscrow = async (orderId) => {
       settlement.orderId,
       settlement.adminEarning,
       settlement.orderNumber,
-      settlement.restaurantId,
+      settlement.cafeId,
       settlement // Pass settlement for reference
     );
     settlement.adminEarning.status = 'credited';
@@ -136,16 +136,16 @@ export const releaseEscrow = async (orderId) => {
 };
 
 /**
- * Credit restaurant wallet
- * @param {ObjectId} restaurantId - Restaurant ID
+ * Credit cafe wallet
+ * @param {ObjectId} cafeId - Cafe ID
  * @param {ObjectId} orderId - Order ID
  * @param {Number} netAmount - Amount to credit (full food price)
  * @param {String} orderNumber - Order number
  */
-const creditRestaurantWallet = async (restaurantId, orderId, netAmount, orderNumber) => {
+const creditCafeWallet = async (cafeId, orderId, netAmount, orderNumber) => {
   try {
-    const RestaurantWallet = (await import('../../restaurant/models/RestaurantWallet.js')).default;
-    const wallet = await RestaurantWallet.findOrCreateByRestaurantId(restaurantId);
+    const CafeWallet = (await import('../../cafe/models/CafeWallet.js')).default;
+    const wallet = await CafeWallet.findOrCreateByCafeId(cafeId);
 
     const description = `Payment for order ${orderNumber}`;
 
@@ -161,8 +161,8 @@ const creditRestaurantWallet = async (restaurantId, orderId, netAmount, orderNum
 
     // Create audit log
     await AuditLog.createLog({
-      entityType: 'restaurant',
-      entityId: restaurantId,
+      entityType: 'cafe',
+      entityId: cafeId,
       action: 'wallet_credit',
       actionType: 'credit',
       performedBy: {
@@ -174,9 +174,9 @@ const creditRestaurantWallet = async (restaurantId, orderId, netAmount, orderNum
         type: 'payment',
         status: 'success',
         orderId: orderId,
-        walletType: 'restaurant'
+        walletType: 'cafe'
       },
-      description: `Restaurant wallet credited for order ${orderNumber}`
+      description: `Cafe wallet credited for order ${orderNumber}`
     });
   } catch (error) {
     console.error('Error crediting cafe wallet:', error);
@@ -233,10 +233,10 @@ const creditDeliveryWallet = async (deliveryId, orderId, amount, orderNumber) =>
  * @param {ObjectId} orderId - Order ID
  * @param {Object} adminEarning - Admin earning breakdown
  * @param {String} orderNumber - Order number
- * @param {ObjectId} restaurantId - Restaurant ID
+ * @param {ObjectId} cafeId - Cafe ID
  * @param {Object} settlement - Settlement object (optional, for reference)
  */
-const creditAdminWallet = async (orderId, adminEarning, orderNumber, restaurantId, settlement = null) => {
+const creditAdminWallet = async (orderId, adminEarning, orderNumber, cafeId, settlement = null) => {
   try {
     const wallet = await AdminWallet.findOrCreate();
 

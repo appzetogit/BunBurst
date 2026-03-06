@@ -13,7 +13,7 @@ import {
   RotateCcw,
   FileText,
 } from "lucide-react"
-import { orderAPI, restaurantAPI } from "@/lib/api"
+import { orderAPI, cafeAPI } from "@/lib/api"
 import { toast } from "sonner"
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -23,7 +23,7 @@ export default function UserOrderDetails() {
   const navigate = useNavigate()
   const { orderId } = useParams()
   const [order, setOrder] = useState(null)
-  const [restaurant, setRestaurant] = useState(null)
+  const [cafe, setCafe] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -45,18 +45,18 @@ export default function UserOrderDetails() {
 
         setOrder(orderData)
 
-        // If restaurantId is just a string (not populated), fetch restaurant details separately
-        const restaurantId = orderData.restaurantId
-        if (restaurantId && typeof restaurantId === 'string' && !orderData.restaurant) {
+        // If cafeId is just a string (not populated), fetch cafe details separately
+        const cafeId = orderData.cafeId
+        if (cafeId && typeof cafeId === 'string' && !orderData.cafe) {
           try {
-            const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantId)
-            if (restaurantResponse?.data?.success && restaurantResponse.data.data?.restaurant) {
-              setRestaurant(restaurantResponse.data.data.restaurant)
-            } else if (restaurantResponse?.data?.restaurant) {
-              setRestaurant(restaurantResponse.data.restaurant)
+            const cafeResponse = await cafeAPI.getCafeById(cafeId)
+            if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
+              setCafe(cafeResponse.data.data.cafe)
+            } else if (cafeResponse?.data?.cafe) {
+              setCafe(cafeResponse.data.cafe)
             }
-          } catch (restaurantError) {
-            console.warn("Failed to fetch cafe details:", restaurantError)
+          } catch (cafeError) {
+            console.warn("Failed to fetch cafe details:", cafeError)
             // Don't show error toast, just log it - order details can still be shown
           }
         }
@@ -110,17 +110,17 @@ export default function UserOrderDetails() {
   }
 
   const orderIdDisplay = order.orderId || order._id || orderId
-  // Use fetched restaurant data if available, otherwise use order.restaurantId or order.restaurant
-  const restaurantObj = restaurant || order.restaurantId || order.restaurant || {}
-  const restaurantName =
-    order.restaurantName || restaurantObj.name || "Restaurant"
+  // Use fetched cafe data if available, otherwise use order.cafeId or order.cafe
+  const cafeObj = cafe || order.cafeId || order.cafe || {}
+  const cafeName =
+    order.cafeName || cafeObj.name || "Cafe"
 
-  // Build restaurant address (try restaurant fields first, then fall back)
-  const restaurantLocation = (() => {
-    const loc = restaurantObj.location || {}
+  // Build cafe address (try cafe fields first, then fall back)
+  const cafeLocation = (() => {
+    const loc = cafeObj.location || {}
 
-    // Priority 1: direct address on restaurant object
-    if (restaurantObj.address) return restaurantObj.address
+    // Priority 1: direct address on cafe object
+    if (cafeObj.address) return cafeObj.address
 
     // Priority 2: formattedAddress from location
     if (loc.formattedAddress) return loc.formattedAddress
@@ -150,8 +150,8 @@ export default function UserOrderDetails() {
       if (parts.length) return parts.join(", ")
     }
 
-    // Priority 5: order-level restaurantAddress if present
-    if (order.restaurantAddress) return order.restaurantAddress
+    // Priority 5: order-level cafeAddress if present
+    if (order.cafeAddress) return order.cafeAddress
 
     // Don't fallback to user delivery address - show empty or "Address not available"
     return "Address not available"
@@ -241,14 +241,14 @@ export default function UserOrderDetails() {
         yPos += (wrappedValue.length * 5)
       })
 
-      // Column 2: Restaurant & Delivery (Right Side)
+      // Column 2: Cafe & Delivery (Right Side)
       let rightY = 50
       drawSectionHeader('Cafe & Delivery', 110, rightY)
       rightY += 10
 
       const deliveryLabels = [
-        ['Restaurant:', restaurantName],
-        ['Address:', restaurantLocation || 'N/A'],
+        ['Cafe:', cafeName],
+        ['Address:', cafeLocation || 'N/A'],
         ['Deliver to:', addressText || 'N/A']
       ]
 
@@ -382,7 +382,7 @@ export default function UserOrderDetails() {
           </div>
         </div>
 
-        {/* Restaurant Info Card */}
+        {/* Cafe Info Card */}
         <div className="bg-white p-4 rounded-xl shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -390,17 +390,17 @@ export default function UserOrderDetails() {
                 src={
                   // Prefer the food image from the first ordered item
                   (Array.isArray(items) && items[0]?.image) ||
-                  restaurantObj.profileImage?.url ||
-                  restaurantObj.profileImage ||
-                  order.restaurantImage ||
+                  cafeObj.profileImage?.url ||
+                  cafeObj.profileImage ||
+                  order.cafeImage ||
                   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=80"
                 }
-                alt={restaurantName}
+                alt={cafeName}
                 className="w-10 h-10 rounded-lg object-cover"
               />
               <div>
-                <h3 className="font-semibold text-gray-800">{restaurantName}</h3>
-                <p className="text-xs text-gray-500">{restaurantLocation}</p>
+                <h3 className="font-semibold text-gray-800">{cafeName}</h3>
+                <p className="text-xs text-gray-500">{cafeLocation}</p>
               </div>
             </div>
           </div>
@@ -617,7 +617,7 @@ export default function UserOrderDetails() {
       <div className="fixed bottom-0 w-full bg-white border-t border-gray-200 p-4 flex gap-3 z-20">
         <button
           type="button"
-          onClick={() => navigate(`/user/restaurants/${order.restaurantId || ""}`)}
+          onClick={() => navigate(`/user/cafes/${order.cafeId || ""}`)}
           className="flex-1 bg-[#E23744] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-red-600 transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
@@ -633,7 +633,7 @@ export default function UserOrderDetails() {
         </button>
       </div>
 
-      {/* Restaurant Complaint Button - Below Order Details */}
+      {/* Cafe Complaint Button - Below Order Details */}
       {order && (
         <div className="p-4 pb-24">
           <button

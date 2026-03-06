@@ -13,7 +13,7 @@ export const getZones = asyncHandler(async (req, res) => {
       page = 1, 
       limit = 50,
       search,
-      restaurantId,
+      cafeId,
       isActive
     } = req.query;
 
@@ -29,8 +29,8 @@ export const getZones = asyncHandler(async (req, res) => {
       ];
     }
 
-    if (restaurantId) {
-      query.restaurantId = new mongoose.Types.ObjectId(restaurantId);
+    if (cafeId) {
+      query.cafeId = new mongoose.Types.ObjectId(cafeId);
     }
 
     if (isActive !== undefined) {
@@ -40,10 +40,10 @@ export const getZones = asyncHandler(async (req, res) => {
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Fetch zones with restaurant details (if restaurantId exists)
+    // Fetch zones with cafe details (if cafeId exists)
     const zones = await Zone.find(query)
       .populate({
-        path: 'restaurantId',
+        path: 'cafeId',
         select: 'name email phone',
         match: { _id: { $exists: true } }
       })
@@ -81,7 +81,7 @@ export const getZoneById = asyncHandler(async (req, res) => {
 
     const zone = await Zone.findById(id)
       .populate({
-        path: 'restaurantId',
+        path: 'cafeId',
         select: 'name email phone',
         match: { _id: { $exists: true } }
       })
@@ -112,7 +112,7 @@ export const createZone = asyncHandler(async (req, res) => {
       zoneName,
       country,
       serviceLocation,
-      restaurantId,
+      cafeId,
       unit,
       coordinates,
       peakZoneRideCount,
@@ -123,7 +123,7 @@ export const createZone = asyncHandler(async (req, res) => {
       isActive
     } = req.body;
 
-    // Validation - For customer zones, country and zoneName are required instead of restaurantId
+    // Validation - For customer zones, country and zoneName are required instead of cafeId
     if (!name && !zoneName) {
       return errorResponse(res, 400, 'Zone name is required');
     }
@@ -151,11 +151,11 @@ export const createZone = asyncHandler(async (req, res) => {
       }
     }
 
-    // Check if restaurant exists (only if restaurantId is provided)
-    if (restaurantId) {
-      const Restaurant = mongoose.model('Restaurant');
-      const restaurant = await Restaurant.findById(restaurantId);
-      if (!restaurant) {
+    // Check if cafe exists (only if cafeId is provided)
+    if (cafeId) {
+      const Cafe = mongoose.model('Cafe');
+      const cafe = await Cafe.findById(cafeId);
+      if (!cafe) {
         return errorResponse(res, 404, 'Cafe not found');
       }
     }
@@ -166,7 +166,7 @@ export const createZone = asyncHandler(async (req, res) => {
       zoneName: zoneName || name,
       country: country || 'India',
       serviceLocation: serviceLocation || country,
-      restaurantId: restaurantId ? new mongoose.Types.ObjectId(restaurantId) : null,
+      cafeId: cafeId ? new mongoose.Types.ObjectId(cafeId) : null,
       unit: unit || 'kilometer',
       coordinates,
       peakZoneRideCount: peakZoneRideCount || 0,
@@ -181,9 +181,9 @@ export const createZone = asyncHandler(async (req, res) => {
     const zone = new Zone(zoneData);
     await zone.save();
 
-    // Populate before returning (only if restaurantId exists)
-    if (zone.restaurantId) {
-      await zone.populate('restaurantId', 'name email phone');
+    // Populate before returning (only if cafeId exists)
+    if (zone.cafeId) {
+      await zone.populate('cafeId', 'name email phone');
     }
     if (zone.createdBy) {
       await zone.populate('createdBy', 'name email');
@@ -233,9 +233,9 @@ export const updateZone = asyncHandler(async (req, res) => {
     Object.assign(zone, updateData);
     await zone.save();
 
-    // Populate before returning (only if restaurantId exists)
-    if (zone.restaurantId) {
-      await zone.populate('restaurantId', 'name email phone');
+    // Populate before returning (only if cafeId exists)
+    if (zone.cafeId) {
+      await zone.populate('cafeId', 'name email phone');
     }
     if (zone.createdBy) {
       await zone.populate('createdBy', 'name email');
@@ -299,19 +299,19 @@ export const toggleZoneStatus = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get zones by restaurant ID
- * GET /api/admin/zones/restaurant/:restaurantId
+ * Get zones by cafe ID
+ * GET /api/admin/zones/cafe/:cafeId
  */
-export const getZonesByRestaurant = asyncHandler(async (req, res) => {
+export const getZonesByCafe = asyncHandler(async (req, res) => {
   try {
-    const { restaurantId } = req.params;
+    const { cafeId } = req.params;
 
     const zones = await Zone.find({ 
-      restaurantId: new mongoose.Types.ObjectId(restaurantId),
+      cafeId: new mongoose.Types.ObjectId(cafeId),
       isActive: true 
     })
       .populate({
-        path: 'restaurantId',
+        path: 'cafeId',
         select: 'name email phone',
         match: { _id: { $exists: true } }
       })
@@ -486,20 +486,20 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
 }
 
 /**
- * Check if a location is within any zone for a restaurant
+ * Check if a location is within any zone for a cafe
  * POST /api/admin/zones/check-location
  */
 export const checkLocationInZone = asyncHandler(async (req, res) => {
   try {
-    const { latitude, longitude, restaurantId } = req.body;
+    const { latitude, longitude, cafeId } = req.body;
 
-    if (!latitude || !longitude || !restaurantId) {
+    if (!latitude || !longitude || !cafeId) {
       return errorResponse(res, 400, 'Latitude, longitude, and cafe ID are required');
     }
 
-    // Find zones for the restaurant
+    // Find zones for the cafe
     const zones = await Zone.find({
-      restaurantId: new mongoose.Types.ObjectId(restaurantId),
+      cafeId: new mongoose.Types.ObjectId(cafeId),
       isActive: true
     });
 

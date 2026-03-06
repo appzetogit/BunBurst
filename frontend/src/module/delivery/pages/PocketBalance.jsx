@@ -6,7 +6,7 @@ import {
   calculateDeliveryBalances,
   calculatePeriodEarnings
 } from "../utils/deliveryWalletState"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 import { deliveryAPI } from "@/lib/api"
 import { toast } from "sonner"
 import {

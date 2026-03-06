@@ -8,7 +8,7 @@ import { isModuleAuthenticated } from "@/lib/utils/auth"
  * 
  * @param {Object} props
  * @param {React.ReactNode} props.children - Auth page component to render if not authenticated
- * @param {string} props.module - Module name (user, restaurant, delivery, admin)
+ * @param {string} props.module - Module name (user, cafe, delivery, admin)
  * @param {string} props.redirectTo - Path to redirect to if authenticated (optional, defaults to module home)
  */
 export default function AuthRedirect({ children, module, redirectTo = null }) {
@@ -18,7 +18,7 @@ export default function AuthRedirect({ children, module, redirectTo = null }) {
   // Define default home pages for each module
   const moduleHomePages = {
     user: "/",
-    restaurant: "/admin/login",
+    cafe: "/admin/login",
     delivery: "/delivery",
     admin: "/admin",
   }

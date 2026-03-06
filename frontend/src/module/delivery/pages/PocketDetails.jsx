@@ -7,7 +7,7 @@ import {
   IndianRupee,
   Gift
 } from "lucide-react"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 import WeekSelector from "../components/WeekSelector"
 import { deliveryAPI } from "@/lib/api"
 import { fetchWalletTransactions } from "../utils/deliveryWalletState"
@@ -202,14 +202,14 @@ export default function PocketDetails() {
     }
   }
 
-  // Get restaurant name from order
-  const getRestaurantName = (order) => {
+  // Get cafe name from order
+  const getCafeName = (order) => {
     return (
-      order.restaurant ||
-      order.restaurantName ||
-      order.restaurantId?.name ||
-      order.restaurant?.name ||
-      "Restaurant"
+      order.cafe ||
+      order.cafeName ||
+      order.cafeId?.name ||
+      order.cafe?.name ||
+      "Cafe"
     )
   }
 
@@ -295,7 +295,7 @@ export default function PocketDetails() {
               const orderId = getOrderId(order)
               const earning = getOrderEarning(orderId)
               const bonus = getOrderBonus(orderId)
-              const restaurantName = getRestaurantName(order)
+              const cafeName = getCafeName(order)
               const orderDate = order.deliveredAt || order.completedAt || order.createdAt || order.date
               const paymentInfo = getPaymentMethod(order)
 
@@ -312,7 +312,7 @@ export default function PocketDetails() {
                           Order #{orderId}
                         </span>
                       </div>
-                      <p className="text-gray-600 text-xs mb-1">{restaurantName}</p>
+                      <p className="text-gray-600 text-xs mb-1">{cafeName}</p>
                       <p className="text-gray-500 text-xs mb-1">{formatDate(orderDate)}</p>
                       <div className="flex items-center gap-2">
                         <span className="text-gray-500 text-xs">Payment:</span>

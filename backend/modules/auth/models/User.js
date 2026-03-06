@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'restaurant', 'delivery', 'admin'],
+    enum: ['user', 'cafe', 'delivery', 'admin'],
     default: 'user'
   },
   signupMethod: {
@@ -120,9 +120,9 @@ const userSchema = new mongoose.Schema({
     }
   },
   favorites: [{
-    restaurantId: {
+    cafeId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Restaurant'
+      ref: 'Cafe'
     },
     addedAt: {
       type: Date,

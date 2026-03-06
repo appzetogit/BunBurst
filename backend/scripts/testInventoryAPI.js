@@ -2,8 +2,8 @@ import axios from 'axios';
 
 const testInventoryAPI = async () => {
     try {
-        const restaurantId = 'REST-1771312074475-1182';
-        const url = `http://localhost:5001/api/restaurant/${restaurantId}/inventory`;
+        const cafeId = 'REST-1771312074475-1182';
+        const url = `http://localhost:5001/api/cafe/${cafeId}/inventory`;
 
         console.log(`\n🧪 Testing inventory API endpoint:`);
         console.log(`   URL: ${url}\n`);

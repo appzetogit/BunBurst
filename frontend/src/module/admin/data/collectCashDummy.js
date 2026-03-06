@@ -12,7 +12,7 @@ export const collectCashDummy = [
   {
     sl: 2,
     collectedFrom: "Hungry Puppets",
-    userType: "Restaurant",
+    userType: "Cafe",
     collectedAt: "07 Feb 2023 06:30 pm",
     collectedAmount: 500.00,
     paymentMethod: "Bank account",

@@ -37,11 +37,11 @@ export async function testBackendHealth() {
 }
 
 /**
- * Test restaurant API endpoint
+ * Test cafe API endpoint
  */
-export async function testRestaurantAPI() {
+export async function testCafeAPI() {
   try {
-    const response = await fetch(`${API_BASE_URL}/restaurant/list`, {
+    const response = await fetch(`${API_BASE_URL}/cafe/list`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -76,11 +76,11 @@ export async function runConnectionTests() {
   
   const results = {
     health: await testBackendHealth(),
-    restaurantAPI: await testRestaurantAPI(),
+    cafeAPI: await testCafeAPI(),
   };
   
   // Summary
-  const allPassed = results.health.success && results.restaurantAPI.success;
+  const allPassed = results.health.success && results.cafeAPI.success;
   
   if (allPassed) {
     console.log('✅ All connection tests passed!');
@@ -107,7 +107,7 @@ export function displayConnectionStatus(results) {
     };
   }
   
-  if (!results.restaurantAPI.success) {
+  if (!results.cafeAPI.success) {
     return {
       type: 'warning',
       title: 'API Endpoint Issue',

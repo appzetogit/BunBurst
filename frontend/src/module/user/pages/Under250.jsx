@@ -18,7 +18,7 @@ import appzetoFoodLogo from "@/assets/appzetologo.png"
 import AddToCartAnimation from "../components/AddToCartAnimation"
 import OptimizedImage from "@/components/OptimizedImage"
 import api from "@/lib/api"
-import { restaurantAPI } from "@/lib/api"
+import { cafeAPI } from "@/lib/api"
 import { isModuleAuthenticated } from "@/lib/utils/auth"
 import UserBannerCarousel from "../components/UserBannerCarousel"
 import UserTopHeader from "../components/UserTopHeader"
@@ -56,8 +56,8 @@ export default function Under250() {
   const [loadingCategories, setLoadingCategories] = useState(true)
   const [bannerImage, setBannerImage] = useState(null)
   const [loadingBanner, setLoadingBanner] = useState(true)
-  const [under250Restaurants, setUnder250Restaurants] = useState([])
-  const [loadingRestaurants, setLoadingRestaurants] = useState(true)
+  const [under250Cafes, setUnder250Cafes] = useState([])
+  const [loadingCafes, setLoadingCafes] = useState(true)
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
 
   // Animated placeholder cycling
@@ -113,14 +113,14 @@ export default function Under250() {
     return 999
   }
 
-  // Sort and filter restaurants based on selected sort and filters
-  const sortedAndFilteredRestaurants = useMemo(() => {
-    let filtered = [...under250Restaurants]
+  // Sort and filter cafes based on selected sort and filters
+  const sortedAndFilteredCafes = useMemo(() => {
+    let filtered = [...under250Cafes]
 
     // Apply "Under 30 mins" filter
     if (under30MinsFilter) {
-      filtered = filtered.filter(restaurant => {
-        const deliveryTime = parseDeliveryTime(restaurant.deliveryTime)
+      filtered = filtered.filter(cafe => {
+        const deliveryTime = parseDeliveryTime(cafe.deliveryTime)
         return deliveryTime <= 30
       })
     }
@@ -162,14 +162,14 @@ export default function Under250() {
     }
 
     return filtered
-  }, [under250Restaurants, selectedSort, under30MinsFilter])
+  }, [under250Cafes, selectedSort, under30MinsFilter])
 
   // Keep existing sorting/filtering and additionally filter menu items by selected category
-  const restaurantsByCategory = useMemo(() => {
-    if (activeCategory === "all") return sortedAndFilteredRestaurants
+  const cafesByCategory = useMemo(() => {
+    if (activeCategory === "all") return sortedAndFilteredCafes
 
     const selectedCategoryObj = categories.find((cat) => cat.id === activeCategory)
-    if (!selectedCategoryObj) return sortedAndFilteredRestaurants
+    if (!selectedCategoryObj) return sortedAndFilteredCafes
 
     const normalizeCategory = (value) =>
       String(value || "")
@@ -191,13 +191,13 @@ export default function Under250() {
       )
     }
 
-    return sortedAndFilteredRestaurants
-      .map((restaurant) => ({
-        ...restaurant,
-        menuItems: (restaurant.menuItems || []).filter((item) => matchesCategory(item.category)),
+    return sortedAndFilteredCafes
+      .map((cafe) => ({
+        ...cafe,
+        menuItems: (cafe.menuItems || []).filter((item) => matchesCategory(item.category)),
       }))
-      .filter((restaurant) => restaurant.menuItems.length > 0)
-  }, [sortedAndFilteredRestaurants, activeCategory, categories])
+      .filter((cafe) => cafe.menuItems.length > 0)
+  }, [sortedAndFilteredCafes, activeCategory, categories])
 
   // State to handle multiple banners if array returned
   const [bannersData, setBannersData] = useState([])
@@ -223,27 +223,27 @@ export default function Under250() {
     fetchBanners()
   }, [])
 
-  // Fetch restaurants with dishes under ₹250 from backend
+  // Fetch cafes with dishes under ₹250 from backend
   useEffect(() => {
-    const fetchRestaurantsUnder250 = async () => {
+    const fetchCafesUnder250 = async () => {
       try {
-        setLoadingRestaurants(true)
-        // Optional: Add zoneId if available (for sorting/filtering, but show all restaurants)
-        const response = await restaurantAPI.getRestaurantsUnder250(zoneId)
-        if (response.data.success && response.data.data.restaurants) {
-          setUnder250Restaurants(response.data.data.restaurants)
+        setLoadingCafes(true)
+        // Optional: Add zoneId if available (for sorting/filtering, but show all cafes)
+        const response = await cafeAPI.getCafesUnder250(zoneId)
+        if (response.data.success && response.data.data.cafes) {
+          setUnder250Cafes(response.data.data.cafes)
         } else {
-          setUnder250Restaurants([])
+          setUnder250Cafes([])
         }
       } catch (error) {
         console.error('Error fetching cafes under 250:', error)
-        setUnder250Restaurants([])
+        setUnder250Cafes([])
       } finally {
-        setLoadingRestaurants(false)
+        setLoadingCafes(false)
       }
     }
 
-    fetchRestaurantsUnder250()
+    fetchCafesUnder250()
   }, [zoneId, isOutOfService])
 
   // Fetch categories from admin API
@@ -324,7 +324,7 @@ export default function Under250() {
   }, [])
 
   // Helper function to update item quantity in bothlocal state and cart
-  const updateItemQuantity = (item, newQuantity, event = null, restaurantName = null) => {
+  const updateItemQuantity = (item, newQuantity, event = null, cafeName = null) => {
     // Check authentication
     if (!isModuleAuthenticated('user')) {
       toast.error("Please login to add items to cart")
@@ -344,8 +344,8 @@ export default function Under250() {
       [item.id]: newQuantity,
     }))
 
-    // Find restaurant name from the item or use provided parameter
-    const restaurant = restaurantName || item.restaurant || "Under 250"
+    // Find cafe name from the item or use provided parameter
+    const cafe = cafeName || item.cafe || "Under 250"
 
     // Prepare cart item with all required properties
     const cartItem = {
@@ -353,7 +353,7 @@ export default function Under250() {
       name: item.name,
       price: item.price,
       image: item.image,
-      restaurant: restaurant,
+      cafe: cafe,
       description: item.description || "",
       originalPrice: item.originalPrice || item.price,
     }
@@ -417,16 +417,16 @@ export default function Under250() {
     }
   }
 
-  const handleItemClick = (item, restaurant) => {
-    // Add restaurant info to item for display
-    const itemWithRestaurant = {
+  const handleItemClick = (item, cafe) => {
+    // Add cafe info to item for display
+    const itemWithCafe = {
       ...item,
-      restaurant: restaurant.name,
-      description: item.description || `${item.name} from ${restaurant.name}`,
+      cafe: cafe.name,
+      description: item.description || `${item.name} from ${cafe.name}`,
       customisable: item.customisable || false,
       notEligibleForCoupons: item.notEligibleForCoupons || false,
     }
-    setSelectedItem(itemWithRestaurant)
+    setSelectedItem(itemWithCafe)
     setShowItemDetail(true)
   }
 
@@ -598,15 +598,15 @@ export default function Under250() {
         </section>
 
 
-        {/* Restaurant Menu Sections */}
-        {loadingRestaurants ? (
+        {/* Cafe Menu Sections */}
+        {loadingCafes ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-gray-500 dark:text-gray-400">Loading cafes...</div>
           </div>
-        ) : restaurantsByCategory.length === 0 ? (
+        ) : cafesByCategory.length === 0 ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-gray-500 dark:text-gray-400">
-              {under250Restaurants.length === 0
+              {under250Cafes.length === 0
                 ? "No cafes with dishes under ₹250 found."
                 : activeCategory === "all"
                   ? "No cafes match the selected filters."
@@ -614,19 +614,19 @@ export default function Under250() {
             </div>
           </div>
         ) : (
-          restaurantsByCategory.map((restaurant) => {
-            const restaurantSlug = restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, "-")
+          cafesByCategory.map((cafe) => {
+            const cafeSlug = cafe.slug || cafe.name.toLowerCase().replace(/\s+/g, "-")
             return (
-              <section key={restaurant.id} className="pt-4 sm:pt-6 md:pt-8 lg:pt-10">
-                {/* Restaurant Header */}
+              <section key={cafe.id} className="pt-4 sm:pt-6 md:pt-8 lg:pt-10">
+                {/* Cafe Header */}
                 <div className="flex items-start justify-between mb-3 md:mb-4 lg:mb-6">
                   <div className="flex-1">
                     <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white mb-1 md:mb-2">
-                      {restaurant.name}
+                      {cafe.name}
                     </h3>
                     <div className="flex items-center gap-2 text-sm md:text-base lg:text-lg text-muted-foreground">
                       <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
-                      <span className="font-medium">{restaurant.deliveryTime}</span>
+                      <span className="font-medium">{cafe.deliveryTime}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
@@ -634,16 +634,16 @@ export default function Under250() {
                       <div className="bg-primary-foreground text-primary px-1 py-1 md:px-1.5 md:py-1.5 lg:px-2 lg:py-2 rounded-full">
                         <Star className="h-3.5 w-3.5 md:h-4 md:w-4 lg:h-5 lg:w-5 fill-primary text-primary" />
                       </div>
-                      <span className="text-xs md:text-sm lg:text-base font-bold">{restaurant.rating}</span>
+                      <span className="text-xs md:text-sm lg:text-base font-bold">{cafe.rating}</span>
                     </div>
                     <span className="text-xs md:text-sm lg:text-base text-gray-400 dark:text-gray-500 mt-0.5">
-                      {restaurant.totalRatings > 0 ? `By ${restaurant.totalRatings >= 1000 ? `${(restaurant.totalRatings / 1000).toFixed(1)}K+` : `${restaurant.totalRatings}+`}` : ''}
+                      {cafe.totalRatings > 0 ? `By ${cafe.totalRatings >= 1000 ? `${(cafe.totalRatings / 1000).toFixed(1)}K+` : `${cafe.totalRatings}+`}` : ''}
                     </span>
                   </div>
                 </div>
 
                 {/* Menu Items Horizontal Scroll */}
-                {restaurant.menuItems && restaurant.menuItems.length > 0 && (
+                {cafe.menuItems && cafe.menuItems.length > 0 && (
                   <div className="space-y-2 md:space-y-3 lg:space-y-4">
                     <div
                       className="flex md:grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 overflow-x-auto md:overflow-x-visible overflow-y-visible scrollbar-hide scroll-smooth pb-2 md:pb-0 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
@@ -654,13 +654,13 @@ export default function Under250() {
                         overflowY: "hidden",
                       }}
                     >
-                      {restaurant.menuItems.map((item, itemIndex) => {
+                      {cafe.menuItems.map((item, itemIndex) => {
                         const quantity = quantities[item.id] || 0
                         return (
                           <motion.div
                             key={item.id}
                             className="flex-shrink-0 w-[200px] sm:w-[220px] md:w-full bg-card rounded-lg md:rounded-xl border border-border overflow-hidden cursor-pointer"
-                            onClick={() => handleItemClick(item, restaurant)}
+                            onClick={() => handleItemClick(item, cafe)}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true, margin: "-50px" }}
@@ -746,7 +746,7 @@ export default function Under250() {
                                     onClick={(e) => {
                                       e.stopPropagation()
                                       if (!shouldShowGrayscale) {
-                                        handleItemClick(item, restaurant)
+                                        handleItemClick(item, cafe)
                                       }
                                     }}
                                   >
@@ -761,7 +761,7 @@ export default function Under250() {
                     </div>
 
                     {/* View Full Menu Button */}
-                    <Link className="flex justify-center mt-2 md:mt-3 lg:mt-4" to={`/user/restaurants/${restaurantSlug}?under250=true`}>
+                    <Link className="flex justify-center mt-2 md:mt-3 lg:mt-4" to={`/user/cafes/${cafeSlug}?under250=true`}>
                       <Button
                         variant="outline"
                         className="w-min align-center text-center rounded-lg md:rounded-xl mx-auto bg-card hover:bg-muted text-foreground border-border h-9 md:h-10 lg:h-11 px-4 md:px-6 lg:px-8 text-sm md:text-base lg:text-lg"
@@ -1038,7 +1038,7 @@ export default function Under250() {
 
                 {/* Description */}
                 <p className="text-sm md:text-base lg:text-lg text-muted-foreground mb-4 md:mb-6 lg:mb-8 leading-relaxed">
-                  {selectedItem.description || `${selectedItem.name} from ${selectedItem.restaurant || 'Under 250'}`}
+                  {selectedItem.description || `${selectedItem.name} from ${selectedItem.cafe || 'Under 250'}`}
                 </p>
 
                 {/* Highly Reordered Progress Bar */}

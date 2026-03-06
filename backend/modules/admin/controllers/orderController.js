@@ -7,7 +7,7 @@ import { resolveOrderPaymentMethod } from '../../../shared/utils/deliveryCashLim
 /**
  * Get all orders for admin
  * GET /api/admin/orders
- * Query params: status, page, limit, search, fromDate, toDate, restaurant, paymentStatus
+ * Query params: status, page, limit, search, fromDate, toDate, cafe, paymentStatus
  */
 export const getOrders = asyncHandler(async (req, res) => {
   try {
@@ -18,7 +18,7 @@ export const getOrders = asyncHandler(async (req, res) => {
       search,
       fromDate,
       toDate,
-      restaurant,
+      cafe,
       paymentStatus,
       zone,
       customer,
@@ -39,7 +39,7 @@ export const getOrders = asyncHandler(async (req, res) => {
         'food-on-the-way': 'out_for_delivery',
         'delivered': 'delivered',
         'canceled': 'cancelled',
-        'restaurant-cancelled': 'cancelled', // Restaurant cancelled orders
+        'cafe-cancelled': 'cancelled', // Cafe cancelled orders
         'payment-failed': 'pending', // Payment failed orders have pending status
         'refunded': 'cancelled', // Refunded orders might be cancelled
         'dine-in': 'dine_in',
@@ -49,19 +49,19 @@ export const getOrders = asyncHandler(async (req, res) => {
       const mappedStatus = statusMap[status] || status;
       query.status = mappedStatus;
 
-      // If restaurant-cancelled, filter by cancellation reason
-      if (status === 'restaurant-cancelled') {
+      // If cafe-cancelled, filter by cancellation reason
+      if (status === 'cafe-cancelled') {
         query.cancellationReason = {
-          $regex: /rejected by restaurant|restaurant rejected|restaurant cancelled/i
+          $regex: /rejected by cafe|cafe rejected|cafe cancelled/i
         };
       }
     }
 
     // Also handle cancelledBy query parameter (if passed separately)
-    if (cancelledBy === 'restaurant') {
+    if (cancelledBy === 'cafe') {
       query.status = 'cancelled';
       query.cancellationReason = {
-        $regex: /rejected by restaurant|restaurant rejected|restaurant cancelled/i
+        $regex: /rejected by cafe|cafe rejected|cafe cancelled/i
       };
     }
 
@@ -85,20 +85,20 @@ export const getOrders = asyncHandler(async (req, res) => {
       }
     }
 
-    // Restaurant filter
-    if (restaurant && restaurant !== 'All cafes') {
-      // Try to find restaurant by name or ID
-      const Restaurant = (await import('../../restaurant/models/Restaurant.js')).default;
-      const restaurantDoc = await Restaurant.findOne({
+    // Cafe filter
+    if (cafe && cafe !== 'All cafes') {
+      // Try to find cafe by name or ID
+      const Cafe = (await import('../../cafe/models/Cafe.js')).default;
+      const cafeDoc = await Cafe.findOne({
         $or: [
-          { name: { $regex: restaurant, $options: 'i' } },
-          { _id: mongoose.Types.ObjectId.isValid(restaurant) ? restaurant : null },
-          { restaurantId: restaurant }
+          { name: { $regex: cafe, $options: 'i' } },
+          { _id: mongoose.Types.ObjectId.isValid(cafe) ? cafe : null },
+          { cafeId: cafe }
         ]
-      }).select('_id restaurantId').lean();
+      }).select('_id cafeId').lean();
 
-      if (restaurantDoc) {
-        query.restaurantId = restaurantDoc._id?.toString() || restaurantDoc.restaurantId;
+      if (cafeDoc) {
+        query.cafeId = cafeDoc._id?.toString() || cafeDoc.cafeId;
       }
     }
 
@@ -172,7 +172,7 @@ export const getOrders = asyncHandler(async (req, res) => {
     // Fetch orders with population
     const orders = await Order.find(query)
       .populate('userId', 'name email phone')
-      .populate('restaurantId', 'name slug address location onboarding')
+      .populate('cafeId', 'name slug address location onboarding')
       .populate('deliveryPartnerId', 'name phone')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
@@ -239,15 +239,15 @@ export const getOrders = asyncHandler(async (req, res) => {
       let orderStatusDisplay;
       if (order.status === 'cancelled') {
         // Check cancelledBy field to determine who cancelled
-        if (order.cancelledBy === 'restaurant') {
+        if (order.cancelledBy === 'cafe') {
           orderStatusDisplay = 'Cancelled by Cafe';
         } else if (order.cancelledBy === 'user') {
           orderStatusDisplay = 'Cancelled by User';
         } else {
           // Fallback: check cancellation reason pattern for old orders
           const cancellationReason = order.cancellationReason || '';
-          const isRestaurantCancelled = /rejected by restaurant|restaurant rejected|restaurant cancelled|restaurant is too busy|item not available|outside delivery area|kitchen closing|technical issue/i.test(cancellationReason);
-          orderStatusDisplay = isRestaurantCancelled ? 'Cancelled by Cafe' : 'Cancelled by User';
+          const isCafeCancelled = /rejected by cafe|cafe rejected|cafe cancelled|cafe is too busy|item not available|outside delivery area|kitchen closing|technical issue/i.test(cancellationReason);
+          orderStatusDisplay = isCafeCancelled ? 'Cancelled by Cafe' : 'Cancelled by User';
         }
       } else {
         const statusMap = {
@@ -306,15 +306,15 @@ export const getOrders = asyncHandler(async (req, res) => {
       // Order amount (final total)
       const orderAmount = order.pricing?.total || 0;
 
-      const restaurantEntity =
-        order.restaurantId && typeof order.restaurantId === 'object'
-          ? order.restaurantId
+      const cafeEntity =
+        order.cafeId && typeof order.cafeId === 'object'
+          ? order.cafeId
           : null;
 
       // Pick the best location source: main location → onboarding.step1.location → null
-      const restaurantLocation = (() => {
-        const loc = restaurantEntity?.location
-        const onboardingLoc = restaurantEntity?.onboarding?.step1?.location
+      const cafeLocation = (() => {
+        const loc = cafeEntity?.location
+        const onboardingLoc = cafeEntity?.onboarding?.step1?.location
         // Prefer whichever source has coordinates; fallback to the other
         const hasCoords = (l) => l && (l.latitude || l.longitude || (Array.isArray(l.coordinates) && l.coordinates.length === 2))
         const chosen = hasCoords(loc) ? loc : hasCoords(onboardingLoc) ? onboardingLoc : (loc || onboardingLoc || null)
@@ -338,20 +338,20 @@ export const getOrders = asyncHandler(async (req, res) => {
       })();
 
 
-      const composedRestaurantAddress = [
-        restaurantLocation?.formattedAddress,
-        restaurantLocation?.address,
-        restaurantEntity?.address,
-        restaurantLocation?.addressLine1,
-        restaurantLocation?.addressLine2,
-        restaurantLocation?.street,
-        restaurantLocation?.area,
-        restaurantLocation?.city,
-        restaurantLocation?.state,
-        restaurantLocation?.zipCode || restaurantLocation?.pincode || restaurantLocation?.postalCode
+      const composedCafeAddress = [
+        cafeLocation?.formattedAddress,
+        cafeLocation?.address,
+        cafeEntity?.address,
+        cafeLocation?.addressLine1,
+        cafeLocation?.addressLine2,
+        cafeLocation?.street,
+        cafeLocation?.area,
+        cafeLocation?.city,
+        cafeLocation?.state,
+        cafeLocation?.zipCode || cafeLocation?.pincode || cafeLocation?.postalCode
       ].filter(Boolean);
 
-      const resolvedRestaurantAddress = composedRestaurantAddress.find((value) => {
+      const resolvedCafeAddress = composedCafeAddress.find((value) => {
         if (typeof value !== 'string') return false;
         const normalized = value.trim().toLowerCase();
         return Boolean(
@@ -371,10 +371,10 @@ export const getOrders = asyncHandler(async (req, res) => {
         customerName: order.userId?.name || 'Unknown',
         customerPhone: customerPhone,
         customerEmail: order.userId?.email || '',
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
-        restaurantId: order.restaurantId?.toString() || order.restaurantId || '',
-        restaurantAddress: resolvedRestaurantAddress,
-        restaurantLocation: restaurantLocation || null,
+        cafe: order.cafeName || order.cafeId?.name || 'Unknown Cafe',
+        cafeId: order.cafeId?.toString() || order.cafeId || '',
+        cafeAddress: resolvedCafeAddress,
+        cafeLocation: cafeLocation || null,
         // Report-specific fields
         totalItemAmount: totalItemAmount,
         itemDiscount: itemDiscount,
@@ -454,7 +454,7 @@ export const getOrderById = asyncHandler(async (req, res) => {
     if (mongoose.Types.ObjectId.isValid(id) && id.length === 24) {
       order = await Order.findById(id)
         .populate('userId', 'name email phone')
-        .populate('restaurantId', 'name slug location address phone onboarding')
+        .populate('cafeId', 'name slug location address phone onboarding')
         .populate('deliveryPartnerId', 'name phone availability')
         .lean();
     }
@@ -463,7 +463,7 @@ export const getOrderById = asyncHandler(async (req, res) => {
     if (!order) {
       order = await Order.findOne({ orderId: id })
         .populate('userId', 'name email phone')
-        .populate('restaurantId', 'name slug location address phone onboarding')
+        .populate('cafeId', 'name slug location address phone onboarding')
         .populate('deliveryPartnerId', 'name phone availability')
         .lean();
     }
@@ -558,7 +558,7 @@ export const getSearchingDeliverymanOrders = asyncHandler(async (req, res) => {
     // Fetch orders with population
     const orders = await Order.find(finalQuery)
       .populate('userId', 'name email phone')
-      .populate('restaurantId', 'name slug')
+      .populate('cafeId', 'name slug')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip(skip)
@@ -630,7 +630,7 @@ export const getSearchingDeliverymanOrders = asyncHandler(async (req, res) => {
         time: timeStr,
         customerName: order.userId?.name || 'Unknown',
         customerPhone: maskedPhone,
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
+        cafe: order.cafeName || order.cafeId?.name || 'Unknown Cafe',
         total: formattedTotal,
         paymentStatus: paymentStatusDisplay,
         orderStatus: orderStatusDisplay,
@@ -639,7 +639,7 @@ export const getSearchingDeliverymanOrders = asyncHandler(async (req, res) => {
         orderId: order.orderId,
         _id: order._id.toString(),
         customerEmail: order.userId?.email || '',
-        restaurantId: order.restaurantId?.toString() || order.restaurantId || '',
+        cafeId: order.cafeId?.toString() || order.cafeId || '',
         items: order.items || [],
         address: order.address || {},
         createdAt: order.createdAt,
@@ -739,7 +739,7 @@ export const getOngoingOrders = asyncHandler(async (req, res) => {
     // Fetch orders with population
     const orders = await Order.find(finalQuery)
       .populate('userId', 'name email phone')
-      .populate('restaurantId', 'name slug')
+      .populate('cafeId', 'name slug')
       .populate('deliveryPartnerId', 'name phone')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
@@ -823,7 +823,7 @@ export const getOngoingOrders = asyncHandler(async (req, res) => {
         time: timeStr,
         customerName: order.userId?.name || 'Unknown',
         customerPhone: maskedPhone,
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
+        cafe: order.cafeName || order.cafeId?.name || 'Unknown Cafe',
         total: formattedTotal,
         paymentStatus: paymentStatusDisplay,
         orderStatus: orderStatusDisplay,
@@ -833,7 +833,7 @@ export const getOngoingOrders = asyncHandler(async (req, res) => {
         orderId: order.orderId,
         _id: order._id.toString(),
         customerEmail: order.userId?.email || '',
-        restaurantId: order.restaurantId?.toString() || order.restaurantId || '',
+        cafeId: order.cafeId?.toString() || order.cafeId || '',
         items: order.items || [],
         address: order.address || {},
         createdAt: order.createdAt,
@@ -864,7 +864,7 @@ export const getOngoingOrders = asyncHandler(async (req, res) => {
 /**
  * Get transaction report with summary statistics and order transactions
  * GET /api/admin/orders/transaction-report
- * Query params: page, limit, search, zone, restaurant, fromDate, toDate
+ * Query params: page, limit, search, zone, cafe, fromDate, toDate
  */
 export const getTransactionReport = asyncHandler(async (req, res) => {
   try {
@@ -874,12 +874,12 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
       limit = 50,
       search,
       zone,
-      restaurant,
+      cafe,
       fromDate,
       toDate
     } = req.query;
 
-    console.log('📋 Query params:', { page, limit, search, zone, restaurant, fromDate, toDate });
+    console.log('📋 Query params:', { page, limit, search, zone, cafe, fromDate, toDate });
 
     // Build query for orders
     const query = {};
@@ -899,19 +899,19 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
       }
     }
 
-    // Restaurant filter
-    if (restaurant && restaurant !== 'All cafes') {
-      const Restaurant = (await import('../../restaurant/models/Restaurant.js')).default;
-      const restaurantDoc = await Restaurant.findOne({
+    // Cafe filter
+    if (cafe && cafe !== 'All cafes') {
+      const Cafe = (await import('../../cafe/models/Cafe.js')).default;
+      const cafeDoc = await Cafe.findOne({
         $or: [
-          { name: { $regex: restaurant, $options: 'i' } },
-          { _id: mongoose.Types.ObjectId.isValid(restaurant) ? restaurant : null },
-          { restaurantId: restaurant }
+          { name: { $regex: cafe, $options: 'i' } },
+          { _id: mongoose.Types.ObjectId.isValid(cafe) ? cafe : null },
+          { cafeId: cafe }
         ]
-      }).select('_id restaurantId').lean();
+      }).select('_id cafeId').lean();
 
-      if (restaurantDoc) {
-        query.restaurantId = restaurantDoc._id?.toString() || restaurantDoc.restaurantId;
+      if (cafeDoc) {
+        query.cafeId = cafeDoc._id?.toString() || cafeDoc.cafeId;
       }
     }
 
@@ -938,7 +938,7 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
     // Fetch orders with population
     const orders = await Order.find(query)
       .populate('userId', 'name email phone')
-      .populate('restaurantId', 'name slug')
+      .populate('cafeId', 'name slug')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip(skip)
@@ -969,7 +969,7 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
     // Get all orders for summary calculation (without pagination)
     const allOrdersForSummary = await Order.find(query)
       .populate('userId', 'name')
-      .populate('restaurantId', 'name')
+      .populate('cafeId', 'name')
       .lean();
 
     // Calculate completed transactions (delivered orders)
@@ -996,8 +996,8 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
     const adminEarning = settlementDocs.reduce((sum, s) =>
       sum + (s.adminEarning?.totalEarning || 0), 0
     );
-    const restaurantEarning = settlementDocs.reduce((sum, s) =>
-      sum + (s.restaurantEarning?.netEarning || 0), 0
+    const cafeEarning = settlementDocs.reduce((sum, s) =>
+      sum + (s.cafeEarning?.netEarning || 0), 0
     );
 
     // Deliveryman earning
@@ -1033,7 +1033,7 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
       return {
         id: order._id.toString(),
         orderId: order.orderId,
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
+        cafe: order.cafeName || order.cafeId?.name || 'Unknown Cafe',
         customerName: order.userId?.name || 'Invalid Customer Data',
         totalItemAmount: totalItemAmount,
         itemDiscount: itemDiscount,
@@ -1051,7 +1051,7 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
         completedTransaction,
         refundedTransaction,
         adminEarning,
-        restaurantEarning,
+        cafeEarning,
         deliverymanEarning
       },
       transactions: transformedTransactions,
@@ -1070,11 +1070,11 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get restaurant report with statistics for each restaurant
- * GET /api/admin/orders/restaurant-report
+ * Get cafe report with statistics for each cafe
+ * GET /api/admin/orders/cafe-report
  * Query params: zone, all (active/inactive), type (commission/subscription), time, search
  */
-export const getRestaurantReport = asyncHandler(async (req, res) => {
+export const getCafeReport = asyncHandler(async (req, res) => {
   try {
     console.log('🔍 Fetching cafe report...');
     const {
@@ -1087,11 +1087,11 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
 
     console.log('📋 Query params:', { zone, all, type, time, search });
 
-    const Restaurant = (await import('../../restaurant/models/Restaurant.js')).default;
+    const Cafe = (await import('../../cafe/models/Cafe.js')).default;
     const FeedbackExperience = (await import('../models/FeedbackExperience.js')).default;
 
-    // Build restaurant query
-    const restaurantQuery = {};
+    // Build cafe query
+    const cafeQuery = {};
 
     // Zone filter
     if (zone && zone !== 'All Zones') {
@@ -1103,16 +1103,16 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
       if (zoneDoc) {
         const ordersInZone = await Order.find({
           'assignmentInfo.zoneId': zoneDoc._id?.toString()
-        }).distinct('restaurantId').lean();
+        }).distinct('cafeId').lean();
 
         if (ordersInZone.length > 0) {
-          restaurantQuery.$or = [
+          cafeQuery.$or = [
             { _id: { $in: ordersInZone } },
-            { restaurantId: { $in: ordersInZone } }
+            { cafeId: { $in: ordersInZone } }
           ];
         } else {
           return successResponse(res, 200, 'Cafe report retrieved successfully', {
-            restaurants: [],
+            cafes: [],
             pagination: { page: 1, limit: 1000, total: 0, pages: 0 }
           });
         }
@@ -1121,22 +1121,22 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
 
     // Active/Inactive filter
     if (all && all !== 'All') {
-      restaurantQuery.isActive = all === 'Active';
+      cafeQuery.isActive = all === 'Active';
     }
 
     // Search filter
     if (search) {
-      restaurantQuery.$or = [
+      cafeQuery.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { restaurantId: { $regex: search, $options: 'i' } }
+        { cafeId: { $regex: search, $options: 'i' } }
       ];
     }
 
-    const restaurants = await Restaurant.find(restaurantQuery)
-      .select('_id restaurantId name profileImage rating totalRatings isActive')
+    const cafes = await Cafe.find(cafeQuery)
+      .select('_id cafeId name profileImage rating totalRatings isActive')
       .lean();
 
-    console.log(`📊 Found ${restaurants.length} restaurants`);
+    console.log(`📊 Found ${cafes.length} cafes`);
 
     // Date range filter for orders
     let dateQuery = {};
@@ -1169,16 +1169,16 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
       }
     }
 
-    const restaurantReports = await Promise.all(
-      restaurants.map(async (restaurant) => {
-        const restaurantId = restaurant._id?.toString();
-        const restaurantIdField = restaurant.restaurantId;
+    const cafeReports = await Promise.all(
+      cafes.map(async (cafe) => {
+        const cafeId = cafe._id?.toString();
+        const cafeIdField = cafe.cafeId;
 
         const orderQuery = {
           ...dateQuery,
           $or: [
-            { restaurantId: restaurantId },
-            { restaurantId: restaurantIdField }
+            { cafeId: cafeId },
+            { cafeId: cafeIdField }
           ]
         };
 
@@ -1202,14 +1202,14 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
         // No commission system — admin commission is 0
         const totalAdminCommission = 0;
 
-        const restaurantObjectId = restaurant._id instanceof mongoose.Types.ObjectId
-          ? restaurant._id
-          : new mongoose.Types.ObjectId(restaurant._id);
+        const cafeObjectId = cafe._id instanceof mongoose.Types.ObjectId
+          ? cafe._id
+          : new mongoose.Types.ObjectId(cafe._id);
 
         const ratingStats = await FeedbackExperience.aggregate([
           {
             $match: {
-              restaurantId: restaurantObjectId,
+              cafeId: cafeObjectId,
               rating: { $exists: true, $ne: null, $gt: 0 }
             }
           },
@@ -1222,8 +1222,8 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
           }
         ]);
 
-        const averageRatings = ratingStats[0]?.averageRating || restaurant.rating || 0;
-        const reviews = ratingStats[0]?.totalRatings || restaurant.totalRatings || 0;
+        const averageRatings = ratingStats[0]?.averageRating || cafe.rating || 0;
+        const reviews = ratingStats[0]?.totalRatings || cafe.totalRatings || 0;
 
         const formatCurrency = (amount) => {
           return `₹${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1231,9 +1231,9 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
 
         return {
           sl: 0,
-          id: restaurantId,
-          restaurantName: restaurant.name,
-          icon: restaurant.profileImage?.url || restaurant.profileImage || null,
+          id: cafeId,
+          cafeName: cafe.name,
+          icon: cafe.profileImage?.url || cafe.profileImage || null,
           totalFood,
           totalOrder,
           totalOrderAmount: formatCurrency(totalOrderAmount),
@@ -1246,16 +1246,16 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
       })
     );
 
-    let filteredReports = restaurantReports;
+    let filteredReports = cafeReports;
     if (type && type !== 'All types') {
       // Subscription filtering can be added here if needed
     }
 
-    filteredReports.sort((a, b) => a.restaurantName.localeCompare(b.restaurantName));
+    filteredReports.sort((a, b) => a.cafeName.localeCompare(b.cafeName));
     filteredReports = filteredReports.map((report, index) => ({ ...report, sl: index + 1 }));
 
     return successResponse(res, 200, 'Cafe report retrieved successfully', {
-      restaurants: filteredReports,
+      cafes: filteredReports,
       pagination: {
         page: 1,
         limit: 1000,
@@ -1271,7 +1271,7 @@ export const getRestaurantReport = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get refund requests (restaurant cancelled orders with pending refunds)
+ * Get refund requests (cafe cancelled orders with pending refunds)
  * GET /api/admin/refund-requests
  */
 export const getRefundRequests = asyncHandler(async (req, res) => {
@@ -1287,39 +1287,39 @@ export const getRefundRequests = asyncHandler(async (req, res) => {
       search,
       fromDate,
       toDate,
-      restaurant
+      cafe
     } = req.query;
 
-    console.log('🔍 Fetching refund requests with params:', { page, limit, search, fromDate, toDate, restaurant });
+    console.log('🔍 Fetching refund requests with params:', { page, limit, search, fromDate, toDate, cafe });
 
-    // Build query for restaurant cancelled orders with pending refunds
+    // Build query for cafe cancelled orders with pending refunds
     const query = {
       status: 'cancelled',
       cancellationReason: {
-        $regex: /rejected by restaurant|restaurant rejected|restaurant cancelled|restaurant is too busy|item not available|outside delivery area|kitchen closing|technical issue/i
+        $regex: /rejected by cafe|cafe rejected|cafe cancelled|cafe is too busy|item not available|outside delivery area|kitchen closing|technical issue/i
       }
     };
 
     console.log('📋 Initial query:', JSON.stringify(query, null, 2));
 
-    // Restaurant filter
-    if (restaurant && restaurant !== 'All cafes') {
+    // Cafe filter
+    if (cafe && cafe !== 'All cafes') {
       try {
-        const Restaurant = (await import('../../restaurant/models/Restaurant.js')).default;
-        const restaurantDoc = await Restaurant.findOne({
+        const Cafe = (await import('../../cafe/models/Cafe.js')).default;
+        const cafeDoc = await Cafe.findOne({
           $or: [
-            { name: { $regex: restaurant, $options: 'i' } },
-            ...(mongoose.Types.ObjectId.isValid(restaurant) ? [{ _id: restaurant }] : []),
-            { restaurantId: restaurant }
+            { name: { $regex: cafe, $options: 'i' } },
+            ...(mongoose.Types.ObjectId.isValid(cafe) ? [{ _id: cafe }] : []),
+            { cafeId: cafe }
           ]
-        }).select('_id restaurantId').lean();
+        }).select('_id cafeId').lean();
 
-        if (restaurantDoc) {
-          query.restaurantId = restaurantDoc._id?.toString() || restaurantDoc.restaurantId;
+        if (cafeDoc) {
+          query.cafeId = cafeDoc._id?.toString() || cafeDoc.cafeId;
         }
       } catch (error) {
         console.error('Error filtering by cafe:', error);
-        // Continue without restaurant filter if there's an error
+        // Continue without cafe filter if there's an error
       }
     }
 
@@ -1343,7 +1343,7 @@ export const getRefundRequests = asyncHandler(async (req, res) => {
     if (search) {
       searchConditions.push(
         { orderId: { $regex: search, $options: 'i' } },
-        { restaurantName: { $regex: search, $options: 'i' } }
+        { cafeName: { $regex: search, $options: 'i' } }
       );
     }
 
@@ -1378,7 +1378,7 @@ export const getRefundRequests = asyncHandler(async (req, res) => {
       orders = await Order.find(query)
         .populate('userId', 'name email phone')
         .populate({
-          path: 'restaurantId',
+          path: 'cafeId',
           select: 'name slug',
           match: { _id: { $exists: true } } // Only populate if it's a valid ObjectId
         })
@@ -1387,15 +1387,15 @@ export const getRefundRequests = asyncHandler(async (req, res) => {
         .skip(skip)
         .lean();
 
-      // Filter out orders where restaurantId population failed (null)
-      orders = orders.filter(order => order.restaurantId !== null || order.restaurantName);
+      // Filter out orders where cafeId population failed (null)
+      orders = orders.filter(order => order.cafeId !== null || order.cafeName);
     } catch (error) {
       console.error('Error fetching orders:', error);
       throw error;
     }
 
     const total = await Order.countDocuments(query);
-    console.log(`✅ Found ${total} restaurant cancelled orders`);
+    console.log(`✅ Found ${total} cafe cancelled orders`);
 
     // Get settlement info for each order to check refund status
     let OrderSettlement;
@@ -1443,8 +1443,8 @@ export const getRefundRequests = asyncHandler(async (req, res) => {
         customerName: order.userId?.name || 'Unknown',
         customerPhone: customerPhone,
         customerEmail: order.userId?.email || '',
-        restaurant: order.restaurantName || order.restaurantId?.name || 'Unknown Cafe',
-        restaurantId: order.restaurantId?.toString() || order.restaurantId || '',
+        cafe: order.cafeName || order.cafeId?.name || 'Unknown Cafe',
+        cafeId: order.cafeId?.toString() || order.cafeId || '',
         totalAmount: order.pricing?.total || 0,
         paymentStatus: order.payment?.status === 'completed' ? 'Paid' : 'Pending',
         orderStatus: 'Refund Requested',
@@ -1456,7 +1456,7 @@ export const getRefundRequests = asyncHandler(async (req, res) => {
         settlement: settlement ? {
           cancellationStage: settlement.cancellationDetails?.cancellationStage,
           refundAmount: settlement.cancellationDetails?.refundAmount,
-          restaurantCompensation: settlement.cancellationDetails?.restaurantCompensation
+          cafeCompensation: settlement.cancellationDetails?.cafeCompensation
         } : null
       };
     }));
@@ -1609,14 +1609,14 @@ export const processRefund = asyncHandler(async (req, res) => {
       return errorResponse(res, 400, 'Order is not cancelled');
     }
 
-    // Check if it's a cancelled order (by restaurant or user)
-    const isRestaurantCancelled = order.cancelledBy === 'restaurant' ||
+    // Check if it's a cancelled order (by cafe or user)
+    const isCafeCancelled = order.cancelledBy === 'cafe' ||
       (order.cancellationReason &&
-        /rejected by restaurant|restaurant rejected|restaurant cancelled|restaurant is too busy|item not available|outside delivery area|kitchen closing|technical issue/i.test(order.cancellationReason));
+        /rejected by cafe|cafe rejected|cafe cancelled|cafe is too busy|item not available|outside delivery area|kitchen closing|technical issue/i.test(order.cancellationReason));
 
     const isUserCancelled = order.cancelledBy === 'user';
 
-    if (!isRestaurantCancelled && !isUserCancelled) {
+    if (!isCafeCancelled && !isUserCancelled) {
       return errorResponse(res, 400, 'This order was not cancelled by cafe or user');
     }
 
@@ -1660,8 +1660,8 @@ export const processRefund = asyncHandler(async (req, res) => {
         orderId: order._id,
         orderNumber: order.orderId,
         userId: order.userId?._id || order.userId,
-        restaurantId: order.restaurantId,
-        restaurantName: order.restaurantName || 'Unknown Cafe',
+        cafeId: order.cafeId,
+        cafeName: order.cafeName || 'Unknown Cafe',
         userPayment: {
           subtotal: subtotal,
           discount: pricing.discount || 0,
@@ -1671,7 +1671,7 @@ export const processRefund = asyncHandler(async (req, res) => {
           packagingFee: 0,
           total: total
         },
-        restaurantEarning: {
+        cafeEarning: {
           foodPrice: foodPrice,
           commission: commission,
           commissionPercentage: 0,
@@ -1890,7 +1890,7 @@ export const manualAssignOrder = asyncHandler(async (req, res) => {
 
       // Populate necessary fields for notification
       const populatedOrder = await Order.findById(order._id)
-        .populate('restaurantId', 'name address location phone ownerPhone')
+        .populate('cafeId', 'name address location phone ownerPhone')
         .populate('userId', 'name phone')
         .lean();
 

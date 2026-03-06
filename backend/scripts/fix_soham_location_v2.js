@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import Restaurant from '../modules/restaurant/models/Restaurant.js';
+import Cafe from '../modules/cafe/models/Cafe.js';
 
 // Setup environment variables
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,19 +24,19 @@ const fixSohamLocation = async () => {
 
         console.log('🔍 Searching for cafe "Soham"...');
         // Case-insensitive search using regex
-        const restaurant = await Restaurant.findOne({
+        const cafe = await Cafe.findOne({
             name: { $regex: new RegExp('^soham$', 'i') }
         });
 
-        if (!restaurant) {
+        if (!cafe) {
             console.error('❌ Cafe "Soham" not found!');
             process.exit(1);
         }
 
-        console.log(`✅ Found restaurant: ${restaurant.name} (${restaurant._id})`);
+        console.log(`✅ Found cafe: ${cafe.name} (${cafe._id})`);
 
         // Check current location
-        console.log('Current Location:', restaurant.location);
+        console.log('Current Location:', cafe.location);
 
         // Set location to Indore center (approx)
         // Lat: 22.719568, Lng: 75.857727
@@ -53,19 +53,19 @@ const fixSohamLocation = async () => {
 
         console.log('🛠️ Updating location to:', newLocation);
 
-        restaurant.location = newLocation;
+        cafe.location = newLocation;
 
         // Also update root level fields just in case (though schema defines location object)
-        // restaurant.latitude = newLocation.latitude;
-        // restaurant.longitude = newLocation.longitude;
+        // cafe.latitude = newLocation.latitude;
+        // cafe.longitude = newLocation.longitude;
 
-        await restaurant.save();
+        await cafe.save();
 
         console.log('✅ Cafe location updated successfully!');
 
         // verify update
-        const updatedRestaurant = await Restaurant.findById(restaurant._id);
-        console.log('New Location in DB:', updatedRestaurant.location);
+        const updatedCafe = await Cafe.findById(cafe._id);
+        console.log('New Location in DB:', updatedCafe.location);
 
     } catch (error) {
         console.error('❌ Error updating cafe location:', error);

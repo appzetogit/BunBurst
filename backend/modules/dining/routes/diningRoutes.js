@@ -1,7 +1,7 @@
 import express from "express";
 import {
-  getRestaurants,
-  getRestaurantBySlug,
+  getCafes,
+  getCafeBySlug,
   getCategories,
   getLimelight,
   getBankOffers,
@@ -10,17 +10,17 @@ import {
   getStories,
   createBooking,
   getUserBookings,
-  getRestaurantBookings,
+  getCafeBookings,
   updateBookingStatus,
   createDiningReview,
 } from "../controllers/diningController.js";
 import { authenticate as authenticateUser } from "../../auth/middleware/auth.js";
-import { authenticate as authenticateRestaurant } from "../../restaurant/middleware/restaurantAuth.js";
+import { authenticate as authenticateCafe } from "../../cafe/middleware/cafeAuth.js";
 
 const router = express.Router();
 
-router.get("/restaurants", getRestaurants);
-router.get("/restaurants/:slug", getRestaurantBySlug);
+router.get("/cafes", getCafes);
+router.get("/cafes/:slug", getCafeBySlug);
 router.get("/categories", getCategories);
 router.get("/limelight", getLimelight);
 router.get("/bank-offers", getBankOffers);
@@ -32,9 +32,9 @@ router.get("/stories", getStories);
 router.post("/bookings", authenticateUser, createBooking);
 router.get("/bookings/my", authenticateUser, getUserBookings);
 router.get(
-  "/bookings/restaurant/:restaurantId",
-  authenticateRestaurant,
-  getRestaurantBookings,
+  "/bookings/cafe/:cafeId",
+  authenticateCafe,
+  getCafeBookings,
 );
 router.patch(
   "/bookings/:bookingId/status",
@@ -42,8 +42,8 @@ router.patch(
   updateBookingStatus,
 );
 router.patch(
-  "/bookings/:bookingId/status/restaurant",
-  authenticateRestaurant,
+  "/bookings/:bookingId/status/cafe",
+  authenticateCafe,
   updateBookingStatus,
 );
 router.post("/reviews", authenticateUser, createDiningReview);

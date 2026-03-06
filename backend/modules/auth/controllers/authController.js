@@ -119,7 +119,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
   }
 
   // Validate role - admin can be used for admin signup/reset
-  const allowedRoles = ['user', 'restaurant', 'delivery', 'admin'];
+  const allowedRoles = ['user', 'cafe', 'delivery', 'admin'];
   const userRole = role || 'user';
   if (!allowedRoles.includes(userRole)) {
     return errorResponse(res, 400, `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`);
@@ -395,7 +395,7 @@ export const register = asyncHandler(async (req, res) => {
   }
 
   // Validate role - admin can be registered via email OTP
-  const allowedRoles = ['user', 'restaurant', 'delivery', 'admin'];
+  const allowedRoles = ['user', 'cafe', 'delivery', 'admin'];
   const userRole = role || 'user';
   if (!allowedRoles.includes(userRole)) {
     return errorResponse(res, 400, `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`);
@@ -627,15 +627,15 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
  * POST /api/auth/firebase/google-login
  */
 export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
-  const { idToken, role = 'restaurant' } = req.body;
+  const { idToken, role = 'cafe' } = req.body;
 
   if (!idToken) {
     return errorResponse(res, 400, 'Firebase ID token is required');
   }
 
   // Validate role - admin cannot be authenticated through this endpoint
-  const allowedRoles = ['user', 'restaurant', 'delivery'];
-  const userRole = role || 'restaurant';
+  const allowedRoles = ['user', 'cafe', 'delivery'];
+  const userRole = role || 'cafe';
   if (!allowedRoles.includes(userRole)) {
     return errorResponse(res, 400, `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`);
   }
@@ -696,8 +696,8 @@ export const firebaseGoogleLogin = asyncHandler(async (req, res) => {
         logger.info('Linked Google account to existing user', { userId: user._id, email });
       }
 
-      // If this is a restaurant login, make sure role matches
-      if (userRole === 'restaurant' && user.role !== 'restaurant') {
+      // If this is a cafe login, make sure role matches
+      if (userRole === 'cafe' && user.role !== 'cafe') {
         return errorResponse(res, 403, 'This account is not registered as a cafe partner');
       }
 
@@ -810,8 +810,8 @@ export const googleAuth = asyncHandler(async (req, res) => {
   const { role } = req.params;
 
   // Validate role
-  const allowedRoles = ['user', 'restaurant', 'delivery'];
-  const userRole = role || 'restaurant';
+  const allowedRoles = ['user', 'cafe', 'delivery'];
+  const userRole = role || 'cafe';
 
   if (!allowedRoles.includes(userRole)) {
     return errorResponse(res, 400, `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`);
@@ -850,8 +850,8 @@ export const googleCallback = asyncHandler(async (req, res) => {
   const { code, state, error } = req.query;
 
   // Validate role
-  const allowedRoles = ['user', 'restaurant', 'delivery'];
-  const userRole = role || 'restaurant';
+  const allowedRoles = ['user', 'cafe', 'delivery'];
+  const userRole = role || 'cafe';
 
   if (!allowedRoles.includes(userRole)) {
     return errorResponse(res, 400, `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`);
@@ -860,18 +860,18 @@ export const googleCallback = asyncHandler(async (req, res) => {
   // Check for OAuth errors
   if (error) {
     logger.error(`Google OAuth error: ${error}`);
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/restaurant/login?error=oauth_failed`);
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/cafe/login?error=oauth_failed`);
   }
 
   if (!code) {
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/restaurant/login?error=no_code`);
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/cafe/login?error=no_code`);
   }
 
   // Verify state (optional but recommended)
   const storedState = req.cookies?.oauth_state;
   if (storedState && state !== storedState) {
     logger.warn('OAuth state mismatch - possible CSRF attack');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/restaurant/login?error=invalid_state`);
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/cafe/login?error=invalid_state`);
   }
 
   try {
@@ -882,7 +882,7 @@ export const googleCallback = asyncHandler(async (req, res) => {
     const googleUser = await googleAuthService.getUserInfoFromToken(tokens);
 
     if (!googleUser.email) {
-      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/restaurant/login?error=no_email`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/cafe/login?error=no_email`);
     }
 
     // Find or create user
@@ -908,9 +908,9 @@ export const googleCallback = asyncHandler(async (req, res) => {
         await user.save();
       }
 
-      // Ensure role matches (for restaurant login, user should be restaurant)
-      if (userRole === 'restaurant' && user.role !== 'restaurant') {
-        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/restaurant/login?error=wrong_role`);
+      // Ensure role matches (for cafe login, user should be cafe)
+      if (userRole === 'cafe' && user.role !== 'cafe') {
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/cafe/login?error=wrong_role`);
       }
     } else {
       // Create new user
@@ -952,7 +952,7 @@ export const googleCallback = asyncHandler(async (req, res) => {
 
     // Redirect to frontend with access token as query param
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectPath = userRole === 'restaurant' ? '/restaurant/auth/google-callback' :
+    const redirectPath = userRole === 'cafe' ? '/cafe/auth/google-callback' :
       userRole === 'delivery' ? '/delivery/auth/google-callback' :
         '/user/auth/google-callback';
 
@@ -972,7 +972,7 @@ export const googleCallback = asyncHandler(async (req, res) => {
     return res.redirect(redirectUrl);
   } catch (error) {
     logger.error(`Error in Google OAuth callback: ${error.message}`);
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/restaurant/login?error=auth_failed`);
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/cafe/login?error=auth_failed`);
   }
 });
 

@@ -7,9 +7,9 @@ const feedbackExperienceSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
-    restaurantId: {
+    cafeId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Restaurant',
+      ref: 'Cafe',
       default: null
     },
     userName: {
@@ -42,7 +42,7 @@ const feedbackExperienceSchema = new mongoose.Schema(
     },
     module: {
       type: String,
-      enum: ['user', 'restaurant', 'delivery'],
+      enum: ['user', 'cafe', 'delivery'],
       default: 'user'
     },
     metadata: {
@@ -79,7 +79,7 @@ feedbackExperienceSchema.pre('save', function(next) {
 
 // Indexes
 feedbackExperienceSchema.index({ userId: 1 });
-feedbackExperienceSchema.index({ restaurantId: 1 });
+feedbackExperienceSchema.index({ cafeId: 1 });
 feedbackExperienceSchema.index({ rating: 1 });
 feedbackExperienceSchema.index({ experience: 1 });
 feedbackExperienceSchema.index({ module: 1 });

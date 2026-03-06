@@ -40,10 +40,10 @@ export default function EmailTemplate() {
       },
       copyrightContent: "© 2023 StackFood. All rights reserved."
     },
-    "new-restaurant": {
+    "new-cafe": {
       icon: null,
       mainTitle: "New Cafe Registration",
-      mailBody: "A new cafe has been registered on the platform. Cafe Name: {restaurantName}, Owner: {ownerName}, Email: {email}, Phone: {phone}",
+      mailBody: "A new cafe has been registered on the platform. Cafe Name: {cafeName}, Owner: {ownerName}, Email: {email}, Phone: {phone}",
       footerText: "Please review and approve the cafe registration. Contact us for any queries.",
       pageLinks: {
         privacyPolicy: true,
@@ -103,7 +103,7 @@ export default function EmailTemplate() {
     "campaign-join": {
       icon: null,
       mainTitle: "Campaign Join Request",
-      mailBody: "A new campaign join request has been received. Campaign: {campaignName}, Cafe: {restaurantName}, Requested By: {requestedBy}",
+      mailBody: "A new campaign join request has been received. Campaign: {campaignName}, Cafe: {cafeName}, Requested By: {requestedBy}",
       footerText: "Please review and approve the campaign join request. Contact us for any queries.",
       pageLinks: {
         privacyPolicy: true,
@@ -166,7 +166,7 @@ export default function EmailTemplate() {
 
   const templates = [
     { id: "forgot-password", label: "Forgot Password" },
-    { id: "new-restaurant", label: "New Cafe Registration" },
+    { id: "new-cafe", label: "New Cafe Registration" },
     { id: "new-deliveryman", label: "New Deliveryman Registration" },
     { id: "withdraw-request", label: "Withdraw Request" },
     { id: "campaign-join", label: "Campaign Join Request" },
@@ -233,7 +233,7 @@ export default function EmailTemplate() {
     // Replace placeholders with sample data
     return content
       .replace(/{userName}/g, "John Doe")
-      .replace(/{restaurantName}/g, "Café Monarch")
+      .replace(/{cafeName}/g, "Café Monarch")
       .replace(/{ownerName}/g, "Jane Smith")
       .replace(/{email}/g, "owner@example.com")
       .replace(/{phone}/g, "+1234567890")
@@ -284,7 +284,7 @@ export default function EmailTemplate() {
             <div className="flex items-center gap-2">
               <label className="text-sm font-semibold text-slate-700">
                 {activeTemplate === "forgot-password" && "Send Mail On Forget Password"}
-                {activeTemplate === "new-restaurant" && "Send Mail On New Cafe Registration"}
+                {activeTemplate === "new-cafe" && "Send Mail On New Cafe Registration"}
                 {activeTemplate === "new-deliveryman" && "Send Mail On New Deliveryman Registration"}
                 {activeTemplate === "withdraw-request" && "Send Mail On Withdraw Request"}
                 {activeTemplate === "campaign-join" && "Send Mail On Campaign Join Request"}

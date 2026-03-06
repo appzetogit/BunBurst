@@ -25,13 +25,13 @@ const checkZones = async () => {
         const activeZones = await Zone.find({ isActive: true }).lean();
         console.log(`Found ${activeZones.length} active zones.`);
 
-        // Test Point for "Soham" restaurant (Indore)
+        // Test Point for "Soham" cafe (Indore)
         const testLat = 22.719568;
         const testLng = 75.857727;
 
         console.log(`Testing point: Lat ${testLat}, Lng ${testLng}`);
 
-        let restaurantInZone = false;
+        let cafeInZone = false;
         let matchedZone = null;
 
         for (const zone of activeZones) {
@@ -71,14 +71,14 @@ const checkZones = async () => {
             console.log(`  Is inside: ${inside}`);
 
             if (inside) {
-                restaurantInZone = true;
+                cafeInZone = true;
                 matchedZone = zone;
                 // Don't break here, we want to see all matching zones or failure reasons
             }
         }
 
-        if (restaurantInZone) {
-            console.log(`✅ Success! Restaurant is in zone: ${matchedZone.name}`);
+        if (cafeInZone) {
+            console.log(`✅ Success! Cafe is in zone: ${matchedZone.name}`);
         } else {
             console.log('❌ Failure! Cafe is NOT in any active zone.');
         }

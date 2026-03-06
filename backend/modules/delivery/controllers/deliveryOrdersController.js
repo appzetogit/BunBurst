@@ -3,9 +3,9 @@ import { successResponse, errorResponse } from '../../../shared/utils/response.j
 import Delivery from '../models/Delivery.js';
 import Order from '../../order/models/Order.js';
 import Payment from '../../payment/models/Payment.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import DeliveryWallet from '../models/DeliveryWallet.js';
-import RestaurantWallet from '../../restaurant/models/RestaurantWallet.js';
+import CafeWallet from '../../cafe/models/CafeWallet.js';
 import { calculateRoute } from '../../order/services/routeCalculationService.js';
 import { notifyUserOrderStatusUpdate } from '../../order/services/userNotificationService.js';
 import mongoose from 'mongoose';
@@ -56,7 +56,7 @@ export const getOrders = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('restaurantId', 'name slug profileImage address location phone ownerPhone')
+      .populate('cafeId', 'name slug profileImage address location phone ownerPhone')
       .populate('userId', 'name phone')
       .lean();
 
@@ -101,7 +101,7 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
 
     // First, try to find order (without deliveryPartnerId filter)
     let order = await Order.findOne(query)
-      .populate('restaurantId', 'name slug profileImage address phone ownerPhone location')
+      .populate('cafeId', 'name slug profileImage address phone ownerPhone location')
       .populate('userId', 'name phone email')
       .lean();
 
@@ -134,11 +134,11 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
       return errorResponse(res, 403, 'Order not found or not assigned to you');
     }
 
-    const pickRestaurantAddress = (restaurantDoc) => {
-      if (!restaurantDoc || typeof restaurantDoc !== 'object') return null;
-      const location = restaurantDoc.location || {};
+    const pickCafeAddress = (cafeDoc) => {
+      if (!cafeDoc || typeof cafeDoc !== 'object') return null;
+      const location = cafeDoc.location || {};
       return (
-        restaurantDoc.address ||
+        cafeDoc.address ||
         location.formattedAddress ||
         location.address ||
         [location.addressLine1, location.addressLine2, location.area, location.city, location.state, location.pincode || location.zipCode || location.postalCode]
@@ -157,20 +157,20 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
       } catch (e) { /* ignore */ }
     }
 
-    // Ensure restaurant address is always available for delivery UI/digital bill.
-    let restaurantDoc = order.restaurantId && typeof order.restaurantId === 'object' ? order.restaurantId : null;
-    if (!restaurantDoc) {
-      const rawRestaurantRef = order.restaurantId?.toString?.() || order.restaurantId;
-      if (rawRestaurantRef) {
-        const refIsObjectId = mongoose.Types.ObjectId.isValid(String(rawRestaurantRef)) && String(rawRestaurantRef).length === 24;
-        restaurantDoc = await Restaurant.findOne(
+    // Ensure cafe address is always available for delivery UI/digital bill.
+    let cafeDoc = order.cafeId && typeof order.cafeId === 'object' ? order.cafeId : null;
+    if (!cafeDoc) {
+      const rawCafeRef = order.cafeId?.toString?.() || order.cafeId;
+      if (rawCafeRef) {
+        const refIsObjectId = mongoose.Types.ObjectId.isValid(String(rawCafeRef)) && String(rawCafeRef).length === 24;
+        cafeDoc = await Cafe.findOne(
           refIsObjectId
-            ? { _id: rawRestaurantRef }
+            ? { _id: rawCafeRef }
             : {
               $or: [
-                { restaurantId: rawRestaurantRef },
-                { slug: rawRestaurantRef },
-                { name: order.restaurantName || '' },
+                { cafeId: rawCafeRef },
+                { slug: rawCafeRef },
+                { name: order.cafeName || '' },
               ],
             }
         )
@@ -179,13 +179,13 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
       }
     }
 
-    const restaurantAddress = pickRestaurantAddress(restaurantDoc);
+    const cafeAddress = pickCafeAddress(cafeDoc);
     const orderWithPayment = {
       ...order,
       paymentMethod,
       customerPhone: order?.userId?.phone || '',
-      ...(restaurantDoc ? { restaurant: restaurantDoc } : {}),
-      ...(restaurantAddress ? { restaurantAddress } : {}),
+      ...(cafeDoc ? { cafe: cafeDoc } : {}),
+      ...(cafeAddress ? { cafeAddress } : {}),
     };
 
     return successResponse(res, 200, 'Order details retrieved successfully', {
@@ -224,7 +224,7 @@ export const acceptOrder = asyncHandler(async (req, res) => {
         { orderId: orderId }
       ]
     })
-      .populate('restaurantId', 'name location address phone ownerPhone')
+      .populate('cafeId', 'name location address phone ownerPhone')
       .populate('userId', 'name phone')
       .lean();
 
@@ -362,7 +362,7 @@ export const acceptOrder = asyncHandler(async (req, res) => {
             { orderId: orderId }
           ]
         })
-          .populate('restaurantId', 'name location address phone ownerPhone')
+          .populate('cafeId', 'name location address phone ownerPhone')
           .populate('userId', 'name phone')
           .lean();
 
@@ -393,9 +393,9 @@ export const acceptOrder = asyncHandler(async (req, res) => {
     console.log(`📍 Order details:`, {
       orderId: order.orderId,
       status: order.status,
-      restaurantId: order.restaurantId?._id || order.restaurantId,
-      hasRestaurantLocation: !!(order.restaurantId?.location?.coordinates),
-      restaurantLocationType: typeof order.restaurantId?.location
+      cafeId: order.cafeId?._id || order.cafeId,
+      hasCafeLocation: !!(order.cafeId?.location?.coordinates),
+      cafeLocationType: typeof order.cafeId?.location
     });
 
     // Check if order is in valid state to accept
@@ -405,41 +405,41 @@ export const acceptOrder = asyncHandler(async (req, res) => {
       return errorResponse(res, 400, `Order cannot be accepted. Current status: ${order.status}. Order must be in 'preparing' or 'ready' status.`);
     }
 
-    // Get restaurant location
-    let restaurantLat, restaurantLng;
+    // Get cafe location
+    let cafeLat, cafeLng;
     try {
-      if (order.restaurantId && order.restaurantId.location && order.restaurantId.location.coordinates) {
-        [restaurantLng, restaurantLat] = order.restaurantId.location.coordinates;
-        console.log(`📍 Restaurant location from populated order: lat=${restaurantLat}, lng=${restaurantLng}`);
+      if (order.cafeId && order.cafeId.location && order.cafeId.location.coordinates) {
+        [cafeLng, cafeLat] = order.cafeId.location.coordinates;
+        console.log(`📍 Cafe location from populated order: lat=${cafeLat}, lng=${cafeLng}`);
       } else {
-        // Try to fetch restaurant from database
-        console.log(`⚠️ Restaurant location not in populated order, fetching from database...`);
-        const restaurantId = order.restaurantId?._id || order.restaurantId;
-        console.log(`🔍 Fetching restaurant with ID: ${restaurantId}`);
+        // Try to fetch cafe from database
+        console.log(`⚠️ Cafe location not in populated order, fetching from database...`);
+        const cafeId = order.cafeId?._id || order.cafeId;
+        console.log(`🔍 Fetching cafe with ID: ${cafeId}`);
 
-        const restaurant = await Restaurant.findById(restaurantId);
-        if (restaurant && restaurant.location && restaurant.location.coordinates) {
-          [restaurantLng, restaurantLat] = restaurant.location.coordinates;
-          console.log(`📍 Restaurant location from database: lat=${restaurantLat}, lng=${restaurantLng}`);
+        const cafe = await Cafe.findById(cafeId);
+        if (cafe && cafe.location && cafe.location.coordinates) {
+          [cafeLng, cafeLat] = cafe.location.coordinates;
+          console.log(`📍 Cafe location from database: lat=${cafeLat}, lng=${cafeLng}`);
         } else {
-          console.error(`❌ Restaurant location not found for restaurant ID: ${restaurantId}`);
-          console.error(`❌ Restaurant data:`, {
-            restaurantExists: !!restaurant,
-            hasLocation: !!(restaurant?.location),
-            hasCoordinates: !!(restaurant?.location?.coordinates),
-            locationType: typeof restaurant?.location
+          console.error(`❌ Cafe location not found for cafe ID: ${cafeId}`);
+          console.error(`❌ Cafe data:`, {
+            cafeExists: !!cafe,
+            hasLocation: !!(cafe?.location),
+            hasCoordinates: !!(cafe?.location?.coordinates),
+            locationType: typeof cafe?.location
           });
           return errorResponse(res, 400, 'Cafe location not found');
         }
       }
 
       // Validate coordinates
-      if (!restaurantLat || !restaurantLng || isNaN(restaurantLat) || isNaN(restaurantLng)) {
-        console.error(`❌ Invalid restaurant coordinates: lat=${restaurantLat}, lng=${restaurantLng}`);
+      if (!cafeLat || !cafeLng || isNaN(cafeLat) || isNaN(cafeLng)) {
+        console.error(`❌ Invalid cafe coordinates: lat=${cafeLat}, lng=${cafeLng}`);
         return errorResponse(res, 400, 'Invalid cafe location coordinates');
       }
     } catch (locationError) {
-      console.error(`❌ Error getting restaurant location: ${locationError.message}`);
+      console.error(`❌ Error getting cafe location: ${locationError.message}`);
       console.error(`❌ Location error stack: ${locationError.stack}`);
       return errorResponse(res, 500, 'Error getting cafe location. Please try again.');
     }
@@ -473,23 +473,23 @@ export const acceptOrder = asyncHandler(async (req, res) => {
 
     // Validate coordinates before calculating route
     if (!deliveryLat || !deliveryLng || isNaN(deliveryLat) || isNaN(deliveryLng) ||
-      !restaurantLat || !restaurantLng || isNaN(restaurantLat) || isNaN(restaurantLng)) {
+      !cafeLat || !cafeLng || isNaN(cafeLat) || isNaN(cafeLng)) {
       console.error(`❌ Invalid coordinates for route calculation:`, {
         deliveryLat,
         deliveryLng,
-        restaurantLat,
-        restaurantLng,
+        cafeLat,
+        cafeLng,
         deliveryLatValid: !!(deliveryLat && !isNaN(deliveryLat)),
         deliveryLngValid: !!(deliveryLng && !isNaN(deliveryLng)),
-        restaurantLatValid: !!(restaurantLat && !isNaN(restaurantLat)),
-        restaurantLngValid: !!(restaurantLng && !isNaN(restaurantLng))
+        cafeLatValid: !!(cafeLat && !isNaN(cafeLat)),
+        cafeLngValid: !!(cafeLng && !isNaN(cafeLng))
       });
       return errorResponse(res, 400, 'Invalid location coordinates. Please ensure location services are enabled.');
     }
 
-    console.log(`✅ Valid coordinates confirmed - Delivery: (${deliveryLat}, ${deliveryLng}), Restaurant: (${restaurantLat}, ${restaurantLng})`);
+    console.log(`✅ Valid coordinates confirmed - Delivery: (${deliveryLat}, ${deliveryLng}), Cafe: (${cafeLat}, ${cafeLng})`);
 
-    // Calculate route from delivery boy to restaurant
+    // Calculate route from delivery boy to cafe
     console.log(`🗺️ Starting route calculation...`);
     let routeData;
     const haversineDistance = (lat1, lng1, lat2, lng2) => {
@@ -506,9 +506,9 @@ export const acceptOrder = asyncHandler(async (req, res) => {
     try {
       console.log(`🗺️ Calling calculateRoute with:`, {
         from: `(${deliveryLat}, ${deliveryLng})`,
-        to: `(${restaurantLat}, ${restaurantLng})`
+        to: `(${cafeLat}, ${cafeLng})`
       });
-      routeData = await calculateRoute(deliveryLat, deliveryLng, restaurantLat, restaurantLng);
+      routeData = await calculateRoute(deliveryLat, deliveryLng, cafeLat, cafeLng);
       console.log(`🗺️ Route calculation result:`, {
         hasData: !!routeData,
         hasCoordinates: !!(routeData?.coordinates),
@@ -529,9 +529,9 @@ export const acceptOrder = asyncHandler(async (req, res) => {
         isNaN(routeData.duration)) {
         console.warn('⚠️ Route calculation returned invalid data, using fallback');
         // Fallback to straight line
-        const distance = haversineDistance(deliveryLat, deliveryLng, restaurantLat, restaurantLng);
+        const distance = haversineDistance(deliveryLat, deliveryLng, cafeLat, cafeLng);
         routeData = {
-          coordinates: [[deliveryLat, deliveryLng], [restaurantLat, restaurantLng]],
+          coordinates: [[deliveryLat, deliveryLng], [cafeLat, cafeLng]],
           distance: distance,
           duration: (distance / 30) * 60, // Assume 30 km/h average speed
           method: 'haversine_fallback'
@@ -544,9 +544,9 @@ export const acceptOrder = asyncHandler(async (req, res) => {
       console.error('❌ Error calculating route:', routeError);
       console.error('❌ Route error stack:', routeError.stack);
       // Fallback to straight line
-      const distance = haversineDistance(deliveryLat, deliveryLng, restaurantLat, restaurantLng);
+      const distance = haversineDistance(deliveryLat, deliveryLng, cafeLat, cafeLng);
       routeData = {
-        coordinates: [[deliveryLat, deliveryLng], [restaurantLat, restaurantLng]],
+        coordinates: [[deliveryLat, deliveryLng], [cafeLat, cafeLng]],
         distance: distance,
         duration: (distance / 30) * 60,
         method: 'haversine_fallback'
@@ -619,7 +619,7 @@ export const acceptOrder = asyncHandler(async (req, res) => {
         },
         { new: true }
       )
-        .populate('restaurantId', 'name location address phone ownerPhone')
+        .populate('cafeId', 'name location address phone ownerPhone')
         .populate('userId', 'name phone')
         .lean();
 
@@ -649,18 +649,18 @@ export const acceptOrder = asyncHandler(async (req, res) => {
       console.error('Error sending assignment notification:', notifError);
     }
 
-    // Calculate delivery distance (restaurant to customer) for earnings calculation
+    // Calculate delivery distance (cafe to customer) for earnings calculation
     let deliveryDistance = 0;
-    if (updatedOrder.restaurantId?.location?.coordinates && updatedOrder.address?.location?.coordinates) {
-      const [restaurantLng, restaurantLat] = updatedOrder.restaurantId.location.coordinates;
+    if (updatedOrder.cafeId?.location?.coordinates && updatedOrder.address?.location?.coordinates) {
+      const [cafeLng, cafeLat] = updatedOrder.cafeId.location.coordinates;
       const [customerLng, customerLat] = updatedOrder.address.location.coordinates;
 
       // Calculate distance using Haversine formula
       const R = 6371; // Earth radius in km
-      const dLat = (customerLat - restaurantLat) * Math.PI / 180;
-      const dLng = (customerLng - restaurantLng) * Math.PI / 180;
+      const dLat = (customerLat - cafeLat) * Math.PI / 180;
+      const dLng = (customerLng - cafeLng) * Math.PI / 180;
       const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(restaurantLat * Math.PI / 180) * Math.cos(customerLat * Math.PI / 180) *
+        Math.cos(cafeLat * Math.PI / 180) * Math.cos(customerLat * Math.PI / 180) *
         Math.sin(dLng / 2) * Math.sin(dLng / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       deliveryDistance = R * c;
@@ -790,7 +790,7 @@ export const confirmReachedPickup = asyncHandler(async (req, res) => {
     // - currentPhase is 'at_pickup' (already at pickup - idempotent, allow re-confirmation)
     // - status is 'accepted' OR  
     // - currentPhase is 'accepted' (alternative phase name)
-    // - order status is 'preparing' or 'ready' (restaurant preparing/ready)
+    // - order status is 'preparing' or 'ready' (cafe preparing/ready)
     const isValidState = order.deliveryState.currentPhase === 'en_route_to_pickup' ||
       order.deliveryState.currentPhase === 'at_pickup' || // Already at pickup - idempotent
       order.deliveryState.status === 'accepted' ||
@@ -895,7 +895,7 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
         ]
       })
         .populate('userId', 'name phone')
-        .populate('restaurantId', 'name location address phone ownerPhone')
+        .populate('cafeId', 'name location address phone ownerPhone')
         .lean();
     }
 
@@ -908,7 +908,7 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
         ]
       })
         .populate('userId', 'name phone')
-        .populate('restaurantId', 'name location address phone ownerPhone')
+        .populate('cafeId', 'name location address phone ownerPhone')
         .lean();
     }
 
@@ -928,7 +928,7 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
         ]
       })
         .populate('userId', 'name phone')
-        .populate('restaurantId', 'name location address phone ownerPhone')
+        .populate('cafeId', 'name location address phone ownerPhone')
         .lean();
     }
 
@@ -983,19 +983,19 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
 
         if (deliveryPartner?.availability?.currentLocation?.coordinates) {
           [deliveryLng, deliveryLat] = deliveryPartner.availability.currentLocation.coordinates;
-        } else if (order.restaurantId) {
-          let restaurant = null;
-          if (mongoose.Types.ObjectId.isValid(order.restaurantId)) {
-            restaurant = await Restaurant.findById(order.restaurantId)
+        } else if (order.cafeId) {
+          let cafe = null;
+          if (mongoose.Types.ObjectId.isValid(order.cafeId)) {
+            cafe = await Cafe.findById(order.cafeId)
               .select('location')
               .lean();
           } else {
-            restaurant = await Restaurant.findOne({ restaurantId: order.restaurantId })
+            cafe = await Cafe.findOne({ cafeId: order.cafeId })
               .select('location')
               .lean();
           }
-          if (restaurant?.location?.coordinates) {
-            [deliveryLng, deliveryLat] = restaurant.location.coordinates;
+          if (cafe?.location?.coordinates) {
+            [deliveryLng, deliveryLat] = cafe.location.coordinates;
           }
         }
       }
@@ -1027,7 +1027,7 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
     // Allow confirmation if:
     // - currentPhase is 'at_pickup' (after Reached Pickup) OR
     // - status is 'reached_pickup' OR
-    // - order status is 'preparing' or 'ready' (restaurant preparing/ready) OR
+    // - order status is 'preparing' or 'ready' (cafe preparing/ready) OR
     // - currentPhase is 'en_route_to_pickup' or status is 'accepted' (Reached Pickup not yet persisted / edge case)
     const isValidState = order.deliveryState.currentPhase === 'at_pickup' ||
       order.deliveryState.status === 'reached_pickup' ||
@@ -1047,7 +1047,7 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
 
     const [customerLng, customerLat] = order.address.location.coordinates;
 
-    // Get delivery boy's current location (should be at restaurant)
+    // Get delivery boy's current location (should be at cafe)
     let deliveryLat = currentLat;
     let deliveryLng = currentLng;
 
@@ -1060,28 +1060,28 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
       if (deliveryPartner?.availability?.currentLocation?.coordinates) {
         [deliveryLng, deliveryLat] = deliveryPartner.availability.currentLocation.coordinates;
       } else {
-        // Use restaurant location as fallback
-        // order.restaurantId might be a string or ObjectId
-        let restaurant = null;
-        if (mongoose.Types.ObjectId.isValid(order.restaurantId)) {
-          restaurant = await Restaurant.findById(order.restaurantId)
+        // Use cafe location as fallback
+        // order.cafeId might be a string or ObjectId
+        let cafe = null;
+        if (mongoose.Types.ObjectId.isValid(order.cafeId)) {
+          cafe = await Cafe.findById(order.cafeId)
             .select('location')
             .lean();
         } else {
-          // Try to find by restaurantId field if it's a string
-          restaurant = await Restaurant.findOne({ restaurantId: order.restaurantId })
+          // Try to find by cafeId field if it's a string
+          cafe = await Cafe.findOne({ cafeId: order.cafeId })
             .select('location')
             .lean();
         }
-        if (restaurant?.location?.coordinates) {
-          [deliveryLng, deliveryLat] = restaurant.location.coordinates;
+        if (cafe?.location?.coordinates) {
+          [deliveryLng, deliveryLat] = cafe.location.coordinates;
         } else {
           return errorResponse(res, 400, 'Location not found for route calculation');
         }
       }
     }
 
-    // Calculate route from restaurant to customer using Dijkstra algorithm
+    // Calculate route from cafe to customer using Dijkstra algorithm
     const routeData = await calculateRoute(deliveryLat, deliveryLng, customerLat, customerLng, {
       useDijkstra: true
     });
@@ -1138,7 +1138,7 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
       { new: true }
     )
       .populate('userId', 'name phone')
-      .populate('restaurantId', 'name location address')
+      .populate('cafeId', 'name location address')
       .lean();
 
     console.log(`✅ Order ID confirmed for order ${order.orderId}`);
@@ -1301,7 +1301,7 @@ export const confirmReachedDrop = asyncHandler(async (req, res) => {
 
         // Populate and get the updated order for response
         const updatedOrder = await Order.findById(order._id)
-          .populate('restaurantId', 'name location address phone ownerPhone')
+          .populate('cafeId', 'name location address phone ownerPhone')
           .populate('userId', 'name phone')
           .lean(); // Use lean() for better performance
 
@@ -1327,7 +1327,7 @@ export const confirmReachedDrop = asyncHandler(async (req, res) => {
       // If already at delivery, populate the order for response
       try {
         const populatedOrder = await Order.findById(order._id)
-          .populate('restaurantId', 'name location address phone ownerPhone')
+          .populate('cafeId', 'name location address phone ownerPhone')
           .populate('userId', 'name phone')
           .lean(); // Use lean() for better performance
 
@@ -1396,7 +1396,7 @@ export const completeDelivery = asyncHandler(async (req, res) => {
         _id: orderId,
         deliveryPartnerId: deliveryId
       })
-        .populate('restaurantId', 'name location address phone ownerPhone')
+        .populate('cafeId', 'name location address phone ownerPhone')
         .populate('userId', 'name phone')
         .lean();
     } else {
@@ -1405,7 +1405,7 @@ export const completeDelivery = asyncHandler(async (req, res) => {
         orderId: orderId,
         deliveryPartnerId: deliveryId
       })
-        .populate('restaurantId', 'name location address phone ownerPhone')
+        .populate('cafeId', 'name location address phone ownerPhone')
         .populate('userId', 'name phone')
         .lean();
     }
@@ -1425,7 +1425,7 @@ export const completeDelivery = asyncHandler(async (req, res) => {
           }
         ]
       })
-        .populate('restaurantId', 'name location address phone ownerPhone')
+        .populate('cafeId', 'name location address phone ownerPhone')
         .populate('userId', 'name phone')
         .lean();
     }
@@ -1530,7 +1530,7 @@ export const completeDelivery = asyncHandler(async (req, res) => {
       },
       { new: true, runValidators: true }
     )
-      .populate('restaurantId', 'name location address phone ownerPhone')
+      .populate('cafeId', 'name location address phone ownerPhone')
       .populate('userId', 'name phone')
       .lean();
 
@@ -1583,17 +1583,17 @@ export const completeDelivery = asyncHandler(async (req, res) => {
     else if (order.assignmentInfo?.distance) {
       deliveryDistance = order.assignmentInfo.distance;
     }
-    // Priority 3: Calculate distance from restaurant to customer if coordinates available
-    else if (order.restaurantId?.location?.coordinates && order.address?.location?.coordinates) {
-      const [restaurantLng, restaurantLat] = order.restaurantId.location.coordinates;
+    // Priority 3: Calculate distance from cafe to customer if coordinates available
+    else if (order.cafeId?.location?.coordinates && order.address?.location?.coordinates) {
+      const [cafeLng, cafeLat] = order.cafeId.location.coordinates;
       const [customerLng, customerLat] = order.address.location.coordinates;
 
       // Calculate distance using Haversine formula
       const R = 6371; // Earth radius in km
-      const dLat = (customerLat - restaurantLat) * Math.PI / 180;
-      const dLng = (customerLng - restaurantLng) * Math.PI / 180;
+      const dLat = (customerLat - cafeLat) * Math.PI / 180;
+      const dLng = (customerLng - cafeLng) * Math.PI / 180;
       const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(restaurantLat * Math.PI / 180) * Math.cos(customerLat * Math.PI / 180) *
+        Math.cos(cafeLat * Math.PI / 180) * Math.cos(customerLat * Math.PI / 180) *
         Math.sin(dLng / 2) * Math.sin(dLng / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       deliveryDistance = R * c;
@@ -1706,31 +1706,31 @@ export const completeDelivery = asyncHandler(async (req, res) => {
       // Don't fail the delivery completion if bonus check fails
     }
 
-    // Credit restaurant wallet with full order amount (no commission deducted)
-    let restaurantWalletTransaction = null;
+    // Credit cafe wallet with full order amount (no commission deducted)
+    let cafeWalletTransaction = null;
     try {
       const orderTotal = order.pricing?.subtotal || order.pricing?.total || 0;
 
-      let restaurant = null;
-      if (mongoose.Types.ObjectId.isValid(order.restaurantId)) {
-        restaurant = await Restaurant.findById(order.restaurantId);
+      let cafe = null;
+      if (mongoose.Types.ObjectId.isValid(order.cafeId)) {
+        cafe = await Cafe.findById(order.cafeId);
       } else {
-        restaurant = await Restaurant.findOne({ restaurantId: order.restaurantId });
+        cafe = await Cafe.findOne({ cafeId: order.cafeId });
       }
 
-      if (!restaurant) {
-        console.warn(`⚠️ Restaurant not found for order ${orderIdForLog}, skipping wallet update`);
-      } else if (restaurant._id) {
-        const restaurantWallet = await RestaurantWallet.findOrCreateByRestaurantId(restaurant._id);
+      if (!cafe) {
+        console.warn(`⚠️ Cafe not found for order ${orderIdForLog}, skipping wallet update`);
+      } else if (cafe._id) {
+        const cafeWallet = await CafeWallet.findOrCreateByCafeId(cafe._id);
 
-        const existingRestaurantTransaction = restaurantWallet.transactions?.find(
+        const existingCafeTransaction = cafeWallet.transactions?.find(
           t => t.orderId && t.orderId.toString() === orderIdForTransaction && t.type === 'payment'
         );
 
-        if (existingRestaurantTransaction) {
-          console.warn(`⚠️ Restaurant earning already added for order ${orderIdForLog}, skipping wallet update`);
+        if (existingCafeTransaction) {
+          console.warn(`⚠️ Cafe earning already added for order ${orderIdForLog}, skipping wallet update`);
         } else {
-          restaurantWalletTransaction = restaurantWallet.addTransaction({
+          cafeWalletTransaction = cafeWallet.addTransaction({
             amount: orderTotal,
             type: 'payment',
             status: 'Completed',
@@ -1738,21 +1738,21 @@ export const completeDelivery = asyncHandler(async (req, res) => {
             orderId: orderMongoId || order._id
           });
 
-          await restaurantWallet.save();
+          await cafeWallet.save();
 
-          logger.info(`💰 Earning added to restaurant wallet: ${restaurant._id}`, {
-            restaurantId: restaurant.restaurantId || restaurant._id.toString(),
+          logger.info(`💰 Earning added to cafe wallet: ${cafe._id}`, {
+            cafeId: cafe.cafeId || cafe._id.toString(),
             orderId: orderIdForLog,
             orderTotal: orderTotal,
-            walletBalance: restaurantWallet.totalBalance
+            walletBalance: cafeWallet.totalBalance
           });
 
-          console.log(`✅ Restaurant earning ₹${orderTotal.toFixed(2)} added to wallet`);
+          console.log(`✅ Cafe earning ₹${orderTotal.toFixed(2)} added to wallet`);
         }
       }
-    } catch (restaurantWalletError) {
-      logger.error('❌ Error processing cafe wallet:', restaurantWalletError);
-      console.error('❌ Error processing cafe wallet:', restaurantWalletError);
+    } catch (cafeWalletError) {
+      logger.error('❌ Error processing cafe wallet:', cafeWalletError);
+      console.error('❌ Error processing cafe wallet:', cafeWalletError);
     }
 
     // Send response first, then handle notifications asynchronously
@@ -1790,11 +1790,11 @@ export const completeDelivery = asyncHandler(async (req, res) => {
     // Handle notifications asynchronously (don't block response)
     const orderIdForNotification = orderMongoId?.toString ? orderMongoId.toString() : orderMongoId;
     Promise.all([
-      // Notify restaurant about delivery completion
+      // Notify cafe about delivery completion
       (async () => {
         try {
-          const { notifyRestaurantOrderUpdate } = await import('../../order/services/restaurantNotificationService.js');
-          await notifyRestaurantOrderUpdate(orderIdForNotification, 'delivered');
+          const { notifyCafeOrderUpdate } = await import('../../order/services/cafeNotificationService.js');
+          await notifyCafeOrderUpdate(orderIdForNotification, 'delivered');
         } catch (notifError) {
           console.error('Error sending cafe notification:', notifError);
         }

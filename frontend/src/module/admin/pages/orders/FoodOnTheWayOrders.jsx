@@ -27,7 +27,7 @@ export default function FoodOnTheWayOrders() {
     filteredOrders,
     count,
     activeFiltersCount,
-    restaurants,
+    cafes,
     handleApplyFilters,
     handleResetFilters,
     handleExport,
@@ -56,7 +56,7 @@ export default function FoodOnTheWayOrders() {
         setFilters={setFilters}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-        restaurants={restaurants}
+        cafes={cafes}
       />
       <SettingsDialog
         isOpen={isSettingsOpen}

@@ -12,9 +12,9 @@ const diningReviewSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    restaurant: {
+    cafe: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Restaurant",
+      ref: "Cafe",
       required: true,
     },
     rating: {

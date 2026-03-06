@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Share2, ChevronLeft, ChevronRight, ChevronDown, Loader2 } from "lucide-react"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 import { useProgressStore } from "../store/progressStore"
 import { deliveryAPI } from "@/lib/api"
 import { toast } from "sonner"

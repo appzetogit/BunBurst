@@ -13,7 +13,7 @@ import {
     createDiningStory,
     deleteDiningStory,
     updateDiningStory,
-    getActiveRestaurants
+    getActiveCafes
 } from '../controllers/diningAdminController.js';
 
 const router = express.Router();
@@ -29,8 +29,8 @@ router.post('/offer-banners', authenticateAdmin, uploadMiddleware.single('image'
 router.put('/offer-banners/:id', authenticateAdmin, uploadMiddleware.single('image'), updateDiningOfferBanner);
 router.delete('/offer-banners/:id', authenticateAdmin, deleteDiningOfferBanner);
 
-// Restaurants helper for dropdown
-router.get('/restaurants-list', authenticateAdmin, getActiveRestaurants);
+// Cafes helper for dropdown
+router.get('/cafes-list', authenticateAdmin, getActiveCafes);
 
 // Stories
 router.get('/stories', authenticateAdmin, getAdminDiningStories);

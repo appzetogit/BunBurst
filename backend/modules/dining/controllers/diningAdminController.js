@@ -1,7 +1,7 @@
 import DiningCategory from '../models/DiningCategory.js';
 import DiningOfferBanner from '../models/DiningOfferBanner.js';
 import DiningStory from '../models/DiningStory.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { uploadToCloudinary } from '../../../shared/utils/cloudinaryService.js';
 import { cloudinary } from '../../../config/cloudinary.js';
@@ -69,7 +69,7 @@ export const deleteDiningCategory = async (req, res) => {
 export const getAdminDiningOfferBanners = async (req, res) => {
     try {
         const banners = await DiningOfferBanner.find()
-            .populate('restaurant', 'name')
+            .populate('cafe', 'name')
             .sort({ createdAt: -1 })
             .lean();
         return successResponse(res, 200, 'Banners retrieved successfully', { banners });
@@ -81,8 +81,8 @@ export const getAdminDiningOfferBanners = async (req, res) => {
 
 export const createDiningOfferBanner = async (req, res) => {
     try {
-        const { percentageOff, tagline, restaurant } = req.body;
-        if (!percentageOff || !tagline || !restaurant) {
+        const { percentageOff, tagline, cafe } = req.body;
+        if (!percentageOff || !tagline || !cafe) {
             return errorResponse(res, 400, 'All fields are required');
         }
         if (!req.file) return errorResponse(res, 400, 'Image is required');
@@ -97,13 +97,13 @@ export const createDiningOfferBanner = async (req, res) => {
             cloudinaryPublicId: result.public_id,
             percentageOff,
             tagline,
-            restaurant
+            cafe
         });
 
         await banner.save();
 
-        // Populate restaurant details for immediate display
-        await banner.populate('restaurant', 'name');
+        // Populate cafe details for immediate display
+        await banner.populate('cafe', 'name');
 
         return successResponse(res, 201, 'Banner created successfully', { banner });
     } catch (error) {
@@ -135,14 +135,14 @@ export const deleteDiningOfferBanner = async (req, res) => {
 export const updateDiningOfferBanner = async (req, res) => {
     try {
         const { id } = req.params;
-        const { percentageOff, tagline, restaurant } = req.body;
+        const { percentageOff, tagline, cafe } = req.body;
 
         const banner = await DiningOfferBanner.findById(id);
         if (!banner) return errorResponse(res, 404, 'Banner not found');
 
         if (percentageOff) banner.percentageOff = percentageOff;
         if (tagline) banner.tagline = tagline;
-        if (restaurant) banner.restaurant = restaurant;
+        if (cafe) banner.cafe = cafe;
 
         if (req.file) {
             try {
@@ -161,7 +161,7 @@ export const updateDiningOfferBanner = async (req, res) => {
         }
 
         await banner.save();
-        await banner.populate('restaurant', 'name');
+        await banner.populate('cafe', 'name');
 
         return successResponse(res, 200, 'Banner updated successfully', { banner });
     } catch (error) {
@@ -170,12 +170,12 @@ export const updateDiningOfferBanner = async (req, res) => {
     }
 };
 
-export const getActiveRestaurants = async (req, res) => {
+export const getActiveCafes = async (req, res) => {
     try {
-        // Fetch restaurants that are active (assuming isServiceable or similar flag, or just all)
+        // Fetch cafes that are active (assuming isServiceable or similar flag, or just all)
         // For now fetching all with just name and id
-        const restaurants = await Restaurant.find().select('name _id').lean();
-        return successResponse(res, 200, 'Cafes retrieved successfully', { restaurants });
+        const cafes = await Cafe.find().select('name _id').lean();
+        return successResponse(res, 200, 'Cafes retrieved successfully', { cafes });
     } catch (error) {
         console.error('Error fetching cafes:', error);
         return errorResponse(res, 500, 'Failed to fetch cafes');

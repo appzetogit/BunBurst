@@ -40,7 +40,7 @@ export const generateBill = async (order) => {
             doc.text(`Order ID: ${order.orderId}`);
             doc.text(`Date & Time: ${new Date(order.createdAt).toLocaleString()}`);
             doc.text(`Customer Name: ${order.customerName || (order.userId && order.userId.name) || 'Customer'}`);
-            doc.text(`Restaurant: ${order.restaurantName}`);
+            doc.text(`Cafe: ${order.cafeName}`);
             doc.moveDown();
 
             // --- Table Header ---

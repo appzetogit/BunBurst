@@ -36,7 +36,7 @@ import { useLocation } from "../hooks/useLocation"
 import { useZone } from "../hooks/useZone"
 import appzetoFoodLogo from "@/assets/appzetologo.png"
 import offerImage from "@/assets/offerimage.png"
-import api, { restaurantAPI, adminAPI } from "@/lib/api"
+import api, { cafeAPI, adminAPI } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
 import OptimizedImage from "@/components/OptimizedImage"
 // Explore More Icons
@@ -61,9 +61,9 @@ const DEFAULT_PLACEHOLDERS = [
   "Search \"dosa\""
 ]
 
-// Restaurant Image Carousel Component
-const RestaurantImageCarousel = React.memo(({ restaurant, priority = false }) => {
-  const images = useMemo(() => restaurant.images || [restaurant.image], [restaurant])
+// Cafe Image Carousel Component
+const CafeImageCarousel = React.memo(({ cafe, priority = false }) => {
+  const images = useMemo(() => cafe.images || [cafe.image], [cafe])
   const [currentIndex, setCurrentIndex] = useState(0)
   const touchStartX = useRef(0)
   const touchEndX = useRef(0)
@@ -74,7 +74,7 @@ const RestaurantImageCarousel = React.memo(({ restaurant, priority = false }) =>
       <div className="relative h-[220px] sm:h-56 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-md flex-shrink-0 bg-gray-200">
         <OptimizedImage
           src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop"
-          alt={restaurant.name}
+          alt={cafe.name}
           className="w-full h-full"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           objectFit="cover"
@@ -134,7 +134,7 @@ const RestaurantImageCarousel = React.memo(({ restaurant, priority = false }) =>
       <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-110">
         <OptimizedImage
           src={images[currentIndex]}
-          alt={`${restaurant.name} - Image ${currentIndex + 1}`}
+          alt={`${cafe.name} - Image ${currentIndex + 1}`}
           className="w-full h-full"
           priority={priority && currentIndex === 0}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -193,14 +193,14 @@ export default function Home() {
   const [isSwitchingOffVegMode, setIsSwitchingOffVegMode] = useState(false)
   const [popupPosition, setPopupPosition] = useState({ top: 0, right: 0 })
   const vegModeToggleRef = useRef(null)
-  const [heroBannersData, setHeroBannersData] = useState([]) // Store full banner data with linked restaurants
+  const [heroBannersData, setHeroBannersData] = useState([]) // Store full banner data with linked cafes
   const [loadingBanners, setLoadingBanners] = useState(true)
   const [landingCategories, setLandingCategories] = useState([])
   const [landingExploreMore, setLandingExploreMore] = useState([])
   const [exploreMoreHeading, setExploreMoreHeading] = useState("Explore More")
   const [loadingLandingConfig, setLoadingLandingConfig] = useState(true)
-  const [restaurantsData, setRestaurantsData] = useState([])
-  const [loadingRestaurants, setLoadingRestaurants] = useState(true)
+  const [cafesData, setCafesData] = useState([])
+  const [loadingCafes, setLoadingCafes] = useState(true)
   const [realCategories, setRealCategories] = useState([])
   // Placeholder for search - moved outside component to prevent recreation
   const [loadingRealCategories, setLoadingRealCategories] = useState(true)
@@ -422,7 +422,7 @@ export default function Home() {
   const { zoneId, zoneStatus, isInService, isOutOfService, loading: zoneLoading } = useZone(location)
   const [showToast, setShowToast] = useState(false)
   const [showManageCollections, setShowManageCollections] = useState(false)
-  const [selectedRestaurantSlug, setSelectedRestaurantSlug] = useState(null)
+  const [selectedCafeSlug, setSelectedCafeSlug] = useState(null)
 
   // Memoize cartCount to prevent recalculation on every render - use cart directly
   const cartCount = useMemo(() =>
@@ -484,10 +484,10 @@ export default function Home() {
     return () => observer.disconnect()
   }, [isFilterOpen])
 
-  // Fetch restaurants from API with filters
-  const fetchRestaurants = useCallback(async (filters = {}) => {
+  // Fetch cafes from API with filters
+  const fetchCafes = useCallback(async (filters = {}) => {
     try {
-      setLoadingRestaurants(true)
+      setLoadingCafes(true)
 
       // First, test backend connection
       try {
@@ -500,8 +500,8 @@ export default function Home() {
         // Result handled silently
       } catch (healthError) {
         // Backend connection error - handled silently, toast notifications shown via axios interceptor
-        setRestaurantsData([])
-        setLoadingRestaurants(false)
+        setCafesData([])
+        setLoadingCafes(false)
         return
       }
 
@@ -560,21 +560,21 @@ export default function Home() {
         params.trusted = 'true'
       }
 
-      // Optional: Add zoneId if available (for sorting/filtering, but show all restaurants)
+      // Optional: Add zoneId if available (for sorting/filtering, but show all cafes)
       if (zoneId) {
         params.zoneId = zoneId
       }
-      // Note: We show all restaurants regardless of zone, but apply grayscale styling if user is out of service
+      // Note: We show all cafes regardless of zone, but apply grayscale styling if user is out of service
 
-      const response = await restaurantAPI.getRestaurants(params)
+      const response = await cafeAPI.getCafes(params)
 
-      if (response.data && response.data.success && response.data.data && response.data.data.restaurants) {
-        const restaurantsArray = response.data.data.restaurants
+      if (response.data && response.data.success && response.data.data && response.data.data.cafes) {
+        const cafesArray = response.data.data.cafes
 
-        if (restaurantsArray.length === 0) {
+        if (cafesArray.length === 0) {
           console.warn('No cafes found in API response')
-          setRestaurantsData([])
-          setLoadingRestaurants(false)
+          setCafesData([])
+          setLoadingCafes(false)
           return
         }
 
@@ -596,23 +596,23 @@ export default function Home() {
         const userLng = location?.longitude
 
         // Transform API data to match expected format
-        const transformedRestaurants = restaurantsArray.map((restaurant, index) => {
-          // Use restaurant data if available, otherwise use defaults
-          const deliveryTime = restaurant.estimatedDeliveryTime || "25-30 mins"
+        const transformedCafes = cafesArray.map((cafe, index) => {
+          // Use cafe data if available, otherwise use defaults
+          const deliveryTime = cafe.estimatedDeliveryTime || "25-30 mins"
 
-          // Calculate distance from user to restaurant
-          let distance = restaurant.distance || "1.2 km"
+          // Calculate distance from user to cafe
+          let distance = cafe.distance || "1.2 km"
 
-          // Get restaurant coordinates
-          const restaurantLocation = restaurant.location
-          const restaurantLat = restaurantLocation?.latitude || (restaurantLocation?.coordinates && Array.isArray(restaurantLocation.coordinates) ? restaurantLocation.coordinates[1] : null)
-          const restaurantLng = restaurantLocation?.longitude || (restaurantLocation?.coordinates && Array.isArray(restaurantLocation.coordinates) ? restaurantLocation.coordinates[0] : null)
+          // Get cafe coordinates
+          const cafeLocation = cafe.location
+          const cafeLat = cafeLocation?.latitude || (cafeLocation?.coordinates && Array.isArray(cafeLocation.coordinates) ? cafeLocation.coordinates[1] : null)
+          const cafeLng = cafeLocation?.longitude || (cafeLocation?.coordinates && Array.isArray(cafeLocation.coordinates) ? cafeLocation.coordinates[0] : null)
 
-          // Calculate distance if both user and restaurant coordinates are available
+          // Calculate distance if both user and cafe coordinates are available
           let distanceInKm = null
-          if (userLat && userLng && restaurantLat && restaurantLng &&
-            !isNaN(userLat) && !isNaN(userLng) && !isNaN(restaurantLat) && !isNaN(restaurantLng)) {
-            distanceInKm = calculateDistance(userLat, userLng, restaurantLat, restaurantLng)
+          if (userLat && userLng && cafeLat && cafeLng &&
+            !isNaN(userLat) && !isNaN(userLng) && !isNaN(cafeLat) && !isNaN(cafeLng)) {
+            distanceInKm = calculateDistance(userLat, userLng, cafeLat, cafeLng)
             // Format distance: show 1 decimal place if >= 1km, otherwise show in meters
             if (distanceInKm >= 1) {
               distance = `${distanceInKm.toFixed(1)} km`
@@ -623,18 +623,18 @@ export default function Home() {
           }
 
           // Get first cuisine or default
-          const cuisine = restaurant.cuisines && restaurant.cuisines.length > 0
-            ? restaurant.cuisines[0]
+          const cuisine = cafe.cuisines && cafe.cuisines.length > 0
+            ? cafe.cuisines[0]
             : "Multi-cuisine"
 
           // Get cover images (separate from menu images) for carousel
-          const coverImages = restaurant.coverImages && restaurant.coverImages.length > 0
-            ? restaurant.coverImages.map(img => img.url || img)
+          const coverImages = cafe.coverImages && cafe.coverImages.length > 0
+            ? cafe.coverImages.map(img => img.url || img)
             : []
 
           // Fallback to menuImages only if coverImages don't exist (for backward compatibility)
-          const fallbackImages = restaurant.menuImages && restaurant.menuImages.length > 0
-            ? restaurant.menuImages.map(img => img.url)
+          const fallbackImages = cafe.menuImages && cafe.menuImages.length > 0
+            ? cafe.menuImages.map(img => img.url)
             : []
 
           // Use cover images first, then fallback to menu images, then profile image
@@ -642,46 +642,46 @@ export default function Home() {
             ? coverImages
             : (fallbackImages.length > 0
               ? fallbackImages
-              : (restaurant.profileImage?.url
-                ? [restaurant.profileImage.url]
+              : (cafe.profileImage?.url
+                ? [cafe.profileImage.url]
                 : ["https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop"]))
 
           // Keep single image for backward compatibility
           const image = allImages[0]
 
           return {
-            id: restaurant.restaurantId || restaurant._id,
-            name: restaurant.name,
+            id: cafe.cafeId || cafe._id,
+            name: cafe.name,
             cuisine: cuisine,
-            rating: Number(restaurant.rating) || 0,
+            rating: Number(cafe.rating) || 0,
             deliveryTime: deliveryTime,
             distance: distance,
             distanceInKm: distanceInKm, // Store numeric distance for sorting
             image: image,
             images: allImages, // Array of cover images for carousel (separate from menu images)
-            priceRange: restaurant.priceRange || "$$", // Use from API or default
-            featuredDish: restaurant.featuredDish || (restaurant.cuisines && restaurant.cuisines.length > 0
-              ? `${restaurant.cuisines[0]} Special`
+            priceRange: cafe.priceRange || "$$", // Use from API or default
+            featuredDish: cafe.featuredDish || (cafe.cuisines && cafe.cuisines.length > 0
+              ? `${cafe.cuisines[0]} Special`
               : "Special Dish"),
-            featuredPrice: restaurant.featuredPrice || 249, // Use from API or default
-            offer: restaurant.offer || "Flat ₹50 OFF above ₹199", // Use from API or default
-            slug: restaurant.slug,
-            restaurantId: restaurant.restaurantId,
-            location: restaurant.location, // Store location for distance recalculation
-            isActive: restaurant.isActive !== false, // Default to true if not specified
-            isAcceptingOrders: restaurant.isAcceptingOrders !== false, // Default to true if not specified
+            featuredPrice: cafe.featuredPrice || 249, // Use from API or default
+            offer: cafe.offer || "Flat ₹50 OFF above ₹199", // Use from API or default
+            slug: cafe.slug,
+            cafeId: cafe.cafeId,
+            location: cafe.location, // Store location for distance recalculation
+            isActive: cafe.isActive !== false, // Default to true if not specified
+            isAcceptingOrders: cafe.isAcceptingOrders !== false, // Default to true if not specified
           }
         })
 
-        // Sort restaurants by distance (nearby first) - only if user location is available
+        // Sort cafes by distance (nearby first) - only if user location is available
         if (userLat && userLng) {
-          transformedRestaurants.sort((a, b) => {
-            // Available restaurants first, then unavailable
+          transformedCafes.sort((a, b) => {
+            // Available cafes first, then unavailable
             const aAvailable = a.isActive && a.isAcceptingOrders
             const bAvailable = b.isActive && b.isAcceptingOrders
 
             if (aAvailable !== bAvailable) {
-              return aAvailable ? -1 : 1 // Available restaurants come first
+              return aAvailable ? -1 : 1 // Available cafes come first
             }
 
             // If both have same availability, sort by distance
@@ -691,30 +691,30 @@ export default function Home() {
           })
         }
 
-        setRestaurantsData(transformedRestaurants)
+        setCafesData(transformedCafes)
       } else {
         console.warn('Invalid API response structure:', response.data)
-        setRestaurantsData([])
+        setCafesData([])
       }
     } catch (error) {
       console.error('Error fetching cafes:', error)
       console.error('Error details:', error.response?.data || error.message)
       // Don't set hardcoded data here - let the useMemo fallback handle it
       // This way, if API succeeds later, it will show the real data
-      setRestaurantsData([])
+      setCafesData([])
     } finally {
-      setLoadingRestaurants(false)
+      setLoadingCafes(false)
     }
   }, [zoneId])
 
-  // Fetch restaurants when appliedFilters change
+  // Fetch cafes when appliedFilters change
   useEffect(() => {
-    fetchRestaurants(appliedFilters)
-  }, [appliedFilters, fetchRestaurants])
+    fetchCafes(appliedFilters)
+  }, [appliedFilters, fetchCafes])
 
-  // Compute restaurants with up-to-date distances and sorting
-  const restaurantsWithDistances = useMemo(() => {
-    if (!restaurantsData || restaurantsData.length === 0) return []
+  // Compute cafes with up-to-date distances and sorting
+  const cafesWithDistances = useMemo(() => {
+    if (!cafesData || cafesData.length === 0) return []
 
     const userLat = location?.latitude
     const userLng = location?.longitude
@@ -729,15 +729,15 @@ export default function Home() {
       return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
     }
 
-    return restaurantsData.map(restaurant => {
-      if (!userLat || !userLng || !restaurant.location) return restaurant
+    return cafesData.map(cafe => {
+      if (!userLat || !userLng || !cafe.location) return cafe
 
-      const restaurantLat = restaurant.location?.latitude || (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) ? restaurant.location.coordinates[1] : null)
-      const restaurantLng = restaurant.location?.longitude || (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) ? restaurant.location.coordinates[0] : null)
+      const cafeLat = cafe.location?.latitude || (cafe.location?.coordinates && Array.isArray(cafe.location.coordinates) ? cafe.location.coordinates[1] : null)
+      const cafeLng = cafe.location?.longitude || (cafe.location?.coordinates && Array.isArray(cafe.location.coordinates) ? cafe.location.coordinates[0] : null)
 
-      if (!restaurantLat || !restaurantLng || isNaN(restaurantLat) || isNaN(restaurantLng)) return restaurant
+      if (!cafeLat || !cafeLng || isNaN(cafeLat) || isNaN(cafeLng)) return cafe
 
-      const distanceInKm = calculateDist(userLat, userLng, restaurantLat, restaurantLng)
+      const distanceInKm = calculateDist(userLat, userLng, cafeLat, cafeLng)
       let formattedDistance = null
 
       if (distanceInKm >= 1) {
@@ -747,12 +747,12 @@ export default function Home() {
       }
 
       return {
-        ...restaurant,
+        ...cafe,
         distance: formattedDistance,
         distanceInKm
       }
     }).sort((a, b) => {
-      // Available restaurants first
+      // Available cafes first
       const aAvailable = a.isActive && a.isAcceptingOrders
       const bAvailable = b.isActive && b.isAcceptingOrders
       if (aAvailable !== bAvailable) return aAvailable ? -1 : 1
@@ -762,11 +762,11 @@ export default function Home() {
       const bDist = b.distanceInKm ?? 999
       return aDist - bDist
     })
-  }, [restaurantsData, location?.latitude, location?.longitude])
+  }, [cafesData, location?.latitude, location?.longitude])
 
-  // Filter restaurants based on active filters
-  const filteredRestaurants = useMemo(() => {
-    let filtered = [...restaurantsWithDistances]
+  // Filter cafes based on active filters
+  const filteredCafes = useMemo(() => {
+    let filtered = [...cafesWithDistances]
 
     // Apply filters
     if (activeFilters.has('price-under-200')) {
@@ -845,15 +845,15 @@ export default function Home() {
     } else if (sortBy === 'rating-low') {
       filtered.sort((a, b) => a.rating - b.rating)
     } else {
-      // Default sorting: Available restaurants first, then by distance (nearby first)
-      // This ensures all restaurants in zone are shown, but nearby ones appear first
+      // Default sorting: Available cafes first, then by distance (nearby first)
+      // This ensures all cafes in zone are shown, but nearby ones appear first
       filtered.sort((a, b) => {
-        // Available restaurants first, then unavailable
+        // Available cafes first, then unavailable
         const aAvailable = a.isActive && a.isAcceptingOrders
         const bAvailable = b.isActive && b.isAcceptingOrders
 
         if (aAvailable !== bAvailable) {
-          return aAvailable ? -1 : 1 // Available restaurants come first
+          return aAvailable ? -1 : 1 // Available cafes come first
         }
 
         // If both have same availability, sort by distance
@@ -864,9 +864,9 @@ export default function Home() {
     }
 
     return filtered
-  }, [restaurantsData, activeFilters, selectedCuisine, sortBy])
+  }, [cafesData, activeFilters, selectedCuisine, sortBy])
 
-  // Featured foods removed - will be handled by restaurants data from API
+  // Featured foods removed - will be handled by cafes data from API
   const filteredFeaturedFoods = useMemo(() => {
     // Return empty array - featured foods will come from API if needed
     return []
@@ -893,11 +893,11 @@ export default function Home() {
   // Removed GSAP animations - using CSS and ScrollReveal components instead for better performance
   // Auto-scroll removed - manual scroll only
 
-  // Animated placeholder cycling - same as RestaurantDetails highlight offer animation
+  // Animated placeholder cycling - same as CafeDetails highlight offer animation
   useEffect(() => {
     const interval = setInterval(() => {
       setPlaceholderIndex((prev) => (prev + 1) % placeholders.length)
-    }, 2000) // Change placeholder every 2 seconds (same as RestaurantDetails)
+    }, 2000) // Change placeholder every 2 seconds (same as CafeDetails)
 
     return () => clearInterval(interval)
   }, []) // placeholders is a constant, no need for dependency
@@ -1498,7 +1498,7 @@ export default function Home() {
 
         {/* Featured Foods - Horizontal Scroll */}
 
-        {/* Restaurants - Enhanced with Animations */}
+        {/* Cafes - Enhanced with Animations */}
         <motion.section
           className="space-y-0 pt-3 sm:pt-4 lg:pt-6 pb-20 md:pb-24"
           initial={{ opacity: 0 }}
@@ -1515,7 +1515,7 @@ export default function Home() {
           >
             <div className="flex flex-col gap-0.5 lg:gap-1">
               <h2 className="text-xs sm:text-sm lg:text-base font-semibold text-muted-foreground/60 tracking-widest uppercase">
-                {filteredRestaurants.length} Cafes Delivering to You
+                {filteredCafes.length} Cafes Delivering to You
               </h2>
               <span className="text-base sm:text-lg lg:text-2xl text-muted-foreground font-normal">Featured</span>
             </div>
@@ -1523,7 +1523,7 @@ export default function Home() {
           <div className="relative">
             {/* Loading Overlay */}
             <AnimatePresence>
-              {(isLoadingFilterResults || loadingRestaurants) && (
+              {(isLoadingFilterResults || loadingCafes) && (
                 <motion.div
                   className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg min-h-[400px]"
                   initial={{ opacity: 0 }}
@@ -1538,30 +1538,30 @@ export default function Home() {
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 xl:gap-8 pt-1 sm:pt-1.5 lg:pt-2 items-stretch ${isLoadingFilterResults || loadingRestaurants ? 'opacity-50' : 'opacity-100'} transition-opacity duration-300`}>
-              {filteredRestaurants.map((restaurant, index) => {
-                const restaurantSlug = restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, "-")
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 xl:gap-8 pt-1 sm:pt-1.5 lg:pt-2 items-stretch ${isLoadingFilterResults || loadingCafes ? 'opacity-50' : 'opacity-100'} transition-opacity duration-300`}>
+              {filteredCafes.map((cafe, index) => {
+                const cafeSlug = cafe.slug || cafe.name.toLowerCase().replace(/\s+/g, "-")
                 // Direct favorite check - isFavorite is already memoized in context
-                const favorite = isFavorite(restaurantSlug)
+                const favorite = isFavorite(cafeSlug)
 
                 const handleToggleFavorite = (e) => {
                   e.preventDefault()
                   e.stopPropagation()
                   if (favorite) {
                     // If already bookmarked, show Manage Collections modal
-                    setSelectedRestaurantSlug(restaurantSlug)
+                    setSelectedCafeSlug(cafeSlug)
                     setShowManageCollections(true)
                   } else {
                     // Add to favorites and show toast
                     addFavorite({
-                      slug: restaurantSlug,
-                      name: restaurant.name,
-                      cuisine: restaurant.cuisine,
-                      rating: restaurant.rating,
-                      deliveryTime: restaurant.deliveryTime,
-                      distance: restaurant.distance,
-                      priceRange: restaurant.priceRange,
-                      image: restaurant.image
+                      slug: cafeSlug,
+                      name: cafe.name,
+                      cuisine: cafe.cuisine,
+                      rating: cafe.rating,
+                      deliveryTime: cafe.deliveryTime,
+                      distance: cafe.distance,
+                      priceRange: cafe.priceRange,
+                      image: cafe.image
                     })
                     setShowToast(true)
                     setTimeout(() => {
@@ -1572,7 +1572,7 @@ export default function Home() {
 
                 return (
                   <div
-                    key={restaurant.id}
+                    key={cafe.id}
                     className="h-full transform transition-all duration-300 hover:-translate-y-3 hover:scale-[1.02]"
                     style={{
                       perspective: 1000,
@@ -1580,20 +1580,20 @@ export default function Home() {
                     }}
                   >
                     <div className="h-full group">
-                      <Link to={`/user/restaurants/${restaurantSlug}`} className="h-full flex">
+                      <Link to={`/user/cafes/${cafeSlug}`} className="h-full flex">
                         <Card className={`overflow-hidden gap-0 cursor-pointer border-0 group bg-card transition-all duration-500 py-0 rounded-md flex flex-col h-full w-full relative ${isOutOfService ? 'grayscale opacity-75' : ''
                           }`}>
                           {/* Image Section with Carousel */}
                           <div className="relative">
-                            <RestaurantImageCarousel
-                              restaurant={restaurant}
+                            <CafeImageCarousel
+                              cafe={cafe}
                               priority={index < 3}
                             />
 
                             {/* Featured Dish Badge - Top Left */}
                             <div className="absolute top-3 left-3 md:top-4 md:left-4 flex items-center z-10 transform transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-0.5">
                               <div className="bg-card/90 backdrop-blur-sm text-foreground px-2 py-1 md:px-4 md:py-1.5 rounded-md text-xs font-medium flex items-center shadow-lg">
-                                {restaurant.featuredDish} · ₹{restaurant.featuredPrice}
+                                {cafe.featuredDish} · ₹{cafe.featuredPrice}
                               </div>
                             </div>
 
@@ -1621,15 +1621,15 @@ export default function Home() {
                           {/* Content Section */}
                           <div className="transform transition-transform duration-300 group-hover:-translate-y-1">
                             <CardContent className="p-3 sm:p-4 lg:p-5 pt-3 sm:pt-4 lg:pt-5 flex flex-col flex-grow">
-                              {/* Restaurant Name & Rating */}
+                              {/* Cafe Name & Rating */}
                               <div className="flex items-start justify-between gap-2 mb-2 lg:mb-3">
                                 <div className="flex-1 min-w-0">
                                   <h3 className="text-md sm:text-md lg:text-xl font-bold text-foreground line-clamp-1 lg:line-clamp-2 transition-colors duration-300 group-hover:text-primary">
-                                    {restaurant.name}
+                                    {cafe.name}
                                   </h3>
                                 </div>
                                 <div className="flex-shrink-0 bg-[#FFC400] text-[#1E1E1E] px-2 py-1 lg:px-3 lg:py-1.5 rounded-lg flex items-center gap-1 transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
-                                  <span className="text-sm lg:text-base font-bold">{restaurant.rating}</span>
+                                  <span className="text-sm lg:text-base font-bold">{cafe.rating}</span>
                                   <Star className="h-3 w-3 lg:h-4 lg:w-4 fill-[#1E1E1E] text-[#1E1E1E]" />
                                 </div>
                               </div>
@@ -1637,16 +1637,16 @@ export default function Home() {
                               {/* Delivery Time & Distance */}
                               <div className="flex items-center gap-1 text-sm lg:text-base text-muted-foreground mb-2 lg:mb-3 transition-opacity duration-300 opacity-70 group-hover:opacity-100">
                                 <Clock className="h-4 w-4 lg:h-5 lg:w-5 text-muted-foreground" strokeWidth={1.5} />
-                                <span className="font-medium">{restaurant.deliveryTime}</span>
+                                <span className="font-medium">{cafe.deliveryTime}</span>
                                 <span className="mx-1">|</span>
-                                <span className="font-medium">{restaurant.distance}</span>
+                                <span className="font-medium">{cafe.distance}</span>
                               </div>
 
                               {/* Offer Badge */}
-                              {restaurant.offer && (
+                              {cafe.offer && (
                                 <div className="flex items-center gap-2 text-sm lg:text-base mt-auto transform transition-transform duration-300 group-hover:translate-x-1">
                                   <BadgePercent className="h-4 w-4 lg:h-5 lg:w-5 text-primary" strokeWidth={2} />
-                                  <span className="text-foreground/80 font-medium">{restaurant.offer}</span>
+                                  <span className="text-foreground/80 font-medium">{cafe.offer}</span>
                                 </div>
                               )}
                             </CardContent>
@@ -1663,9 +1663,9 @@ export default function Home() {
             </div>
           </div>
           <div className="flex justify-center pt-2 sm:pt-3">
-            {/* <Link to="/user/restaurants">
+            {/* <Link to="/user/cafes">
               <Button variant="outline" className="bg-transparent outline-none text-green-600 hover:opacity-80 border-none underline shadow-none  text-xs sm:text-sm md:text-base sm:hidden">
-                See All Restaurants
+                See All Cafes
               </Button>
             </Link> */}
           </div>
@@ -2017,9 +2017,9 @@ export default function Home() {
                     setIsLoadingFilterResults(true)
                     setIsFilterOpen(false)
 
-                    // Refetch restaurants with new filters
+                    // Refetch cafes with new filters
                     try {
-                      await fetchRestaurants({
+                      await fetchCafes({
                         activeFilters: new Set(activeFilters),
                         sortBy,
                         selectedCuisine
@@ -2102,7 +2102,7 @@ export default function Home() {
 
               {/* Radio Options */}
               <div className="space-y-2 mb-4">
-                {/* All restaurants */}
+                {/* All cafes */}
                 <label
                   className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   onClick={() => setVegModeOption("all")}
@@ -2130,7 +2130,7 @@ export default function Home() {
                   </span>
                 </label>
 
-                {/* Pure Veg restaurants only */}
+                {/* Pure Veg cafes only */}
                 <label
                   className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   onClick={() => setVegModeOption("pure-veg")}
@@ -2450,7 +2450,7 @@ export default function Home() {
                 transition={{ delay: 0.4 }}
                 className="text-gray-800 font-normal text-base text-center relative z-10"
               >
-                Explore veg dishes from all restaurants
+                Explore veg dishes from all cafes
               </motion.p>
             </div>
           </motion.div>
@@ -2693,14 +2693,14 @@ export default function Home() {
                       <div className="flex-1 text-left">
                         <div className="flex items-center justify-between">
                           <span className="text-base font-medium text-gray-900">Bookmarks</span>
-                          {selectedRestaurantSlug && (
+                          {selectedCafeSlug && (
                             <div onClick={(e) => e.stopPropagation()}>
                               <Checkbox
-                                checked={isFavorite(selectedRestaurantSlug)}
+                                checked={isFavorite(selectedCafeSlug)}
                                 onCheckedChange={(checked) => {
                                   if (!checked) {
-                                    removeFavorite(selectedRestaurantSlug)
-                                    setSelectedRestaurantSlug(null)
+                                    removeFavorite(selectedCafeSlug)
+                                    setSelectedCafeSlug(null)
                                     setShowManageCollections(false)
                                   }
                                 }}
@@ -2708,7 +2708,7 @@ export default function Home() {
                               />
                             </div>
                           )}
-                          {!selectedRestaurantSlug && (
+                          {!selectedCafeSlug && (
                             <div className="h-5 w-5 rounded border-2 border-red-500 bg-red-500 flex items-center justify-center">
                               <Check className="h-3 w-3 text-white" />
                             </div>
@@ -2741,7 +2741,7 @@ export default function Home() {
                     <Button
                       className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 rounded-lg font-medium"
                       onClick={() => {
-                        setSelectedRestaurantSlug(null)
+                        setSelectedCafeSlug(null)
                         setShowManageCollections(false)
                       }}
                     >

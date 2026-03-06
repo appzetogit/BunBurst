@@ -79,7 +79,7 @@ export default function OrderDetailsPage() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-sm md:text-base font-bold text-gray-900 mb-1">Order #{order.id}</h3>
-              <p className="text-xs md:text-sm text-gray-600">{order.restaurant}</p>
+              <p className="text-xs md:text-sm text-gray-600">{order.cafe}</p>
             </div>
             <div className={`px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs font-semibold ${
               order.status === "Delivered" 

@@ -44,10 +44,10 @@ import {
   calculatePeriodEarnings,
   calculateDeliveryBalances
 } from "../utils/deliveryWalletState"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 import { getAllDeliveryOrders } from "../utils/deliveryOrderStatus"
 import { getUnreadDeliveryNotificationCount } from "../utils/deliveryNotifications"
-import { deliveryAPI, restaurantAPI, uploadAPI } from "@/lib/api"
+import { deliveryAPI, cafeAPI, uploadAPI } from "@/lib/api"
 import { useDeliveryNotifications } from "../hooks/useDeliveryNotifications"
 import { getGoogleMapsApiKey } from "@/lib/utils/googleMapsApiKey"
 import { useCompanyName } from "@/lib/hooks/useCompanyName"
@@ -69,8 +69,8 @@ import bikeLogo from "../../../assets/bikelogo.png"
 
 // Ola Maps API Key removed
 
-// Mock restaurants data
-const mockRestaurants = [
+// Mock cafes data
+const mockCafes = [
   {
     id: 1,
     name: "Hotel Pankaj",
@@ -444,7 +444,7 @@ export default function DeliveryHome() {
   const directionsServiceRef = useRef(null) // Directions Service instance
   const directionsRendererRef = useRef(null) // Directions Renderer instance
   const directionsMapInstanceRef = useRef(null) // Directions map instance
-  const restaurantMarkerRef = useRef(null) // Restaurant marker on directions map
+  const cafeMarkerRef = useRef(null) // Cafe marker on directions map
   const directionsBikeMarkerRef = useRef(null) // Bike marker on directions map
   const lastRouteRecalculationRef = useRef(null) // Track last route recalculation time (API cost optimization)
   const lastBikePositionRef = useRef(null) // Track last bike position for deviation detection
@@ -602,7 +602,7 @@ export default function DeliveryHome() {
 
     return hotspots
   })
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null)
+  const [selectedCafe, setSelectedCafe] = useState(null)
   const [bottomSheetExpanded, setBottomSheetExpanded] = useState(false)
   const [acceptButtonProgress, setAcceptButtonProgress] = useState(0)
   const [isAnimatingToComplete, setIsAnimatingToComplete] = useState(false)
@@ -627,7 +627,7 @@ export default function DeliveryHome() {
   const [isDraggingNewOrderPopup, setIsDraggingNewOrderPopup] = useState(false)
   const [isNewOrderPopupMinimized, setIsNewOrderPopupMinimized] = useState(false)
   const [showDirectionsMap, setShowDirectionsMap] = useState(false)
-  const [navigationMode, setNavigationMode] = useState('restaurant') // 'restaurant' or 'customer'
+  const [navigationMode, setNavigationMode] = useState('cafe') // 'cafe' or 'customer'
   const [showreachedPickupPopup, setShowreachedPickupPopup] = useState(false)
   const [showOrderIdConfirmationPopup, setShowOrderIdConfirmationPopup] = useState(false)
   const [showReachedDropPopup, setShowReachedDropPopup] = useState(false)
@@ -1248,7 +1248,7 @@ export default function DeliveryHome() {
   }
 
   // Auto-show disabled - Only real orders from Socket.IO will show
-  // Removed mock restaurant auto-show logic
+  // Removed mock cafe auto-show logic
 
   // Countdown timer for new order popup
   useEffect(() => {
@@ -1288,7 +1288,7 @@ export default function DeliveryHome() {
 
   // Play audio when New Order popup appears (only for real orders from Socket.IO)
   useEffect(() => {
-    if (showNewOrderPopup && (newOrder || selectedRestaurant)) {
+    if (showNewOrderPopup && (newOrder || selectedCafe)) {
       // Stop any existing audio first
       if (alertAudioRef.current) {
         alertAudioRef.current.pause()
@@ -1349,7 +1349,7 @@ export default function DeliveryHome() {
         alertAudioRef.current = null
       }
     }
-  }, [showNewOrderPopup, selectedRestaurant])
+  }, [showNewOrderPopup, selectedCafe])
 
   // Reset countdown when popup closes
   useEffect(() => {
@@ -1422,7 +1422,7 @@ export default function DeliveryHome() {
   useEffect(() => {
     // Clear any popup state on mount
     setShowNewOrderPopup(false)
-    setSelectedRestaurant(null)
+    setSelectedCafe(null)
     setHasAutoShown(false)
     setCountdownSeconds(300)
 
@@ -2040,8 +2040,8 @@ export default function DeliveryHome() {
 
       // Accept order via backend API and get route
       const acceptOrderAndShowRoute = async () => {
-        // Get order ID from selectedRestaurant or newOrder (define outside try-catch for error handling)
-        const orderId = selectedRestaurant?.id || newOrder?.orderMongoId || newOrder?.orderId
+        // Get order ID from selectedCafe or newOrder (define outside try-catch for error handling)
+        const orderId = selectedCafe?.id || newOrder?.orderMongoId || newOrder?.orderId
 
         if (!orderId) {
           console.error('❌ No order ID found to accept')
@@ -2107,101 +2107,101 @@ export default function DeliveryHome() {
             const order = orderData.order || orderData // Backend returns { order, route }
             const routeData = response.data.data.route
 
-            // Update selectedRestaurant with correct data from backend
-            let restaurantInfo = null;
+            // Update selectedCafe with correct data from backend
+            let cafeInfo = null;
             if (order) {
-              // Extract restaurant location with robust fallbacks
-              const restaurantCoords = extractLatLng(
-                order.restaurantId?.location || order.restaurantLocation || order.location
+              // Extract cafe location with robust fallbacks
+              const cafeCoords = extractLatLng(
+                order.cafeId?.location || order.cafeLocation || order.location
               )
-              const restaurantLat = restaurantCoords.lat ??
-                toFiniteCoordinate(order.restaurantLat) ??
-                toFiniteCoordinate(selectedRestaurant?.lat)
-              const restaurantLng = restaurantCoords.lng ??
-                toFiniteCoordinate(order.restaurantLng) ??
-                toFiniteCoordinate(selectedRestaurant?.lng)
+              const cafeLat = cafeCoords.lat ??
+                toFiniteCoordinate(order.cafeLat) ??
+                toFiniteCoordinate(selectedCafe?.lat)
+              const cafeLng = cafeCoords.lng ??
+                toFiniteCoordinate(order.cafeLng) ??
+                toFiniteCoordinate(selectedCafe?.lng)
 
-              // Format restaurant address - check multiple possible locations
-              let restaurantAddress = 'Cafe Address'
-              const restaurantLocation = order.restaurantId?.location
+              // Format cafe address - check multiple possible locations
+              let cafeAddress = 'Cafe Address'
+              const cafeLocation = order.cafeId?.location
 
               // Debug: Log order structure to understand data format
-              // Priority 1: Direct address fields on restaurantId
-              if (order.restaurantId?.address) {
-                restaurantAddress = order.restaurantId.address
+              // Priority 1: Direct address fields on cafeId
+              if (order.cafeId?.address) {
+                cafeAddress = order.cafeId.address
                 }
               // Priority 2: formattedAddress from location
-              else if (restaurantLocation?.formattedAddress) {
-                restaurantAddress = restaurantLocation.formattedAddress
+              else if (cafeLocation?.formattedAddress) {
+                cafeAddress = cafeLocation.formattedAddress
                 }
               // Priority 3: address from location
-              else if (restaurantLocation?.address) {
-                restaurantAddress = restaurantLocation.address
+              else if (cafeLocation?.address) {
+                cafeAddress = cafeLocation.address
                 }
               // Priority 4: Build from addressLine1 (with zone and pin code)
-              else if (restaurantLocation?.addressLine1) {
+              else if (cafeLocation?.addressLine1) {
                 const addressParts = [
-                  restaurantLocation.addressLine1,
-                  restaurantLocation.addressLine2,
-                  restaurantLocation.area, // Zone
-                  restaurantLocation.city,
-                  restaurantLocation.state,
-                  restaurantLocation.pincode || restaurantLocation.zipCode || restaurantLocation.postalCode
+                  cafeLocation.addressLine1,
+                  cafeLocation.addressLine2,
+                  cafeLocation.area, // Zone
+                  cafeLocation.city,
+                  cafeLocation.state,
+                  cafeLocation.pincode || cafeLocation.zipCode || cafeLocation.postalCode
                 ].filter(Boolean)
-                restaurantAddress = addressParts.join(', ')
+                cafeAddress = addressParts.join(', ')
                 }
               // Priority 5: Build from street components (with zone and pin code)
-              else if (restaurantLocation?.street) {
+              else if (cafeLocation?.street) {
                 const addressParts = [
-                  restaurantLocation.street,
-                  restaurantLocation.area, // Zone
-                  restaurantLocation.city,
-                  restaurantLocation.state,
-                  restaurantLocation.pincode || restaurantLocation.zipCode || restaurantLocation.postalCode
+                  cafeLocation.street,
+                  cafeLocation.area, // Zone
+                  cafeLocation.city,
+                  cafeLocation.state,
+                  cafeLocation.pincode || cafeLocation.zipCode || cafeLocation.postalCode
                 ].filter(Boolean)
-                restaurantAddress = addressParts.join(', ')
+                cafeAddress = addressParts.join(', ')
                 }
-              // Priority 6: Check restaurantId directly for address fields
-              else if (order.restaurantId?.street || order.restaurantId?.city) {
+              // Priority 6: Check cafeId directly for address fields
+              else if (order.cafeId?.street || order.cafeId?.city) {
                 const addressParts = [
-                  order.restaurantId.street,
-                  order.restaurantId.area,
-                  order.restaurantId.city,
-                  order.restaurantId.state,
-                  order.restaurantId.zipCode || order.restaurantId.pincode || order.restaurantId.postalCode
+                  order.cafeId.street,
+                  order.cafeId.area,
+                  order.cafeId.city,
+                  order.cafeId.state,
+                  order.cafeId.zipCode || order.cafeId.pincode || order.cafeId.postalCode
                 ].filter(Boolean)
-                restaurantAddress = addressParts.join(', ')
+                cafeAddress = addressParts.join(', ')
                 }
-              // Priority 7: Check order.restaurantAddress (if exists)
-              else if (order.restaurantAddress) {
-                restaurantAddress = order.restaurantAddress
+              // Priority 7: Check order.cafeAddress (if exists)
+              else if (order.cafeAddress) {
+                cafeAddress = order.cafeAddress
                 }
               // Priority 8: Use coordinates if address not available
-              else if (hasValidCoordinates(restaurantLat, restaurantLng)) {
-                restaurantAddress = `${restaurantLat}, ${restaurantLng}`
+              else if (hasValidCoordinates(cafeLat, cafeLng)) {
+                cafeAddress = `${cafeLat}, ${cafeLng}`
                 } else {
-                console.warn('⚠️ Restaurant address not found in order, will try to fetch from restaurant API')
-                // Try to fetch restaurant address by ID if available
-                const restaurantId = order.restaurantId
-                if (restaurantId) {
-                  // Handle both string and object restaurantId
-                  const restaurantIdString = typeof restaurantId === 'string'
-                    ? restaurantId
-                    : (restaurantId._id || restaurantId.id || restaurantId.toString())
+                console.warn('⚠️ Cafe address not found in order, will try to fetch from cafe API')
+                // Try to fetch cafe address by ID if available
+                const cafeId = order.cafeId
+                if (cafeId) {
+                  // Handle both string and object cafeId
+                  const cafeIdString = typeof cafeId === 'string'
+                    ? cafeId
+                    : (cafeId._id || cafeId.id || cafeId.toString())
 
-                  if (restaurantIdString) {
+                  if (cafeIdString) {
                     try {
-                      const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantIdString)
-                      if (restaurantResponse.data?.success && restaurantResponse.data.data) {
-                        const restaurant = restaurantResponse.data.data.restaurant || restaurantResponse.data.data
-                        const restLocation = restaurant.location
+                      const cafeResponse = await cafeAPI.getCafeById(cafeIdString)
+                      if (cafeResponse.data?.success && cafeResponse.data.data) {
+                        const cafe = cafeResponse.data.data.cafe || cafeResponse.data.data
+                        const restLocation = cafe.location
                         // Priority: location.formattedAddress (this is what user wants)
                         if (restLocation?.formattedAddress) {
-                          restaurantAddress = restLocation.formattedAddress
-                          } else if (restaurant.address) {
-                          restaurantAddress = restaurant.address
+                          cafeAddress = restLocation.formattedAddress
+                          } else if (cafe.address) {
+                          cafeAddress = cafe.address
                           } else if (restLocation?.address) {
-                          restaurantAddress = restLocation.address
+                          cafeAddress = restLocation.address
                           } else if (restLocation?.addressLine1) {
                           const addressParts = [
                             restLocation.addressLine1,
@@ -2211,7 +2211,7 @@ export default function DeliveryHome() {
                             restLocation.state,
                             restLocation.pincode || restLocation.zipCode || restLocation.postalCode
                           ].filter(Boolean)
-                          restaurantAddress = addressParts.join(', ')
+                          cafeAddress = addressParts.join(', ')
                           } else if (restLocation?.street) {
                           const addressParts = [
                             restLocation.street,
@@ -2220,76 +2220,76 @@ export default function DeliveryHome() {
                             restLocation.state,
                             restLocation.pincode || restLocation.zipCode || restLocation.postalCode
                           ].filter(Boolean)
-                          restaurantAddress = addressParts.join(', ')
+                          cafeAddress = addressParts.join(', ')
                           }
                       }
-                    } catch (restaurantError) {
-                      console.error('❌ Error fetching cafe address:', restaurantError)
+                    } catch (cafeError) {
+                      console.error('❌ Error fetching cafe address:', cafeError)
                     }
                   }
                 }
 
-                if (restaurantAddress === 'Cafe Address') {
+                if (cafeAddress === 'Cafe Address') {
                   console.warn('⚠️ Cafe address not found in any location, using default')
                 }
               }
 
-              // Extract restaurant name - priority: restaurantName field > restaurantId.name > fallback
-              // Backend returns restaurantName as a direct field on order, and restaurantId is populated with name
-              let restaurantName = null
+              // Extract cafe name - priority: cafeName field > cafeId.name > fallback
+              // Backend returns cafeName as a direct field on order, and cafeId is populated with name
+              let cafeName = null
 
-              // Priority 1: Direct restaurantName field from order (stored in Order model)
-              if (order.restaurantName && typeof order.restaurantName === 'string' && order.restaurantName.trim()) {
-                restaurantName = order.restaurantName.trim()
+              // Priority 1: Direct cafeName field from order (stored in Order model)
+              if (order.cafeName && typeof order.cafeName === 'string' && order.cafeName.trim()) {
+                cafeName = order.cafeName.trim()
                 }
-              // Priority 2: Name from populated restaurantId object
-              else if (order.restaurantId && typeof order.restaurantId === 'object' && order.restaurantId.name) {
-                restaurantName = order.restaurantId.name.trim()
+              // Priority 2: Name from populated cafeId object
+              else if (order.cafeId && typeof order.cafeId === 'object' && order.cafeId.name) {
+                cafeName = order.cafeId.name.trim()
                 }
-              // Priority 3: Fallback to existing selectedRestaurant name
-              else if (selectedRestaurant?.name) {
-                restaurantName = selectedRestaurant.name
-                console.warn('⚠️ Cafe name not found in order, using selectedRestaurant.name:', restaurantName)
+              // Priority 3: Fallback to existing selectedCafe name
+              else if (selectedCafe?.name) {
+                cafeName = selectedCafe.name
+                console.warn('⚠️ Cafe name not found in order, using selectedCafe.name:', cafeName)
               }
               // Final fallback
               else {
-                restaurantName = 'Restaurant'
-                console.error('❌ Cafe name not found anywhere, using default:', restaurantName)
+                cafeName = 'Cafe'
+                console.error('❌ Cafe name not found anywhere, using default:', cafeName)
               }
 
               // Extract earnings from backend response
               const backendEarnings = orderData.estimatedEarnings || response.data.data.estimatedEarnings;
               const earningsValue = backendEarnings
                 ? (typeof backendEarnings === 'object' ? backendEarnings.totalEarning : backendEarnings)
-                : (selectedRestaurant?.estimatedEarnings || 0);
+                : (selectedCafe?.estimatedEarnings || 0);
 
               
 
-              restaurantInfo = {
+              cafeInfo = {
                 id: order._id || order.orderId,
                 orderId: order.orderId, // Correct order ID from backend
-                name: restaurantName, // Restaurant name from backend (priority: restaurantName > restaurantId.name)
-                address: restaurantAddress, // Restaurant address from backend
-                lat: restaurantLat,
-                lng: restaurantLng,
-                distance: selectedRestaurant?.distance || '0 km',
-                timeAway: selectedRestaurant?.timeAway || '0 mins',
-                dropDistance: selectedRestaurant?.dropDistance || '0 km',
-                pickupDistance: selectedRestaurant?.pickupDistance || '0 km',
-                estimatedEarnings: backendEarnings || selectedRestaurant?.estimatedEarnings || 0,
+                name: cafeName, // Cafe name from backend (priority: cafeName > cafeId.name)
+                address: cafeAddress, // Cafe address from backend
+                lat: cafeLat,
+                lng: cafeLng,
+                distance: selectedCafe?.distance || '0 km',
+                timeAway: selectedCafe?.timeAway || '0 mins',
+                dropDistance: selectedCafe?.dropDistance || '0 km',
+                pickupDistance: selectedCafe?.pickupDistance || '0 km',
+                estimatedEarnings: backendEarnings || selectedCafe?.estimatedEarnings || 0,
                 amount: earningsValue, // Also set amount for compatibility
-                customerName: order.userId?.name || selectedRestaurant?.customerName,
-                customerPhone: order.userId?.phone || selectedRestaurant?.customerPhone || null,
+                customerName: order.userId?.name || selectedCafe?.customerName,
+                customerPhone: order.userId?.phone || selectedCafe?.customerPhone || null,
                 customerAddress: order.address?.formattedAddress ||
                   (order.address?.street ? `${order.address.street}, ${order.address.city || ''}, ${order.address.state || ''}`.trim() : '') ||
-                  selectedRestaurant?.customerAddress,
+                  selectedCafe?.customerAddress,
                 customerLat: order.address?.location?.coordinates?.[1],
                 customerLng: order.address?.location?.coordinates?.[0],
                 items: order.items || [],
                 total: order.pricing?.total || 0,
                 paymentMethod: order.paymentMethod ?? order.payment?.method ?? 'razorpay', // backend-resolved first (COD vs Online)
-                phone: order.restaurantId?.phone || order.restaurantId?.ownerPhone || null, // Restaurant phone number (prefer phone, fallback to ownerPhone)
-                ownerPhone: order.restaurantId?.ownerPhone || null, // Owner phone number (separate field for direct access)
+                phone: order.cafeId?.phone || order.cafeId?.ownerPhone || null, // Cafe phone number (prefer phone, fallback to ownerPhone)
+                ownerPhone: order.cafeId?.ownerPhone || null, // Owner phone number (separate field for direct access)
                 orderStatus: order.status || 'preparing', // Store order status (pending, preparing, ready, out_for_delivery, delivered)
                 deliveryState: {
                   ...(order.deliveryState || {}),
@@ -2300,11 +2300,11 @@ export default function DeliveryHome() {
               }
 
               // Update state immediately
-              setSelectedRestaurant(restaurantInfo)
+              setSelectedCafe(cafeInfo)
             }
 
-            // Ensure we have restaurantInfo before proceeding
-            if (!restaurantInfo) {
+            // Ensure we have cafeInfo before proceeding
+            if (!cafeInfo) {
               console.error('❌ Cafe info not available, cannot proceed');
               return;
             }
@@ -2321,9 +2321,9 @@ export default function DeliveryHome() {
             }
 
             // Calculate route using Google Maps Directions API (Zomato-style road-based routing)
-            // Use LIVE location from delivery boy to restaurant
-            // Use restaurantInfo directly (not selectedRestaurant) since state update is async
-            if (restaurantInfo && hasValidCoordinates(restaurantInfo?.lat, restaurantInfo?.lng) && currentLocation) {
+            // Use LIVE location from delivery boy to cafe
+            // Use cafeInfo directly (not selectedCafe) since state update is async
+            if (cafeInfo && hasValidCoordinates(cafeInfo?.lat, cafeInfo?.lng) && currentLocation) {
               
               
               
@@ -2332,7 +2332,7 @@ export default function DeliveryHome() {
                 // Calculate route immediately with current live location
                 const directionsResult = await calculateRouteWithDirectionsAPI(
                   currentLocation, // Delivery boy's current live location
-                  { lat: restaurantInfo.lat, lng: restaurantInfo.lng } // Restaurant location
+                  { lat: cafeInfo.lat, lng: cafeInfo.lng } // Cafe location
                 );
 
                 if (directionsResult) {
@@ -2352,7 +2352,7 @@ export default function DeliveryHome() {
                   directionsResponseRef.current = directionsResult; // Store in ref for callbacks
                   directionsResultForMap = directionsResult; // Store for use in setTimeout
 
-                  // Initialize live tracking polyline with full route (Delivery Boy → Restaurant)
+                  // Initialize live tracking polyline with full route (Delivery Boy → Cafe)
                   if (currentLocation) {
                     // Ensure map is ready before updating polyline
                     if (window.deliveryMapInstance) {
@@ -2375,7 +2375,7 @@ export default function DeliveryHome() {
                   
                   if (!routeCoordinates || routeCoordinates.length === 0) {
                     try {
-                      const url = `https://router.project-osrm.org/route/v1/driving/${currentLocation[1]},${currentLocation[0]};${restaurantInfo.lng},${restaurantInfo.lat}?overview=full&geometries=geojson`;
+                      const url = `https://router.project-osrm.org/route/v1/driving/${currentLocation[1]},${currentLocation[0]};${cafeInfo.lng},${cafeInfo.lat}?overview=full&geometries=geojson`;
                       const osrmResponse = await fetch(url);
                       const osrmData = await osrmResponse.json();
 
@@ -2385,14 +2385,14 @@ export default function DeliveryHome() {
                         
                       } else {
                         // Final fallback: straight line
-                        routeCoordinates = [currentLocation, [restaurantInfo.lat, restaurantInfo.lng]];
+                        routeCoordinates = [currentLocation, [cafeInfo.lat, cafeInfo.lng]];
                         setRoutePolyline(routeCoordinates);
                         
                       }
                     } catch (osrmError) {
                       console.error('❌ Error calculating route with OSRM:', osrmError);
                       // Final fallback: straight line
-                      routeCoordinates = [currentLocation, [restaurantInfo.lat, restaurantInfo.lng]];
+                      routeCoordinates = [currentLocation, [cafeInfo.lat, cafeInfo.lng]];
                       setRoutePolyline(routeCoordinates);
                     }
                   }
@@ -2409,7 +2409,7 @@ export default function DeliveryHome() {
                 if (!routeCoordinates || routeCoordinates.length === 0) {
                   try {
                     // Try OSRM first
-                    const url = `https://router.project-osrm.org/route/v1/driving/${currentLocation[1]},${currentLocation[0]};${restaurantInfo.lng},${restaurantInfo.lat}?overview=full&geometries=geojson`;
+                    const url = `https://router.project-osrm.org/route/v1/driving/${currentLocation[1]},${currentLocation[0]};${cafeInfo.lng},${cafeInfo.lat}?overview=full&geometries=geojson`;
                     const osrmResponse = await fetch(url);
                     const osrmData = await osrmResponse.json();
 
@@ -2419,23 +2419,23 @@ export default function DeliveryHome() {
                       
                     } else {
                       // Final fallback: straight line
-                      routeCoordinates = [currentLocation, [restaurantInfo.lat, restaurantInfo.lng]];
+                      routeCoordinates = [currentLocation, [cafeInfo.lat, cafeInfo.lng]];
                       setRoutePolyline(routeCoordinates);
                       
                     }
                   } catch (osrmError) {
                     console.warn('⚠️ OSRM fallback failed, using straight line');
                     // Final fallback: straight line
-                    routeCoordinates = [currentLocation, [restaurantInfo.lat, restaurantInfo.lng]];
+                    routeCoordinates = [currentLocation, [cafeInfo.lat, cafeInfo.lng]];
                     setRoutePolyline(routeCoordinates);
                   }
                 }
               }
             } else {
               console.error('❌ Cannot calculate route: missing cafe info or location', {
-                restaurantInfo: !!restaurantInfo,
-                restaurantLat: restaurantInfo?.lat,
-                restaurantLng: restaurantInfo?.lng,
+                cafeInfo: !!cafeInfo,
+                cafeLat: cafeInfo?.lat,
+                cafeLng: cafeInfo?.lng,
                 currentLocation: !!currentLocation
               });
             }
@@ -2443,7 +2443,7 @@ export default function DeliveryHome() {
             // Close popup and show route on main map (not full-screen directions map)
             setShowNewOrderPopup(false);
             // CRITICAL: Clear newOrder notification immediately to prevent duplicate notifications
-            const acceptedOrderId = restaurantInfo.id || restaurantInfo.orderId || newOrder?.orderMongoId || newOrder?.orderId;
+            const acceptedOrderId = cafeInfo.id || cafeInfo.orderId || newOrder?.orderMongoId || newOrder?.orderId;
             if (acceptedOrderId) {
               acceptedOrderIdsRef.current.add(acceptedOrderId);
               
@@ -2456,8 +2456,8 @@ export default function DeliveryHome() {
             // Show Reached Pickup popup immediately after order acceptance (no distance check)
             // But only if order is not already past pickup phase
             setTimeout(() => {
-              const currentOrderStatus = selectedRestaurant?.orderStatus || selectedRestaurant?.status || '';
-              const currentDeliveryPhase = selectedRestaurant?.deliveryPhase || selectedRestaurant?.deliveryState?.currentPhase || '';
+              const currentOrderStatus = selectedCafe?.orderStatus || selectedCafe?.status || '';
+              const currentDeliveryPhase = selectedCafe?.deliveryPhase || selectedCafe?.deliveryState?.currentPhase || '';
               const isAlreadyPastPickup = currentOrderStatus === 'out_for_delivery' ||
                 currentDeliveryPhase === 'en_route_to_delivery' ||
                 currentDeliveryPhase === 'en_route_to_drop' ||
@@ -2479,7 +2479,7 @@ export default function DeliveryHome() {
               
 
               // Show route on main map using DirectionsRenderer or polyline
-              if (window.deliveryMapInstance && restaurantInfo) {
+              if (window.deliveryMapInstance && cafeInfo) {
                 // Use DirectionsRenderer on main map if we have directions result
                 // Use directionsResponse state (which was set above) instead of local variable
                 const directionsResult = directionsResultForMap || (directionsResponse && directionsResponse.routes && directionsResponse.routes.length > 0 ? directionsResponse : null);
@@ -2571,21 +2571,21 @@ export default function DeliveryHome() {
                   console.warn('⚠️ No route data available to display (neither Directions API result nor coordinates)');
                 }
 
-                // Add restaurant marker to main map
-                if (restaurantInfo.lat && restaurantInfo.lng) {
-                  const restaurantLocation = {
-                    lat: restaurantInfo.lat,
-                    lng: restaurantInfo.lng
+                // Add cafe marker to main map
+                if (cafeInfo.lat && cafeInfo.lng) {
+                  const cafeLocation = {
+                    lat: cafeInfo.lat,
+                    lng: cafeInfo.lng
                   };
 
-                  // Remove old restaurant marker if exists
-                  if (restaurantMarkerRef.current) {
-                    restaurantMarkerRef.current.setMap(null);
+                  // Remove old cafe marker if exists
+                  if (cafeMarkerRef.current) {
+                    cafeMarkerRef.current.setMap(null);
                   }
 
-                  // Create restaurant marker on main map with kitchen icon
-                  restaurantMarkerRef.current = new window.google.maps.Marker({
-                    position: restaurantLocation,
+                  // Create cafe marker on main map with kitchen icon
+                  cafeMarkerRef.current = new window.google.maps.Marker({
+                    position: cafeLocation,
                     map: window.deliveryMapInstance,
                     icon: {
                       url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -2599,7 +2599,7 @@ export default function DeliveryHome() {
                       scaledSize: new window.google.maps.Size(48, 48),
                       anchor: new window.google.maps.Point(24, 48)
                     },
-                    title: restaurantInfo.name || 'Kitchen',
+                    title: cafeInfo.name || 'Kitchen',
                     animation: window.google.maps.Animation.DROP,
                     zIndex: 10
                   });
@@ -2613,8 +2613,8 @@ export default function DeliveryHome() {
               // Save accepted order to localStorage for refresh handling
               try {
                 const activeOrderData = {
-                  orderId: restaurantInfo.id || restaurantInfo.orderId,
-                  restaurantInfo: restaurantInfo,
+                  orderId: cafeInfo.id || cafeInfo.orderId,
+                  cafeInfo: cafeInfo,
                   // Don't save directionsResponse - Google Maps objects can't be serialized to JSON
                   // Route will be recalculated on restore using Directions API
                   routeCoordinates: routeCoordinates, // Save coordinates for fallback polyline
@@ -2860,12 +2860,12 @@ export default function DeliveryHome() {
 
         // Get order ID - prioritize orderId (string) over id (MongoDB _id) for better compatibility
         // Backend accepts both _id and orderId, but orderId is more reliable
-        const orderId = selectedRestaurant?.orderId || selectedRestaurant?.id || newOrder?.orderId || newOrder?.orderMongoId
+        const orderId = selectedCafe?.orderId || selectedCafe?.id || newOrder?.orderId || newOrder?.orderMongoId
 
         // CRITICAL: Check if order is already delivered/completed - don't call API
-        const orderStatus = selectedRestaurant?.orderStatus || selectedRestaurant?.status || ''
-        const deliveryPhase = selectedRestaurant?.deliveryPhase || selectedRestaurant?.deliveryState?.currentPhase || ''
-        const deliveryStateStatus = selectedRestaurant?.deliveryState?.status || ''
+        const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || ''
+        const deliveryPhase = selectedCafe?.deliveryPhase || selectedCafe?.deliveryState?.currentPhase || ''
+        const deliveryStateStatus = selectedCafe?.deliveryState?.status || ''
 
         const isDelivered = orderStatus === 'delivered' ||
           deliveryPhase === 'completed' ||
@@ -2916,8 +2916,8 @@ export default function DeliveryHome() {
               toast.success('Reached pickup confirmed!')
 
               // Update local state to reflect the new status
-              if (selectedRestaurant) {
-                setSelectedRestaurant(prev => ({
+              if (selectedCafe) {
+                setSelectedCafe(prev => ({
                   ...prev,
                   deliveryState: {
                     ...(prev?.deliveryState || {}),
@@ -2950,7 +2950,7 @@ export default function DeliveryHome() {
               response: error.response?.data,
               status: error.response?.status,
               orderId: orderId || 'unknown',
-              selectedRestaurant: selectedRestaurant
+              selectedCafe: selectedCafe
             })
 
             // Show specific error message
@@ -3054,10 +3054,10 @@ export default function DeliveryHome() {
           // Get order ID - prioritize MongoDB _id over orderId string for API call
           // Backend expects _id (MongoDB ObjectId) in the URL parameter
           // Use _id (MongoDB ObjectId) if available, otherwise fallback to orderId string
-          const orderIdForApi = selectedRestaurant?.id ||
+          const orderIdForApi = selectedCafe?.id ||
             newOrder?.orderMongoId ||
             newOrder?._id ||
-            selectedRestaurant?.orderId ||
+            selectedCafe?.orderId ||
             newOrder?.orderId
 
           if (orderIdForApi) {
@@ -3092,7 +3092,7 @@ export default function DeliveryHome() {
                 response: error.response?.data,
                 status: status,
                 orderIdForApi: orderIdForApi || 'unknown',
-                selectedRestaurant: selectedRestaurant,
+                selectedCafe: selectedCafe,
                 newOrder: newOrder
               })
 
@@ -3332,14 +3332,14 @@ export default function DeliveryHome() {
       setTimeout(async () => {
         setShowOrderIdConfirmationPopup(false)
 
-        // Get order ID from selectedRestaurant
-        const orderId = selectedRestaurant?.id || selectedRestaurant?.orderId
-        const confirmedOrderId = selectedRestaurant?.orderId
+        // Get order ID from selectedCafe
+        const orderId = selectedCafe?.id || selectedCafe?.orderId
+        const confirmedOrderId = selectedCafe?.orderId
 
         // CRITICAL: Check if order is already delivered/completed - don't call API
-        const orderStatus = selectedRestaurant?.orderStatus || selectedRestaurant?.status || ''
-        const deliveryPhase = selectedRestaurant?.deliveryPhase || selectedRestaurant?.deliveryState?.currentPhase || ''
-        const deliveryStateStatus = selectedRestaurant?.deliveryState?.status || ''
+        const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || ''
+        const deliveryPhase = selectedCafe?.deliveryPhase || selectedCafe?.deliveryState?.currentPhase || ''
+        const deliveryStateStatus = selectedCafe?.deliveryState?.status || ''
 
         const isDelivered = orderStatus === 'delivered' ||
           deliveryPhase === 'completed' ||
@@ -3358,17 +3358,17 @@ export default function DeliveryHome() {
           deliveryPhase === 'en_route_to_delivery' ||
           deliveryPhase === 'picked_up' ||
           deliveryStateStatus === 'order_confirmed' ||
-          selectedRestaurant?.deliveryState?.orderIdConfirmedAt
+          selectedCafe?.deliveryState?.orderIdConfirmedAt
 
         if (isOrderIdAlreadyConfirmed) {
           console.warn('⚠️ Order ID is already confirmed, skipping confirmation:', {
             orderStatus,
             deliveryPhase,
             deliveryStateStatus,
-            orderIdConfirmedAt: selectedRestaurant?.deliveryState?.orderIdConfirmedAt
+            orderIdConfirmedAt: selectedCafe?.deliveryState?.orderIdConfirmedAt
           })
           // Don't show error, just update the UI state and close popup
-          setSelectedRestaurant(prev => ({
+          setSelectedCafe(prev => ({
             ...prev,
             orderStatus: 'out_for_delivery',
             status: 'out_for_delivery',
@@ -3415,8 +3415,8 @@ export default function DeliveryHome() {
 
         try {
           // Prefer string orderId (ORD-xxx) for URL; backend accepts both _id and orderId
-          const orderIdForApi = selectedRestaurant?.orderId || selectedRestaurant?.id
-          const confirmedOrderIdForApi = selectedRestaurant?.orderId || (orderIdForApi && String(orderIdForApi).startsWith('ORD-') ? orderIdForApi : undefined)
+          const orderIdForApi = selectedCafe?.orderId || selectedCafe?.id
+          const confirmedOrderIdForApi = selectedCafe?.orderId || (orderIdForApi && String(orderIdForApi).startsWith('ORD-') ? orderIdForApi : undefined)
 
           // Call backend API to confirm order ID
           // Confirm order ID
@@ -3430,24 +3430,24 @@ export default function DeliveryHome() {
             const order = orderData.order || orderData
             const routeData = orderData.route || order.deliveryState?.routeToDelivery
 
-            // Update selectedRestaurant with customer address
-            if (order && selectedRestaurant) {
+            // Update selectedCafe with customer address
+            if (order && selectedCafe) {
               const customerCoords = order.address?.location?.coordinates
               const customerLat = customerCoords?.[1]
               const customerLng = customerCoords?.[0]
 
               if (customerLat && customerLng) {
-                const updatedRestaurant = {
-                  ...selectedRestaurant,
-                  customerName: order.userId?.name || selectedRestaurant.customerName,
-                  customerPhone: order.userId?.phone || selectedRestaurant.customerPhone || null,
+                const updatedCafe = {
+                  ...selectedCafe,
+                  customerName: order.userId?.name || selectedCafe.customerName,
+                  customerPhone: order.userId?.phone || selectedCafe.customerPhone || null,
                   customerAddress: order.address?.formattedAddress ||
                     (order.address?.street ? `${order.address.street}, ${order.address.city || ''}, ${order.address.state || ''}`.trim() : '') ||
-                    selectedRestaurant.customerAddress,
+                    selectedCafe.customerAddress,
                   customerLat,
                   customerLng
                 }
-                setSelectedRestaurant(updatedRestaurant)
+                setSelectedCafe(updatedCafe)
 
                 // Calculate route from delivery boy's live location to customer using Directions API
                 try {
@@ -3535,7 +3535,7 @@ export default function DeliveryHome() {
             }
 
             // Update status to out_for_delivery (merge if customer block didn't run)
-            setSelectedRestaurant(prev => ({
+            setSelectedCafe(prev => ({
               ...prev,
               orderStatus: 'out_for_delivery',
               status: 'out_for_delivery',
@@ -3590,11 +3590,11 @@ export default function DeliveryHome() {
 
   // Handle Start Navigation Button - Opens Google Maps app in navigation mode
   const handleStartNavigation = async () => {
-    let customerLat = toFiniteCoordinate(selectedRestaurant?.customerLat)
-    let customerLng = toFiniteCoordinate(selectedRestaurant?.customerLng)
+    let customerLat = toFiniteCoordinate(selectedCafe?.customerLat)
+    let customerLng = toFiniteCoordinate(selectedCafe?.customerLng)
 
     if (!hasValidCoordinates(customerLat, customerLng)) {
-      const orderId = selectedRestaurant?.orderId || selectedRestaurant?.id
+      const orderId = selectedCafe?.orderId || selectedCafe?.id
       if (orderId) {
         try {
           const response = await deliveryAPI.getOrderDetails(orderId)
@@ -3606,7 +3606,7 @@ export default function DeliveryHome() {
           if (hasValidCoordinates(fetchedLat, fetchedLng)) {
             customerLat = fetchedLat
             customerLng = fetchedLng
-            setSelectedRestaurant(prev => prev ? {
+            setSelectedCafe(prev => prev ? {
               ...prev,
               customerLat: fetchedLat,
               customerLng: fetchedLng
@@ -3620,9 +3620,9 @@ export default function DeliveryHome() {
 
     if (!hasValidCoordinates(customerLat, customerLng)) {
       console.error('Customer location not available', {
-        customerLat: selectedRestaurant?.customerLat,
-        customerLng: selectedRestaurant?.customerLng,
-        selectedRestaurant
+        customerLat: selectedCafe?.customerLat,
+        customerLng: selectedCafe?.customerLng,
+        selectedCafe
       })
       toast.error('Customer location not found')
       return
@@ -3787,7 +3787,7 @@ export default function DeliveryHome() {
       // Navigate to pickup directions page after animation
       setTimeout(() => {
         navigate("/delivery/pickup-directions", {
-          state: { restaurants: mockRestaurants },
+          state: { cafes: mockCafes },
           replace: false
         })
 
@@ -3934,7 +3934,7 @@ export default function DeliveryHome() {
         const activeOrderData = localStorage.getItem('deliveryActiveOrder');
         if (activeOrderData) {
           const activeOrder = JSON.parse(activeOrderData);
-          const activeOrderId = activeOrder.orderId || activeOrder.restaurantInfo?.id || activeOrder.restaurantInfo?.orderId;
+          const activeOrderId = activeOrder.orderId || activeOrder.cafeInfo?.id || activeOrder.cafeInfo?.orderId;
           if (activeOrderId === orderId) {
             
             acceptedOrderIdsRef.current.add(orderId);
@@ -3956,15 +3956,15 @@ export default function DeliveryHome() {
         return
       }
 
-      // Transform newOrder data to match selectedRestaurant format
-      // Extract restaurant address with proper priority
-      let restaurantAddress = 'Cafe address';
-      if (newOrder.restaurantLocation?.address) {
-        restaurantAddress = newOrder.restaurantLocation.address;
-      } else if (newOrder.restaurantLocation?.formattedAddress) {
-        restaurantAddress = newOrder.restaurantLocation.formattedAddress;
-      } else if (newOrder.restaurantAddress) {
-        restaurantAddress = newOrder.restaurantAddress;
+      // Transform newOrder data to match selectedCafe format
+      // Extract cafe address with proper priority
+      let cafeAddress = 'Cafe address';
+      if (newOrder.cafeLocation?.address) {
+        cafeAddress = newOrder.cafeLocation.address;
+      } else if (newOrder.cafeLocation?.formattedAddress) {
+        cafeAddress = newOrder.cafeLocation.formattedAddress;
+      } else if (newOrder.cafeAddress) {
+        cafeAddress = newOrder.cafeAddress;
       }
 
       // Extract earnings from notification - backend now calculates and sends estimatedEarnings
@@ -3982,10 +3982,10 @@ export default function DeliveryHome() {
 
       // Use calculated earnings if available, otherwise fallback to deliveryFee
       const effectiveEarnings = earnedValue > 0 ? earned : (deliveryFee > 0 ? deliveryFee : 0);
-      const extractedRestaurantCoords = extractLatLng(newOrder.restaurantLocation || newOrder.restaurant?.location)
-      const newOrderRestaurantCoords = {
-        lat: extractedRestaurantCoords.lat ?? toFiniteCoordinate(newOrder.restaurantLat),
-        lng: extractedRestaurantCoords.lng ?? toFiniteCoordinate(newOrder.restaurantLng)
+      const extractedCafeCoords = extractLatLng(newOrder.cafeLocation || newOrder.cafe?.location)
+      const newOrderCafeCoords = {
+        lat: extractedCafeCoords.lat ?? toFiniteCoordinate(newOrder.cafeLat),
+        lng: extractedCafeCoords.lng ?? toFiniteCoordinate(newOrder.cafeLng)
       }
 
       
@@ -3998,19 +3998,19 @@ export default function DeliveryHome() {
         pickupDistance === 'Distance not available' ||
         pickupDistance === 'Calculating...'
       ) {
-        // Try to calculate from driver's current location to restaurant
+        // Try to calculate from driver's current location to cafe
         const currentLocation = riderLocation || lastLocationRef.current;
-        const restaurantLat = newOrderRestaurantCoords.lat;
-        const restaurantLng = newOrderRestaurantCoords.lng;
+        const cafeLat = newOrderCafeCoords.lat;
+        const cafeLng = newOrderCafeCoords.lng;
 
         if (currentLocation && currentLocation.length === 2 &&
-          hasValidCoordinates(restaurantLat, restaurantLng)) {
+          hasValidCoordinates(cafeLat, cafeLng)) {
           // Calculate distance in meters, then convert to km
           const distanceInMeters = calculateDistance(
             currentLocation[0],
             currentLocation[1],
-            restaurantLat,
-            restaurantLng
+            cafeLat,
+            cafeLng
           );
           const distanceInKm = distanceInMeters / 1000;
           pickupDistance = `${distanceInKm.toFixed(2)} km`;
@@ -4027,13 +4027,13 @@ export default function DeliveryHome() {
         pickupDistance = 'Calculating...';
       }
 
-      const restaurantData = {
+      const cafeData = {
         id: newOrder.orderMongoId || newOrder.orderId,
         orderId: newOrder.orderId,
-        name: newOrder.restaurantName,
-        address: restaurantAddress,
-        lat: newOrderRestaurantCoords.lat,
-        lng: newOrderRestaurantCoords.lng,
+        name: newOrder.cafeName,
+        address: cafeAddress,
+        lat: newOrderCafeCoords.lat,
+        lng: newOrderCafeCoords.lng,
         distance: pickupDistance,
         timeAway: pickupDistance !== 'Calculating...' ? calculateTimeAway(pickupDistance) : 'Calculating...',
         dropDistance: newOrder.deliveryDistance ||
@@ -4053,7 +4053,7 @@ export default function DeliveryHome() {
         total: newOrder.total || 0
       }
 
-      setSelectedRestaurant(restaurantData)
+      setSelectedCafe(cafeData)
       setShowNewOrderPopup(true)
       setCountdownSeconds(300) // Reset countdown to 5 minutes
     }
@@ -4061,58 +4061,58 @@ export default function DeliveryHome() {
 
   // Recalculate distance when rider location becomes available
   useEffect(() => {
-    if (!selectedRestaurant || !showNewOrderPopup) return
+    if (!selectedCafe || !showNewOrderPopup) return
 
     // Only recalculate if distance is missing or showing '0 km' or 'Calculating...'
-    const currentDistance = selectedRestaurant.distance || selectedRestaurant.pickupDistance
+    const currentDistance = selectedCafe.distance || selectedCafe.pickupDistance
     if (currentDistance && currentDistance !== '0 km' && currentDistance !== 'Calculating...') {
       return // Distance already calculated
     }
 
     const currentLocation = riderLocation || lastLocationRef.current
-    const restaurantLat = selectedRestaurant.lat
-    const restaurantLng = selectedRestaurant.lng
+    const cafeLat = selectedCafe.lat
+    const cafeLng = selectedCafe.lng
 
     if (currentLocation && currentLocation.length === 2 &&
-      hasValidCoordinates(restaurantLat, restaurantLng)) {
+      hasValidCoordinates(cafeLat, cafeLng)) {
       // Calculate distance in meters, then convert to km
       const distanceInMeters = calculateDistance(
         currentLocation[0],
         currentLocation[1],
-        restaurantLat,
-        restaurantLng
+        cafeLat,
+        cafeLng
       )
       const distanceInKm = distanceInMeters / 1000
       const pickupDistance = `${distanceInKm.toFixed(2)} km`
 
-      setSelectedRestaurant(prev => ({
+      setSelectedCafe(prev => ({
         ...prev,
         distance: pickupDistance,
         pickupDistance: pickupDistance,
         timeAway: calculateTimeAway(pickupDistance)
       }))
     }
-  }, [riderLocation, selectedRestaurant, showNewOrderPopup, calculateTimeAway])
+  }, [riderLocation, selectedCafe, showNewOrderPopup, calculateTimeAway])
 
-  // Fetch restaurant address if missing when selectedRestaurant is set
+  // Fetch cafe address if missing when selectedCafe is set
   useEffect(() => {
-    if (!selectedRestaurant?.orderId && !selectedRestaurant?.id) return
-    if (!isValidAddress(getRestaurantDisplayAddress(selectedRestaurant))) {
-      // Address is missing, fetch order details to get restaurant address
-      const orderId = selectedRestaurant.orderId || selectedRestaurant.id
+    if (!selectedCafe?.orderId && !selectedCafe?.id) return
+    if (!isValidAddress(getCafeDisplayAddress(selectedCafe))) {
+      // Address is missing, fetch order details to get cafe address
+      const orderId = selectedCafe.orderId || selectedCafe.id
       const fetchAddress = async () => {
         try {
           const response = await deliveryAPI.getOrderDetails(orderId)
           if (response?.data?.success && response?.data?.data) {
             const order = response.data.data.order || response.data.data
 
-            // Extract restaurant address using the same unified helper as slider
-            const restaurantAddress = getRestaurantDisplayAddress(order)
+            // Extract cafe address using the same unified helper as slider
+            const cafeAddress = getCafeDisplayAddress(order)
 
-            if (isValidAddress(restaurantAddress)) {
-              setSelectedRestaurant(prev => ({
+            if (isValidAddress(cafeAddress)) {
+              setSelectedCafe(prev => ({
                 ...prev,
-                address: restaurantAddress
+                address: cafeAddress
               }))
               }
           }
@@ -4123,7 +4123,7 @@ export default function DeliveryHome() {
 
       fetchAddress()
     }
-  }, [selectedRestaurant?.orderId, selectedRestaurant?.id, selectedRestaurant?.address])
+  }, [selectedCafe?.orderId, selectedCafe?.id, selectedCafe?.address])
 
   // Handle online toggle - check for booked gigs
   const handleToggleOnline = () => {
@@ -4352,26 +4352,26 @@ export default function DeliveryHome() {
             return
           }
 
-          // Transform order data to match selectedRestaurant format
-          // Fetch restaurant address with proper priority
-          let restaurantAddress = 'Cafe address';
-          if (firstOrder.restaurantId?.address) {
-            restaurantAddress = firstOrder.restaurantId.address;
-          } else if (firstOrder.restaurantId?.location?.formattedAddress) {
-            restaurantAddress = firstOrder.restaurantId.location.formattedAddress;
-          } else if (firstOrder.restaurantId?.location?.address) {
-            restaurantAddress = firstOrder.restaurantId.location.address;
-          } else if (firstOrder.restaurantId?.location?.street) {
+          // Transform order data to match selectedCafe format
+          // Fetch cafe address with proper priority
+          let cafeAddress = 'Cafe address';
+          if (firstOrder.cafeId?.address) {
+            cafeAddress = firstOrder.cafeId.address;
+          } else if (firstOrder.cafeId?.location?.formattedAddress) {
+            cafeAddress = firstOrder.cafeId.location.formattedAddress;
+          } else if (firstOrder.cafeId?.location?.address) {
+            cafeAddress = firstOrder.cafeId.location.address;
+          } else if (firstOrder.cafeId?.location?.street) {
             // Build address from location fields
-            const loc = firstOrder.restaurantId.location;
+            const loc = firstOrder.cafeId.location;
             const parts = [loc.street, loc.city, loc.state, loc.pincode].filter(Boolean);
-            restaurantAddress = parts.join(', ') || 'Cafe address';
+            cafeAddress = parts.join(', ') || 'Cafe address';
           }
 
           
 
-          const assignedRestaurantCoords = extractLatLng(
-            firstOrder.restaurantId?.location || firstOrder.restaurantLocation
+          const assignedCafeCoords = extractLatLng(
+            firstOrder.cafeId?.location || firstOrder.cafeLocation
           );
 
           // Calculate pickup distance if not provided
@@ -4379,19 +4379,19 @@ export default function DeliveryHome() {
           if (firstOrder.assignmentInfo?.distance) {
             pickupDistance = `${firstOrder.assignmentInfo.distance.toFixed(2)} km`;
           } else {
-            // Try to calculate from driver's current location to restaurant
+            // Try to calculate from driver's current location to cafe
             const currentLocation = riderLocation || lastLocationRef.current;
-            const restaurantLat = assignedRestaurantCoords.lat;
-            const restaurantLng = assignedRestaurantCoords.lng;
+            const cafeLat = assignedCafeCoords.lat;
+            const cafeLng = assignedCafeCoords.lng;
 
             if (currentLocation && currentLocation.length === 2 &&
-              hasValidCoordinates(restaurantLat, restaurantLng)) {
+              hasValidCoordinates(cafeLat, cafeLng)) {
               // Calculate distance in meters, then convert to km
               const distanceInMeters = calculateDistance(
                 currentLocation[0],
                 currentLocation[1],
-                restaurantLat,
-                restaurantLng
+                cafeLat,
+                cafeLng
               );
               const distanceInKm = distanceInMeters / 1000;
               pickupDistance = `${distanceInKm.toFixed(2)} km`;
@@ -4404,13 +4404,13 @@ export default function DeliveryHome() {
             pickupDistance = 'Calculating...';
           }
 
-          const restaurantData = {
+          const cafeData = {
             id: firstOrder._id?.toString() || firstOrder.orderId,
             orderId: firstOrder.orderId,
-            name: firstOrder.restaurantId?.name || 'Restaurant',
-            address: restaurantAddress,
-            lat: assignedRestaurantCoords.lat,
-            lng: assignedRestaurantCoords.lng,
+            name: firstOrder.cafeId?.name || 'Cafe',
+            address: cafeAddress,
+            lat: assignedCafeCoords.lat,
+            lng: assignedCafeCoords.lng,
             distance: pickupDistance,
             timeAway: pickupDistance !== 'Calculating...' ? calculateTimeAway(pickupDistance) : 'Calculating...',
             dropDistance: firstOrder.address?.location?.coordinates
@@ -4432,7 +4432,7 @@ export default function DeliveryHome() {
             amount: firstOrder.pricing?.total || 0
           }
 
-          setSelectedRestaurant(restaurantData)
+          setSelectedCafe(cafeData)
           setShowNewOrderPopup(true)
           setCountdownSeconds(300) // Reset countdown to 5 minutes
           } else {
@@ -4964,24 +4964,24 @@ export default function DeliveryHome() {
 
           // Don't re-attach route polyline on refresh - only show if there's an active order
           // This prevents showing default/mock polylines on page refresh
-          if (preservedState.hasPolyline && routePolylineRef.current && selectedRestaurant) {
+          if (preservedState.hasPolyline && routePolylineRef.current && selectedCafe) {
             // Only re-attach if we have an active order
             if (routeHistoryRef.current.length >= 2) {
               routePolylineRef.current.setMap(map);
               
             }
-          } else if (!selectedRestaurant && routePolylineRef.current) {
+          } else if (!selectedCafe && routePolylineRef.current) {
             // Clear polyline if no active order
             routePolylineRef.current.setMap(null);
             routePolylineRef.current = null;
           }
 
           // Clear live tracking polyline if no active order
-          if (!selectedRestaurant && liveTrackingPolylineRef.current) {
+          if (!selectedCafe && liveTrackingPolylineRef.current) {
             liveTrackingPolylineRef.current.setMap(null);
             liveTrackingPolylineRef.current = null;
           }
-          if (!selectedRestaurant && liveTrackingPolylineShadowRef.current) {
+          if (!selectedCafe && liveTrackingPolylineShadowRef.current) {
             liveTrackingPolylineShadowRef.current.setMap(null);
             liveTrackingPolylineShadowRef.current = null;
           }
@@ -5028,18 +5028,18 @@ export default function DeliveryHome() {
             }
           }
 
-          // Ensure restaurant marker is visible if we have a selected restaurant
-          if (selectedRestaurant && selectedRestaurant.lat && selectedRestaurant.lng) {
+          // Ensure cafe marker is visible if we have a selected cafe
+          if (selectedCafe && selectedCafe.lat && selectedCafe.lng) {
             setTimeout(() => {
-              if (!restaurantMarkerRef.current || restaurantMarkerRef.current.getMap() === null) {
+              if (!cafeMarkerRef.current || cafeMarkerRef.current.getMap() === null) {
                 
-                const restaurantLocation = {
-                  lat: selectedRestaurant.lat,
-                  lng: selectedRestaurant.lng
+                const cafeLocation = {
+                  lat: selectedCafe.lat,
+                  lng: selectedCafe.lng
                 };
 
-                restaurantMarkerRef.current = new window.google.maps.Marker({
-                  position: restaurantLocation,
+                cafeMarkerRef.current = new window.google.maps.Marker({
+                  position: cafeLocation,
                   map: window.deliveryMapInstance,
                   icon: {
                     url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -5053,7 +5053,7 @@ export default function DeliveryHome() {
                     scaledSize: new window.google.maps.Size(48, 48),
                     anchor: new window.google.maps.Point(24, 48)
                   },
-                  title: selectedRestaurant.name || 'Restaurant',
+                  title: selectedCafe.name || 'Cafe',
                   zIndex: 10
                 });
               }
@@ -5170,7 +5170,7 @@ export default function DeliveryHome() {
       }
 
       // Update route polyline only if there's an active order
-      if (selectedRestaurant) {
+      if (selectedCafe) {
         updateRoutePolyline();
       } else {
         // Clear any existing polylines if no active order
@@ -5225,7 +5225,7 @@ export default function DeliveryHome() {
     }
   }, [isOnline, riderLocation, showHomeSections])
 
-  // Safeguard: Ensure bike marker and restaurant marker stay on map (prevent them from disappearing)
+  // Safeguard: Ensure bike marker and cafe marker stay on map (prevent them from disappearing)
   // Always show bike marker regardless of online/offline status
   useEffect(() => {
     if (showHomeSections || !window.deliveryMapInstance) return;
@@ -5247,30 +5247,30 @@ export default function DeliveryHome() {
         }
       }
 
-      // Check restaurant marker
-      if (selectedRestaurant && selectedRestaurant.lat && selectedRestaurant.lng) {
-        if (restaurantMarkerRef.current) {
-          const markerMap = restaurantMarkerRef.current.getMap();
+      // Check cafe marker
+      if (selectedCafe && selectedCafe.lat && selectedCafe.lng) {
+        if (cafeMarkerRef.current) {
+          const markerMap = cafeMarkerRef.current.getMap();
           if (markerMap === null || markerMap !== window.deliveryMapInstance) {
             console.warn('⚠️ Cafe marker lost map reference, re-adding...');
-            const restaurantLocation = {
-              lat: selectedRestaurant.lat,
-              lng: selectedRestaurant.lng
+            const cafeLocation = {
+              lat: selectedCafe.lat,
+              lng: selectedCafe.lng
             };
 
-            restaurantMarkerRef.current.setMap(window.deliveryMapInstance);
-            restaurantMarkerRef.current.setPosition(restaurantLocation);
+            cafeMarkerRef.current.setMap(window.deliveryMapInstance);
+            cafeMarkerRef.current.setPosition(cafeLocation);
           }
         } else {
           // Marker doesn't exist, create it
           console.warn('⚠️ Cafe marker missing, creating...');
-          const restaurantLocation = {
-            lat: selectedRestaurant.lat,
-            lng: selectedRestaurant.lng
+          const cafeLocation = {
+            lat: selectedCafe.lat,
+            lng: selectedCafe.lng
           };
 
-          restaurantMarkerRef.current = new window.google.maps.Marker({
-            position: restaurantLocation,
+          cafeMarkerRef.current = new window.google.maps.Marker({
+            position: cafeLocation,
             map: window.deliveryMapInstance,
             icon: {
               url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -5284,7 +5284,7 @@ export default function DeliveryHome() {
               scaledSize: new window.google.maps.Size(48, 48),
               anchor: new window.google.maps.Point(24, 48)
             },
-            title: selectedRestaurant.name || 'Restaurant',
+            title: selectedCafe.name || 'Cafe',
             zIndex: 10
           });
         }
@@ -5292,29 +5292,29 @@ export default function DeliveryHome() {
     }, 2000); // Check every 2 seconds
 
     return () => clearInterval(checkInterval);
-  }, [riderLocation, selectedRestaurant, showHomeSections])
+  }, [riderLocation, selectedCafe, showHomeSections])
 
-  // Create restaurant marker when selectedRestaurant changes
+  // Create cafe marker when selectedCafe changes
   useEffect(() => {
-    if (!window.deliveryMapInstance || !selectedRestaurant || !selectedRestaurant.lat || !selectedRestaurant.lng) {
+    if (!window.deliveryMapInstance || !selectedCafe || !selectedCafe.lat || !selectedCafe.lng) {
       return;
     }
 
     // Only create marker if it doesn't exist or is on wrong map
-    if (!restaurantMarkerRef.current || restaurantMarkerRef.current.getMap() !== window.deliveryMapInstance) {
-      const restaurantLocation = {
-        lat: selectedRestaurant.lat,
-        lng: selectedRestaurant.lng
+    if (!cafeMarkerRef.current || cafeMarkerRef.current.getMap() !== window.deliveryMapInstance) {
+      const cafeLocation = {
+        lat: selectedCafe.lat,
+        lng: selectedCafe.lng
       };
 
       // Remove old marker if exists
-      if (restaurantMarkerRef.current) {
-        restaurantMarkerRef.current.setMap(null);
+      if (cafeMarkerRef.current) {
+        cafeMarkerRef.current.setMap(null);
       }
 
-      // Create new restaurant marker
-      restaurantMarkerRef.current = new window.google.maps.Marker({
-        position: restaurantLocation,
+      // Create new cafe marker
+      cafeMarkerRef.current = new window.google.maps.Marker({
+        position: cafeLocation,
         map: window.deliveryMapInstance,
         icon: {
           url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -5328,7 +5328,7 @@ export default function DeliveryHome() {
           scaledSize: new window.google.maps.Size(48, 48),
           anchor: new window.google.maps.Point(24, 48)
         },
-        title: selectedRestaurant.name || 'Restaurant',
+        title: selectedCafe.name || 'Cafe',
         animation: window.google.maps.Animation.DROP,
         zIndex: 10
       });
@@ -5336,13 +5336,13 @@ export default function DeliveryHome() {
       
     } else {
       // Update position if marker exists
-      restaurantMarkerRef.current.setPosition({
-        lat: selectedRestaurant.lat,
-        lng: selectedRestaurant.lng
+      cafeMarkerRef.current.setPosition({
+        lat: selectedCafe.lat,
+        lng: selectedCafe.lng
       });
-      restaurantMarkerRef.current.setTitle(selectedRestaurant.name || 'Restaurant');
+      cafeMarkerRef.current.setTitle(selectedCafe.name || 'Cafe');
     }
-  }, [selectedRestaurant?.lat, selectedRestaurant?.lng, selectedRestaurant?.name])
+  }, [selectedCafe?.lat, selectedCafe?.lng, selectedCafe?.name])
 
   // Calculate route using Google Maps Directions API (Zomato-style road-based routing)
   // Optimized for TWO_WHEELER mode with DRIVING fallback
@@ -5434,8 +5434,8 @@ export default function DeliveryHome() {
 
     // CRITICAL: Don't create/update polyline if there's no active order
     // This prevents showing default/mock polylines on page refresh
-    // But allow it if we're going to restaurant (not customer)
-    // Note: We can't use selectedRestaurant directly in callback, so we'll check it in the calling code
+    // But allow it if we're going to cafe (not customer)
+    // Note: We can't use selectedCafe directly in callback, so we'll check it in the calling code
     // For now, just proceed - the calling code will handle the checks
 
     try {
@@ -5584,20 +5584,20 @@ export default function DeliveryHome() {
 
   // Initialize Directions Map with Google Maps Directions API (Zomato-style)
   useEffect(() => {
-    if (!showDirectionsMap || !selectedRestaurant) {
+    if (!showDirectionsMap || !selectedCafe) {
       setDirectionsMapLoading(false)
       return
     }
 
-    // Re-initialize if navigation mode changed (restaurant -> customer or vice versa)
+    // Re-initialize if navigation mode changed (cafe -> customer or vice versa)
     if (directionsMapInstanceRef.current) {
       // Clear existing map to re-initialize with new destination
       directionsMapInstanceRef.current = null;
       if (directionsRendererRef.current) {
         directionsRendererRef.current.setMap(null);
       }
-      if (restaurantMarkerRef.current) {
-        restaurantMarkerRef.current.setMap(null);
+      if (cafeMarkerRef.current) {
+        cafeMarkerRef.current.setMap(null);
       }
       if (directionsBikeMarkerRef.current) {
         directionsBikeMarkerRef.current.setMap(null);
@@ -5630,18 +5630,18 @@ export default function DeliveryHome() {
         // Determine destination based on navigation mode
         let destinationLocation;
         let destinationName;
-        if (navigationMode === 'customer' && selectedRestaurant.customerLat && selectedRestaurant.customerLng) {
+        if (navigationMode === 'customer' && selectedCafe.customerLat && selectedCafe.customerLng) {
           destinationLocation = {
-            lat: selectedRestaurant.customerLat,
-            lng: selectedRestaurant.customerLng
+            lat: selectedCafe.customerLat,
+            lng: selectedCafe.customerLng
           };
-          destinationName = selectedRestaurant.customerName || 'Customer';
+          destinationName = selectedCafe.customerName || 'Customer';
         } else {
           destinationLocation = {
-            lat: selectedRestaurant.lat,
-            lng: selectedRestaurant.lng
+            lat: selectedCafe.lat,
+            lng: selectedCafe.lng
           };
-          destinationName = selectedRestaurant.name || 'Restaurant';
+          destinationName = selectedCafe.name || 'Cafe';
         }
 
         
@@ -5716,7 +5716,7 @@ export default function DeliveryHome() {
             map.fitBounds(bounds, { padding: 50 });
           }
 
-          // Add custom Destination Marker (Restaurant or Customer)
+          // Add custom Destination Marker (Cafe or Customer)
           const markerIcon = navigationMode === 'customer'
             ? `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#e53935">
@@ -5732,8 +5732,8 @@ export default function DeliveryHome() {
                 </svg>
               `)}`;
 
-          if (!restaurantMarkerRef.current) {
-            restaurantMarkerRef.current = new window.google.maps.Marker({
+          if (!cafeMarkerRef.current) {
+            cafeMarkerRef.current = new window.google.maps.Marker({
               position: destinationLocation,
               map: map,
               icon: {
@@ -5745,14 +5745,14 @@ export default function DeliveryHome() {
               animation: window.google.maps.Animation.DROP
             });
           } else {
-            restaurantMarkerRef.current.setPosition(destinationLocation);
-            restaurantMarkerRef.current.setIcon({
+            cafeMarkerRef.current.setPosition(destinationLocation);
+            cafeMarkerRef.current.setIcon({
               url: markerIcon,
               scaledSize: new window.google.maps.Size(48, 48),
               anchor: new window.google.maps.Point(24, 48)
             });
-            restaurantMarkerRef.current.setTitle(destinationName);
-            restaurantMarkerRef.current.setMap(map);
+            cafeMarkerRef.current.setTitle(destinationName);
+            cafeMarkerRef.current.setMap(map);
           }
 
           // Add custom Bike Marker (Delivery Boy)
@@ -5810,8 +5810,8 @@ export default function DeliveryHome() {
           if (directionsRendererRef.current) {
             directionsRendererRef.current.setMap(null);
           }
-          if (restaurantMarkerRef.current) {
-            restaurantMarkerRef.current.setMap(null);
+          if (cafeMarkerRef.current) {
+            cafeMarkerRef.current.setMap(null);
           }
           if (directionsBikeMarkerRef.current) {
             directionsBikeMarkerRef.current.setMap(null);
@@ -5822,10 +5822,10 @@ export default function DeliveryHome() {
         }
       }
     };
-    // Only re-initialize if showDirectionsMap, selectedRestaurant.id, or navigationMode changes
+    // Only re-initialize if showDirectionsMap, selectedCafe.id, or navigationMode changes
     // Don't include calculateRouteWithDirectionsAPI to prevent unnecessary re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showDirectionsMap, selectedRestaurant?.id, navigationMode, selectedRestaurant?.customerLat, selectedRestaurant?.customerLng, riderLocation])
+  }, [showDirectionsMap, selectedCafe?.id, navigationMode, selectedCafe?.customerLat, selectedCafe?.customerLng, riderLocation])
 
   // Helper function to calculate distance in meters (Haversine formula)
   const calculateDistanceInMeters = useCallback((lat1, lng1, lat2, lng2) => {
@@ -5869,12 +5869,12 @@ export default function DeliveryHome() {
 
         // Only recalculate if moved >50 meters AND last recalculation was >30 seconds ago
         const timeSinceLastRecalc = Date.now() - (lastRouteRecalculationRef.current || 0);
-        if (distance > 50 && timeSinceLastRecalc > 30000 && selectedRestaurant) {
+        if (distance > 50 && timeSinceLastRecalc > 30000 && selectedCafe) {
           
           lastRouteRecalculationRef.current = Date.now();
           calculateRouteWithDirectionsAPI(
             [newPosition.lat, newPosition.lng],
-            { lat: selectedRestaurant.lat, lng: selectedRestaurant.lng }
+            { lat: selectedCafe.lat, lng: selectedCafe.lng }
           ).then(result => {
             if (result && result.routes && result.routes[0]) {
               // Extract route and create custom polyline (don't use DirectionsRenderer - it adds dots)
@@ -5911,7 +5911,7 @@ export default function DeliveryHome() {
       lastBikePositionRef.current = newPosition;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showDirectionsMap, riderLocation, selectedRestaurant?.id, calculateDistanceInMeters])
+  }, [showDirectionsMap, riderLocation, selectedCafe?.id, calculateDistanceInMeters])
 
   // Handle route polyline visibility and updates
   // Always use custom polyline (DirectionsRenderer is never active - it adds dots)
@@ -5931,8 +5931,8 @@ export default function DeliveryHome() {
 
   // Handle directionsResponse updates - Show route on main map when directions are calculated
   useEffect(() => {
-    // Only show route if there's an active order (selectedRestaurant)
-    if (!selectedRestaurant) {
+    // Only show route if there's an active order (selectedCafe)
+    if (!selectedCafe) {
       // Clear route if no active order
       if (routePolylineRef.current) {
         routePolylineRef.current.setMap(null);
@@ -6072,7 +6072,7 @@ export default function DeliveryHome() {
       console.error('❌ directionsResponse type:', typeof directionsResponse);
       console.error('❌ directionsResponse:', directionsResponse);
     }
-  }, [directionsResponse, selectedRestaurant])
+  }, [directionsResponse, selectedCafe])
 
   // Restore active order from localStorage on page load/refresh
   useEffect(() => {
@@ -6088,12 +6088,12 @@ export default function DeliveryHome() {
         
 
         // Get order ID from saved data
-        const orderId = activeOrderData.orderId || activeOrderData.restaurantInfo?.id || activeOrderData.restaurantInfo?.orderId;
+        const orderId = activeOrderData.orderId || activeOrderData.cafeInfo?.id || activeOrderData.cafeInfo?.orderId;
 
         if (!orderId) {
           
           localStorage.removeItem('deliveryActiveOrder');
-          setSelectedRestaurant(null);
+          setSelectedCafe(null);
           return;
         }
 
@@ -6105,7 +6105,7 @@ export default function DeliveryHome() {
           if (!orderResponse.data?.success || !orderResponse.data?.data) {
             
             localStorage.removeItem('deliveryActiveOrder');
-            setSelectedRestaurant(null);
+            setSelectedCafe(null);
             return;
           }
 
@@ -6119,14 +6119,14 @@ export default function DeliveryHome() {
             if (status === 'cancelled' || status === 'delivered') {
               
               localStorage.removeItem('deliveryActiveOrder');
-              setSelectedRestaurant(null);
+              setSelectedCafe(null);
               return;
             }
 
             // Update activeOrderData with fresh info (e.g., digitalBillHtml)
-            if (remoteOrder.digitalBillHtml && activeOrderData.restaurantInfo) {
+            if (remoteOrder.digitalBillHtml && activeOrderData.cafeInfo) {
               
-              activeOrderData.restaurantInfo.digitalBillHtml = remoteOrder.digitalBillHtml;
+              activeOrderData.cafeInfo.digitalBillHtml = remoteOrder.digitalBillHtml;
               // Also update localStorage to persist this
               localStorage.setItem('deliveryActiveOrder', JSON.stringify(activeOrderData));
             }
@@ -6139,7 +6139,7 @@ export default function DeliveryHome() {
           if (verifyError.response?.status === 404 || verifyError.response?.status === 403) {
             
             localStorage.removeItem('deliveryActiveOrder');
-            setSelectedRestaurant(null);
+            setSelectedCafe(null);
             return;
           }
           // For other errors (network, etc.), still try to restore but log warning
@@ -6152,13 +6152,13 @@ export default function DeliveryHome() {
         if (hoursSinceAccepted > 24) {
           
           localStorage.removeItem('deliveryActiveOrder');
-          setSelectedRestaurant(null);
+          setSelectedCafe(null);
           return;
         }
 
-        // Restore selectedRestaurant state
-        if (activeOrderData.restaurantInfo) {
-          setSelectedRestaurant(activeOrderData.restaurantInfo);
+        // Restore selectedCafe state
+        if (activeOrderData.cafeInfo) {
+          setSelectedCafe(activeOrderData.cafeInfo);
           
         }
 
@@ -6173,13 +6173,13 @@ export default function DeliveryHome() {
 
           // Recalculate route using Directions API (preferred) or use saved coordinates (fallback)
           // Don't restore directionsResponse from localStorage - Google Maps objects can't be serialized
-          if (activeOrderData.restaurantInfo && activeOrderData.restaurantInfo.lat && activeOrderData.restaurantInfo.lng && riderLocation && riderLocation.length === 2) {
+          if (activeOrderData.cafeInfo && activeOrderData.cafeInfo.lat && activeOrderData.cafeInfo.lng && riderLocation && riderLocation.length === 2) {
             // Try to recalculate with Directions API first (if flag indicates we had Directions API before)
             if (activeOrderData.hasDirectionsAPI) {
               
               calculateRouteWithDirectionsAPI(
                 riderLocation,
-                { lat: activeOrderData.restaurantInfo.lat, lng: activeOrderData.restaurantInfo.lng }
+                { lat: activeOrderData.cafeInfo.lat, lng: activeOrderData.cafeInfo.lng }
               ).then(result => {
                 if (result && result.routes && result.routes.length > 0) {
                   setDirectionsResponse(result);
@@ -6211,7 +6211,7 @@ export default function DeliveryHome() {
               
             }
           } else if (activeOrderData.routeCoordinates && activeOrderData.routeCoordinates.length > 0) {
-            // Fallback: Use coordinates if restaurant info or rider location not available
+            // Fallback: Use coordinates if cafe info or rider location not available
             setRoutePolyline(activeOrderData.routeCoordinates);
             
           }
@@ -6222,7 +6222,7 @@ export default function DeliveryHome() {
         console.error('❌ Error restoring active order:', error);
         // Clear localStorage and state if there's an error
         localStorage.removeItem('deliveryActiveOrder');
-        setSelectedRestaurant(null);
+        setSelectedCafe(null);
         setShowReachedDropPopup(false);
         setShowOrderDeliveredAnimation(false);
         setShowCustomerReviewPopup(false);
@@ -6236,7 +6236,7 @@ export default function DeliveryHome() {
 
   // Ensure polyline is displayed when map becomes ready and there's an active route
   useEffect(() => {
-    if (!selectedRestaurant || !window.deliveryMapInstance || !window.google || !window.google.maps) {
+    if (!selectedCafe || !window.deliveryMapInstance || !window.google || !window.google.maps) {
       return;
     }
 
@@ -6264,12 +6264,12 @@ export default function DeliveryHome() {
         liveTrackingPolylineShadowRef.current.setMap(window.deliveryMapInstance);
       }
     }
-  }, [selectedRestaurant, riderLocation, updateLiveTrackingPolyline]);
+  }, [selectedCafe, riderLocation, updateLiveTrackingPolyline]);
 
   // Clear any default/mock routes on mount if there's no active order
   useEffect(() => {
     // Clear immediately on mount if no active order
-    if (!selectedRestaurant && window.deliveryMapInstance) {
+    if (!selectedCafe && window.deliveryMapInstance) {
       
       // Clear route polyline
       if (routePolylineRef.current) {
@@ -6296,7 +6296,7 @@ export default function DeliveryHome() {
 
     // Wait a bit for restoreActiveOrder to complete, then check again
     const timer = setTimeout(() => {
-      if (!selectedRestaurant && window.deliveryMapInstance) {
+      if (!selectedCafe && window.deliveryMapInstance) {
         
         // Clear route polyline
         if (routePolylineRef.current) {
@@ -6327,23 +6327,23 @@ export default function DeliveryHome() {
     }, 1000); // Wait 1 second for restoreActiveOrder to complete
 
     return () => clearTimeout(timer);
-  }, [selectedRestaurant])
+  }, [selectedCafe])
 
   // Utility function to clear order data when order is deleted or cancelled
   const handleCallCustomer = useCallback(async () => {
-    let customerPhone = selectedRestaurant?.customerPhone ||
-      selectedRestaurant?.customer?.phone ||
-      selectedRestaurant?.userId?.phone ||
+    let customerPhone = selectedCafe?.customerPhone ||
+      selectedCafe?.customer?.phone ||
+      selectedCafe?.userId?.phone ||
       null
 
-    if (!customerPhone && selectedRestaurant?.orderId) {
+    if (!customerPhone && selectedCafe?.orderId) {
       try {
-        const response = await deliveryAPI.getOrderDetails(selectedRestaurant.orderId || selectedRestaurant.id)
+        const response = await deliveryAPI.getOrderDetails(selectedCafe.orderId || selectedCafe.id)
         const order = response?.data?.data?.order || response?.data?.order || response?.data?.data || null
         customerPhone = order?.customerPhone || order?.userId?.phone || order?.customer?.phone || null
 
         if (customerPhone) {
-          setSelectedRestaurant(prev => prev ? ({
+          setSelectedCafe(prev => prev ? ({
             ...prev,
             customerPhone,
             customerName: prev.customerName || order?.userId?.name || prev.customerName,
@@ -6362,12 +6362,12 @@ export default function DeliveryHome() {
 
     const cleanPhone = String(customerPhone).replace(/[^\d+]/g, '')
     window.location.href = `tel:${cleanPhone}`
-  }, [selectedRestaurant])
+  }, [selectedCafe])
 
   const clearOrderData = useCallback(() => {
     
     localStorage.removeItem('deliveryActiveOrder');
-    setSelectedRestaurant(null);
+    setSelectedCafe(null);
     setShowReachedDropPopup(false);
     setShowOrderDeliveredAnimation(false);
     setShowCustomerReviewPopup(false);
@@ -6394,11 +6394,11 @@ export default function DeliveryHome() {
 
   // Periodically verify order still exists (every 30 seconds) to catch deletions
   useEffect(() => {
-    if (!selectedRestaurant?.id && !selectedRestaurant?.orderId) {
+    if (!selectedCafe?.id && !selectedCafe?.orderId) {
       return; // No active order to verify
     }
 
-    const orderId = selectedRestaurant.orderId || selectedRestaurant.id;
+    const orderId = selectedCafe.orderId || selectedCafe.id;
 
     const verifyOrderInterval = setInterval(async () => {
       try {
@@ -6432,8 +6432,8 @@ export default function DeliveryHome() {
         }
 
         // Update order status if it changed
-        if (order.status && order.status !== selectedRestaurant.orderStatus) {
-          setSelectedRestaurant(prev => ({
+        if (order.status && order.status !== selectedCafe.orderStatus) {
+          setSelectedCafe(prev => ({
             ...prev,
             orderStatus: order.status,
             status: order.status,
@@ -6453,13 +6453,13 @@ export default function DeliveryHome() {
     return () => {
       clearInterval(verifyOrderInterval);
     };
-  }, [selectedRestaurant?.id, selectedRestaurant?.orderId, clearOrderData])
+  }, [selectedCafe?.id, selectedCafe?.orderId, clearOrderData])
 
   // Handle route polyline visibility toggle
   // Only show fallback polyline if DirectionsRenderer is NOT active
   useEffect(() => {
-    // Only show route if there's an active order (selectedRestaurant)
-    if (!selectedRestaurant) {
+    // Only show route if there's an active order (selectedCafe)
+    if (!selectedCafe) {
       // Clear route if no active order
       if (routePolylineRef.current) {
         routePolylineRef.current.setMap(null);
@@ -6487,97 +6487,97 @@ export default function DeliveryHome() {
         routePolylineRef.current.setMap(null);
       }
     }
-  }, [showRoutePath, routePolyline, directionsResponse, selectedRestaurant])
+  }, [showRoutePath, routePolyline, directionsResponse, selectedCafe])
 
-  // Listen for order ready event from backend (when restaurant marks order ready)
+  // Listen for order ready event from backend (when cafe marks order ready)
   useEffect(() => {
     if (!orderReady) return
-    let restaurantInfo = selectedRestaurant
+    let cafeInfo = selectedCafe
     const order = orderReady.order || orderReady
 
-    // Update selectedRestaurant with order data from orderReady if we don't have it
-    if ((orderReady.orderId || order?.orderId) && order && !selectedRestaurant?.orderId) {
-      // Extract restaurant address with multiple fallbacks
-      let restaurantAddress = selectedRestaurant?.address || 'Cafe Address'
-      const restaurantLocation = order.restaurantId?.location
+    // Update selectedCafe with order data from orderReady if we don't have it
+    if ((orderReady.orderId || order?.orderId) && order && !selectedCafe?.orderId) {
+      // Extract cafe address with multiple fallbacks
+      let cafeAddress = selectedCafe?.address || 'Cafe Address'
+      const cafeLocation = order.cafeId?.location
 
-      if (order.restaurantId?.address) {
-        restaurantAddress = order.restaurantId.address
-      } else if (restaurantLocation?.formattedAddress) {
-        restaurantAddress = restaurantLocation.formattedAddress
-      } else if (restaurantLocation?.address) {
-        restaurantAddress = restaurantLocation.address
-      } else if (restaurantLocation?.street) {
+      if (order.cafeId?.address) {
+        cafeAddress = order.cafeId.address
+      } else if (cafeLocation?.formattedAddress) {
+        cafeAddress = cafeLocation.formattedAddress
+      } else if (cafeLocation?.address) {
+        cafeAddress = cafeLocation.address
+      } else if (cafeLocation?.street) {
         const addressParts = [
-          restaurantLocation.street,
-          restaurantLocation.area,
-          restaurantLocation.city,
-          restaurantLocation.state,
-          restaurantLocation.zipCode || restaurantLocation.pincode || restaurantLocation.postalCode
+          cafeLocation.street,
+          cafeLocation.area,
+          cafeLocation.city,
+          cafeLocation.state,
+          cafeLocation.zipCode || cafeLocation.pincode || cafeLocation.postalCode
         ].filter(Boolean)
-        restaurantAddress = addressParts.join(', ')
-      } else if (restaurantLocation?.addressLine1) {
+        cafeAddress = addressParts.join(', ')
+      } else if (cafeLocation?.addressLine1) {
         const addressParts = [
-          restaurantLocation.addressLine1,
-          restaurantLocation.addressLine2,
-          restaurantLocation.city,
-          restaurantLocation.state
+          cafeLocation.addressLine1,
+          cafeLocation.addressLine2,
+          cafeLocation.city,
+          cafeLocation.state
         ].filter(Boolean)
-        restaurantAddress = addressParts.join(', ')
-      } else if (order.restaurantId?.addressLine1) {
+        cafeAddress = addressParts.join(', ')
+      } else if (order.cafeId?.addressLine1) {
         const addressParts = [
-          order.restaurantId.addressLine1,
-          order.restaurantId.addressLine2,
-          order.restaurantId.area, // Zone
-          order.restaurantId.city,
-          order.restaurantId.state,
-          order.restaurantId.pincode || order.restaurantId.zipCode || order.restaurantId.postalCode
+          order.cafeId.addressLine1,
+          order.cafeId.addressLine2,
+          order.cafeId.area, // Zone
+          order.cafeId.city,
+          order.cafeId.state,
+          order.cafeId.pincode || order.cafeId.zipCode || order.cafeId.postalCode
         ].filter(Boolean)
-        restaurantAddress = addressParts.join(', ')
-      } else if (order.restaurantId?.street || order.restaurantId?.city) {
+        cafeAddress = addressParts.join(', ')
+      } else if (order.cafeId?.street || order.cafeId?.city) {
         const addressParts = [
-          order.restaurantId.street,
-          order.restaurantId.area, // Zone
-          order.restaurantId.city,
-          order.restaurantId.state,
-          order.restaurantId.pincode || order.restaurantId.zipCode || order.restaurantId.postalCode
+          order.cafeId.street,
+          order.cafeId.area, // Zone
+          order.cafeId.city,
+          order.cafeId.state,
+          order.cafeId.pincode || order.cafeId.zipCode || order.cafeId.postalCode
         ].filter(Boolean)
-        restaurantAddress = addressParts.join(', ')
-      } else if (order.restaurantAddress) {
-        restaurantAddress = order.restaurantAddress
-      } else if (orderReady.restaurantAddress) {
-        restaurantAddress = orderReady.restaurantAddress
+        cafeAddress = addressParts.join(', ')
+      } else if (order.cafeAddress) {
+        cafeAddress = order.cafeAddress
+      } else if (orderReady.cafeAddress) {
+        cafeAddress = orderReady.cafeAddress
       }
 
-      restaurantInfo = {
-        ...selectedRestaurant,
-        orderId: order.orderId || orderReady.orderId || selectedRestaurant?.orderId,
-        name: order.restaurantName || orderReady.restaurantName || order.restaurantId?.name || selectedRestaurant?.name,
-        address: restaurantAddress,
-        lat: order.restaurantId?.location?.coordinates?.[1] || orderReady.restaurantLat || selectedRestaurant?.lat,
-        lng: order.restaurantId?.location?.coordinates?.[0] || orderReady.restaurantLng || selectedRestaurant?.lng,
-        customerPhone: order.userId?.phone || orderReady.customerPhone || selectedRestaurant?.customerPhone || null,
+      cafeInfo = {
+        ...selectedCafe,
+        orderId: order.orderId || orderReady.orderId || selectedCafe?.orderId,
+        name: order.cafeName || orderReady.cafeName || order.cafeId?.name || selectedCafe?.name,
+        address: cafeAddress,
+        lat: order.cafeId?.location?.coordinates?.[1] || orderReady.cafeLat || selectedCafe?.lat,
+        lng: order.cafeId?.location?.coordinates?.[0] || orderReady.cafeLng || selectedCafe?.lng,
+        customerPhone: order.userId?.phone || orderReady.customerPhone || selectedCafe?.customerPhone || null,
         orderStatus: 'ready'
       }
-      setSelectedRestaurant(restaurantInfo)
-      } else if (selectedRestaurant) {
+      setSelectedCafe(cafeInfo)
+      } else if (selectedCafe) {
       // Always set orderStatus to 'ready' so location monitor shows Reached Pickup when rider is within 500m
-      setSelectedRestaurant(prev => ({ ...prev, orderStatus: 'ready' }))
+      setSelectedCafe(prev => ({ ...prev, orderStatus: 'ready' }))
     }
 
     setShowDirectionsMap(false)
 
-    const currentRestaurantInfo = {
-      ...(restaurantInfo || selectedRestaurant || {}),
-      lat: (restaurantInfo || selectedRestaurant)?.lat ?? orderReady?.restaurantLat,
-      lng: (restaurantInfo || selectedRestaurant)?.lng ?? orderReady?.restaurantLng
+    const currentCafeInfo = {
+      ...(cafeInfo || selectedCafe || {}),
+      lat: (cafeInfo || selectedCafe)?.lat ?? orderReady?.cafeLat,
+      lng: (cafeInfo || selectedCafe)?.lng ?? orderReady?.cafeLng
     }
-    const orderStatus = currentRestaurantInfo?.orderStatus || currentRestaurantInfo?.status || ''
-    const deliveryPhase = currentRestaurantInfo?.deliveryPhase || currentRestaurantInfo?.deliveryState?.currentPhase || ''
+    const orderStatus = currentCafeInfo?.orderStatus || currentCafeInfo?.status || ''
+    const deliveryPhase = currentCafeInfo?.deliveryPhase || currentCafeInfo?.deliveryState?.currentPhase || ''
     const isDelivered = orderStatus === 'delivered' ||
       deliveryPhase === 'completed' ||
       deliveryPhase === 'delivered' ||
-      currentRestaurantInfo?.deliveryState?.status === 'delivered'
+      currentCafeInfo?.deliveryState?.status === 'delivered'
 
     if (isDelivered) {
       clearOrderReady()
@@ -6588,25 +6588,25 @@ export default function DeliveryHome() {
     setShowreachedPickupPopup(true)
 
     clearOrderReady()
-  }, [orderReady, selectedRestaurant])
+  }, [orderReady, selectedCafe])
 
-  // Fetch order details when Reached Pickup popup is shown to ensure we have restaurant address
+  // Fetch order details when Reached Pickup popup is shown to ensure we have cafe address
   useEffect(() => {
     // Always log to see if useEffect is running
     if (!showreachedPickupPopup) {
       return
     }
 
-    const orderId = selectedRestaurant?.orderId || selectedRestaurant?.id
+    const orderId = selectedCafe?.orderId || selectedCafe?.id
     if (!orderId) {
       return
     }
 
     // Always fetch to ensure we have the latest address (even if one exists, it might be incomplete)
     // Only skip if we have a valid non-default address
-    if (selectedRestaurant?.address &&
-      selectedRestaurant.address !== 'Cafe Address' &&
-      selectedRestaurant.address.length > 20) { // Valid address should be longer than default
+    if (selectedCafe?.address &&
+      selectedCafe.address !== 'Cafe Address' &&
+      selectedCafe.address.length > 20) { // Valid address should be longer than default
       return
     }
 
@@ -6619,78 +6619,78 @@ export default function DeliveryHome() {
           const order = orderData.order || orderData
 
           // Debug: Log full order structure
-          // Extract restaurant address with multiple fallbacks
-          let restaurantAddress = selectedRestaurant?.address || 'Cafe Address'
-          const restaurantLocation = order.restaurantId?.location
+          // Extract cafe address with multiple fallbacks
+          let cafeAddress = selectedCafe?.address || 'Cafe Address'
+          const cafeLocation = order.cafeId?.location
 
-          if (order.restaurantId?.address) {
-            restaurantAddress = order.restaurantId.address
-            } else if (restaurantLocation?.formattedAddress) {
-            restaurantAddress = restaurantLocation.formattedAddress
-            } else if (restaurantLocation?.address) {
-            restaurantAddress = restaurantLocation.address
-            } else if (restaurantLocation?.street) {
+          if (order.cafeId?.address) {
+            cafeAddress = order.cafeId.address
+            } else if (cafeLocation?.formattedAddress) {
+            cafeAddress = cafeLocation.formattedAddress
+            } else if (cafeLocation?.address) {
+            cafeAddress = cafeLocation.address
+            } else if (cafeLocation?.street) {
             const addressParts = [
-              restaurantLocation.street,
-              restaurantLocation.area,
-              restaurantLocation.city,
-              restaurantLocation.state,
-              restaurantLocation.zipCode || restaurantLocation.pincode || restaurantLocation.postalCode
+              cafeLocation.street,
+              cafeLocation.area,
+              cafeLocation.city,
+              cafeLocation.state,
+              cafeLocation.zipCode || cafeLocation.pincode || cafeLocation.postalCode
             ].filter(Boolean)
-            restaurantAddress = addressParts.join(', ')
-            } else if (restaurantLocation?.addressLine1) {
+            cafeAddress = addressParts.join(', ')
+            } else if (cafeLocation?.addressLine1) {
             const addressParts = [
-              restaurantLocation.addressLine1,
-              restaurantLocation.addressLine2,
-              restaurantLocation.city,
-              restaurantLocation.state
+              cafeLocation.addressLine1,
+              cafeLocation.addressLine2,
+              cafeLocation.city,
+              cafeLocation.state
             ].filter(Boolean)
-            restaurantAddress = addressParts.join(', ')
-            } else if (order.restaurantId?.street || order.restaurantId?.city) {
+            cafeAddress = addressParts.join(', ')
+            } else if (order.cafeId?.street || order.cafeId?.city) {
             const addressParts = [
-              order.restaurantId.street,
-              order.restaurantId.area,
-              order.restaurantId.city,
-              order.restaurantId.state,
-              order.restaurantId.zipCode || order.restaurantId.pincode || order.restaurantId.postalCode
+              order.cafeId.street,
+              order.cafeId.area,
+              order.cafeId.city,
+              order.cafeId.state,
+              order.cafeId.zipCode || order.cafeId.pincode || order.cafeId.postalCode
             ].filter(Boolean)
-            restaurantAddress = addressParts.join(', ')
-            } else if (order.restaurantAddress) {
-            restaurantAddress = order.restaurantAddress
-            } else if (order.restaurant?.address) {
-            restaurantAddress = order.restaurant.address
-            } else if (order.restaurant?.location?.formattedAddress) {
-            restaurantAddress = order.restaurant.location.formattedAddress
-            } else if (order.restaurant?.location?.address) {
-            restaurantAddress = order.restaurant.location.address
+            cafeAddress = addressParts.join(', ')
+            } else if (order.cafeAddress) {
+            cafeAddress = order.cafeAddress
+            } else if (order.cafe?.address) {
+            cafeAddress = order.cafe.address
+            } else if (order.cafe?.location?.formattedAddress) {
+            cafeAddress = order.cafe.location.formattedAddress
+            } else if (order.cafe?.location?.address) {
+            cafeAddress = order.cafe.location.address
             }
 
-          // Update selectedRestaurant with fetched address
-          if (restaurantAddress && restaurantAddress !== 'Cafe Address') {
-            setSelectedRestaurant(prev => {
+          // Update selectedCafe with fetched address
+          if (cafeAddress && cafeAddress !== 'Cafe Address') {
+            setSelectedCafe(prev => {
               const updated = {
                 ...prev,
-                address: restaurantAddress
+                address: cafeAddress
               }
               return updated
             })
           } else {
-            // If address not found in order, try fetching restaurant details by ID
-            const restaurantId = order.restaurantId
-            if (restaurantId && (typeof restaurantId === 'string' || typeof restaurantId === 'object')) {
-              const restaurantIdString = typeof restaurantId === 'string' ? restaurantId : (restaurantId._id || restaurantId.id || restaurantId.toString())
+            // If address not found in order, try fetching cafe details by ID
+            const cafeId = order.cafeId
+            if (cafeId && (typeof cafeId === 'string' || typeof cafeId === 'object')) {
+              const cafeIdString = typeof cafeId === 'string' ? cafeId : (cafeId._id || cafeId.id || cafeId.toString())
               try {
-                const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantIdString)
-                if (restaurantResponse.data?.success && restaurantResponse.data.data) {
-                  const restaurant = restaurantResponse.data.data.restaurant || restaurantResponse.data.data
-                  // Extract address from restaurant location.formattedAddress (priority)
+                const cafeResponse = await cafeAPI.getCafeById(cafeIdString)
+                if (cafeResponse.data?.success && cafeResponse.data.data) {
+                  const cafe = cafeResponse.data.data.cafe || cafeResponse.data.data
+                  // Extract address from cafe location.formattedAddress (priority)
                   let fetchedAddress = 'Cafe Address'
-                  const restLocation = restaurant.location
+                  const restLocation = cafe.location
 
                   if (restLocation?.formattedAddress) {
                     fetchedAddress = restLocation.formattedAddress
-                    } else if (restaurant.address) {
-                    fetchedAddress = restaurant.address
+                    } else if (cafe.address) {
+                    fetchedAddress = cafe.address
                     } else if (restLocation?.address) {
                     fetchedAddress = restLocation.address
                     } else if (restLocation?.street) {
@@ -6710,57 +6710,57 @@ export default function DeliveryHome() {
                       restLocation.state
                     ].filter(Boolean)
                     fetchedAddress = addressParts.join(', ')
-                    } else if (restaurant.street || restaurant.city) {
+                    } else if (cafe.street || cafe.city) {
                     const addressParts = [
-                      restaurant.street,
-                      restaurant.area,
-                      restaurant.city,
-                      restaurant.state,
-                      restaurant.zipCode || restaurant.pincode || restaurant.postalCode
+                      cafe.street,
+                      cafe.area,
+                      cafe.city,
+                      cafe.state,
+                      cafe.zipCode || cafe.pincode || cafe.postalCode
                     ].filter(Boolean)
                     fetchedAddress = addressParts.join(', ')
                     }
 
-                  // Update selectedRestaurant with fetched address and phone
+                  // Update selectedCafe with fetched address and phone
                   const updates = {}
                   if (fetchedAddress && fetchedAddress !== 'Cafe Address') {
                     updates.address = fetchedAddress
                   }
 
-                  // Also fetch phone number from restaurant data
-                  const restaurantPhone = restaurant.phone || restaurant.ownerPhone || restaurant.primaryContactNumber
-                  if (restaurantPhone) {
-                    updates.phone = restaurantPhone
-                    updates.ownerPhone = restaurant.ownerPhone || restaurantPhone
+                  // Also fetch phone number from cafe data
+                  const cafePhone = cafe.phone || cafe.ownerPhone || cafe.primaryContactNumber
+                  if (cafePhone) {
+                    updates.phone = cafePhone
+                    updates.ownerPhone = cafe.ownerPhone || cafePhone
                     }
 
                   if (Object.keys(updates).length > 0) {
-                    setSelectedRestaurant(prev => ({
+                    setSelectedCafe(prev => ({
                       ...prev,
                       ...updates
                     }))
                     return // Exit early since we got the data
                   } else {
                     console.warn('⚠️ Could not extract address or phone from cafe data:', {
-                      restaurantKeys: Object.keys(restaurant),
+                      cafeKeys: Object.keys(cafe),
                       hasLocation: !!restLocation,
                       locationKeys: restLocation ? Object.keys(restLocation) : [],
-                      hasPhone: !!restaurant.phone,
-                      hasOwnerPhone: !!restaurant.ownerPhone,
-                      hasPrimaryContact: !!restaurant.primaryContactNumber
+                      hasPhone: !!cafe.phone,
+                      hasOwnerPhone: !!cafe.ownerPhone,
+                      hasPrimaryContact: !!cafe.primaryContactNumber
                     })
                   }
                 }
-              } catch (restaurantError) {
-                console.error('❌ Error fetching cafe details:', restaurantError)
+              } catch (cafeError) {
+                console.error('❌ Error fetching cafe details:', cafeError)
               }
             }
 
             console.warn('⚠️ Could not extract cafe address from order or cafe API:', {
               orderKeys: Object.keys(order),
-              hasRestaurantId: !!order.restaurantId,
-              restaurantIdType: typeof order.restaurantId,
-              restaurantIdValue: order.restaurantId
+              hasCafeId: !!order.cafeId,
+              cafeIdType: typeof order.cafeId,
+              cafeIdValue: order.cafeId
             })
           }
         }
@@ -6771,10 +6771,10 @@ export default function DeliveryHome() {
 
     fetchOrderDetails()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showreachedPickupPopup, selectedRestaurant?.orderId, selectedRestaurant?.id])
+  }, [showreachedPickupPopup, selectedCafe?.orderId, selectedCafe?.id])
 
   // Monitor delivery boy's location for "Reached Pickup" detection
-  // Show "Reached Pickup" popup when delivery boy is within 500 meters of restaurant location
+  // Show "Reached Pickup" popup when delivery boy is within 500 meters of cafe location
   useEffect(() => {
     // Don't show if popup is already showing, or if order hasn't been accepted yet
     if (showreachedPickupPopup ||
@@ -6784,22 +6784,22 @@ export default function DeliveryHome() {
       showOrderDeliveredAnimation || // Don't show if order is delivered
       showCustomerReviewPopup || // Don't show if showing review popup
       showPaymentPage || // Don't show if showing payment page
-      !selectedRestaurant?.lat ||
-      !selectedRestaurant?.lng ||
+      !selectedCafe?.lat ||
+      !selectedCafe?.lng ||
       !riderLocation ||
       riderLocation.length !== 2) {
       return
     }
 
     // Only show for orders that are in pickup phase (en_route_to_pickup or at_pickup)
-    const deliveryPhase = selectedRestaurant?.deliveryPhase || selectedRestaurant?.deliveryState?.currentPhase || ''
-    const orderStatus = selectedRestaurant?.orderStatus || selectedRestaurant?.status || ''
+    const deliveryPhase = selectedCafe?.deliveryPhase || selectedCafe?.deliveryState?.currentPhase || ''
+    const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || ''
 
     // CRITICAL: Don't show if order is already delivered/completed
     const isDelivered = orderStatus === 'delivered' ||
       deliveryPhase === 'completed' ||
       deliveryPhase === 'delivered' ||
-      selectedRestaurant?.deliveryState?.status === 'delivered'
+      selectedCafe?.deliveryState?.status === 'delivered'
 
     if (isDelivered) {
       // Hide popup if it's showing and order is delivered
@@ -6814,9 +6814,9 @@ export default function DeliveryHome() {
       deliveryPhase === 'picked_up' ||
       deliveryPhase === 'en_route_to_drop' ||
       orderStatus === 'out_for_delivery' ||
-      selectedRestaurant?.deliveryState?.status === 'order_confirmed' ||
-      selectedRestaurant?.deliveryState?.currentPhase === 'en_route_to_delivery' ||
-      selectedRestaurant?.deliveryState?.currentPhase === 'en_route_to_drop'
+      selectedCafe?.deliveryState?.status === 'order_confirmed' ||
+      selectedCafe?.deliveryState?.currentPhase === 'en_route_to_delivery' ||
+      selectedCafe?.deliveryState?.currentPhase === 'en_route_to_drop'
 
     if (isOrderIdConfirmed) {
       // Order ID is already confirmed, don't show Reached Pickup popup
@@ -6846,10 +6846,10 @@ export default function DeliveryHome() {
   }, [
     riderLocation?.[0] ?? null,
     riderLocation?.[1] ?? null,
-    selectedRestaurant?.lat ?? null,
-    selectedRestaurant?.lng ?? null,
-    selectedRestaurant?.deliveryPhase ?? selectedRestaurant?.deliveryState?.currentPhase ?? null,
-    selectedRestaurant?.orderStatus ?? selectedRestaurant?.status ?? null,
+    selectedCafe?.lat ?? null,
+    selectedCafe?.lng ?? null,
+    selectedCafe?.deliveryPhase ?? selectedCafe?.deliveryState?.currentPhase ?? null,
+    selectedCafe?.orderStatus ?? selectedCafe?.status ?? null,
     Boolean(showNewOrderPopup),
     Boolean(showOrderIdConfirmationPopup),
     Boolean(showreachedPickupPopup),
@@ -6857,19 +6857,19 @@ export default function DeliveryHome() {
     Boolean(showOrderDeliveredAnimation),
     Boolean(showCustomerReviewPopup),
     Boolean(showPaymentPage),
-    selectedRestaurant?.orderStatus,
-    selectedRestaurant?.status,
-    selectedRestaurant?.deliveryPhase,
-    selectedRestaurant?.deliveryState?.status,
+    selectedCafe?.orderStatus,
+    selectedCafe?.status,
+    selectedCafe?.deliveryPhase,
+    selectedCafe?.deliveryState?.status,
     calculateDistanceInMeters
   ])
 
   // CRITICAL: Monitor order status and close all pickup/delivery popups when order is delivered
-  // Also clear selectedRestaurant if order is completed and payment page is closed
+  // Also clear selectedCafe if order is completed and payment page is closed
   useEffect(() => {
-    const orderStatus = selectedRestaurant?.orderStatus || selectedRestaurant?.status || ''
-    const deliveryPhase = selectedRestaurant?.deliveryPhase || selectedRestaurant?.deliveryState?.currentPhase || ''
-    const deliveryStateStatus = selectedRestaurant?.deliveryState?.status || ''
+    const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || ''
+    const deliveryPhase = selectedCafe?.deliveryPhase || selectedCafe?.deliveryState?.currentPhase || ''
+    const deliveryStateStatus = selectedCafe?.deliveryState?.status || ''
 
     const isDelivered = orderStatus === 'delivered' ||
       orderStatus === 'completed' ||
@@ -6891,9 +6891,9 @@ export default function DeliveryHome() {
         setShowReachedDropPopup(false)
       }
 
-      // If payment page is closed and order is delivered, clear selectedRestaurant
-      if (!showPaymentPage && !showCustomerReviewPopup && !showOrderDeliveredAnimation && selectedRestaurant) {
-        setSelectedRestaurant(null)
+      // If payment page is closed and order is delivered, clear selectedCafe
+      if (!showPaymentPage && !showCustomerReviewPopup && !showOrderDeliveredAnimation && selectedCafe) {
+        setSelectedCafe(null)
         localStorage.removeItem('deliveryActiveOrder')
         localStorage.removeItem('activeOrder')
         if (typeof clearNewOrder === 'function') {
@@ -6914,11 +6914,11 @@ export default function DeliveryHome() {
       }
     }
   }, [
-    selectedRestaurant?.orderStatus,
-    selectedRestaurant?.status,
-    selectedRestaurant?.deliveryPhase,
-    selectedRestaurant?.deliveryState?.currentPhase,
-    selectedRestaurant?.deliveryState?.status,
+    selectedCafe?.orderStatus,
+    selectedCafe?.status,
+    selectedCafe?.deliveryPhase,
+    selectedCafe?.deliveryState?.currentPhase,
+    selectedCafe?.deliveryState?.status,
     showPaymentPage,
     showOrderDeliveredAnimation,
     showCustomerReviewPopup,
@@ -6928,10 +6928,10 @@ export default function DeliveryHome() {
     clearNewOrder
   ])
 
-  // Monitor order status and switch route from restaurant to customer when order is picked up
+  // Monitor order status and switch route from cafe to customer when order is picked up
   useEffect(() => {
-    const orderStatus = selectedRestaurant?.orderStatus || selectedRestaurant?.status || '';
-    const deliveryPhase = selectedRestaurant?.deliveryPhase || selectedRestaurant?.deliveryState?.currentPhase || '';
+    const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || '';
+    const deliveryPhase = selectedCafe?.deliveryPhase || selectedCafe?.deliveryState?.currentPhase || '';
 
     // Check if order is picked up or out for delivery
     const isPickedUp = orderStatus === 'out_for_delivery' ||
@@ -6940,7 +6940,7 @@ export default function DeliveryHome() {
       deliveryPhase === 'picked_up';
 
     // Check if we have customer location
-    const hasCustomerLocation = selectedRestaurant?.customerLat && selectedRestaurant?.customerLng;
+    const hasCustomerLocation = selectedCafe?.customerLat && selectedCafe?.customerLng;
 
     // Only switch route if order is picked up and we have customer location
     if (isPickedUp && hasCustomerLocation && riderLocation && riderLocation.length === 2) {
@@ -6956,7 +6956,7 @@ export default function DeliveryHome() {
         // Calculate route from current location to customer
         calculateRouteWithDirectionsAPI(
           riderLocation,
-          { lat: selectedRestaurant.customerLat, lng: selectedRestaurant.customerLng }
+          { lat: selectedCafe.customerLat, lng: selectedCafe.customerLng }
         ).then(directionsResult => {
           if (directionsResult) {
             
@@ -6965,7 +6965,7 @@ export default function DeliveryHome() {
 
             // Show polyline for customer route - update live tracking polyline with new route
             if (riderLocation && window.deliveryMapInstance) {
-              // Update live tracking polyline with route to customer (Restaurant → Customer)
+              // Update live tracking polyline with route to customer (Cafe → Customer)
               updateLiveTrackingPolyline(directionsResult, riderLocation);
               
             } else {
@@ -7015,12 +7015,12 @@ export default function DeliveryHome() {
       }
     }
   }, [
-    selectedRestaurant?.orderStatus,
-    selectedRestaurant?.status,
-    selectedRestaurant?.deliveryPhase,
-    selectedRestaurant?.deliveryState?.currentPhase,
-    selectedRestaurant?.customerLat,
-    selectedRestaurant?.customerLng,
+    selectedCafe?.orderStatus,
+    selectedCafe?.status,
+    selectedCafe?.deliveryPhase,
+    selectedCafe?.deliveryState?.currentPhase,
+    selectedCafe?.customerLat,
+    selectedCafe?.customerLng,
     riderLocation,
     calculateRouteWithDirectionsAPI,
     updateLiveTrackingPolyline
@@ -7028,16 +7028,16 @@ export default function DeliveryHome() {
 
   // When out_for_delivery but customerLat/customerLng missing, fetch order details and set them
   useEffect(() => {
-    if (!selectedRestaurant) {
+    if (!selectedCafe) {
       fetchedOrderDetailsForDropRef.current = null
       return
     }
-    const orderStatus = selectedRestaurant?.orderStatus || selectedRestaurant?.status || ''
-    const deliveryPhase = selectedRestaurant?.deliveryPhase || selectedRestaurant?.deliveryState?.currentPhase || ''
+    const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || ''
+    const deliveryPhase = selectedCafe?.deliveryPhase || selectedCafe?.deliveryState?.currentPhase || ''
     const isOutForDelivery = orderStatus === 'out_for_delivery' || deliveryPhase === 'en_route_to_delivery'
-    const hasCustomerCoords = selectedRestaurant?.customerLat != null && selectedRestaurant?.customerLng != null &&
-      !(selectedRestaurant.customerLat === 0 && selectedRestaurant.customerLng === 0)
-    const orderId = selectedRestaurant?.orderId || selectedRestaurant?.id
+    const hasCustomerCoords = selectedCafe?.customerLat != null && selectedCafe?.customerLng != null &&
+      !(selectedCafe.customerLat === 0 && selectedCafe.customerLng === 0)
+    const orderId = selectedCafe?.orderId || selectedCafe?.id
 
     if (!isOutForDelivery || hasCustomerCoords || !orderId || fetchedOrderDetailsForDropRef.current === orderId) return
 
@@ -7048,21 +7048,21 @@ export default function DeliveryHome() {
         const coords = order?.address?.location?.coordinates
         const lat = coords?.[1]
         const lng = coords?.[0]
-        if (lat != null && lng != null && !(lat === 0 && lng === 0) && selectedRestaurant) {
-          setSelectedRestaurant(prev => prev ? { ...prev, customerLat: lat, customerLng: lng } : null)
+        if (lat != null && lng != null && !(lat === 0 && lng === 0) && selectedCafe) {
+          setSelectedCafe(prev => prev ? { ...prev, customerLat: lat, customerLng: lng } : null)
           }
       })
       .catch(err => {
         console.warn('⚠️ Reached Drop: getOrderDetails failed for customer coords:', err?.response?.data?.message || err.message)
       })
-  }, [selectedRestaurant?.orderStatus, selectedRestaurant?.deliveryPhase, selectedRestaurant?.deliveryState?.currentPhase, selectedRestaurant?.customerLat, selectedRestaurant?.customerLng, selectedRestaurant?.orderId, selectedRestaurant?.id])
+  }, [selectedCafe?.orderStatus, selectedCafe?.deliveryPhase, selectedCafe?.deliveryState?.currentPhase, selectedCafe?.customerLat, selectedCafe?.customerLng, selectedCafe?.orderId, selectedCafe?.id])
 
   // Monitor delivery boy's location for "Reached Drop" detection
   // Show "Reached Drop" popup when delivery boy is within 500 meters of customer location
   // Use useMemo to ensure deliveryStateStatus is always defined (prevents dependency array size changes)
   const deliveryStateStatus = useMemo(() => {
-    return selectedRestaurant?.deliveryState?.status ?? null
-  }, [selectedRestaurant?.deliveryState?.status])
+    return selectedCafe?.deliveryState?.status ?? null
+  }, [selectedCafe?.deliveryState?.status])
 
   useEffect(() => {
     // CRITICAL: If payment page is showing, delivery is completed - do NOT show reached drop popup
@@ -7071,8 +7071,8 @@ export default function DeliveryHome() {
       return
     }
 
-    const orderStatus = selectedRestaurant?.orderStatus || selectedRestaurant?.status || newOrder?.status || ''
-    const deliveryPhase = selectedRestaurant?.deliveryState?.currentPhase || selectedRestaurant?.deliveryPhase || ''
+    const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || newOrder?.status || ''
+    const deliveryPhase = selectedCafe?.deliveryState?.currentPhase || selectedCafe?.deliveryPhase || ''
     const isDeliveredOrCompleted = orderStatus === 'delivered' ||
       orderStatus === 'completed' ||
       deliveryPhase === 'completed' ||
@@ -7091,12 +7091,12 @@ export default function DeliveryHome() {
     // Rider position: prefer riderLocation, fallback lastLocationRef
     const riderPos = (riderLocation && riderLocation.length === 2) ? riderLocation : (lastLocationRef.current && lastLocationRef.current.length === 2 ? lastLocationRef.current : null)
 
-    const hasCustomerCoords = selectedRestaurant?.customerLat != null && selectedRestaurant?.customerLng != null &&
-      !(selectedRestaurant.customerLat === 0 && selectedRestaurant.customerLng === 0)
+    const hasCustomerCoords = selectedCafe?.customerLat != null && selectedCafe?.customerLng != null &&
+      !(selectedCafe.customerLat === 0 && selectedCafe.customerLng === 0)
 
     if (!hasCustomerCoords) {
       // Don't spam; only log when we're otherwise ready to monitor
-      if (isOutForDelivery && !isDeliveredOrCompleted && selectedRestaurant) {
+      if (isOutForDelivery && !isDeliveredOrCompleted && selectedCafe) {
         console.warn('[Reached Drop] Customer location missing. Ensure order has delivery address or wait for fetch.')
       }
       return
@@ -7136,8 +7136,8 @@ export default function DeliveryHome() {
     const distanceInMeters = calculateDistanceInMeters(
       riderPos[0],
       riderPos[1],
-      selectedRestaurant.customerLat,
-      selectedRestaurant.customerLng
+      selectedCafe.customerLat,
+      selectedCafe.customerLng
     )
 
     // Log distance check more frequently for debugging
@@ -7157,10 +7157,10 @@ export default function DeliveryHome() {
   }, [
     riderLocation?.[0] ?? null,
     riderLocation?.[1] ?? null,
-    selectedRestaurant?.customerLat ?? null,
-    selectedRestaurant?.customerLng ?? null,
-    selectedRestaurant?.orderStatus ?? newOrder?.status ?? null,
-    selectedRestaurant?.deliveryPhase ?? selectedRestaurant?.deliveryState?.currentPhase ?? null,
+    selectedCafe?.customerLat ?? null,
+    selectedCafe?.customerLng ?? null,
+    selectedCafe?.orderStatus ?? newOrder?.status ?? null,
+    selectedCafe?.deliveryPhase ?? selectedCafe?.deliveryState?.currentPhase ?? null,
     deliveryStateStatus, // Use memoized value to ensure consistent dependency array size
     Boolean(showNewOrderPopup),
     Boolean(showOrderIdConfirmationPopup),
@@ -7353,8 +7353,8 @@ export default function DeliveryHome() {
   // Accepts optional coordinates parameter to draw route immediately without waiting for state update
   // This is a FALLBACK polyline - should only be used when DirectionsRenderer is NOT available
   const updateRoutePolyline = (coordinates = null) => {
-    // Only show route if there's an active order (selectedRestaurant)
-    if (!selectedRestaurant) {
+    // Only show route if there's an active order (selectedCafe)
+    if (!selectedCafe) {
       // Clear route if no active order
       if (routePolylineRef.current) {
         routePolylineRef.current.setMap(null);
@@ -7457,23 +7457,23 @@ export default function DeliveryHome() {
     return parts.join(', ')
   }
 
-  const getRestaurantDisplayAddress = (source) => {
+  const getCafeDisplayAddress = (source) => {
     if (!source || typeof source !== 'object') return null
     const candidates = [
       source.address,
-      source.restaurantAddress,
-      source.restaurantLocation?.formattedAddress,
-      source.restaurantLocation?.address,
-      buildAddressFromLocation(source.restaurantLocation),
-      source.restaurantId?.address,
-      source.restaurantId?.formattedAddress,
-      source.restaurantId?.location?.formattedAddress,
-      source.restaurantId?.location?.address,
-      buildAddressFromLocation(source.restaurantId?.location),
-      source.restaurant?.address,
-      source.restaurant?.location?.formattedAddress,
-      source.restaurant?.location?.address,
-      buildAddressFromLocation(source.restaurant?.location),
+      source.cafeAddress,
+      source.cafeLocation?.formattedAddress,
+      source.cafeLocation?.address,
+      buildAddressFromLocation(source.cafeLocation),
+      source.cafeId?.address,
+      source.cafeId?.formattedAddress,
+      source.cafeId?.location?.formattedAddress,
+      source.cafeId?.location?.address,
+      buildAddressFromLocation(source.cafeId?.location),
+      source.cafe?.address,
+      source.cafe?.location?.formattedAddress,
+      source.cafe?.location?.address,
+      buildAddressFromLocation(source.cafe?.location),
       buildAddressFromLocation(source.location)
     ]
     return candidates.find(isValidAddress) || null
@@ -7497,11 +7497,11 @@ export default function DeliveryHome() {
     return candidates.find((value) => Boolean(value && typeof value === 'string' && value.trim())) || null
   }
 
-  const sliderRestaurantAddress = useMemo(() => {
-    const selectedRestaurantAddress = getRestaurantDisplayAddress(selectedRestaurant)
-    if (isValidAddress(selectedRestaurantAddress)) return selectedRestaurantAddress
-    return getRestaurantDisplayAddress(newOrder)
-  }, [selectedRestaurant, newOrder])
+  const sliderCafeAddress = useMemo(() => {
+    const selectedCafeAddress = getCafeDisplayAddress(selectedCafe)
+    if (isValidAddress(selectedCafeAddress)) return selectedCafeAddress
+    return getCafeDisplayAddress(newOrder)
+  }, [selectedCafe, newOrder])
 
   // Carousel slides data - fully dynamic, built from real-time state
   const carouselSlides = useMemo(() => {
@@ -7596,25 +7596,25 @@ export default function DeliveryHome() {
       }
     }
 
-    // Slide 3.5: Active order / en-route restaurant info
-    const activeRestaurantName =
-      selectedRestaurant?.name ||
-      selectedRestaurant?.restaurantName ||
-      newOrder?.restaurantName ||
+    // Slide 3.5: Active order / en-route cafe info
+    const activeCafeName =
+      selectedCafe?.name ||
+      selectedCafe?.cafeName ||
+      newOrder?.cafeName ||
       null
 
-    const activeRestaurantAddress = sliderRestaurantAddress
+    const activeCafeAddress = sliderCafeAddress
 
-    if (activeRestaurantName && activeRestaurantAddress) {
+    if (activeCafeName && activeCafeAddress) {
       const orderStatus =
-        selectedRestaurant?.orderStatus ||
-        selectedRestaurant?.status ||
+        selectedCafe?.orderStatus ||
+        selectedCafe?.status ||
         newOrder?.status ||
         ''
 
       const deliveryPhase =
-        selectedRestaurant?.deliveryPhase ||
-        selectedRestaurant?.deliveryState?.currentPhase ||
+        selectedCafe?.deliveryPhase ||
+        selectedCafe?.deliveryState?.currentPhase ||
         ''
 
       // Only show while order is active (not delivered/completed)
@@ -7636,8 +7636,8 @@ export default function DeliveryHome() {
 
         slides.push({
           id: 'active-order',
-          title: `${phaseLabel} · ${activeRestaurantName}`,
-          subtitle: activeRestaurantAddress,
+          title: `${phaseLabel} · ${activeCafeName}`,
+          subtitle: activeCafeAddress,
           icon: 'bag',
           buttonText: 'Navigate',
           bgColor: 'bg-gray-700',
@@ -7663,8 +7663,8 @@ export default function DeliveryHome() {
     todayTrips,
     todayHoursWorked,
     formatHours,
-    sliderRestaurantAddress,
-    selectedRestaurant,
+    sliderCafeAddress,
+    selectedCafe,
     newOrder
   ])
 
@@ -8936,7 +8936,7 @@ export default function DeliveryHome() {
 
       {/* New Order Popup with Countdown Timer - Custom Implementation */}
       <AnimatePresence>
-        {showNewOrderPopup && (newOrder || selectedRestaurant) && isOnline && (
+        {showNewOrderPopup && (newOrder || selectedCafe) && isOnline && (
           <>
             {/* Backdrop */}
             {!isNewOrderPopupMinimized && (
@@ -9084,7 +9084,7 @@ export default function DeliveryHome() {
                   <div className="mb-4">
                     <p className="text-gray-500 text-xs mb-1">Order ID</p>
                     <p className="text-base font-semibold text-[#1E1E1E]">
-                      {newOrder?.orderId || selectedRestaurant?.orderId || 'ORD1234567890'}
+                      {newOrder?.orderId || selectedCafe?.orderId || 'ORD1234567890'}
                     </p>
                   </div>
 
@@ -9097,15 +9097,15 @@ export default function DeliveryHome() {
                     </div>
 
                     <h3 className="text-lg font-bold text-[#1E1E1E] mb-1">
-                      {newOrder?.restaurantName || selectedRestaurant?.name || 'Restaurant'}
+                      {newOrder?.cafeName || selectedCafe?.name || 'Cafe'}
                     </h3>
                     <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                      {sliderRestaurantAddress || 'Address'}
+                      {sliderCafeAddress || 'Address'}
                     </p>
 
                     {(() => {
-                      const timeVal = selectedRestaurant?.timeAway && selectedRestaurant.timeAway !== 'Calculating...'
-                        ? `${selectedRestaurant.timeAway} away`
+                      const timeVal = selectedCafe?.timeAway && selectedCafe.timeAway !== 'Calculating...'
+                        ? `${selectedCafe.timeAway} away`
                         : (newOrder?.pickupDistance && newOrder.pickupDistance !== '0 km' && newOrder.pickupDistance !== 'Calculating...'
                           ? `${calculateTimeAway(newOrder.pickupDistance)} away`
                           : null)
@@ -9118,8 +9118,8 @@ export default function DeliveryHome() {
                     })()}
 
                     {(() => {
-                      const distVal = selectedRestaurant?.distance && selectedRestaurant.distance !== '0 km' && selectedRestaurant.distance !== 'Calculating...'
-                        ? `${selectedRestaurant.distance} away`
+                      const distVal = selectedCafe?.distance && selectedCafe.distance !== '0 km' && selectedCafe.distance !== 'Calculating...'
+                        ? `${selectedCafe.distance} away`
                         : (newOrder?.pickupDistance && newOrder.pickupDistance !== '0 km' && newOrder.pickupDistance !== 'Calculating...'
                           ? `${newOrder.pickupDistance} away`
                           : null)
@@ -9297,7 +9297,7 @@ export default function DeliveryHome() {
 
       {/* Directions Map View */}
       <AnimatePresence>
-        {showDirectionsMap && selectedRestaurant && (
+        {showDirectionsMap && selectedCafe && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -9344,26 +9344,26 @@ export default function DeliveryHome() {
             </span>
           </div>
 
-          {/* Restaurant Info */}
+          {/* Cafe Info */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-[#1E1E1E] mb-2">
-              {selectedRestaurant?.name || 'Cafe Name'}
+              {selectedCafe?.name || 'Cafe Name'}
             </h2>
             <p className="text-gray-600 mb-2 leading-relaxed">
               {(() => {
-                const address = selectedRestaurant?.address;
+                const address = selectedCafe?.address;
 
                 // If address is default or missing, try to find it in other fields
                 if (!address || address === 'Cafe Address' || address === 'Cafe address') {
                   // Check if address might be in a different field
                   const possibleAddress =
-                    selectedRestaurant?.restaurantAddress ||
-                    selectedRestaurant?.restaurant?.address ||
-                    selectedRestaurant?.restaurantId?.address ||
-                    selectedRestaurant?.restaurantId?.location?.formattedAddress ||
-                    selectedRestaurant?.restaurantId?.location?.address ||
-                    selectedRestaurant?.location?.address ||
-                    selectedRestaurant?.location?.formattedAddress;
+                    selectedCafe?.cafeAddress ||
+                    selectedCafe?.cafe?.address ||
+                    selectedCafe?.cafeId?.address ||
+                    selectedCafe?.cafeId?.location?.formattedAddress ||
+                    selectedCafe?.cafeId?.location?.address ||
+                    selectedCafe?.location?.address ||
+                    selectedCafe?.location?.formattedAddress;
 
                   if (possibleAddress && possibleAddress !== 'Cafe Address' && possibleAddress !== 'Cafe address') {
                     return possibleAddress;
@@ -9376,7 +9376,7 @@ export default function DeliveryHome() {
               })()}
             </p>
             <p className="text-gray-500 text-sm font-medium">
-              Order ID: {selectedRestaurant?.orderId || 'ORD1234567890'}
+              Order ID: {selectedCafe?.orderId || 'ORD1234567890'}
             </p>
           </div>
 
@@ -9384,70 +9384,70 @@ export default function DeliveryHome() {
           <div className="flex gap-3 mb-6">
             <button
               onClick={async () => {
-                // Try multiple paths to find restaurant phone number
-                let restaurantPhone = selectedRestaurant?.phone ||
-                  selectedRestaurant?.restaurantId?.phone ||
-                  selectedRestaurant?.ownerPhone ||
-                  selectedRestaurant?.restaurant?.phone ||
+                // Try multiple paths to find cafe phone number
+                let cafePhone = selectedCafe?.phone ||
+                  selectedCafe?.cafeId?.phone ||
+                  selectedCafe?.ownerPhone ||
+                  selectedCafe?.cafe?.phone ||
                   null
 
-                // If phone not found in selectedRestaurant, try to fetch order details from backend
-                if (!restaurantPhone && selectedRestaurant?.orderId) {
+                // If phone not found in selectedCafe, try to fetch order details from backend
+                if (!cafePhone && selectedCafe?.orderId) {
                   try {
-                    const orderId = selectedRestaurant.orderId || selectedRestaurant.id
+                    const orderId = selectedCafe.orderId || selectedCafe.id
                     const response = await deliveryAPI.getOrderDetails(orderId)
                     // Check multiple response formats
                     const order = response.data?.data?.order || response.data?.order || null
 
                     if (order) {
                       // Try all possible paths in the API response
-                      // Restaurant model has both 'phone' and 'ownerPhone' fields
-                      restaurantPhone = order.restaurantId?.phone ||
-                        order.restaurantId?.ownerPhone ||
-                        order.restaurant?.phone ||
-                        order.restaurant?.ownerPhone ||
-                        order.restaurantId?.contact?.phone ||
-                        order.restaurantId?.owner?.phone ||
+                      // Cafe model has both 'phone' and 'ownerPhone' fields
+                      cafePhone = order.cafeId?.phone ||
+                        order.cafeId?.ownerPhone ||
+                        order.cafe?.phone ||
+                        order.cafe?.ownerPhone ||
+                        order.cafeId?.contact?.phone ||
+                        order.cafeId?.owner?.phone ||
                         null
 
-                      // If phone found, update selectedRestaurant for future use
-                      if (restaurantPhone && selectedRestaurant) {
-                        setSelectedRestaurant({
-                          ...selectedRestaurant,
-                          phone: restaurantPhone,
-                          ownerPhone: order.restaurantId?.ownerPhone || order.restaurant?.ownerPhone || restaurantPhone
+                      // If phone found, update selectedCafe for future use
+                      if (cafePhone && selectedCafe) {
+                        setSelectedCafe({
+                          ...selectedCafe,
+                          phone: cafePhone,
+                          ownerPhone: order.cafeId?.ownerPhone || order.cafe?.ownerPhone || cafePhone
                         })
                         }
 
-                      // If still not found, try restaurant API directly
-                      if (!restaurantPhone && order.restaurantId) {
-                        const restaurantId = typeof order.restaurantId === 'string'
-                          ? order.restaurantId
-                          : (order.restaurantId._id || order.restaurantId.id || order.restaurantId.toString())
+                      // If still not found, try cafe API directly
+                      if (!cafePhone && order.cafeId) {
+                        const cafeId = typeof order.cafeId === 'string'
+                          ? order.cafeId
+                          : (order.cafeId._id || order.cafeId.id || order.cafeId.toString())
 
-                        if (restaurantId) {
+                        if (cafeId) {
                           try {
-                            const restaurantResponse = await restaurantAPI.getRestaurantById(restaurantId)
-                            if (restaurantResponse.data?.success && restaurantResponse.data.data) {
-                              const restaurant = restaurantResponse.data.data.restaurant || restaurantResponse.data.data
-                              restaurantPhone = restaurant.phone || restaurant.ownerPhone || restaurant.primaryContactNumber
+                            const cafeResponse = await cafeAPI.getCafeById(cafeId)
+                            if (cafeResponse.data?.success && cafeResponse.data.data) {
+                              const cafe = cafeResponse.data.data.cafe || cafeResponse.data.data
+                              cafePhone = cafe.phone || cafe.ownerPhone || cafe.primaryContactNumber
 
-                              if (restaurantPhone) {
-                                setSelectedRestaurant({
-                                  ...selectedRestaurant,
-                                  phone: restaurantPhone,
-                                  ownerPhone: restaurant.ownerPhone || restaurantPhone
+                              if (cafePhone) {
+                                setSelectedCafe({
+                                  ...selectedCafe,
+                                  phone: cafePhone,
+                                  ownerPhone: cafe.ownerPhone || cafePhone
                                 })
                                 }
                             }
-                          } catch (restaurantError) {
-                            console.error('❌ [CALL] Error fetching cafe by ID:', restaurantError)
+                          } catch (cafeError) {
+                            console.error('❌ [CALL] Error fetching cafe by ID:', cafeError)
                           }
                         }
                       }
 
-                      if (!restaurantPhone) {
-                        console.warn('⚠️ [CALL] Phone not found in order.restaurantId object:', order.restaurantId)
+                      if (!cafePhone) {
+                        console.warn('⚠️ [CALL] Phone not found in order.cafeId object:', order.cafeId)
                       }
                     } else {
                       console.warn('⚠️ [CALL] Order details API response format unexpected - order not found in response:', {
@@ -9461,22 +9461,22 @@ export default function DeliveryHome() {
                     console.error('❌ [CALL] Error response:', error.response?.data)
                     console.error('❌ [CALL] Error status:', error.response?.status)
                   }
-                } else if (!selectedRestaurant?.orderId) {
-                  console.warn('⚠️ [CALL] Cannot fetch phone - orderId not found in selectedRestaurant:', selectedRestaurant)
+                } else if (!selectedCafe?.orderId) {
+                  console.warn('⚠️ [CALL] Cannot fetch phone - orderId not found in selectedCafe:', selectedCafe)
                 }
 
-                if (restaurantPhone) {
+                if (cafePhone) {
                   // Remove any spaces, dashes, or special characters except + and digits
-                  const cleanPhone = restaurantPhone.replace(/[^\d+]/g, '')
+                  const cleanPhone = cafePhone.replace(/[^\d+]/g, '')
                   window.location.href = `tel:${cleanPhone}`
                 } else {
                   toast.error('Cafe phone number not available. Please contact support.')
                   console.error('❌ Cafe phone not found in any path:', {
-                    selectedRestaurant,
-                    hasPhone: !!selectedRestaurant?.phone,
-                    hasRestaurantIdPhone: !!selectedRestaurant?.restaurantId?.phone,
-                    hasOwnerPhone: !!selectedRestaurant?.ownerPhone,
-                    orderId: selectedRestaurant?.orderId
+                    selectedCafe,
+                    hasPhone: !!selectedCafe?.phone,
+                    hasCafeIdPhone: !!selectedCafe?.cafeId?.phone,
+                    hasOwnerPhone: !!selectedCafe?.ownerPhone,
+                    orderId: selectedCafe?.orderId
                   })
                 }
               }}
@@ -9487,52 +9487,52 @@ export default function DeliveryHome() {
             </button>
             <button
               onClick={() => {
-                // Get restaurant coordinates with robust fallbacks
+                // Get cafe coordinates with robust fallbacks
                 const locationCandidates = [
-                  selectedRestaurant?.restaurant?.location,
-                  selectedRestaurant?.restaurantLocation,
-                  selectedRestaurant?.location,
-                  selectedRestaurant?.restaurantId?.location,
-                  selectedRestaurant?.fullOrder?.restaurantId?.location,
-                  selectedRestaurant?.order?.restaurantId?.location
+                  selectedCafe?.cafe?.location,
+                  selectedCafe?.cafeLocation,
+                  selectedCafe?.location,
+                  selectedCafe?.cafeId?.location,
+                  selectedCafe?.fullOrder?.cafeId?.location,
+                  selectedCafe?.order?.cafeId?.location
                 ]
 
-                let extractedRestaurantCoords = { lat: null, lng: null }
+                let extractedCafeCoords = { lat: null, lng: null }
                 for (const candidate of locationCandidates) {
                   const parsed = extractLatLng(candidate)
                   if (hasValidCoordinates(parsed.lat, parsed.lng)) {
-                    extractedRestaurantCoords = parsed
+                    extractedCafeCoords = parsed
                     break
                   }
                 }
 
                 // Last fallback: use routeToPickup last coordinate [lat, lng]
-                let routeRestaurantLat = null
-                let routeRestaurantLng = null
-                const routeCoords = selectedRestaurant?.deliveryState?.routeToPickup?.coordinates
+                let routeCafeLat = null
+                let routeCafeLng = null
+                const routeCoords = selectedCafe?.deliveryState?.routeToPickup?.coordinates
                 if (Array.isArray(routeCoords) && routeCoords.length > 0) {
                   const lastPoint = routeCoords[routeCoords.length - 1]
                   if (Array.isArray(lastPoint) && lastPoint.length >= 2) {
-                    routeRestaurantLat = toFiniteCoordinate(lastPoint[0])
-                    routeRestaurantLng = toFiniteCoordinate(lastPoint[1])
+                    routeCafeLat = toFiniteCoordinate(lastPoint[0])
+                    routeCafeLng = toFiniteCoordinate(lastPoint[1])
                   }
                 }
 
-                const restaurantLat = toFiniteCoordinate(selectedRestaurant?.lat) ??
-                  extractedRestaurantCoords.lat ??
-                  toFiniteCoordinate(selectedRestaurant?.restaurantLat) ??
-                  routeRestaurantLat
-                const restaurantLng = toFiniteCoordinate(selectedRestaurant?.lng) ??
-                  extractedRestaurantCoords.lng ??
-                  toFiniteCoordinate(selectedRestaurant?.restaurantLng) ??
-                  routeRestaurantLng
+                const cafeLat = toFiniteCoordinate(selectedCafe?.lat) ??
+                  extractedCafeCoords.lat ??
+                  toFiniteCoordinate(selectedCafe?.cafeLat) ??
+                  routeCafeLat
+                const cafeLng = toFiniteCoordinate(selectedCafe?.lng) ??
+                  extractedCafeCoords.lng ??
+                  toFiniteCoordinate(selectedCafe?.cafeLng) ??
+                  routeCafeLng
 
-                if (!hasValidCoordinates(restaurantLat, restaurantLng)) {
+                if (!hasValidCoordinates(cafeLat, cafeLng)) {
                   toast.error('Cafe location not available')
                   console.error('❌ Cafe coordinates not found:', {
-                    lat: restaurantLat,
-                    lng: restaurantLng,
-                    selectedRestaurant
+                    lat: cafeLat,
+                    lng: cafeLng,
+                    selectedCafe
                   })
                   return
                 }
@@ -9542,7 +9542,7 @@ export default function DeliveryHome() {
                 const isAndroid = /android/i.test(userAgent)
                 const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream
                 const isLocalDevHost = ['localhost', '127.0.0.1'].includes(window.location.hostname)
-                const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${restaurantLat},${restaurantLng}&travelmode=bicycling`
+                const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${cafeLat},${cafeLng}&travelmode=bicycling`
 
                 let mapsUrl = ''
 
@@ -9558,7 +9558,7 @@ export default function DeliveryHome() {
 
                 if (isAndroid) {
                   // Android: Use google.navigation: scheme (opens directly in navigation mode)
-                  mapsUrl = `google.navigation:q=${restaurantLat},${restaurantLng}&mode=b`
+                  mapsUrl = `google.navigation:q=${cafeLat},${cafeLng}&mode=b`
 
                   // Try to open Google Maps app first
                   window.location.href = mapsUrl
@@ -9569,14 +9569,14 @@ export default function DeliveryHome() {
                   }, 500)
                 } else if (isIOS) {
                   // iOS: Use comgooglemaps:// scheme (opens Google Maps app)
-                  mapsUrl = `comgooglemaps://?daddr=${restaurantLat},${restaurantLng}&directionsmode=bicycling`
+                  mapsUrl = `comgooglemaps://?daddr=${cafeLat},${cafeLng}&directionsmode=bicycling`
 
                   // Try to open Google Maps app first
                   window.location.href = mapsUrl
 
                   // Fallback to web URL after a short delay (in case app is not installed)
                   setTimeout(() => {
-                    const webUrl = `https://maps.google.com/?daddr=${restaurantLat},${restaurantLng}&directionsmode=bicycling`
+                    const webUrl = `https://maps.google.com/?daddr=${cafeLat},${cafeLng}&directionsmode=bicycling`
                     window.open(webUrl, '_blank')
                   }, 500)
                 } else {
@@ -9686,7 +9686,7 @@ export default function DeliveryHome() {
             <div className="bg-white rounded-xl p-6 mb-6 overflow-hidden border border-[#F5F5F5]">
               <p className="text-gray-500 text-xs mb-2">Order ID</p>
               <p className="text-2xl sm:text-3xl font-bold text-[#1E1E1E] tracking-wider whitespace-nowrap overflow-x-auto min-w-0">
-                {selectedRestaurant?.orderId || selectedRestaurant?.id || newOrder?.orderId || newOrder?.orderMongoId || 'ORD1234567890'}
+                {selectedCafe?.orderId || selectedCafe?.id || newOrder?.orderId || newOrder?.orderMongoId || 'ORD1234567890'}
               </p>
             </div>
 
@@ -9699,7 +9699,7 @@ export default function DeliveryHome() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={async () => {
-                    const orderId = selectedRestaurant?.orderId || selectedRestaurant?.id || newOrder?.orderId || newOrder?.orderMongoId;
+                    const orderId = selectedCafe?.orderId || selectedCafe?.id || newOrder?.orderId || newOrder?.orderMongoId;
                     setIsLoadingBill(true);
                     try {
                       const response = await deliveryAPI.getOrderDetails(orderId);
@@ -9725,7 +9725,7 @@ export default function DeliveryHome() {
                 </button>
                 <button
                   onClick={async () => {
-                    const orderId = selectedRestaurant?.orderId || selectedRestaurant?.id || newOrder?.orderId || newOrder?.orderMongoId;
+                    const orderId = selectedCafe?.orderId || selectedCafe?.id || newOrder?.orderId || newOrder?.orderMongoId;
 
                     // If we already have bill data, use it. Otherwise fetch it.
                     let orderData = digitalBillData;
@@ -9838,12 +9838,12 @@ export default function DeliveryHome() {
     </div>
     
     <div class="content">
-      <!-- Restaurant Info -->
+      <!-- Cafe Info -->
       <div class="section">
         <div class="section-title">From</div>
         <div class="info-box">
-          <h3>${orderData.restaurantId?.name || orderData.restaurantName || 'Restaurant'}</h3>
-          <p>${getRestaurantDisplayAddress(orderData) || 'Address'}</p>
+          <h3>${orderData.cafeId?.name || orderData.cafeName || 'Cafe'}</h3>
+          <p>${getCafeDisplayAddress(orderData) || 'Address'}</p>
         </div>
       </div>
 
@@ -10038,9 +10038,9 @@ export default function DeliveryHome() {
       </BottomPopup>
 
       {/* Start Navigation Button Card - Show when order is out_for_delivery */}
-      {selectedRestaurant &&
-        (selectedRestaurant.orderStatus === 'out_for_delivery' ||
-          selectedRestaurant.deliveryPhase === 'en_route_to_delivery') &&
+      {selectedCafe &&
+        (selectedCafe.orderStatus === 'out_for_delivery' ||
+          selectedCafe.deliveryPhase === 'en_route_to_delivery') &&
         !showReachedDropPopup &&
         !showOrderDeliveredAnimation &&
         !showCustomerReviewPopup &&
@@ -10074,13 +10074,13 @@ export default function DeliveryHome() {
                       Head to Customer Location
                     </h3>
                     <p className="text-sm text-gray-600 mt-0.5">
-                      {selectedRestaurant?.customerName || 'Customer'}
+                      {selectedCafe?.customerName || 'Customer'}
                     </p>
                   </div>
                 </div>
-                {selectedRestaurant?.customerAddress && (
+                {selectedCafe?.customerAddress && (
                   <p className="text-xs text-gray-500 ml-13 truncate">
-                    {selectedRestaurant.customerAddress}
+                    {selectedCafe.customerAddress}
                   </p>
                 )}
               </div>
@@ -10139,13 +10139,13 @@ export default function DeliveryHome() {
           {/* Customer Info */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-[#1E1E1E] mb-2">
-              {selectedRestaurant?.customerName || 'Customer Name'}
+              {selectedCafe?.customerName || 'Customer Name'}
             </h2>
             <p className="text-gray-600 mb-2 leading-relaxed">
-              {selectedRestaurant?.customerAddress || 'Customer Address'}
+              {selectedCafe?.customerAddress || 'Customer Address'}
             </p>
             <p className="text-gray-500 text-sm font-medium">
-              Order ID: {selectedRestaurant?.orderId || 'ORD1234567890'}
+              Order ID: {selectedCafe?.orderId || 'ORD1234567890'}
             </p>
           </div>
 
@@ -10278,7 +10278,7 @@ export default function DeliveryHome() {
                     ? (tripDistance >= 1000
                       ? `${(tripDistance / 1000).toFixed(1)} kms`
                       : `${tripDistance.toFixed(0)} m`)
-                    : (selectedRestaurant?.tripDistance || '—')}
+                    : (selectedCafe?.tripDistance || '—')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -10291,17 +10291,17 @@ export default function DeliveryHome() {
                     ? (tripTime >= 60
                       ? `${Math.round(tripTime / 60)} mins`
                       : `${tripTime} secs`)
-                    : (selectedRestaurant?.tripTime || '—')}
+                    : (selectedCafe?.tripTime || '—')}
                 </span>
               </div>
             </div>
           </div>
 
           {/* Payment info: Online = amount paid, COD = collect from customer */}
-          {selectedRestaurant?.total != null && (() => {
-            const m = (selectedRestaurant.paymentMethod || '').toLowerCase()
+          {selectedCafe?.total != null && (() => {
+            const m = (selectedCafe.paymentMethod || '').toLowerCase()
             const isCod = m === 'cash' || m === 'cod'
-            const total = Number(selectedRestaurant.total) || 0
+            const total = Number(selectedCafe.total) || 0
             return (
               <div className={`rounded-xl p-4 mb-6 ${isCod ? 'bg-amber-50 border border-amber-200' : 'bg-emerald-50 border border-emerald-200'}`}>
                 <div className="flex items-center justify-between">
@@ -10437,10 +10437,10 @@ export default function DeliveryHome() {
             <button
               onClick={async () => {
                 // Get order ID - use MongoDB _id for API call
-                const orderIdForApi = selectedRestaurant?.id ||
+                const orderIdForApi = selectedCafe?.id ||
                   newOrder?.orderMongoId ||
                   newOrder?._id ||
-                  selectedRestaurant?.orderId ||
+                  selectedCafe?.orderId ||
                   newOrder?.orderId
 
                 // Save review by calling completeDelivery API with rating and review
@@ -10510,7 +10510,7 @@ export default function DeliveryHome() {
             {/* Header */}
             <div className="bg-[#e53935] text-white px-6 py-6">
               <h1 className="text-2xl font-bold mb-2">Payment</h1>
-              <p className="text-white/90 text-sm">Order ID: {selectedRestaurant?.orderId || 'ORD1234567890'}</p>
+              <p className="text-white/90 text-sm">Order ID: {selectedCafe?.orderId || 'ORD1234567890'}</p>
             </div>
 
             {/* Payment Amount */}
@@ -10522,7 +10522,7 @@ export default function DeliveryHome() {
                     return orderEarnings.toFixed(2);
                   }
                   // Handle estimatedEarnings - can be number or object
-                  const earnings = selectedRestaurant?.amount || selectedRestaurant?.estimatedEarnings || 0;
+                  const earnings = selectedCafe?.amount || selectedCafe?.estimatedEarnings || 0;
                   if (typeof earnings === 'object' && earnings.totalEarning) {
                     return earnings.totalEarning.toFixed(2);
                   }
@@ -10545,7 +10545,7 @@ export default function DeliveryHome() {
                       if (orderEarnings > 0) {
                         earnings = orderEarnings;
                       } else {
-                        const estEarnings = selectedRestaurant?.amount || selectedRestaurant?.estimatedEarnings || 0;
+                        const estEarnings = selectedCafe?.amount || selectedCafe?.estimatedEarnings || 0;
                         if (typeof estEarnings === 'object' && estEarnings.totalEarning) {
                           earnings = estEarnings.totalEarning;
                         } else if (typeof estEarnings === 'number') {
@@ -10568,7 +10568,7 @@ export default function DeliveryHome() {
                         return orderEarnings.toFixed(2);
                       }
                       // Handle estimatedEarnings - can be number or object
-                      const earnings = selectedRestaurant?.amount || selectedRestaurant?.estimatedEarnings || 0;
+                      const earnings = selectedCafe?.amount || selectedCafe?.estimatedEarnings || 0;
                       if (typeof earnings === 'object' && earnings.totalEarning) {
                         return earnings.totalEarning.toFixed(2);
                       }
@@ -10590,8 +10590,8 @@ export default function DeliveryHome() {
                   setShowOrderDeliveredAnimation(false)
                   setShowCustomerReviewPopup(false)
 
-                  // Clear selected restaurant/order to prevent showing popups for delivered order
-                  setSelectedRestaurant(null)
+                  // Clear selected cafe/order to prevent showing popups for delivered order
+                  setSelectedCafe(null)
 
                   // CRITICAL: Clear active order from localStorage to prevent it from showing again
                   localStorage.removeItem('deliveryActiveOrder')
@@ -10667,14 +10667,14 @@ export default function DeliveryHome() {
 
                 {/* Bill Content */}
                 <div className="p-6 space-y-5 overflow-y-auto">
-                  {/* Restaurant Info */}
+                  {/* Cafe Info */}
                   <div className="pb-4" style={{ borderBottom: '1.5px solid #F5F5F5' }}>
                     <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#9e9e9e' }}>From</p>
                     <h3 className="text-lg font-bold" style={{ color: '#1E1E1E' }}>
-                      {digitalBillData.restaurantId?.name || digitalBillData.restaurantName || 'Restaurant'}
+                      {digitalBillData.cafeId?.name || digitalBillData.cafeName || 'Cafe'}
                     </h3>
                     <p className="text-sm mt-1" style={{ color: '#555' }}>
-                      {getRestaurantDisplayAddress(digitalBillData) || 'Address'}
+                      {getCafeDisplayAddress(digitalBillData) || 'Address'}
                     </p>
                   </div>
 

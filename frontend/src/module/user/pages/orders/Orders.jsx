@@ -37,7 +37,7 @@ export default function Orders() {
 
   // Calculate countdown for an order
   const calculateCountdown = (order) => {
-    if (!order || order.status === 'delivered' || order.status === 'cancelled' || order.status === 'restaurant_cancelled') {
+    if (!order || order.status === 'delivered' || order.status === 'cancelled' || order.status === 'cafe_cancelled') {
       return null
     }
 
@@ -148,7 +148,7 @@ export default function Orders() {
       
       console.log('🎯 Showing rating popup for order:', {
         orderId,
-        restaurant: orderToRate.restaurant,
+        cafe: orderToRate.cafe,
         status: orderToRate.status
       })
       
@@ -159,7 +159,7 @@ export default function Orders() {
       setTimeout(() => {
         console.log('✨ Opening rating modal for order:', {
           orderId: orderId,
-          restaurant: orderToRate.restaurant,
+          cafe: orderToRate.cafe,
           status: orderToRate.status,
           originalStatus: orderToRate.originalStatus
         })
@@ -202,20 +202,20 @@ export default function Orders() {
             status: o.status,
             rating: o.rating || o.review?.rating,
             deliveredAt: o.deliveredAt,
-            restaurant: o.restaurantId?.name || o.restaurantName
+            cafe: o.cafeId?.name || o.cafeName
           })))
           
           // Transform API orders to match UI structure
           const transformedOrders = ordersData.map(order => {
             const createdAt = order.createdAt ? new Date(order.createdAt) : new Date()
             
-            // Check if cancelled by restaurant or user
+            // Check if cancelled by cafe or user
             const isCancelled = order.status === 'cancelled'
             const cancellationReason = order.cancellationReason || ''
             // Check cancelledBy field first, then fallback to cancellation reason pattern
-            const isRestaurantCancelled = isCancelled && (
-              order.cancelledBy === 'restaurant' ||
-              /rejected by restaurant|restaurant rejected|restaurant cancelled|restaurant is too busy|item not available|outside delivery area|kitchen closing|technical issue|order not accepted within time limit|restaurant did not respond/i.test(cancellationReason)
+            const isCafeCancelled = isCancelled && (
+              order.cancelledBy === 'cafe' ||
+              /rejected by cafe|cafe rejected|cafe cancelled|cafe is too busy|item not available|outside delivery area|kitchen closing|technical issue|order not accepted within time limit|cafe did not respond/i.test(cancellationReason)
             )
             const isUserCancelled = isCancelled && order.cancelledBy === 'user'
 
@@ -226,7 +226,7 @@ export default function Orders() {
               id: order.orderId || order._id?.toString() || `ORD-${order._id}`,
               mongoId: order._id,
               orderId: order.orderId || order._id?.toString(), // Keep orderId for display
-              status: isRestaurantCancelled ? 'restaurant_cancelled' : getOrderStatus(order),
+              status: isCafeCancelled ? 'cafe_cancelled' : getOrderStatus(order),
               originalStatus: originalStatus, // Keep original status for reference
               createdAt: createdAt.toISOString(),
               address: order.address || {},
@@ -248,15 +248,15 @@ export default function Orders() {
               pricing: order.pricing || {}, // Keep full pricing object for discounts, coupons
               payment: order.payment || {},
               paymentMethod: order.payment?.method || order.paymentMethod,
-              restaurant: order.restaurantId?.name || order.restaurantName || 'Restaurant',
-              restaurantId: order.restaurantId?._id || order.restaurantId,
-              restaurantImage: order.restaurantId?.profileImage?.url || order.restaurantId?.profileImage || null,
-              restaurantLocation: order.restaurantId?.location?.area || order.restaurantId?.location?.city || order.address?.city || '',
+              cafe: order.cafeId?.name || order.cafeName || 'Cafe',
+              cafeId: order.cafeId?._id || order.cafeId,
+              cafeImage: order.cafeId?.profileImage?.url || order.cafeId?.profileImage || null,
+              cafeLocation: order.cafeId?.location?.area || order.cafeId?.location?.city || order.address?.city || '',
               rating: order.rating || order.review?.rating || null, // Check both rating and review.rating
               review: order.review || null,
               tracking: order.tracking || {},
               cancellationReason: cancellationReason,
-              isRestaurantCancelled: isRestaurantCancelled,
+              isCafeCancelled: isCafeCancelled,
               isUserCancelled: isUserCancelled,
               cancelledBy: order.cancelledBy,
               eta: order.eta || { min: order.estimatedDeliveryTime || 30, max: order.estimatedDeliveryTime || 30 },
@@ -334,19 +334,19 @@ export default function Orders() {
     if (!searchQuery.trim()) return true
     
     const query = searchQuery.toLowerCase()
-    const restaurantMatch = order.restaurant?.toLowerCase().includes(query)
+    const cafeMatch = order.cafe?.toLowerCase().includes(query)
     const itemsMatch = order.items.some(item => 
       (item.name || item.foodName || '').toLowerCase().includes(query)
     )
     
-    return restaurantMatch || itemsMatch
+    return cafeMatch || itemsMatch
   })
 
   // Handle reorder
   const handleReorder = (order) => {
-    // Navigate to restaurant page or cart
-    if (order.restaurantId) {
-      navigate(`/user/restaurants/${order.restaurantId}`)
+    // Navigate to cafe page or cart
+    if (order.cafeId) {
+      navigate(`/user/cafes/${order.cafeId}`)
     } else {
       toast.info('Cafe information not available')
     }
@@ -357,20 +357,20 @@ export default function Orders() {
     setActiveMenuOrderId((current) => (current === orderId ? null : orderId))
   }
 
-  const handleShareRestaurant = async (order) => {
+  const handleShareCafe = async (order) => {
     const companyName = await getCompanyNameAsync()
     const location =
-      order.restaurantLocation ||
+      order.cafeLocation ||
       `${order.address?.city || ""}, ${order.address?.state || ""}`.trim()
 
-    const shareText = `Check out ${order.restaurant} on ${companyName}.
+    const shareText = `Check out ${order.cafe} on ${companyName}.
 Location: ${location || "Location not available"}
-Order again from this restaurant in the ${companyName} app.`
+Order again from this cafe in the ${companyName} app.`
 
     try {
       if (navigator.share) {
         await navigator.share({
-          title: order.restaurant,
+          title: order.cafe,
           text: shareText,
         })
       } else if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -422,12 +422,12 @@ Order again from this restaurant in the ${companyName} app.`
       await api.post(API_ENDPOINTS.ADMIN.FEEDBACK_EXPERIENCE_CREATE, {
         rating: selectedRating,
         module: "user",
-        restaurantId: order.restaurantId || null,
+        cafeId: order.cafeId || null,
         metadata: {
           orderId: order.id,
           orderMongoId: order.mongoId,
           orderTotal: order.total,
-          restaurantName: order.restaurant,
+          cafeName: order.cafe,
           comment: feedbackText || undefined,
         },
       })
@@ -542,31 +542,31 @@ Order again from this restaurant in the ${companyName} app.`
             
             // Payment failed only for online payments (razorpay) that actually failed
             // Don't show payment failed for COD/wallet or cancelled orders
-            const isCancelled = order.status === 'cancelled' || order.status === 'restaurant_cancelled'
+            const isCancelled = order.status === 'cancelled' || order.status === 'cafe_cancelled'
             const paymentFailed = !isCodOrWallet && 
                                  !isCancelled && 
                                  (order.payment?.status === 'failed')
             
             const isDelivered = order.status === 'delivered'
-            const isRestaurantCancelled = order.isRestaurantCancelled || order.status === 'restaurant_cancelled'
+            const isCafeCancelled = order.isCafeCancelled || order.status === 'cafe_cancelled'
             const isUserCancelled = order.isUserCancelled || (isCancelled && order.cancelledBy === 'user')
-            // Prefer food image from first item; fallback to restaurant image, then generic food photo
+            // Prefer food image from first item; fallback to cafe image, then generic food photo
             const firstItemImage = order.items?.[0]?.image
-            const restaurantImage = firstItemImage 
-              || order.restaurantImage 
+            const cafeImage = firstItemImage 
+              || order.cafeImage 
               || "https://images.unsplash.com/photo-1604908176997-125188eb3c52?auto=format&fit=crop&w=200&q=80"
-            const location = order.restaurantLocation || `${order.address?.city || ''}, ${order.address?.state || ''}`.trim() || 'Location not available'
+            const location = order.cafeLocation || `${order.address?.city || ''}, ${order.address?.state || ''}`.trim() || 'Location not available'
 
             return (
               <div key={order.id} className="relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                {/* Card Header: Restaurant Info */}
+                {/* Card Header: Cafe Info */}
                 <div className="flex items-start justify-between p-4 pb-2">
                   <div className="flex gap-3">
-                    {/* Restaurant Image */}
+                    {/* Cafe Image */}
                     <div className="w-14 h-14 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0">
                       <img 
-                        src={restaurantImage} 
-                        alt={order.restaurant} 
+                        src={cafeImage} 
+                        alt={order.cafe} 
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.src = "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?auto=format&fit=crop&w=100&q=80"
@@ -575,7 +575,7 @@ Order again from this restaurant in the ${companyName} app.`
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-800 text-lg leading-tight">{order.restaurant}</h3>
+                      <h3 className="font-semibold text-gray-800 text-lg leading-tight">{order.cafe}</h3>
                       <p className="text-xs text-gray-500 mt-0.5">{location}</p>
                       {order.orderId && (
                         <p className="text-xs text-gray-400 mt-0.5 font-mono">#{order.orderId}</p>
@@ -586,8 +586,8 @@ Order again from this restaurant in the ${companyName} app.`
                           {order.deliveryPartnerPhone && ` • ${order.deliveryPartnerPhone}`}
                         </p>
                       )}
-                      {order.restaurantId && (
-                        <Link to={`/user/restaurants/${order.restaurantId}`}>
+                      {order.cafeId && (
+                        <Link to={`/user/cafes/${order.cafeId}`}>
                           <button className="text-xs text-red-500 font-medium flex items-center mt-1 hover:text-red-600">
                             View menu <span className="ml-0.5">▸</span>
                           </button>
@@ -610,7 +610,7 @@ Order again from this restaurant in the ${companyName} app.`
                   <div className="absolute right-3 top-10 z-20 w-40 rounded-xl bg-white shadow-lg border border-gray-100 py-1 text-xs">
                     <button
                       type="button"
-                      onClick={() => handleShareRestaurant(order)}
+                      onClick={() => handleShareCafe(order)}
                       className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-800"
                     >
                       Share cafe
@@ -757,13 +757,13 @@ Order again from this restaurant in the ${companyName} app.`
                     {isDelivered && !paymentFailed && (
                       <p className="text-xs font-medium text-green-600 mt-1">✓ Delivered</p>
                     )}
-                    {isRestaurantCancelled && (
+                    {isCafeCancelled && (
                       <p className="text-xs font-medium text-red-500 mt-1">✗ Cafe Cancelled</p>
                     )}
                     {isUserCancelled && (
                       <p className="text-xs font-medium text-gray-500 mt-1">✗ Cancelled by you</p>
                     )}
-                    {isCancelled && !isRestaurantCancelled && !isUserCancelled && (
+                    {isCancelled && !isCafeCancelled && !isUserCancelled && (
                       <p className="text-xs font-medium text-gray-500 mt-1">✗ Cancelled</p>
                     )}
                   </div>
@@ -783,7 +783,7 @@ Order again from this restaurant in the ${companyName} app.`
                 {/* Card Footer: Actions */}
                 <div className="px-4 py-3 flex items-center justify-between">
                   {/* Left Side: Rating or Error */}
-                  {isRestaurantCancelled ? (
+                  {isCafeCancelled ? (
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <div className="bg-red-100 p-1 rounded-full">
@@ -875,7 +875,7 @@ Order again from this restaurant in the ${companyName} app.`
                 </button>
               </div>
               <p className="text-sm text-white/90">
-                {ratingModal.order.restaurant} • Order #{ratingModal.order.id}
+                {ratingModal.order.cafe} • Order #{ratingModal.order.id}
               </p>
             </div>
 

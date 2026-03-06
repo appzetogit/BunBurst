@@ -26,9 +26,9 @@ const transactionSchema = new mongoose.Schema({
     ref: 'Order',
     sparse: true
   },
-  restaurantId: {
+  cafeId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Restaurant',
+    ref: 'Cafe',
     sparse: true
   },
   metadata: {
@@ -96,7 +96,7 @@ const adminWalletSchema = new mongoose.Schema({
 
 // Indexes
 adminWalletSchema.index({ 'transactions.orderId': 1 });
-adminWalletSchema.index({ 'transactions.restaurantId': 1 });
+adminWalletSchema.index({ 'transactions.cafeId': 1 });
 adminWalletSchema.index({ 'transactions.type': 1 });
 adminWalletSchema.index({ 'transactions.createdAt': -1 });
 adminWalletSchema.index({ lastTransactionAt: -1 });

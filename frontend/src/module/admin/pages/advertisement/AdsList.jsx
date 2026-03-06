@@ -19,14 +19,14 @@ export default function AdsList() {
   const [selectedAd, setSelectedAd] = useState(null)
   const [filters, setFilters] = useState({
     status: "",
-    restaurant: "",
+    cafe: "",
     priority: "",
   })
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     adsId: true,
     adsTitle: true,
-    restaurantInfo: true,
+    cafeInfo: true,
     adsType: true,
     duration: true,
     status: true,
@@ -38,7 +38,7 @@ export default function AdsList() {
     si: "Serial Number",
     adsId: "Ads ID",
     adsTitle: "Ads Title",
-    restaurantInfo: "Cafe Info",
+    cafeInfo: "Cafe Info",
     adsType: "Ads Type",
     duration: "Duration",
     status: "Status",
@@ -57,7 +57,7 @@ export default function AdsList() {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(ad =>
         ad.adsId?.toLowerCase().includes(query) ||
-        ad.restaurantName?.toLowerCase().includes(query) ||
+        ad.cafeName?.toLowerCase().includes(query) ||
         ad.adsTitle?.toLowerCase().includes(query)
       )
     }
@@ -66,8 +66,8 @@ export default function AdsList() {
       result = result.filter(ad => ad.status === filters.status)
     }
 
-    if (filters.restaurant) {
-      result = result.filter(ad => ad.restaurantName === filters.restaurant)
+    if (filters.cafe) {
+      result = result.filter(ad => ad.cafeName === filters.cafe)
     }
 
     if (filters.priority) {
@@ -136,7 +136,7 @@ export default function AdsList() {
       si: true,
       adsId: true,
       adsTitle: true,
-      restaurantInfo: true,
+      cafeInfo: true,
       adsType: true,
       duration: true,
       status: true,
@@ -152,12 +152,12 @@ export default function AdsList() {
   const handleResetFilters = () => {
     setFilters({
       status: "",
-      restaurant: "",
+      cafe: "",
       priority: "",
     })
   }
 
-  const restaurants = [...new Set(ads.map(ad => ad.restaurantName))].filter(Boolean)
+  const cafes = [...new Set(ads.map(ad => ad.cafeName))].filter(Boolean)
   const statuses = [...new Set(ads.map(ad => ad.status))].filter(Boolean)
 
   return (
@@ -271,7 +271,7 @@ export default function AdsList() {
                 {visibleColumns.si && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">SI</th>}
                 {visibleColumns.adsId && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads ID</th>}
                 {visibleColumns.adsTitle && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Title</th>}
-                {visibleColumns.restaurantInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Cafe Info</th>}
+                {visibleColumns.cafeInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Cafe Info</th>}
                 {visibleColumns.adsType && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Type</th>}
                 {visibleColumns.duration && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Duration</th>}
                 {visibleColumns.status && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Status</th>}
@@ -313,15 +313,15 @@ export default function AdsList() {
                         <span className="text-sm font-medium text-slate-900">{ad.adsTitle}</span>
                       </td>
                     )}
-                    {visibleColumns.restaurantInfo && (
+                    {visibleColumns.cafeInfo && (
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                             <Building2 className="w-5 h-5 text-orange-600" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-slate-900">{ad.restaurantName}</span>
-                            <span className="text-xs text-slate-500">{ad.restaurantEmail}</span>
+                            <span className="text-sm font-medium text-slate-900">{ad.cafeName}</span>
+                            <span className="text-xs text-slate-500">{ad.cafeEmail}</span>
                           </div>
                         </div>
                       </td>
@@ -430,13 +430,13 @@ export default function AdsList() {
                 Cafe
               </label>
               <select
-                value={filters.restaurant}
-                onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
+                value={filters.cafe}
+                onChange={(e) => setFilters(prev => ({ ...prev, cafe: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               >
                 <option value="">All Cafes</option>
-                {restaurants.map(restaurant => (
-                  <option key={restaurant} value={restaurant}>{restaurant}</option>
+                {cafes.map(cafe => (
+                  <option key={cafe} value={cafe}>{cafe}</option>
                 ))}
               </select>
             </div>
@@ -502,11 +502,11 @@ export default function AdsList() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Cafe Name</p>
-                  <p className="text-sm text-slate-900">{selectedAd.restaurantName}</p>
+                  <p className="text-sm text-slate-900">{selectedAd.cafeName}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Cafe Email</p>
-                  <p className="text-sm text-slate-900">{selectedAd.restaurantEmail}</p>
+                  <p className="text-sm text-slate-900">{selectedAd.cafeEmail}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Ads Type</p>

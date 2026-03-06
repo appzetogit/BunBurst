@@ -11,7 +11,7 @@ import { useProfile } from "../../context/ProfileContext"
 import { useOrders } from "../../context/OrdersContext"
 import { useLocation as useUserLocation } from "../../hooks/useLocation"
 import { useZone } from "../../hooks/useZone"
-import { orderAPI, restaurantAPI, adminAPI, userAPI, API_ENDPOINTS } from "@/lib/api"
+import { orderAPI, cafeAPI, adminAPI, userAPI, API_ENDPOINTS } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
 import { initRazorpayPayment } from "@/lib/utils/razorpay"
 import { toast } from "sonner"
@@ -89,7 +89,7 @@ export default function Cart() {
     );
   }
 
-  const { cart, updateQuantity, updateCartItem, addToCart, getCartCount, clearCart, cleanCartForRestaurant } = cartContext;
+  const { cart, updateQuantity, updateCartItem, addToCart, getCartCount, clearCart, cleanCartForCafe } = cartContext;
   const { getDefaultAddress, getDefaultPaymentMethod, addresses, paymentMethods, userProfile } = useProfile()
   const { createOrder } = useOrders()
   const { openLocationSelector } = useLocationSelector()
@@ -159,7 +159,7 @@ export default function Cart() {
 
   const resolveCategoryIdForItem = (item) => {
     // Prefer explicit category names first (category/categoryName/sectionName),
-    // because item.categoryId can be stale or restaurant-side and may not map
+    // because item.categoryId can be stale or cafe-side and may not map
     // to the intended global admin category for addons.
     const primaryNameCandidates = [
       item?.category,
@@ -207,7 +207,7 @@ export default function Cart() {
       if (byNameOrSlug) return byNameOrSlug
 
       // IMPORTANT:
-      // Cart items may carry restaurant/menu-side category ObjectIds which are
+      // Cart items may carry cafe/menu-side category ObjectIds which are
       // different from admin global category ids used by addons.
       // So only trust raw ObjectId fallback when we don't have public category
       // mappings loaded yet.
@@ -345,9 +345,9 @@ export default function Cart() {
   const [placedOrderId, setPlacedOrderId] = useState(null)
 
 
-  // Restaurant and pricing state
-  const [restaurantData, setRestaurantData] = useState(null)
-  const [loadingRestaurant, setLoadingRestaurant] = useState(false)
+  // Cafe and pricing state
+  const [cafeData, setCafeData] = useState(null)
+  const [loadingCafe, setLoadingCafe] = useState(false)
   const [pricing, setPricing] = useState(null)
   const [loadingPricing, setLoadingPricing] = useState(false)
 
@@ -388,11 +388,11 @@ export default function Cart() {
     : savedAddress
   const defaultPayment = getDefaultPaymentMethod()
 
-  // Get restaurant ID from cart or restaurant data
-  // Priority: restaurantData > cart[0].restaurantId
-  // DO NOT use cart[0].restaurant as slug fallback - it creates wrong slugs
-  const restaurantId = cart.length > 0
-    ? (restaurantData?._id || restaurantData?.restaurantId || cart[0]?.restaurantId || null)
+  // Get cafe ID from cart or cafe data
+  // Priority: cafeData > cart[0].cafeId
+  // DO NOT use cart[0].cafe as slug fallback - it creates wrong slugs
+  const cafeId = cart.length > 0
+    ? (cafeData?._id || cafeData?.cafeId || cart[0]?.cafeId || null)
     : null
 
   // Extract unique category IDs from cart items to fetch matching global addons.
@@ -409,11 +409,11 @@ export default function Cart() {
 
   // â”€â”€ Share cart via native OS share sheet (WhatsApp, Instagram, etc.) â”€â”€
   const handleShareCart = async () => {
-    const restaurantSlug = restaurantData?.slug || restaurantName || 'restaurant'
-    const shareUrl = `${window.location.origin}/user/restaurants/${restaurantSlug}`
+    const cafeSlug = cafeData?.slug || cafeName || 'cafe'
+    const shareUrl = `${window.location.origin}/user/cafes/${cafeSlug}`
     const itemNames = cart.map(i => i.name).join(', ')
-    const shareTitle = `Check out my order from ${restaurantData?.name || restaurantSlug}!`
-    const shareText = `I'm ordering ${itemNames} from ${restaurantData?.name || restaurantSlug}. Try it too! 🍽️`
+    const shareTitle = `Check out my order from ${cafeData?.name || cafeSlug}!`
+    const shareText = `I'm ordering ${itemNames} from ${cafeData?.name || cafeSlug}. Try it too! 🍽️`
     if (navigator.share) {
       try {
         await navigator.share({ title: shareTitle, text: shareText, url: shareUrl })
@@ -462,138 +462,138 @@ export default function Cart() {
     }
   }, [showPlacingOrder, showOrderSuccess])
 
-  // Fetch restaurant data when cart has items
+  // Fetch cafe data when cart has items
   useEffect(() => {
-    const fetchRestaurantData = async () => {
+    const fetchCafeData = async () => {
       if (cart.length === 0) {
-        setRestaurantData(null)
+        setCafeData(null)
         return
       }
 
-      // If we already have restaurantData, don't fetch again
-      if (restaurantData) {
+      // If we already have cafeData, don't fetch again
+      if (cafeData) {
         return
       }
 
-      setLoadingRestaurant(true)
+      setLoadingCafe(true)
 
-      // Strategy 1: Try using restaurantId from cart if available
-      if (cart[0]?.restaurantId) {
+      // Strategy 1: Try using cafeId from cart if available
+      if (cart[0]?.cafeId) {
         try {
-          const cartRestaurantId = cart[0].restaurantId;
-          const cartRestaurantName = cart[0].restaurant;
+          const cartCafeId = cart[0].cafeId;
+          const cartCafeName = cart[0].cafe;
 
-          console.log("🔄 Fetching cafe data by restaurantId from cart:", cartRestaurantId)
-          const response = await restaurantAPI.getRestaurantById(cartRestaurantId)
-          const data = response?.data?.data?.restaurant || response?.data?.restaurant
+          console.log("🔄 Fetching cafe data by cafeId from cart:", cartCafeId)
+          const response = await cafeAPI.getCafeById(cartCafeId)
+          const data = response?.data?.data?.cafe || response?.data?.cafe
 
           if (data) {
-            // CRITICAL: Validate that fetched restaurant matches cart items
-            const fetchedRestaurantId = data.restaurantId || data._id?.toString();
-            const fetchedRestaurantName = data.name;
+            // CRITICAL: Validate that fetched cafe matches cart items
+            const fetchedCafeId = data.cafeId || data._id?.toString();
+            const fetchedCafeName = data.name;
 
-            // Check if restaurantId matches
-            const restaurantIdMatches =
-              fetchedRestaurantId === cartRestaurantId ||
-              data._id?.toString() === cartRestaurantId ||
-              data.restaurantId === cartRestaurantId;
+            // Check if cafeId matches
+            const cafeIdMatches =
+              fetchedCafeId === cartCafeId ||
+              data._id?.toString() === cartCafeId ||
+              data.cafeId === cartCafeId;
 
-            // Check if restaurant name matches (if available in cart)
-            const restaurantNameMatches =
-              !cartRestaurantName ||
-              fetchedRestaurantName?.toLowerCase().trim() === cartRestaurantName.toLowerCase().trim();
+            // Check if cafe name matches (if available in cart)
+            const cafeNameMatches =
+              !cartCafeName ||
+              fetchedCafeName?.toLowerCase().trim() === cartCafeName.toLowerCase().trim();
 
-            if (!restaurantIdMatches) {
-              console.error('❌ CRITICAL: Fetched cafe ID does not match cart restaurantId!', {
-                cartRestaurantId: cartRestaurantId,
-                fetchedRestaurantId: fetchedRestaurantId,
+            if (!cafeIdMatches) {
+              console.error('❌ CRITICAL: Fetched cafe ID does not match cart cafeId!', {
+                cartCafeId: cartCafeId,
+                fetchedCafeId: fetchedCafeId,
                 fetched_id: data._id?.toString(),
-                fetched_restaurantId: data.restaurantId,
-                cartRestaurantName: cartRestaurantName,
-                fetchedRestaurantName: fetchedRestaurantName
+                fetched_cafeId: data.cafeId,
+                cartCafeName: cartCafeName,
+                fetchedCafeName: fetchedCafeName
               });
-              // Don't set restaurantData if IDs don't match - this prevents wrong restaurant assignment
-              setLoadingRestaurant(false);
+              // Don't set cafeData if IDs don't match - this prevents wrong cafe assignment
+              setLoadingCafe(false);
               return;
             }
 
-            if (!restaurantNameMatches) {
+            if (!cafeNameMatches) {
               console.warn('⚠️ WARNING: Cafe name mismatch:', {
-                cartRestaurantName: cartRestaurantName,
-                fetchedRestaurantName: fetchedRestaurantName
+                cartCafeName: cartCafeName,
+                fetchedCafeName: fetchedCafeName
               });
               // Still proceed but log warning
             }
 
-            console.log("✅ Cafe data loaded from cart restaurantId:", {
+            console.log("✅ Cafe data loaded from cart cafeId:", {
               _id: data._id,
-              restaurantId: data.restaurantId,
+              cafeId: data.cafeId,
               name: data.name,
-              cartRestaurantId: cartRestaurantId,
-              cartRestaurantName: cartRestaurantName
+              cartCafeId: cartCafeId,
+              cartCafeName: cartCafeName
             })
-            setRestaurantData(data)
-            setLoadingRestaurant(false)
+            setCafeData(data)
+            setLoadingCafe(false)
             return
           }
         } catch (error) {
-          console.warn("⚠️ Failed to fetch by cart restaurantId, trying fallback...", error)
+          console.warn("⚠️ Failed to fetch by cart cafeId, trying fallback...", error)
         }
       }
 
-      // Strategy 2: If no restaurantId in cart, search by restaurant name
-      if (cart[0]?.restaurant && !restaurantData) {
+      // Strategy 2: If no cafeId in cart, search by cafe name
+      if (cart[0]?.cafe && !cafeData) {
         try {
-          console.log("🔍 Searching cafe by name:", cart[0].restaurant)
-          const searchResponse = await restaurantAPI.getRestaurants({ limit: 100 })
-          const restaurants = searchResponse?.data?.data?.restaurants || searchResponse?.data?.data || []
-          console.log("📋 Fetched", restaurants.length, "cafes for name search")
+          console.log("🔍 Searching cafe by name:", cart[0].cafe)
+          const searchResponse = await cafeAPI.getCafes({ limit: 100 })
+          const cafes = searchResponse?.data?.data?.cafes || searchResponse?.data?.data || []
+          console.log("📋 Fetched", cafes.length, "cafes for name search")
 
           // Try exact match first
-          let matchingRestaurant = restaurants.find(r =>
-            r.name?.toLowerCase().trim() === cart[0].restaurant?.toLowerCase().trim()
+          let matchingCafe = cafes.find(r =>
+            r.name?.toLowerCase().trim() === cart[0].cafe?.toLowerCase().trim()
           )
 
           // If no exact match, try partial match
-          if (!matchingRestaurant) {
+          if (!matchingCafe) {
             console.log("🔍 No exact match, trying partial match...")
-            matchingRestaurant = restaurants.find(r =>
-              r.name?.toLowerCase().includes(cart[0].restaurant?.toLowerCase().trim()) ||
-              cart[0].restaurant?.toLowerCase().trim().includes(r.name?.toLowerCase())
+            matchingCafe = cafes.find(r =>
+              r.name?.toLowerCase().includes(cart[0].cafe?.toLowerCase().trim()) ||
+              cart[0].cafe?.toLowerCase().trim().includes(r.name?.toLowerCase())
             )
           }
 
-          if (matchingRestaurant) {
-            // CRITICAL: Validate that the found restaurant matches cart items
-            const cartRestaurantName = cart[0]?.restaurant?.toLowerCase().trim();
-            const foundRestaurantName = matchingRestaurant.name?.toLowerCase().trim();
+          if (matchingCafe) {
+            // CRITICAL: Validate that the found cafe matches cart items
+            const cartCafeName = cart[0]?.cafe?.toLowerCase().trim();
+            const foundCafeName = matchingCafe.name?.toLowerCase().trim();
 
-            if (cartRestaurantName && foundRestaurantName && cartRestaurantName !== foundRestaurantName) {
+            if (cartCafeName && foundCafeName && cartCafeName !== foundCafeName) {
               console.error("❌ CRITICAL: Cafe name mismatch!", {
-                cartRestaurantName: cart[0]?.restaurant,
-                foundRestaurantName: matchingRestaurant.name,
-                cartRestaurantId: cart[0]?.restaurantId,
-                foundRestaurantId: matchingRestaurant.restaurantId || matchingRestaurant._id
+                cartCafeName: cart[0]?.cafe,
+                foundCafeName: matchingCafe.name,
+                cartCafeId: cart[0]?.cafeId,
+                foundCafeId: matchingCafe.cafeId || matchingCafe._id
               });
-              // Don't set restaurantData if names don't match - this prevents wrong restaurant assignment
-              setLoadingRestaurant(false);
+              // Don't set cafeData if names don't match - this prevents wrong cafe assignment
+              setLoadingCafe(false);
               return;
             }
 
             console.log("✅ Found cafe by name:", {
-              name: matchingRestaurant.name,
-              _id: matchingRestaurant._id,
-              restaurantId: matchingRestaurant.restaurantId,
-              slug: matchingRestaurant.slug,
-              cartRestaurantName: cart[0]?.restaurant
+              name: matchingCafe.name,
+              _id: matchingCafe._id,
+              cafeId: matchingCafe.cafeId,
+              slug: matchingCafe.slug,
+              cartCafeName: cart[0]?.cafe
             })
-            setRestaurantData(matchingRestaurant)
-            setLoadingRestaurant(false)
+            setCafeData(matchingCafe)
+            setLoadingCafe(false)
             return
           } else {
-            console.warn("⚠️ Cafe not found even by name search. Searched in", restaurants.length, "restaurants")
-            if (restaurants.length > 0) {
-              console.log("📋 Available cafe names:", restaurants.map(r => r.name).slice(0, 10))
+            console.warn("⚠️ Cafe not found even by name search. Searched in", cafes.length, "cafes")
+            if (cafes.length > 0) {
+              console.log("📋 Available cafe names:", cafes.map(r => r.name).slice(0, 10))
             }
           }
         } catch (searchError) {
@@ -602,12 +602,12 @@ export default function Cart() {
       }
 
       // If all strategies fail, set to null
-      setRestaurantData(null)
-      setLoadingRestaurant(false)
+      setCafeData(null)
+      setLoadingCafe(false)
     }
 
-    fetchRestaurantData()
-  }, [cart.length, cart[0]?.restaurantId, cart[0]?.restaurant])
+    fetchCafeData()
+  }, [cart.length, cart[0]?.cafeId, cart[0]?.cafe])
 
   // Fetch global admin addons that match cart item categories.
   useEffect(() => {
@@ -665,7 +665,7 @@ export default function Cart() {
   // Fetch coupons for items in cart
   useEffect(() => {
     const fetchCouponsForCartItems = async () => {
-      if (cart.length === 0 || !restaurantId) {
+      if (cart.length === 0 || !cafeId) {
         setAvailableCoupons([])
         return
       }
@@ -685,7 +685,7 @@ export default function Cart() {
 
         try {
           console.log(`[CART-COUPONS] Fetching coupons for itemId: ${cartItem.id}, name: ${cartItem.name}`)
-          const response = await restaurantAPI.getCouponsByItemIdPublic(restaurantId, cartItem.id)
+          const response = await cafeAPI.getCouponsByItemIdPublic(cafeId, cartItem.id)
 
           if (response?.data?.success && response?.data?.data?.coupons) {
             const coupons = response.data.data.coupons
@@ -721,7 +721,7 @@ export default function Cart() {
     }
 
     fetchCouponsForCartItems()
-  }, [cart, restaurantId])
+  }, [cart, cafeId])
 
   // Calculate pricing from backend whenever cart, address, or coupon changes
   useEffect(() => {
@@ -746,7 +746,7 @@ export default function Cart() {
 
         const response = await orderAPI.calculateOrder({
           items,
-          restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
+          cafeId: cafeData?.cafeId || cafeData?._id || cafeId || null,
           deliveryAddress: defaultAddress,
           couponCode: appliedCoupon?.code || couponCode || null
         })
@@ -775,7 +775,7 @@ export default function Cart() {
     }
 
     calculatePricing()
-  }, [cart, defaultAddress, appliedCoupon, couponCode, restaurantId])
+  }, [cart, defaultAddress, appliedCoupon, couponCode, cafeId])
 
   // Fetch wallet balance
   useEffect(() => {
@@ -827,8 +827,8 @@ export default function Cart() {
   const total = pricing?.total || (totalBeforeDiscount - discount)
   const savings = pricing?.savings || (discount + (subtotal > 500 ? 32 : 0))
 
-  // Restaurant name from data or cart
-  const restaurantName = restaurantData?.name || cart[0]?.restaurant || "Restaurant"
+  // Cafe name from data or cart
+  const cafeName = cafeData?.name || cart[0]?.cafe || "Cafe"
 
   // Handler to select address by label (Home, Office, Other)
   const handleSelectAddressByLabel = async (label) => {
@@ -894,7 +894,7 @@ export default function Cart() {
 
           const response = await orderAPI.calculateOrder({
             items,
-            restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
+            cafeId: cafeData?.cafeId || cafeData?._id || cafeId || null,
             deliveryAddress: defaultAddress,
             couponCode: coupon.code
           })
@@ -929,7 +929,7 @@ export default function Cart() {
 
         const response = await orderAPI.calculateOrder({
           items,
-          restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
+          cafeId: cafeData?.cafeId || cafeData?._id || cafeId || null,
           deliveryAddress: defaultAddress,
           couponCode: null
         })
@@ -1002,26 +1002,26 @@ export default function Cart() {
       console.log("🌐 Making request to:", fullUrl)
       console.log("🔑 Authentication token present:", !!localStorage.getItem('accessToken') || !!localStorage.getItem('user_accessToken'))
 
-      // CRITICAL: Validate restaurant ID before placing order
-      // Ensure we're using the correct restaurant from restaurantData (most reliable)
-      const finalRestaurantId = restaurantData?.restaurantId || restaurantData?._id || null;
-      const finalRestaurantName = restaurantData?.name || null;
+      // CRITICAL: Validate cafe ID before placing order
+      // Ensure we're using the correct cafe from cafeData (most reliable)
+      const finalCafeId = cafeData?.cafeId || cafeData?._id || null;
+      const finalCafeName = cafeData?.name || null;
 
-      if (!finalRestaurantId) {
+      if (!finalCafeId) {
         console.error('❌ CRITICAL: Cannot place order - Cafe ID is missing!');
         console.error('📋 Debug info:', {
-          restaurantData: restaurantData ? {
-            _id: restaurantData._id,
-            restaurantId: restaurantData.restaurantId,
-            name: restaurantData.name
+          cafeData: cafeData ? {
+            _id: cafeData._id,
+            cafeId: cafeData.cafeId,
+            name: cafeData.name
           } : 'Not loaded',
-          cartRestaurantId: restaurantId,
-          cartRestaurantName: cart[0]?.restaurant,
+          cartCafeId: cafeId,
+          cartCafeName: cart[0]?.cafe,
           cartItems: cart.map(item => ({
             id: item.id,
             name: item.name,
-            restaurant: item.restaurant,
-            restaurantId: item.restaurantId
+            cafe: item.cafe,
+            cafeId: item.cafeId
           }))
         });
         alert('Error: Cafe information is missing. Please refresh the page and try again.');
@@ -1029,48 +1029,48 @@ export default function Cart() {
         return;
       }
 
-      // CRITICAL: Validate that ALL cart items belong to the SAME restaurant
-      const cartRestaurantIds = cart
-        .map(item => item.restaurantId)
+      // CRITICAL: Validate that ALL cart items belong to the SAME cafe
+      const cartCafeIds = cart
+        .map(item => item.cafeId)
         .filter(Boolean)
         .map(id => String(id).trim()); // Normalize to string and trim
 
-      const cartRestaurantNames = cart
-        .map(item => item.restaurant)
+      const cartCafeNames = cart
+        .map(item => item.cafe)
         .filter(Boolean)
         .map(name => name.trim().toLowerCase()); // Normalize names
 
       // Get unique values (after normalization)
-      const uniqueRestaurantIds = [...new Set(cartRestaurantIds)];
-      const uniqueRestaurantNames = [...new Set(cartRestaurantNames)];
+      const uniqueCafeIds = [...new Set(cartCafeIds)];
+      const uniqueCafeNames = [...new Set(cartCafeNames)];
 
-      // Check if cart has items from multiple restaurants
-      // Note: If restaurant names match, allow even if IDs differ (same restaurant, different ID format)
-      if (uniqueRestaurantNames.length > 1) {
-        // Different restaurant names = definitely different restaurants
+      // Check if cart has items from multiple cafes
+      // Note: If cafe names match, allow even if IDs differ (same cafe, different ID format)
+      if (uniqueCafeNames.length > 1) {
+        // Different cafe names = definitely different cafes
         console.error('❌ CRITICAL ERROR: Cart contains items from multiple cafes!', {
-          restaurantIds: uniqueRestaurantIds,
-          restaurantNames: uniqueRestaurantNames,
+          cafeIds: uniqueCafeIds,
+          cafeNames: uniqueCafeNames,
           cartItems: cart.map(item => ({
             id: item.id,
             name: item.name,
-            restaurant: item.restaurant,
-            restaurantId: item.restaurantId
+            cafe: item.cafe,
+            cafeId: item.cafeId
           }))
         });
 
-        // Automatically clean cart to keep items from the restaurant matching restaurantData
-        if (finalRestaurantId && finalRestaurantName) {
-          console.log('🧹 Auto-cleaning cart to keep items from:', finalRestaurantName);
-          cleanCartForRestaurant(finalRestaurantId, finalRestaurantName);
+        // Automatically clean cart to keep items from the cafe matching cafeData
+        if (finalCafeId && finalCafeName) {
+          console.log('🧹 Auto-cleaning cart to keep items from:', finalCafeName);
+          cleanCartForCafe(finalCafeId, finalCafeName);
           toast.error('Cart contained items from different cafes. Items from other cafes have been removed.');
         } else {
-          // If restaurantData is not available, keep items from first restaurant in cart
-          const firstRestaurantId = cart[0]?.restaurantId;
-          const firstRestaurantName = cart[0]?.restaurant;
-          if (firstRestaurantId && firstRestaurantName) {
-            console.log('🧹 Auto-cleaning cart to keep items from first cafe:', firstRestaurantName);
-            cleanCartForRestaurant(firstRestaurantId, firstRestaurantName);
+          // If cafeData is not available, keep items from first cafe in cart
+          const firstCafeId = cart[0]?.cafeId;
+          const firstCafeName = cart[0]?.cafe;
+          if (firstCafeId && firstCafeName) {
+            console.log('🧹 Auto-cleaning cart to keep items from first cafe:', firstCafeName);
+            cleanCartForCafe(firstCafeId, firstCafeName);
             toast.error('Cart contained items from different cafes. Items from other cafes have been removed.');
           } else {
             toast.error('Cart contains items from different cafes. Please clear cart and try again.');
@@ -1081,51 +1081,51 @@ export default function Cart() {
         return;
       }
 
-      // If restaurant names match but IDs differ, that's OK (same restaurant, different ID format)
+      // If cafe names match but IDs differ, that's OK (same cafe, different ID format)
       // But log a warning in development
-      if (uniqueRestaurantIds.length > 1 && uniqueRestaurantNames.length === 1) {
+      if (uniqueCafeIds.length > 1 && uniqueCafeNames.length === 1) {
         if (process.env.NODE_ENV === 'development') {
           console.warn('⚠️ Cart items have different cafe IDs but same name. This is OK if IDs are in different formats.', {
-            restaurantIds: uniqueRestaurantIds,
-            restaurantName: uniqueRestaurantNames[0]
+            cafeIds: uniqueCafeIds,
+            cafeName: uniqueCafeNames[0]
           });
         }
       }
 
-      // Validate that cart items' restaurantId matches the restaurantData
-      if (cartRestaurantIds.length > 0) {
-        const cartRestaurantId = cartRestaurantIds[0];
+      // Validate that cart items' cafeId matches the cafeData
+      if (cartCafeIds.length > 0) {
+        const cartCafeId = cartCafeIds[0];
 
-        // Check if cart restaurantId matches restaurantData
-        const restaurantIdMatches =
-          cartRestaurantId === finalRestaurantId ||
-          cartRestaurantId === restaurantData?._id?.toString() ||
-          cartRestaurantId === restaurantData?.restaurantId;
+        // Check if cart cafeId matches cafeData
+        const cafeIdMatches =
+          cartCafeId === finalCafeId ||
+          cartCafeId === cafeData?._id?.toString() ||
+          cartCafeId === cafeData?.cafeId;
 
-        if (!restaurantIdMatches) {
-          console.error('❌ CRITICAL ERROR: Cart restaurantId does not match restaurantData!', {
-            cartRestaurantId: cartRestaurantId,
-            finalRestaurantId: finalRestaurantId,
-            restaurantDataId: restaurantData?._id?.toString(),
-            restaurantDataRestaurantId: restaurantData?.restaurantId,
-            restaurantDataName: restaurantData?.name,
-            cartRestaurantName: cartRestaurantNames[0]
+        if (!cafeIdMatches) {
+          console.error('❌ CRITICAL ERROR: Cart cafeId does not match cafeData!', {
+            cartCafeId: cartCafeId,
+            finalCafeId: finalCafeId,
+            cafeDataId: cafeData?._id?.toString(),
+            cafeDataCafeId: cafeData?.cafeId,
+            cafeDataName: cafeData?.name,
+            cartCafeName: cartCafeNames[0]
           });
-          alert(`Error: Cart items belong to "${cartRestaurantNames[0] || 'Unknown Cafe'}" but restaurant data doesn't match. Please refresh the page and try again.`);
+          alert(`Error: Cart items belong to "${cartCafeNames[0] || 'Unknown Cafe'}" but cafe data doesn't match. Please refresh the page and try again.`);
           setIsPlacingOrder(false);
           return;
         }
       }
 
-      // Validate restaurant name matches
-      if (cartRestaurantNames.length > 0 && finalRestaurantName) {
-        const cartRestaurantName = cartRestaurantNames[0];
-        if (cartRestaurantName.toLowerCase().trim() !== finalRestaurantName.toLowerCase().trim()) {
+      // Validate cafe name matches
+      if (cartCafeNames.length > 0 && finalCafeName) {
+        const cartCafeName = cartCafeNames[0];
+        if (cartCafeName.toLowerCase().trim() !== finalCafeName.toLowerCase().trim()) {
           console.error('❌ CRITICAL ERROR: Cafe name mismatch!', {
-            cartRestaurantName: cartRestaurantName,
-            finalRestaurantName: finalRestaurantName
+            cartCafeName: cartCafeName,
+            finalCafeName: finalCafeName
           });
-          alert(`Error: Cart items belong to "${cartRestaurantName}" but restaurant data shows "${finalRestaurantName}". Please refresh the page and try again.`);
+          alert(`Error: Cart items belong to "${cartCafeName}" but cafe data shows "${finalCafeName}". Please refresh the page and try again.`);
           setIsPlacingOrder(false);
           return;
         }
@@ -1133,27 +1133,27 @@ export default function Cart() {
 
       // Log order details for debugging
       console.log('✅ Order validation passed - Placing order with cafe:', {
-        restaurantId: finalRestaurantId,
-        restaurantName: finalRestaurantName,
-        restaurantDataId: restaurantData?._id,
-        restaurantDataRestaurantId: restaurantData?.restaurantId,
-        cartRestaurantId: cartRestaurantIds[0],
-        cartRestaurantName: cartRestaurantNames[0],
+        cafeId: finalCafeId,
+        cafeName: finalCafeName,
+        cafeDataId: cafeData?._id,
+        cafeDataCafeId: cafeData?.cafeId,
+        cartCafeId: cartCafeIds[0],
+        cartCafeName: cartCafeNames[0],
         cartItemCount: cart.length
       });
 
-      // FINAL VALIDATION: Double-check restaurantId before sending to backend
-      const cartRestaurantId = cart[0]?.restaurantId;
-      if (cartRestaurantId && cartRestaurantId !== finalRestaurantId &&
-        cartRestaurantId !== restaurantData?._id?.toString() &&
-        cartRestaurantId !== restaurantData?.restaurantId) {
-        console.error('❌ CRITICAL: Final validation failed - restaurantId mismatch!', {
-          cartRestaurantId: cartRestaurantId,
-          finalRestaurantId: finalRestaurantId,
-          restaurantDataId: restaurantData?._id?.toString(),
-          restaurantDataRestaurantId: restaurantData?.restaurantId,
-          cartRestaurantName: cart[0]?.restaurant,
-          finalRestaurantName: finalRestaurantName
+      // FINAL VALIDATION: Double-check cafeId before sending to backend
+      const cartCafeId = cart[0]?.cafeId;
+      if (cartCafeId && cartCafeId !== finalCafeId &&
+        cartCafeId !== cafeData?._id?.toString() &&
+        cartCafeId !== cafeData?.cafeId) {
+        console.error('❌ CRITICAL: Final validation failed - cafeId mismatch!', {
+          cartCafeId: cartCafeId,
+          finalCafeId: finalCafeId,
+          cafeDataId: cafeData?._id?.toString(),
+          cafeDataCafeId: cafeData?.cafeId,
+          cartCafeName: cart[0]?.cafe,
+          finalCafeName: finalCafeName
         });
         alert('Error: Cafe information mismatch detected. Please refresh the page and try again.');
         setIsPlacingOrder(false);
@@ -1163,8 +1163,8 @@ export default function Cart() {
       const orderPayload = {
         items: orderItems,
         address: defaultAddress,
-        restaurantId: finalRestaurantId,
-        restaurantName: finalRestaurantName,
+        cafeId: finalCafeId,
+        cafeName: finalCafeName,
         pricing: orderPricing,
         note: note || "",
         sendCutlery: sendCutlery !== false,
@@ -1173,8 +1173,8 @@ export default function Cart() {
       };
       // Log final order details (including paymentMethod for COD debugging)
       console.log('📤 FINAL: Sending order to backend with:', {
-        restaurantId: finalRestaurantId,
-        restaurantName: finalRestaurantName,
+        cafeId: finalCafeId,
+        cafeName: finalCafeName,
         itemCount: orderItems.length,
         totalAmount: orderPricing.total,
         paymentMethod: orderPayload.paymentMethod
@@ -1269,7 +1269,7 @@ export default function Cart() {
         notes: {
           orderId: order.orderId,
           userId: userInfo.id || "",
-          restaurantId: restaurantId || "unknown"
+          cafeId: cafeId || "unknown"
         },
         handler: async (response) => {
           try {
@@ -1435,9 +1435,9 @@ export default function Cart() {
                 </Button>
               </Link>
               <div className="min-w-0">
-                <p className="text-xs md:text-sm text-muted-foreground">{restaurantName}</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{cafeName}</p>
                 <p className="text-sm md:text-base font-medium text-foreground truncate">
-                  {restaurantData?.estimatedDeliveryTime || "10-15 mins"} to <span className="font-semibold">Location</span>
+                  {cafeData?.estimatedDeliveryTime || "10-15 mins"} to <span className="font-semibold">Location</span>
                   <span className="text-muted-foreground ml-1 text-xs md:text-sm">{defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || defaultAddress?.city || "Select address") : "Select address"}</span>
                 </p>
               </div>
@@ -1611,16 +1611,16 @@ export default function Cart() {
                             </div>
                             <button
                               onClick={() => {
-                                // Use restaurant info from existing cart items to ensure format consistency
-                                const cartRestaurantId = cart[0]?.restaurantId || restaurantId;
-                                const cartRestaurantName = cart[0]?.restaurant || restaurantName;
+                                // Use cafe info from existing cart items to ensure format consistency
+                                const cartCafeId = cart[0]?.cafeId || cafeId;
+                                const cartCafeName = cart[0]?.cafe || cafeName;
 
-                                if (!cartRestaurantId || !cartRestaurantName) {
+                                if (!cartCafeId || !cartCafeName) {
                                   console.error('❌ Cannot add addon: Missing cafe information', {
-                                    cartRestaurantId,
-                                    cartRestaurantName,
-                                    restaurantId,
-                                    restaurantName,
+                                    cartCafeId,
+                                    cartCafeName,
+                                    cafeId,
+                                    cafeName,
                                     cartItem: cart[0]
                                   });
                                   toast.error('Cafe information is missing. Please refresh the page.');
@@ -1634,8 +1634,8 @@ export default function Cart() {
                                   image: addon.image || (addon.images && addon.images[0]) || "",
                                   description: addon.description || "",
                                   isVeg: true,
-                                  restaurant: cartRestaurantName,
-                                  restaurantId: cartRestaurantId
+                                  cafe: cartCafeName,
+                                  cafeId: cartCafeId
                                 });
                               }}
                               className="absolute bottom-1 md:bottom-2 right-1 md:right-2 w-6 h-6 md:w-7 md:h-7 bg-card border border-primary rounded flex items-center justify-center shadow-sm hover:bg-primary/10 transition-colors"
@@ -1736,7 +1736,7 @@ export default function Cart() {
                 <div className="flex items-center gap-3 md:gap-4">
                   <Clock className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="text-sm md:text-base text-foreground">Delivery in <span className="font-semibold">{restaurantData?.estimatedDeliveryTime || "10-15 mins"}</span></p>
+                    <p className="text-sm md:text-base text-foreground">Delivery in <span className="font-semibold">{cafeData?.estimatedDeliveryTime || "10-15 mins"}</span></p>
                   </div>
                 </div>
               </div>

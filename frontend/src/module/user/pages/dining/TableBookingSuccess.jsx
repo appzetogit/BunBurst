@@ -81,19 +81,19 @@ export default function TableBookingSuccess() {
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-2xl bg-card border border-border flex-shrink-0 p-1">
                             <img
-                                src={booking.restaurant?.image || booking.restaurant?.profileImage?.url || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=150&q=80"}
+                                src={booking.cafe?.image || booking.cafe?.profileImage?.url || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=150&q=80"}
                                 className="w-full h-full object-cover rounded-xl"
-                                alt="restaurant"
+                                alt="cafe"
                             />
                         </div>
                         <div className="min-w-0">
-                            <h2 className="font-black text-lg text-foreground truncate">{booking.restaurant?.name || "The Great Indian Cafe"}</h2>
+                            <h2 className="font-black text-lg text-foreground truncate">{booking.cafe?.name || "The Great Indian Cafe"}</h2>
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                 <MapPin className="w-3 h-3" />
                                 <span className="truncate">
-                                    {typeof booking.restaurant?.location === 'string'
-                                        ? booking.restaurant.location
-                                        : (booking.restaurant?.location?.formattedAddress || booking.restaurant?.location?.address || `${booking.restaurant?.location?.city || ''}${booking.restaurant?.location?.area ? ', ' + booking.restaurant.location.area : ''}`)}
+                                    {typeof booking.cafe?.location === 'string'
+                                        ? booking.cafe.location
+                                        : (booking.cafe?.location?.formattedAddress || booking.cafe?.location?.address || `${booking.cafe?.location?.city || ''}${booking.cafe?.location?.area ? ', ' + booking.cafe.location.area : ''}`)}
                                 </span>
                             </p>
                         </div>

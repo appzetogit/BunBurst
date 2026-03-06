@@ -10,7 +10,7 @@ export default function NewAdvertisement() {
   const [formData, setFormData] = useState({
     title: "",
     shortDescription: "",
-    restaurant: "",
+    cafe: "",
     priority: "Priority",
     advertisementType: "Cafe Promotion",
     validity: "",
@@ -110,8 +110,8 @@ export default function NewAdvertisement() {
       errors.title = "Advertisement title is required"
     }
 
-    if (!formData.restaurant) {
-      errors.restaurant = "Cafe selection is required"
+    if (!formData.cafe) {
+      errors.cafe = "Cafe selection is required"
     }
 
     if (!formData.validity) {
@@ -161,7 +161,7 @@ export default function NewAdvertisement() {
     setFormData({
       title: "",
       shortDescription: "",
-      restaurant: "",
+      cafe: "",
       priority: "Priority",
       advertisementType: "Cafe Promotion",
       validity: "",
@@ -246,18 +246,18 @@ export default function NewAdvertisement() {
                         Select Cafe <span className="text-red-500">*</span>
                       </label>
                       <select
-                        value={formData.restaurant}
-                        onChange={(e) => handleInputChange("restaurant", e.target.value)}
+                        value={formData.cafe}
+                        onChange={(e) => handleInputChange("cafe", e.target.value)}
                         className={`w-full px-4 py-2.5 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                          formErrors.restaurant ? "border-red-500" : "border-slate-300"
+                          formErrors.cafe ? "border-red-500" : "border-slate-300"
                         }`}
                       >
                         <option value="">Select Cafe</option>
                         <option value="cafe-monarch">Café Monarch</option>
                         <option value="hungry-puppets">Hungry Puppets</option>
                       </select>
-                      {formErrors.restaurant && (
-                        <p className="text-xs text-red-500 mt-1">{formErrors.restaurant}</p>
+                      {formErrors.cafe && (
+                        <p className="text-xs text-red-500 mt-1">{formErrors.cafe}</p>
                       )}
                     </div>
 

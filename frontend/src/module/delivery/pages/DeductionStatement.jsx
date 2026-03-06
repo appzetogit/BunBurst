@@ -6,7 +6,7 @@ import {
   Calendar,
   CheckCircle
 } from "lucide-react"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 import { DateRangeCalendar } from "@/components/ui/date-range-calendar"
 import WeekSelector from "../components/WeekSelector"
 

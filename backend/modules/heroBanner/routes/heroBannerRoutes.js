@@ -9,7 +9,7 @@ import {
   deleteHeroBanner,
   updateBannerOrder,
   toggleBannerStatus,
-  linkRestaurantsToBanner,
+  linkCafesToBanner,
   getLandingConfig,
   getLandingCategories,
   createLandingCategory,
@@ -37,19 +37,19 @@ import {
   deleteDiningBanner,
   updateDiningBannerOrder,
   toggleDiningBannerStatus,
-  getAllTop10Restaurants,
-  getTop10Restaurants,
-  createTop10Restaurant,
-  deleteTop10Restaurant,
-  updateTop10RestaurantRank,
-  updateTop10RestaurantOrder,
-  toggleTop10RestaurantStatus,
-  getAllGourmetRestaurants,
-  getGourmetRestaurants,
-  createGourmetRestaurant,
-  deleteGourmetRestaurant,
-  updateGourmetRestaurantOrder,
-  toggleGourmetRestaurantStatus
+  getAllTop10Cafes,
+  getTop10Cafes,
+  createTop10Cafe,
+  deleteTop10Cafe,
+  updateTop10CafeRank,
+  updateTop10CafeOrder,
+  toggleTop10CafeStatus,
+  getAllGourmetCafes,
+  getGourmetCafes,
+  createGourmetCafe,
+  deleteGourmetCafe,
+  updateGourmetCafeOrder,
+  toggleGourmetCafeStatus
 } from '../controllers/heroBannerController.js';
 
 const router = express.Router();
@@ -60,8 +60,8 @@ router.get('/landing/public', getLandingConfig);
 
 router.get('/under-250/public', getUnder250Banners);
 router.get('/dining/public', getDiningBanners);
-router.get('/top-10/public', getTop10Restaurants);
-router.get('/gourmet/public', getGourmetRestaurants);
+router.get('/top-10/public', getTop10Cafes);
+router.get('/gourmet/public', getGourmetCafes);
 
 // Admin routes - Hero Banners
 router.get('/', authenticateAdmin, getAllHeroBanners);
@@ -80,7 +80,7 @@ router.post(
 router.delete('/:id', authenticateAdmin, deleteHeroBanner);
 router.patch('/:id/order', authenticateAdmin, updateBannerOrder);
 router.patch('/:id/status', authenticateAdmin, toggleBannerStatus);
-router.patch('/:id/link-restaurants', authenticateAdmin, linkRestaurantsToBanner);
+router.patch('/:id/link-cafes', authenticateAdmin, linkCafesToBanner);
 
 // Admin routes - Landing Page Categories
 router.get('/landing/categories', authenticateAdmin, getLandingCategories);
@@ -148,20 +148,20 @@ router.delete('/dining/:id', authenticateAdmin, deleteDiningBanner);
 router.patch('/dining/:id/order', authenticateAdmin, updateDiningBannerOrder);
 router.patch('/dining/:id/status', authenticateAdmin, toggleDiningBannerStatus);
 
-// Admin routes - Top 10 Restaurants
-router.get('/top-10', authenticateAdmin, getAllTop10Restaurants);
-router.post('/top-10', authenticateAdmin, createTop10Restaurant);
-router.delete('/top-10/:id', authenticateAdmin, deleteTop10Restaurant);
-router.patch('/top-10/:id/rank', authenticateAdmin, updateTop10RestaurantRank);
-router.patch('/top-10/:id/order', authenticateAdmin, updateTop10RestaurantOrder);
-router.patch('/top-10/:id/status', authenticateAdmin, toggleTop10RestaurantStatus);
+// Admin routes - Top 10 Cafes
+router.get('/top-10', authenticateAdmin, getAllTop10Cafes);
+router.post('/top-10', authenticateAdmin, createTop10Cafe);
+router.delete('/top-10/:id', authenticateAdmin, deleteTop10Cafe);
+router.patch('/top-10/:id/rank', authenticateAdmin, updateTop10CafeRank);
+router.patch('/top-10/:id/order', authenticateAdmin, updateTop10CafeOrder);
+router.patch('/top-10/:id/status', authenticateAdmin, toggleTop10CafeStatus);
 
-// Admin routes - Gourmet Restaurants
-router.get('/gourmet', authenticateAdmin, getAllGourmetRestaurants);
-router.post('/gourmet', authenticateAdmin, createGourmetRestaurant);
-router.delete('/gourmet/:id', authenticateAdmin, deleteGourmetRestaurant);
-router.patch('/gourmet/:id/order', authenticateAdmin, updateGourmetRestaurantOrder);
-router.patch('/gourmet/:id/status', authenticateAdmin, toggleGourmetRestaurantStatus);
+// Admin routes - Gourmet Cafes
+router.get('/gourmet', authenticateAdmin, getAllGourmetCafes);
+router.post('/gourmet', authenticateAdmin, createGourmetCafe);
+router.delete('/gourmet/:id', authenticateAdmin, deleteGourmetCafe);
+router.patch('/gourmet/:id/order', authenticateAdmin, updateGourmetCafeOrder);
+router.patch('/gourmet/:id/status', authenticateAdmin, toggleGourmetCafeStatus);
 
 export default router;
 

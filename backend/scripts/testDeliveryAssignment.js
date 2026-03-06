@@ -1,6 +1,6 @@
 /**
  * Test Script: Delivery Assignment Flow
- * This script tests the complete flow from restaurant accepting order to delivery boy receiving notification
+ * This script tests the complete flow from cafe accepting order to delivery boy receiving notification
  * 
  * Usage: node backend/scripts/testDeliveryAssignment.js
  */
@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { connectDB } from '../config/database.js';
 import Order from '../modules/order/models/Order.js';
-import Restaurant from '../modules/restaurant/models/Restaurant.js';
+import Cafe from '../modules/cafe/models/Cafe.js';
 import Delivery from '../modules/delivery/models/Delivery.js';
 import { assignOrderToDeliveryBoy } from '../modules/order/services/deliveryAssignmentService.js';
 import { notifyDeliveryBoyNewOrder } from '../modules/order/services/deliveryNotificationService.js';
@@ -41,19 +41,19 @@ async function testDeliveryAssignment() {
     await connectDB();
     log('✅ Database connected\n', 'green');
 
-    // Step 1: Check for restaurants
+    // Step 1: Check for cafes
     log('📋 Step 1: Checking cafes...', 'yellow');
-    const restaurants = await Restaurant.find({ isActive: true })
-      .select('_id name location restaurantId')
+    const cafes = await Cafe.find({ isActive: true })
+      .select('_id name location cafeId')
       .limit(5)
       .lean();
     
-    if (restaurants.length === 0) {
+    if (cafes.length === 0) {
       log('❌ No active cafes found', 'red');
       return;
     }
-    log(`✅ Found ${restaurants.length} active restaurant(s)`, 'green');
-    restaurants.forEach(r => {
+    log(`✅ Found ${cafes.length} active cafe(s)`, 'green');
+    cafes.forEach(r => {
       const hasLocation = r.location?.coordinates && r.location.coordinates.length === 2;
       log(`   - ${r.name} (ID: ${r._id}) - Location: ${hasLocation ? '✅' : '❌'}`, hasLocation ? 'green' : 'red');
     });
@@ -102,7 +102,7 @@ async function testDeliveryAssignment() {
       status: 'preparing',
       deliveryPartnerId: { $exists: false }
     })
-      .populate('restaurantId', 'name location')
+      .populate('cafeId', 'name location')
       .populate('userId', 'name phone')
       .limit(5)
       .lean();
@@ -111,30 +111,30 @@ async function testDeliveryAssignment() {
       log('ℹ️ No unassigned preparing orders found', 'blue');
       log('💡 Creating a test order scenario...', 'yellow');
       
-      // Use first restaurant
-      const testRestaurant = restaurants[0];
-      if (!testRestaurant.location?.coordinates) {
+      // Use first cafe
+      const testCafe = cafes[0];
+      if (!testCafe.location?.coordinates) {
         log('❌ Test cafe has no location', 'red');
         return;
       }
 
-      log(`📝 Simulating order assignment for restaurant: ${testRestaurant.name}`, 'blue');
-      const [restaurantLng, restaurantLat] = testRestaurant.location.coordinates;
-      log(`📍 Restaurant location: ${restaurantLat}, ${restaurantLng}`, 'blue');
+      log(`📝 Simulating order assignment for cafe: ${testCafe.name}`, 'blue');
+      const [cafeLng, cafeLat] = testCafe.location.coordinates;
+      log(`📍 Cafe location: ${cafeLat}, ${cafeLng}`, 'blue');
 
       // Test assignment
       const testOrder = {
         orderId: 'TEST-' + Date.now(),
         _id: new mongoose.Types.ObjectId(),
-        restaurantId: testRestaurant._id.toString(),
+        cafeId: testCafe._id.toString(),
         status: 'preparing'
       };
 
       log('\n🔄 Testing delivery assignment...', 'yellow');
       const assignmentResult = await assignOrderToDeliveryBoy(
         testOrder,
-        restaurantLat,
-        restaurantLng
+        cafeLat,
+        cafeLng
       );
 
       if (assignmentResult && assignmentResult.deliveryPartnerId) {
@@ -149,24 +149,24 @@ async function testDeliveryAssignment() {
       log(`✅ Found ${unassignedOrders.length} unassigned order(s)`, 'green');
       for (const order of unassignedOrders) {
         log(`\n📦 Order: ${order.orderId}`, 'cyan');
-        log(`   Restaurant: ${order.restaurantId?.name || 'N/A'}`, 'blue');
+        log(`   Cafe: ${order.cafeId?.name || 'N/A'}`, 'blue');
         log(`   Customer: ${order.userId?.name || 'N/A'}`, 'blue');
         
-        const restaurant = order.restaurantId;
-        if (!restaurant?.location?.coordinates) {
+        const cafe = order.cafeId;
+        if (!cafe?.location?.coordinates) {
           log('   ❌ Cafe has no location', 'red');
           continue;
         }
 
-        const [restaurantLng, restaurantLat] = restaurant.location.coordinates;
-        log(`   📍 Restaurant location: ${restaurantLat}, ${restaurantLng}`, 'blue');
+        const [cafeLng, cafeLat] = cafe.location.coordinates;
+        log(`   📍 Cafe location: ${cafeLat}, ${cafeLng}`, 'blue');
 
         // Test assignment
         log('   🔄 Testing assignment...', 'yellow');
         const assignmentResult = await assignOrderToDeliveryBoy(
           order,
-          restaurantLat,
-          restaurantLng
+          cafeLat,
+          cafeLng
         );
 
         if (assignmentResult && assignmentResult.deliveryPartnerId) {
@@ -207,7 +207,7 @@ async function testDeliveryAssignment() {
 
     // Summary
     log('\n📊 Test Summary:', 'cyan');
-    log(`   Restaurants: ${restaurants.length}`, 'blue');
+    log(`   Cafes: ${cafes.length}`, 'blue');
     log(`   Online Delivery Partners: ${deliveryPartners.length}`, deliveryPartners.length > 0 ? 'green' : 'red');
     log(`   Unassigned Orders: ${unassignedOrders.length}`, 'blue');
     
@@ -220,8 +220,8 @@ async function testDeliveryAssignment() {
       log('   4. Delivery partners need to open the app and go online', 'yellow');
     }
 
-    if (restaurants.length === 0) {
-      log('\n⚠️ ISSUE FOUND: No active restaurants!', 'yellow');
+    if (cafes.length === 0) {
+      log('\n⚠️ ISSUE FOUND: No active cafes!', 'yellow');
     }
 
     log('\n✅ Test completed!\n', 'green');

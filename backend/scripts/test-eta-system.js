@@ -3,9 +3,9 @@
  * 
  * This script tests the complete ETA calculation system:
  * 1. Order creation with initial ETA
- * 2. Restaurant accepts order (ETA update)
+ * 2. Cafe accepts order (ETA update)
  * 3. Rider assignment (ETA update)
- * 4. Rider reaches restaurant (ETA update)
+ * 4. Rider reaches cafe (ETA update)
  * 5. Rider starts delivery (ETA update)
  * 6. Live ETA retrieval
  * 
@@ -16,7 +16,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { connectDB } from '../config/database.js';
 import Order from '../modules/order/models/Order.js';
-import Restaurant from '../modules/restaurant/models/Restaurant.js';
+import Cafe from '../modules/cafe/models/Cafe.js';
 import Delivery from '../modules/delivery/models/Delivery.js';
 import User from '../modules/auth/models/User.js';
 import etaCalculationService from '../modules/order/services/etaCalculationService.js';
@@ -28,7 +28,7 @@ dotenv.config();
 
 // Test configuration
 const TEST_CONFIG = {
-  restaurantId: null, // Will be set from first restaurant
+  cafeId: null, // Will be set from first cafe
   userId: null, // Will be set from first user
   deliveryPartnerId: null, // Will be set from first delivery partner
   orderId: null // Will be set after order creation
@@ -71,19 +71,19 @@ async function setupTestData() {
   logStep(1, 'Setting up test data...');
 
   try {
-    // Get first restaurant
-    const restaurant = await Restaurant.findOne({ isActive: true, isAcceptingOrders: true });
-    if (!restaurant) {
+    // Get first cafe
+    const cafe = await Cafe.findOne({ isActive: true, isAcceptingOrders: true });
+    if (!cafe) {
       throw new Error('No active cafe found. Please create a cafe first.');
     }
-    TEST_CONFIG.restaurantId = restaurant._id.toString();
-    logSuccess(`Found restaurant: ${restaurant.name} (${restaurant.restaurantId})`);
+    TEST_CONFIG.cafeId = cafe._id.toString();
+    logSuccess(`Found cafe: ${cafe.name} (${cafe.cafeId})`);
 
-    // Check restaurant location
-    if (!restaurant.location || !restaurant.location.latitude || !restaurant.location.longitude) {
+    // Check cafe location
+    if (!cafe.location || !cafe.location.latitude || !cafe.location.longitude) {
       throw new Error('Cafe location not set. Please set cafe location first.');
     }
-    logInfo(`Restaurant location: ${restaurant.location.latitude}, ${restaurant.location.longitude}`);
+    logInfo(`Cafe location: ${cafe.location.latitude}, ${cafe.location.longitude}`);
 
     // Get first user
     const user = await User.findOne();
@@ -120,29 +120,29 @@ async function testInitialETA() {
   logStep(2, 'Testing initial ETA calculation...');
 
   try {
-    const restaurant = await Restaurant.findById(TEST_CONFIG.restaurantId);
-    if (!restaurant) {
+    const cafe = await Cafe.findById(TEST_CONFIG.cafeId);
+    if (!cafe) {
       throw new Error('Cafe not found');
     }
 
-    const restaurantLocation = {
-      latitude: restaurant.location.latitude,
-      longitude: restaurant.location.longitude
+    const cafeLocation = {
+      latitude: cafe.location.latitude,
+      longitude: cafe.location.longitude
     };
 
-    // User location (slightly different from restaurant)
+    // User location (slightly different from cafe)
     const userLocation = {
-      latitude: restaurant.location.latitude + 0.01, // ~1km away
-      longitude: restaurant.location.longitude + 0.01
+      latitude: cafe.location.latitude + 0.01, // ~1km away
+      longitude: cafe.location.longitude + 0.01
     };
 
-    logInfo(`Calculating ETA from restaurant to user location...`);
-    logInfo(`Restaurant: ${restaurantLocation.latitude}, ${restaurantLocation.longitude}`);
+    logInfo(`Calculating ETA from cafe to user location...`);
+    logInfo(`Cafe: ${cafeLocation.latitude}, ${cafeLocation.longitude}`);
     logInfo(`User: ${userLocation.latitude}, ${userLocation.longitude}`);
 
     const etaResult = await etaCalculationService.calculateInitialETA({
-      restaurantId: restaurant.restaurantId || TEST_CONFIG.restaurantId,
-      restaurantLocation,
+      cafeId: cafe.cafeId || TEST_CONFIG.cafeId,
+      cafeLocation,
       userLocation
     });
 
@@ -165,16 +165,16 @@ async function testCreateOrder() {
   logStep(3, 'Testing order creation with ETA...');
 
   try {
-    const restaurant = await Restaurant.findById(TEST_CONFIG.restaurantId);
-    if (!restaurant) {
+    const cafe = await Cafe.findById(TEST_CONFIG.cafeId);
+    if (!cafe) {
       throw new Error('Cafe not found');
     }
 
     const order = new Order({
       orderId: `TEST-${Date.now()}`,
       userId: TEST_CONFIG.userId,
-      restaurantId: TEST_CONFIG.restaurantId,
-      restaurantName: restaurant.name,
+      cafeId: TEST_CONFIG.cafeId,
+      cafeName: cafe.name,
       items: [{
         itemId: 'test-item-1',
         name: 'Test Item',
@@ -185,15 +185,15 @@ async function testCreateOrder() {
       address: {
         label: 'Home',
         street: 'Test Street',
-        city: restaurant.location.city || 'Test City',
-        state: restaurant.location.state || 'Test State',
+        city: cafe.location.city || 'Test City',
+        state: cafe.location.state || 'Test State',
         zipCode: '123456',
         formattedAddress: 'Test Address, Test City, Test State 123456',
         location: {
           type: 'Point',
           coordinates: [
-            restaurant.location.longitude + 0.01,
-            restaurant.location.latitude + 0.01
+            cafe.location.longitude + 0.01,
+            cafe.location.latitude + 0.01
           ]
         }
       },
@@ -211,19 +211,19 @@ async function testCreateOrder() {
     });
 
     // Calculate and set ETA
-    const restaurantLocation = {
-      latitude: restaurant.location.latitude,
-      longitude: restaurant.location.longitude
+    const cafeLocation = {
+      latitude: cafe.location.latitude,
+      longitude: cafe.location.longitude
     };
 
     const userLocation = {
-      latitude: restaurant.location.latitude + 0.01,
-      longitude: restaurant.location.longitude + 0.01
+      latitude: cafe.location.latitude + 0.01,
+      longitude: cafe.location.longitude + 0.01
     };
 
     const etaResult = await etaCalculationService.calculateInitialETA({
-      restaurantId: restaurant.restaurantId || TEST_CONFIG.restaurantId,
-      restaurantLocation,
+      cafeId: cafe.cafeId || TEST_CONFIG.cafeId,
+      cafeLocation,
       userLocation
     });
 
@@ -263,9 +263,9 @@ async function testCreateOrder() {
 }
 
 /**
- * Test 4: Restaurant Accepts Order
+ * Test 4: Cafe Accepts Order
  */
-async function testRestaurantAccepts() {
+async function testCafeAccepts() {
   logStep(4, 'Testing cafe accept (ETA update)...');
 
   try {
@@ -279,10 +279,10 @@ async function testRestaurantAccepts() {
       max: order.eta.max
     };
 
-    // Simulate restaurant accepting after 3 minutes
+    // Simulate cafe accepting after 3 minutes
     const acceptedAt = new Date(Date.now() - 3 * 60 * 1000); // 3 minutes ago
 
-    await etaEventService.handleRestaurantAccepted(TEST_CONFIG.orderId, acceptedAt);
+    await etaEventService.handleCafeAccepted(TEST_CONFIG.orderId, acceptedAt);
 
     // Reload order
     await order.reload();
@@ -291,7 +291,7 @@ async function testRestaurantAccepts() {
       max: order.eta.max
     };
 
-    logSuccess(`Restaurant accepted order`);
+    logSuccess(`Cafe accepted order`);
     logInfo(`ETA before: ${beforeETA.min}-${beforeETA.max} mins`);
     logInfo(`ETA after: ${afterETA.min}-${afterETA.max} mins`);
 
@@ -305,7 +305,7 @@ async function testRestaurantAccepts() {
 
     return true;
   } catch (error) {
-    logError(`Restaurant accept test failed: ${error.message}`);
+    logError(`Cafe accept test failed: ${error.message}`);
     console.error(error);
     return false;
   }
@@ -355,9 +355,9 @@ async function testRiderAssignment() {
 }
 
 /**
- * Test 6: Rider Reaches Restaurant
+ * Test 6: Rider Reaches Cafe
  */
-async function testRiderReachesRestaurant() {
+async function testRiderReachesCafe() {
   logStep(6, 'Testing rider reaches cafe (ETA update)...');
 
   try {
@@ -371,7 +371,7 @@ async function testRiderReachesRestaurant() {
       max: order.eta.max
     };
 
-    await etaEventService.handleRiderReachedRestaurant(TEST_CONFIG.orderId);
+    await etaEventService.handleRiderReachedCafe(TEST_CONFIG.orderId);
 
     // Reload order
     await order.reload();
@@ -380,13 +380,13 @@ async function testRiderReachesRestaurant() {
       max: order.eta.max
     };
 
-    logSuccess(`Rider reached restaurant`);
+    logSuccess(`Rider reached cafe`);
     logInfo(`ETA before: ${beforeETA.min}-${beforeETA.max} mins`);
     logInfo(`ETA after: ${afterETA.min}-${afterETA.max} mins`);
 
     return true;
   } catch (error) {
-    logError(`Rider reaches restaurant test failed: ${error.message}`);
+    logError(`Rider reaches cafe test failed: ${error.message}`);
     console.error(error);
     return false;
   }
@@ -559,9 +559,9 @@ async function runTests() {
       setup: await setupTestData(),
       initialETA: await testInitialETA(),
       createOrder: await testCreateOrder(),
-      restaurantAccepts: await testRestaurantAccepts(),
+      cafeAccepts: await testCafeAccepts(),
       riderAssignment: await testRiderAssignment(),
-      riderReachesRestaurant: await testRiderReachesRestaurant(),
+      riderReachesCafe: await testRiderReachesCafe(),
       riderStartsDelivery: await testRiderStartsDelivery(),
       getLiveETA: await testGetLiveETA(),
       getETAHistory: await testGetETAHistory(),

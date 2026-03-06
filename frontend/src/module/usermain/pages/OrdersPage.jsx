@@ -87,8 +87,8 @@ export default function OrdersPage() {
             return {
               id: order.orderId || order._id,
               mongoId: order._id,
-              restaurant: order.restaurantName || order.restaurantId?.name || 'Restaurant',
-              restaurantId: order.restaurantId,
+              cafe: order.cafeName || order.cafeId?.name || 'Cafe',
+              cafeId: order.cafeId,
               status: getOrderStatus(order),
               date: createdAt,
               time: createdAt.toLocaleTimeString('en-US', { 
@@ -225,7 +225,7 @@ export default function OrdersPage() {
                       Order #{order.id}
                     </h3>
                     <p className="text-[10px] md:text-xs text-gray-600 truncate">
-                      {order.restaurant || "Restaurant"}
+                      {order.cafe || "Cafe"}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 ml-2 flex-shrink-0">

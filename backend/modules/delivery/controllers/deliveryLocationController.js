@@ -206,7 +206,7 @@ export const getZonesInRadius = asyncHandler(async (req, res) => {
 
     // Fetch all active zones
     const zones = await Zone.find({ isActive: true })
-      .populate('restaurantId', 'name email phone')
+      .populate('cafeId', 'name email phone')
       .lean();
 
     // Calculate distance from delivery boy's location to each zone center

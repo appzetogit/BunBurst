@@ -7,7 +7,7 @@ import {
   Clock,
   XCircle
 } from "lucide-react"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 import { fetchWalletTransactions } from "../utils/deliveryWalletState"
 
 export default function Payout() {

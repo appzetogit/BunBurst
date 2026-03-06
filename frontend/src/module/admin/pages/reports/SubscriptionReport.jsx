@@ -9,7 +9,7 @@ export default function SubscriptionReport() {
   const [searchQuery, setSearchQuery] = useState("")
   const [subscriptions, setSubscriptions] = useState(subscriptionReportDummy)
   const [filters, setFilters] = useState({
-    restaurant: "All cafes",
+    cafe: "All cafes",
     package: "All packages",
     all: "All",
   })
@@ -23,12 +23,12 @@ export default function SubscriptionReport() {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(subscription =>
         subscription.transactionId.toLowerCase().includes(query) ||
-        subscription.restaurantName.toLowerCase().includes(query)
+        subscription.cafeName.toLowerCase().includes(query)
       )
     }
 
-    if (filters.restaurant !== "All cafes") {
-      result = result.filter(s => s.restaurantName === filters.restaurant)
+    if (filters.cafe !== "All cafes") {
+      result = result.filter(s => s.cafeName === filters.cafe)
     }
 
     if (filters.package !== "All packages") {
@@ -53,7 +53,7 @@ export default function SubscriptionReport() {
       { key: "sl", label: "SI" },
       { key: "transactionId", label: "Transaction ID" },
       { key: "transactionDate", label: "Transaction Date" },
-      { key: "restaurantName", label: "Cafe Name" },
+      { key: "cafeName", label: "Cafe Name" },
       { key: "packageName", label: "Package Name" },
       { key: "duration", label: "Duration" },
       { key: "pricing", label: "Pricing" },
@@ -74,13 +74,13 @@ export default function SubscriptionReport() {
 
   const handleResetFilters = () => {
     setFilters({
-      restaurant: "All cafes",
+      cafe: "All cafes",
       package: "All packages",
       all: "All",
     })
   }
 
-  const activeFiltersCount = (filters.restaurant !== "All cafes" ? 1 : 0) + (filters.package !== "All packages" ? 1 : 0) + (filters.all !== "All" ? 1 : 0)
+  const activeFiltersCount = (filters.cafe !== "All cafes" ? 1 : 0) + (filters.package !== "All packages" ? 1 : 0) + (filters.all !== "All" ? 1 : 0)
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen overflow-x-hidden">
@@ -100,8 +100,8 @@ export default function SubscriptionReport() {
                   Cafe
                 </label>
                 <select
-                  value={filters.restaurant}
-                  onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
+                  value={filters.cafe}
+                  onChange={(e) => setFilters(prev => ({ ...prev, cafe: e.target.value }))}
                   className="w-full sm:w-48 px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="All cafes">All cafes</option>
@@ -313,7 +313,7 @@ export default function SubscriptionReport() {
                         <span className="text-xs text-slate-700">{subscription.transactionDate}</span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-xs text-slate-700">{subscription.restaurantName}</span>
+                        <span className="text-xs text-slate-700">{subscription.cafeName}</span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs text-slate-700">{subscription.packageName}</span>

@@ -116,7 +116,7 @@ console.error = (...args) => {
     return
   }
 
-  // Suppress Restaurant Socket transport errors (handled by useRestaurantNotifications with throttled message)
+  // Suppress Cafe Socket transport errors (handled by useCafeNotifications with throttled message)
   if (
     errorStr.includes('Cafe Socket connection error') ||
     errorStr.includes('xhr poll error') ||

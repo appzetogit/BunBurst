@@ -1,14 +1,14 @@
 import Order from '../models/Order.js';
 import OrderSettlement from '../models/OrderSettlement.js';
-import RestaurantCommission from '../../admin/models/RestaurantCommission.js';
+import CafeCommission from '../../admin/models/CafeCommission.js';
 
 import FeeSettings from '../../admin/models/FeeSettings.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import mongoose from 'mongoose';
 
 /**
  * Calculate comprehensive order settlement breakdown
- * This calculates earnings for User, Restaurant, Delivery Partner, and Admin
+ * This calculates earnings for User, Cafe, Delivery Partner, and Admin
  */
 export const calculateOrderSettlement = async (orderId) => {
   try {
@@ -25,21 +25,21 @@ export const calculateOrderSettlement = async (orderId) => {
     const platformFee = feeSettings?.platformFee || 5;
     const gstRate = (feeSettings?.gstRate || 5) / 100;
 
-    // Get restaurant details
-    let restaurant = null;
-    if (mongoose.Types.ObjectId.isValid(order.restaurantId) && order.restaurantId.length === 24) {
-      restaurant = await Restaurant.findById(order.restaurantId).lean();
+    // Get cafe details
+    let cafe = null;
+    if (mongoose.Types.ObjectId.isValid(order.cafeId) && order.cafeId.length === 24) {
+      cafe = await Cafe.findById(order.cafeId).lean();
     }
-    if (!restaurant) {
-      restaurant = await Restaurant.findOne({
+    if (!cafe) {
+      cafe = await Cafe.findOne({
         $or: [
-          { restaurantId: order.restaurantId },
-          { slug: order.restaurantId }
+          { cafeId: order.cafeId },
+          { slug: order.cafeId }
         ]
       }).lean();
     }
 
-    if (!restaurant) {
+    if (!cafe) {
       throw new Error('Cafe not found');
     }
 
@@ -54,10 +54,10 @@ export const calculateOrderSettlement = async (orderId) => {
       total: order.pricing.total || 0
     };
 
-    // Restaurant receives the full food price — no commission deducted
+    // Cafe receives the full food price — no commission deducted
     const foodPrice = userPayment.subtotal - userPayment.discount;
 
-    const restaurantEarning = {
+    const cafeEarning = {
       foodPrice: foodPrice,
       commission: 0,
       commissionPercentage: 0,
@@ -103,11 +103,11 @@ export const calculateOrderSettlement = async (orderId) => {
     const settlementData = {
       orderNumber: order.orderId,
       userId: order.userId,
-      restaurantId: restaurant._id,
-      restaurantName: restaurant.name || order.restaurantName,
+      cafeId: cafe._id,
+      cafeName: cafe.name || order.cafeName,
       deliveryPartnerId: order.deliveryPartnerId || null,
       userPayment,
-      restaurantEarning,
+      cafeEarning,
       deliveryPartnerEarning,
       adminEarning,
       escrowStatus: 'pending',
@@ -147,7 +147,7 @@ export const getOrderSettlement = async (orderId) => {
   try {
     let settlement = await OrderSettlement.findOne({ orderId })
       .populate('orderId', 'orderId status')
-      .populate('restaurantId', 'name restaurantId')
+      .populate('cafeId', 'name cafeId')
       .populate('deliveryPartnerId', 'name phone')
       .lean();
 

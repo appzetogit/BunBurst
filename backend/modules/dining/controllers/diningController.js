@@ -1,4 +1,4 @@
-import DiningRestaurant from "../models/DiningRestaurant.js";
+import DiningCafe from "../models/DiningCafe.js";
 import DiningCategory from "../models/DiningCategory.js";
 import DiningLimelight from "../models/DiningLimelight.js";
 import DiningBankOffer from "../models/DiningBankOffer.js";
@@ -7,10 +7,10 @@ import DiningOfferBanner from "../models/DiningOfferBanner.js";
 import DiningStory from "../models/DiningStory.js";
 import TableBooking from "../models/TableBooking.js";
 import DiningReview from "../models/DiningReview.js";
-import Restaurant from "../../restaurant/models/Restaurant.js";
+import Cafe from "../../cafe/models/Cafe.js";
 
-// Get all dining restaurants (with filtering)
-export const getRestaurants = async (req, res) => {
+// Get all dining cafes (with filtering)
+export const getCafes = async (req, res) => {
   try {
     const { city } = req.query;
     let query = {};
@@ -20,11 +20,11 @@ export const getRestaurants = async (req, res) => {
       query.location = { $regex: city, $options: "i" };
     }
 
-    const restaurants = await DiningRestaurant.find(query);
+    const cafes = await DiningCafe.find(query);
     res.status(200).json({
       success: true,
-      count: restaurants.length,
-      data: restaurants,
+      count: cafes.length,
+      data: cafes,
     });
   } catch (error) {
     res.status(500).json({
@@ -35,20 +35,20 @@ export const getRestaurants = async (req, res) => {
   }
 };
 
-// Get single restaurant by slug
-export const getRestaurantBySlug = async (req, res) => {
+// Get single cafe by slug
+export const getCafeBySlug = async (req, res) => {
   try {
-    const restaurant = await DiningRestaurant.findOne({
+    const cafe = await DiningCafe.findOne({
       slug: req.params.slug,
     });
 
-    // If not found in GamingRestaurant, check regular Restaurant
-    let actualRestaurant = restaurant;
-    if (!actualRestaurant) {
-      actualRestaurant = await Restaurant.findOne({ slug: req.params.slug });
+    // If not found in GamingCafe, check regular Cafe
+    let actualCafe = cafe;
+    if (!actualCafe) {
+      actualCafe = await Cafe.findOne({ slug: req.params.slug });
     }
 
-    if (!actualRestaurant) {
+    if (!actualCafe) {
       return res.status(404).json({
         success: false,
         message: "Cafe not found",
@@ -57,7 +57,7 @@ export const getRestaurantBySlug = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: actualRestaurant,
+      data: actualCafe,
     });
   } catch (error) {
     res.status(500).json({
@@ -150,7 +150,7 @@ export const getMustTries = async (req, res) => {
 export const getOfferBanners = async (req, res) => {
   try {
     const banners = await DiningOfferBanner.find({ isActive: true })
-      .populate("restaurant", "name")
+      .populate("cafe", "name")
       .sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
@@ -189,11 +189,11 @@ export const getStories = async (req, res) => {
 // Create a new table booking
 export const createBooking = async (req, res) => {
   try {
-    const { restaurant, guests, date, timeSlot, specialRequest } = req.body;
+    const { cafe, guests, date, timeSlot, specialRequest } = req.body;
     const userId = req.user._id;
 
     const booking = await TableBooking.create({
-      restaurant,
+      cafe,
       user: userId,
       guests,
       date,
@@ -202,20 +202,20 @@ export const createBooking = async (req, res) => {
       status: "confirmed",
     });
 
-    // Populate restaurant data for the success page
+    // Populate cafe data for the success page
     let populatedBooking = await TableBooking.findById(booking._id).populate(
-      "restaurant",
+      "cafe",
       "name location image",
     );
     let bookingObj = populatedBooking.toObject();
 
-    // Check if restaurant population failed (might be in DiningRestaurant collection)
-    if (!bookingObj.restaurant || typeof bookingObj.restaurant === "string") {
-      const diningRes = await DiningRestaurant.findById(
-        booking.restaurant,
+    // Check if cafe population failed (might be in DiningCafe collection)
+    if (!bookingObj.cafe || typeof bookingObj.cafe === "string") {
+      const diningRes = await DiningCafe.findById(
+        booking.cafe,
       ).select("name location image");
       if (diningRes) {
-        bookingObj.restaurant = diningRes;
+        bookingObj.cafe = diningRes;
       }
     }
 
@@ -237,25 +237,25 @@ export const createBooking = async (req, res) => {
 export const getUserBookings = async (req, res) => {
   try {
     const bookings = await TableBooking.find({ user: req.user._id })
-      .populate("restaurant", "name location image")
+      .populate("cafe", "name location image")
       .sort({ createdAt: -1 });
 
-    // Manually handle population if the restaurant wasn't found in "Restaurant" collection
-    // (it might be in "DiningRestaurant" collection)
+    // Manually handle population if the cafe wasn't found in "Cafe" collection
+    // (it might be in "DiningCafe" collection)
     const processedBookings = await Promise.all(
       bookings.map(async (booking) => {
         const bookingObj = booking.toObject();
 
         if (
-          !bookingObj.restaurant ||
-          typeof bookingObj.restaurant === "string"
+          !bookingObj.cafe ||
+          typeof bookingObj.cafe === "string"
         ) {
-          // Try finding in DiningRestaurant
-          const diningRes = await DiningRestaurant.findById(
-            booking.restaurant,
+          // Try finding in DiningCafe
+          const diningRes = await DiningCafe.findById(
+            booking.cafe,
           ).select("name location image");
           if (diningRes) {
-            bookingObj.restaurant = diningRes;
+            bookingObj.cafe = diningRes;
           }
         }
         return bookingObj;
@@ -276,13 +276,13 @@ export const getUserBookings = async (req, res) => {
   }
 };
 
-// Get bookings for a specific restaurant (for owners)
-export const getRestaurantBookings = async (req, res) => {
+// Get bookings for a specific cafe (for owners)
+export const getCafeBookings = async (req, res) => {
   try {
-    const { restaurantId } = req.params;
-    // In a real app, we should check if req.user is the owner of this restaurant
+    const { cafeId } = req.params;
+    // In a real app, we should check if req.user is the owner of this cafe
 
-    const bookings = await TableBooking.find({ restaurant: restaurantId })
+    const bookings = await TableBooking.find({ cafe: cafeId })
       .populate("user", "name phone")
       .sort({ date: 1, timeSlot: 1 });
 
@@ -300,7 +300,7 @@ export const getRestaurantBookings = async (req, res) => {
   }
 };
 
-// Update booking status (for restaurant owners)
+// Update booking status (for cafe owners)
 export const updateBookingStatus = async (req, res) => {
   try {
     const { bookingId } = req.params;
@@ -371,7 +371,7 @@ export const createDiningReview = async (req, res) => {
     const review = await DiningReview.create({
       booking: bookingId,
       user: userId,
-      restaurant: booking.restaurant,
+      cafe: booking.cafe,
       rating,
       comment,
     });

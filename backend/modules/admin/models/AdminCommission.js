@@ -24,17 +24,17 @@ const adminCommissionSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
-  restaurantId: {
+  cafeId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Restaurant',
+    ref: 'Cafe',
     required: true,
     index: true
   },
-  restaurantName: {
+  cafeName: {
     type: String,
     required: true
   },
-  restaurantEarning: {
+  cafeEarning: {
     type: Number,
     required: true,
     min: 0
@@ -54,7 +54,7 @@ const adminCommissionSchema = new mongoose.Schema({
 });
 
 // Indexes
-adminCommissionSchema.index({ restaurantId: 1, orderDate: -1 });
+adminCommissionSchema.index({ cafeId: 1, orderDate: -1 });
 adminCommissionSchema.index({ status: 1 });
 adminCommissionSchema.index({ orderDate: -1 });
 
@@ -93,7 +93,7 @@ adminCommissionSchema.statics.getCommissionByDateRange = async function(startDat
     }
   })
   .populate('orderId', 'orderId')
-  .populate('restaurantId', 'name restaurantId')
+  .populate('cafeId', 'name cafeId')
   .sort({ orderDate: -1 });
 };
 

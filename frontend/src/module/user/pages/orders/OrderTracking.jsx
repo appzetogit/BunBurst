@@ -32,7 +32,7 @@ import { useOrders } from "../../context/OrdersContext"
 import { useProfile } from "../../context/ProfileContext"
 import { useLocation as useUserLocation } from "../../hooks/useLocation"
 import DeliveryTrackingMap from "../../components/DeliveryTrackingMap"
-import { orderAPI, restaurantAPI } from "@/lib/api"
+import { orderAPI, cafeAPI } from "@/lib/api"
 import circleIcon from "@/assets/circleicon.png"
 import { useLocationSelector } from "../../components/UserLayout"
 
@@ -76,37 +76,37 @@ const DeliveryMap = ({ orderId, order, isVisible }) => {
   const { location: userLocation } = useUserLocation() // Get user's live location
 
   // Get coordinates from order or use defaults (Indore)
-  const getRestaurantCoords = () => {
+  const getCafeCoords = () => {
     console.log('🔍 Getting cafe coordinates from order:', {
       hasOrder: !!order,
-      restaurantLocation: order?.restaurantLocation,
-      coordinates: order?.restaurantLocation?.coordinates,
-      restaurantId: order?.restaurantId,
-      restaurantIdLocation: order?.restaurantId?.location,
-      restaurantIdCoordinates: order?.restaurantId?.location?.coordinates
+      cafeLocation: order?.cafeLocation,
+      coordinates: order?.cafeLocation?.coordinates,
+      cafeId: order?.cafeId,
+      cafeIdLocation: order?.cafeId?.location,
+      cafeIdCoordinates: order?.cafeId?.location?.coordinates
     });
 
-    // Try multiple sources for restaurant coordinates
+    // Try multiple sources for cafe coordinates
     let coords = null;
 
-    // Priority 1: restaurantLocation.coordinates (already extracted in transformed order)
-    if (order?.restaurantLocation?.coordinates &&
-      Array.isArray(order.restaurantLocation.coordinates) &&
-      order.restaurantLocation.coordinates.length >= 2) {
-      coords = order.restaurantLocation.coordinates;
-      console.log('✅ Using restaurantLocation.coordinates:', coords);
+    // Priority 1: cafeLocation.coordinates (already extracted in transformed order)
+    if (order?.cafeLocation?.coordinates &&
+      Array.isArray(order.cafeLocation.coordinates) &&
+      order.cafeLocation.coordinates.length >= 2) {
+      coords = order.cafeLocation.coordinates;
+      console.log('✅ Using cafeLocation.coordinates:', coords);
     }
-    // Priority 2: restaurantId.location.coordinates (if restaurantId is populated)
-    else if (order?.restaurantId?.location?.coordinates &&
-      Array.isArray(order.restaurantId.location.coordinates) &&
-      order.restaurantId.location.coordinates.length >= 2) {
-      coords = order.restaurantId.location.coordinates;
-      console.log('✅ Using restaurantId.location.coordinates:', coords);
+    // Priority 2: cafeId.location.coordinates (if cafeId is populated)
+    else if (order?.cafeId?.location?.coordinates &&
+      Array.isArray(order.cafeId.location.coordinates) &&
+      order.cafeId.location.coordinates.length >= 2) {
+      coords = order.cafeId.location.coordinates;
+      console.log('✅ Using cafeId.location.coordinates:', coords);
     }
-    // Priority 3: restaurantId.location with latitude/longitude
-    else if (order?.restaurantId?.location?.latitude && order?.restaurantId?.location?.longitude) {
-      coords = [order.restaurantId.location.longitude, order.restaurantId.location.latitude];
-      console.log('✅ Using restaurantId.location (lat/lng):', coords);
+    // Priority 3: cafeId.location with latitude/longitude
+    else if (order?.cafeId?.location?.latitude && order?.cafeId?.location?.longitude) {
+      coords = [order.cafeId.location.longitude, order.cafeId.location.latitude];
+      console.log('✅ Using cafeId.location (lat/lng):', coords);
     }
 
     if (coords && coords.length >= 2) {
@@ -146,7 +146,7 @@ const DeliveryMap = ({ orderId, order, isVisible }) => {
     return null;
   };
 
-  const restaurantCoords = getRestaurantCoords();
+  const cafeCoords = getCafeCoords();
   const customerCoords = getCustomerCoords();
   const userLiveCoords = getUserLiveCoords();
 
@@ -176,7 +176,7 @@ const DeliveryMap = ({ orderId, order, isVisible }) => {
     >
       <DeliveryTrackingMap
         orderId={orderId}
-        restaurantCoords={restaurantCoords}
+        cafeCoords={cafeCoords}
         customerCoords={customerCoords}
         userLiveCoords={userLiveCoords}
         userLocationAccuracy={userLocation?.accuracy}
@@ -278,18 +278,18 @@ export default function OrderTracking() {
             });
 
             // Re-fetch and update order (same logic as initial fetch)
-            let restaurantCoords = null;
-            if (apiOrder.restaurantId?.location?.coordinates &&
-              Array.isArray(apiOrder.restaurantId.location.coordinates) &&
-              apiOrder.restaurantId.location.coordinates.length >= 2) {
-              restaurantCoords = apiOrder.restaurantId.location.coordinates;
-            } else if (typeof apiOrder.restaurantId === 'string') {
+            let cafeCoords = null;
+            if (apiOrder.cafeId?.location?.coordinates &&
+              Array.isArray(apiOrder.cafeId.location.coordinates) &&
+              apiOrder.cafeId.location.coordinates.length >= 2) {
+              cafeCoords = apiOrder.cafeId.location.coordinates;
+            } else if (typeof apiOrder.cafeId === 'string') {
               try {
-                const restaurantResponse = await restaurantAPI.getRestaurantById(apiOrder.restaurantId);
-                if (restaurantResponse?.data?.success && restaurantResponse.data.data?.restaurant) {
-                  const restaurant = restaurantResponse.data.data.restaurant;
-                  if (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) && restaurant.location.coordinates.length >= 2) {
-                    restaurantCoords = restaurant.location.coordinates;
+                const cafeResponse = await cafeAPI.getCafeById(apiOrder.cafeId);
+                if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
+                  const cafe = cafeResponse.data.data.cafe;
+                  if (cafe.location?.coordinates && Array.isArray(cafe.location.coordinates) && cafe.location.coordinates.length >= 2) {
+                    cafeCoords = cafe.location.coordinates;
                   }
                 }
               } catch (err) {
@@ -299,9 +299,9 @@ export default function OrderTracking() {
 
             const transformedOrder = {
               ...apiOrder,
-              restaurantLocation: restaurantCoords ? {
-                coordinates: restaurantCoords
-              } : order.restaurantLocation,
+              cafeLocation: cafeCoords ? {
+                coordinates: cafeCoords
+              } : order.cafeLocation,
               deliveryPartner: apiOrder.deliveryPartnerId ? {
                 name: apiOrder.deliveryPartnerId.name || 'Delivery Partner',
                 phone: apiOrder.deliveryPartnerId.phone || '',
@@ -329,16 +329,16 @@ export default function OrderTracking() {
       // First try to get from context (localStorage)
       const contextOrder = getOrderById(orderId)
       if (contextOrder) {
-        // Ensure restaurant location is available in context order
-        if (!contextOrder.restaurantLocation?.coordinates && contextOrder.restaurantId?.location?.coordinates) {
-          contextOrder.restaurantLocation = {
-            coordinates: contextOrder.restaurantId.location.coordinates
+        // Ensure cafe location is available in context order
+        if (!contextOrder.cafeLocation?.coordinates && contextOrder.cafeId?.location?.coordinates) {
+          contextOrder.cafeLocation = {
+            coordinates: contextOrder.cafeId.location.coordinates
           };
         }
-        // Also ensure restaurantId is present
-        if (!contextOrder.restaurantId && contextOrder.restaurant) {
-          // Try to preserve restaurantId if it exists
-          console.log('⚠️ Context order missing restaurantId, will fetch from API');
+        // Also ensure cafeId is present
+        if (!contextOrder.cafeId && contextOrder.cafe) {
+          // Try to preserve cafeId if it exists
+          console.log('⚠️ Context order missing cafeId, will fetch from API');
         }
         setOrder(contextOrder)
         setLoading(false)
@@ -358,60 +358,60 @@ export default function OrderTracking() {
           // Log full API response structure for debugging
           console.log('🔍 Full API Order Response:', {
             orderId: apiOrder.orderId || apiOrder._id,
-            hasRestaurantId: !!apiOrder.restaurantId,
-            restaurantIdType: typeof apiOrder.restaurantId,
-            restaurantIdKeys: apiOrder.restaurantId ? Object.keys(apiOrder.restaurantId) : [],
-            restaurantIdLocation: apiOrder.restaurantId?.location,
-            restaurantIdLocationKeys: apiOrder.restaurantId?.location ? Object.keys(apiOrder.restaurantId.location) : [],
-            restaurantIdCoordinates: apiOrder.restaurantId?.location?.coordinates,
-            fullRestaurantId: apiOrder.restaurantId
+            hasCafeId: !!apiOrder.cafeId,
+            cafeIdType: typeof apiOrder.cafeId,
+            cafeIdKeys: apiOrder.cafeId ? Object.keys(apiOrder.cafeId) : [],
+            cafeIdLocation: apiOrder.cafeId?.location,
+            cafeIdLocationKeys: apiOrder.cafeId?.location ? Object.keys(apiOrder.cafeId.location) : [],
+            cafeIdCoordinates: apiOrder.cafeId?.location?.coordinates,
+            fullCafeId: apiOrder.cafeId
           });
 
-          // Extract restaurant location coordinates with multiple fallbacks
-          let restaurantCoords = null;
+          // Extract cafe location coordinates with multiple fallbacks
+          let cafeCoords = null;
 
-          // Priority 1: restaurantId.location.coordinates (GeoJSON format: [lng, lat])
-          if (apiOrder.restaurantId?.location?.coordinates &&
-            Array.isArray(apiOrder.restaurantId.location.coordinates) &&
-            apiOrder.restaurantId.location.coordinates.length >= 2) {
-            restaurantCoords = apiOrder.restaurantId.location.coordinates;
-            console.log('✅ Found coordinates in restaurantId.location.coordinates:', restaurantCoords);
+          // Priority 1: cafeId.location.coordinates (GeoJSON format: [lng, lat])
+          if (apiOrder.cafeId?.location?.coordinates &&
+            Array.isArray(apiOrder.cafeId.location.coordinates) &&
+            apiOrder.cafeId.location.coordinates.length >= 2) {
+            cafeCoords = apiOrder.cafeId.location.coordinates;
+            console.log('✅ Found coordinates in cafeId.location.coordinates:', cafeCoords);
           }
-          // Priority 2: restaurantId.location with latitude/longitude properties
-          else if (apiOrder.restaurantId?.location?.latitude && apiOrder.restaurantId?.location?.longitude) {
-            restaurantCoords = [apiOrder.restaurantId.location.longitude, apiOrder.restaurantId.location.latitude];
-            console.log('✅ Found coordinates in restaurantId.location (lat/lng):', restaurantCoords);
+          // Priority 2: cafeId.location with latitude/longitude properties
+          else if (apiOrder.cafeId?.location?.latitude && apiOrder.cafeId?.location?.longitude) {
+            cafeCoords = [apiOrder.cafeId.location.longitude, apiOrder.cafeId.location.latitude];
+            console.log('✅ Found coordinates in cafeId.location (lat/lng):', cafeCoords);
           }
-          // Priority 3: Check if restaurantId is a string ID and fetch restaurant details
-          else if (typeof apiOrder.restaurantId === 'string') {
-            console.log('⚠️ restaurantId is a string ID, fetching cafe details...', apiOrder.restaurantId);
+          // Priority 3: Check if cafeId is a string ID and fetch cafe details
+          else if (typeof apiOrder.cafeId === 'string') {
+            console.log('⚠️ cafeId is a string ID, fetching cafe details...', apiOrder.cafeId);
             try {
-              const restaurantResponse = await restaurantAPI.getRestaurantById(apiOrder.restaurantId);
-              if (restaurantResponse?.data?.success && restaurantResponse.data.data?.restaurant) {
-                const restaurant = restaurantResponse.data.data.restaurant;
-                if (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) && restaurant.location.coordinates.length >= 2) {
-                  restaurantCoords = restaurant.location.coordinates;
-                  console.log('✅ Fetched cafe coordinates from API:', restaurantCoords);
+              const cafeResponse = await cafeAPI.getCafeById(apiOrder.cafeId);
+              if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
+                const cafe = cafeResponse.data.data.cafe;
+                if (cafe.location?.coordinates && Array.isArray(cafe.location.coordinates) && cafe.location.coordinates.length >= 2) {
+                  cafeCoords = cafe.location.coordinates;
+                  console.log('✅ Fetched cafe coordinates from API:', cafeCoords);
                 }
               }
             } catch (err) {
               console.error('❌ Error fetching cafe details:', err);
             }
           }
-          // Priority 4: Check nested restaurant data
-          else if (apiOrder.restaurant?.location?.coordinates) {
-            restaurantCoords = apiOrder.restaurant.location.coordinates;
-            console.log('✅ Found coordinates in cafe.location.coordinates:', restaurantCoords);
+          // Priority 4: Check nested cafe data
+          else if (apiOrder.cafe?.location?.coordinates) {
+            cafeCoords = apiOrder.cafe.location.coordinates;
+            console.log('✅ Found coordinates in cafe.location.coordinates:', cafeCoords);
           }
 
-          console.log('📍 Final cafe coordinates:', restaurantCoords);
+          console.log('📍 Final cafe coordinates:', cafeCoords);
           console.log('📍 Customer coordinates:', apiOrder.address?.location?.coordinates);
 
           // Transform API order to match component structure
           const transformedOrder = {
             id: apiOrder.orderId || apiOrder._id,
-            restaurant: apiOrder.restaurantName || 'Restaurant',
-            restaurantId: apiOrder.restaurantId || null, // Include restaurantId for location access
+            cafe: apiOrder.cafeName || 'Cafe',
+            cafeId: apiOrder.cafeId || null, // Include cafeId for location access
             userId: apiOrder.userId || null, // Include user data for phone number
             userName: apiOrder.userName || apiOrder.userId?.name || apiOrder.userId?.fullName || '',
             userPhone: apiOrder.userPhone || apiOrder.userId?.phone || '',
@@ -427,8 +427,8 @@ export default function OrderTracking() {
                   : apiOrder.address?.city || ''),
               coordinates: apiOrder.address?.location?.coordinates || null
             },
-            restaurantLocation: {
-              coordinates: restaurantCoords
+            cafeLocation: {
+              coordinates: cafeCoords
             },
             items: apiOrder.items?.map(item => ({
               name: item.name,
@@ -601,33 +601,33 @@ export default function OrderTracking() {
       if (response.data?.success && response.data.data?.order) {
         const apiOrder = response.data.data.order
 
-        // Extract restaurant location coordinates with multiple fallbacks
-        let restaurantCoords = null;
+        // Extract cafe location coordinates with multiple fallbacks
+        let cafeCoords = null;
 
-        // Priority 1: restaurantId.location.coordinates (GeoJSON format: [lng, lat])
-        if (apiOrder.restaurantId?.location?.coordinates &&
-          Array.isArray(apiOrder.restaurantId.location.coordinates) &&
-          apiOrder.restaurantId.location.coordinates.length >= 2) {
-          restaurantCoords = apiOrder.restaurantId.location.coordinates;
+        // Priority 1: cafeId.location.coordinates (GeoJSON format: [lng, lat])
+        if (apiOrder.cafeId?.location?.coordinates &&
+          Array.isArray(apiOrder.cafeId.location.coordinates) &&
+          apiOrder.cafeId.location.coordinates.length >= 2) {
+          cafeCoords = apiOrder.cafeId.location.coordinates;
         }
-        // Priority 2: restaurantId.location with latitude/longitude properties
-        else if (apiOrder.restaurantId?.location?.latitude && apiOrder.restaurantId?.location?.longitude) {
-          restaurantCoords = [apiOrder.restaurantId.location.longitude, apiOrder.restaurantId.location.latitude];
+        // Priority 2: cafeId.location with latitude/longitude properties
+        else if (apiOrder.cafeId?.location?.latitude && apiOrder.cafeId?.location?.longitude) {
+          cafeCoords = [apiOrder.cafeId.location.longitude, apiOrder.cafeId.location.latitude];
         }
-        // Priority 3: Check nested restaurant data
-        else if (apiOrder.restaurant?.location?.coordinates) {
-          restaurantCoords = apiOrder.restaurant.location.coordinates;
+        // Priority 3: Check nested cafe data
+        else if (apiOrder.cafe?.location?.coordinates) {
+          cafeCoords = apiOrder.cafe.location.coordinates;
         }
-        // Priority 4: Check if restaurantId is a string ID and fetch restaurant details
-        else if (typeof apiOrder.restaurantId === 'string') {
-          console.log('⚠️ restaurantId is a string ID, fetching cafe details...', apiOrder.restaurantId);
+        // Priority 4: Check if cafeId is a string ID and fetch cafe details
+        else if (typeof apiOrder.cafeId === 'string') {
+          console.log('⚠️ cafeId is a string ID, fetching cafe details...', apiOrder.cafeId);
           try {
-            const restaurantResponse = await restaurantAPI.getRestaurantById(apiOrder.restaurantId);
-            if (restaurantResponse?.data?.success && restaurantResponse.data.data?.restaurant) {
-              const restaurant = restaurantResponse.data.data.restaurant;
-              if (restaurant.location?.coordinates && Array.isArray(restaurant.location.coordinates) && restaurant.location.coordinates.length >= 2) {
-                restaurantCoords = restaurant.location.coordinates;
-                console.log('✅ Fetched cafe coordinates from API:', restaurantCoords);
+            const cafeResponse = await cafeAPI.getCafeById(apiOrder.cafeId);
+            if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
+              const cafe = cafeResponse.data.data.cafe;
+              if (cafe.location?.coordinates && Array.isArray(cafe.location.coordinates) && cafe.location.coordinates.length >= 2) {
+                cafeCoords = cafe.location.coordinates;
+                console.log('✅ Fetched cafe coordinates from API:', cafeCoords);
               }
             }
           } catch (err) {
@@ -637,8 +637,8 @@ export default function OrderTracking() {
 
         const transformedOrder = {
           id: apiOrder.orderId || apiOrder._id,
-          restaurant: apiOrder.restaurantName || 'Restaurant',
-          restaurantId: apiOrder.restaurantId || null, // Include restaurantId for location access
+          cafe: apiOrder.cafeName || 'Cafe',
+          cafeId: apiOrder.cafeId || null, // Include cafeId for location access
           userId: apiOrder.userId || null, // Include user data for phone number
           userName: apiOrder.userName || apiOrder.userId?.name || apiOrder.userId?.fullName || '',
           userPhone: apiOrder.userPhone || apiOrder.userId?.phone || '',
@@ -654,8 +654,8 @@ export default function OrderTracking() {
                 : apiOrder.address?.city || ''),
             coordinates: apiOrder.address?.location?.coordinates || null
           },
-          restaurantLocation: {
-            coordinates: restaurantCoords
+          cafeLocation: {
+            coordinates: cafeCoords
           },
           items: apiOrder.items?.map(item => ({
             name: item.name,
@@ -814,7 +814,7 @@ export default function OrderTracking() {
               <ArrowLeft className="w-6 h-6" />
             </motion.button>
           </Link>
-          <h2 className="font-semibold text-lg">{order.restaurant}</h2>
+          <h2 className="font-semibold text-lg">{order.cafe}</h2>
           <motion.button
             className="w-10 h-10 flex items-center justify-center"
             whileTap={{ scale: 0.9 }}
@@ -1022,7 +1022,7 @@ export default function OrderTracking() {
           />
         </motion.div>
 
-        {/* Restaurant Section */}
+        {/* Cafe Section */}
         <motion.div
           className="bg-white rounded-xl shadow-sm overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
@@ -1034,7 +1034,7 @@ export default function OrderTracking() {
               <span className="text-2xl">🍔</span>
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-[#1E1E1E]">{order.restaurant}</p>
+              <p className="font-semibold text-[#1E1E1E]">{order.cafe}</p>
               <p className="text-sm text-gray-500">{order.address?.city || 'Local Area'}</p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import FeedbackExperience from '../models/FeedbackExperience.js';
 import User from '../../auth/models/User.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
 
@@ -10,7 +10,7 @@ import asyncHandler from '../../../shared/middleware/asyncHandler.js';
  */
 export const createFeedbackExperience = asyncHandler(async (req, res) => {
   try {
-    const { rating, module = 'user', restaurantId = null, metadata = {} } = req.body;
+    const { rating, module = 'user', cafeId = null, metadata = {} } = req.body;
 
     // Get authenticated entity from request (set by flexible auth middleware)
     const authenticatedEntity = req.user;
@@ -22,13 +22,13 @@ export const createFeedbackExperience = asyncHandler(async (req, res) => {
     const tokenRole = req.token?.role || 'user';
     let userId = authenticatedEntity._id?.toString();
     let finalModule = module;
-    let finalRestaurantId = restaurantId;
+    let finalCafeId = cafeId;
 
-    // If restaurant is providing feedback, store restaurant ID separately
-    if (tokenRole === 'restaurant') {
-      finalModule = 'restaurant';
-      finalRestaurantId = authenticatedEntity._id?.toString() || null;
-      // For restaurant feedback, userId can be null or the restaurant's ID
+    // If cafe is providing feedback, store cafe ID separately
+    if (tokenRole === 'cafe') {
+      finalModule = 'cafe';
+      finalCafeId = authenticatedEntity._id?.toString() || null;
+      // For cafe feedback, userId can be null or the cafe's ID
       userId = authenticatedEntity._id?.toString();
     } else if (tokenRole === 'delivery') {
       finalModule = 'delivery';
@@ -46,7 +46,7 @@ export const createFeedbackExperience = asyncHandler(async (req, res) => {
       return errorResponse(res, 400, 'Rating must be an integer between 0 and 10');
     }
 
-    // Extract user info based on role (user, restaurant, or delivery)
+    // Extract user info based on role (user, cafe, or delivery)
     let userName = 'Unknown';
     let userEmail = '';
     let userPhone = '';
@@ -72,7 +72,7 @@ export const createFeedbackExperience = asyncHandler(async (req, res) => {
     // Create feedback experience
     const feedbackExperience = await FeedbackExperience.create({
       userId,
-      restaurantId: finalRestaurantId,
+      cafeId: finalCafeId,
       userName,
       userEmail,
       userPhone,
@@ -103,7 +103,7 @@ export const getFeedbackExperiences = asyncHandler(async (req, res) => {
       rating,
       experience,
       module: moduleFilter,
-      restaurantId,
+      cafeId,
       startDate,
       endDate,
       sortBy = 'createdAt',
@@ -141,9 +141,9 @@ export const getFeedbackExperiences = asyncHandler(async (req, res) => {
       query.module = moduleFilter;
     }
 
-    // Restaurant filter
-    if (restaurantId) {
-      query.restaurantId = restaurantId;
+    // Cafe filter
+    if (cafeId) {
+      query.cafeId = cafeId;
     }
 
     // Date range filter
@@ -165,10 +165,10 @@ export const getFeedbackExperiences = asyncHandler(async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
 
-    // Get feedback experiences with user and restaurant details
+    // Get feedback experiences with user and cafe details
     const feedbackExperiences = await FeedbackExperience.find(query)
       .populate('userId', 'name email phone')
-      .populate('restaurantId', 'name restaurantId')
+      .populate('cafeId', 'name cafeId')
       .sort(sort)
       .limit(parseInt(limit))
       .skip(skip)
@@ -252,7 +252,7 @@ export const getFeedbackExperienceById = asyncHandler(async (req, res) => {
 
     const feedbackExperience = await FeedbackExperience.findById(id)
       .populate('userId', 'name email phone')
-      .populate('restaurantId', 'name restaurantId')
+      .populate('cafeId', 'name cafeId')
       .lean();
 
     if (!feedbackExperience) {

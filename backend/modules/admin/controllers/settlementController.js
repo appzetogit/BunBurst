@@ -1,9 +1,9 @@
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import {
-  getPendingRestaurantSettlements,
+  getPendingCafeSettlements,
   getPendingDeliverySettlements,
-  generateRestaurantSettlementReport,
+  generateCafeSettlementReport,
   generateDeliverySettlementReport,
   markSettlementsAsProcessed
 } from '../../order/services/settlementService.js';
@@ -31,16 +31,16 @@ export const getOrderSettlementDetails = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get pending restaurant settlements
- * GET /api/admin/settlements/restaurants
- * Query params: restaurantId, startDate, endDate
+ * Get pending cafe settlements
+ * GET /api/admin/settlements/cafes
+ * Query params: cafeId, startDate, endDate
  */
-export const getRestaurantSettlements = asyncHandler(async (req, res) => {
+export const getCafeSettlements = asyncHandler(async (req, res) => {
   try {
-    const { restaurantId, startDate, endDate } = req.query;
+    const { cafeId, startDate, endDate } = req.query;
     
-    const settlements = await getPendingRestaurantSettlements(
-      restaurantId || null,
+    const settlements = await getPendingCafeSettlements(
+      cafeId || null,
       startDate || null,
       endDate || null
     );
@@ -48,8 +48,8 @@ export const getRestaurantSettlements = asyncHandler(async (req, res) => {
     // Calculate totals
     const totals = settlements.reduce((acc, s) => {
       acc.totalOrders += 1;
-      acc.totalEarnings += s.restaurantEarning.netEarning;
-      acc.totalCommission += s.restaurantEarning.commission;
+      acc.totalEarnings += s.cafeEarning.netEarning;
+      acc.totalCommission += s.cafeEarning.commission;
       return acc;
     }, {
       totalOrders: 0,
@@ -105,21 +105,21 @@ export const getDeliverySettlements = asyncHandler(async (req, res) => {
 });
 
 /**
- * Generate restaurant settlement report
- * GET /api/admin/settlements/restaurants/:restaurantId/report
+ * Generate cafe settlement report
+ * GET /api/admin/settlements/cafes/:cafeId/report
  * Query params: startDate, endDate
  */
-export const getRestaurantSettlementReport = asyncHandler(async (req, res) => {
+export const getCafeSettlementReport = asyncHandler(async (req, res) => {
   try {
-    const { restaurantId } = req.params;
+    const { cafeId } = req.params;
     const { startDate, endDate } = req.query;
 
     if (!startDate || !endDate) {
       return errorResponse(res, 400, 'startDate and endDate are required');
     }
 
-    const report = await generateRestaurantSettlementReport(
-      restaurantId,
+    const report = await generateCafeSettlementReport(
+      cafeId,
       startDate,
       endDate
     );
@@ -274,10 +274,10 @@ export const getSettlementStatistics = asyncHandler(async (req, res) => {
     const stats = {
       totalOrders: settlements.length,
       totalUserPayments: settlements.reduce((sum, s) => sum + s.userPayment.total, 0),
-      totalRestaurantEarnings: settlements.reduce((sum, s) => sum + s.restaurantEarning.netEarning, 0),
+      totalCafeEarnings: settlements.reduce((sum, s) => sum + s.cafeEarning.netEarning, 0),
       totalDeliveryEarnings: settlements.reduce((sum, s) => sum + (s.deliveryPartnerEarning.totalEarning || 0), 0),
       totalAdminEarnings: settlements.reduce((sum, s) => sum + s.adminEarning.totalEarning, 0),
-      totalCommission: settlements.reduce((sum, s) => sum + s.restaurantEarning.commission, 0),
+      totalCommission: settlements.reduce((sum, s) => sum + s.cafeEarning.commission, 0),
       totalPlatformFee: settlements.reduce((sum, s) => sum + s.userPayment.platformFee, 0),
       totalDeliveryFee: settlements.reduce((sum, s) => sum + s.userPayment.deliveryFee, 0),
       totalGST: settlements.reduce((sum, s) => sum + s.userPayment.gst, 0)

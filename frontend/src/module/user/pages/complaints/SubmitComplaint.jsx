@@ -62,7 +62,7 @@ export default function SubmitComplaint() {
         console.log("Order fetched successfully:", { 
           _id: orderData._id, 
           orderId: orderData.orderId,
-          restaurantName: orderData.restaurantName 
+          cafeName: orderData.cafeName 
         })
         setOrder(orderData)
       } catch (error) {
@@ -170,7 +170,7 @@ export default function SubmitComplaint() {
               Order #{order.orderId || order._id}
             </p>
             <p className="text-xs text-gray-500">
-              {order.restaurantName || 'Restaurant'}
+              {order.cafeName || 'Cafe'}
             </p>
           </div>
         </div>

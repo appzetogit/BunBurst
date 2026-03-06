@@ -36,11 +36,11 @@ const etaLogSchema = new mongoose.Schema({
     required: true,
     enum: [
       'ORDER_CREATED',
-      'RESTAURANT_ACCEPTED',
-      'RESTAURANT_DELAYED',
+      'CAFE_ACCEPTED',
+      'CAFE_DELAYED',
       'RIDER_ASSIGNED',
       'RIDER_ASSIGNMENT_DELAYED',
-      'RIDER_REACHED_RESTAURANT',
+      'RIDER_REACHED_CAFE',
       'FOOD_NOT_READY',
       'FOOD_READY',
       'RIDER_STARTED_DELIVERY',
@@ -51,11 +51,11 @@ const etaLogSchema = new mongoose.Schema({
   },
   // Breakdown of ETA components for transparency
   breakdown: {
-    restaurantPrepTime: Number,
-    restaurantLoadDelay: Number,
+    cafePrepTime: Number,
+    cafeLoadDelay: Number,
     riderAssignmentTime: Number,
-    travelTimeRiderToRestaurant: Number,
-    travelTimeRestaurantToUser: Number,
+    travelTimeRiderToCafe: Number,
+    travelTimeCafeToUser: Number,
     trafficMultiplier: Number,
     bufferTime: Number,
     totalETA: Number

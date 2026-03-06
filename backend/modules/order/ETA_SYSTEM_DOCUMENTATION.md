@@ -27,8 +27,8 @@ This is a comprehensive ETA (Estimated Time of Arrival) calculation system for t
 ## ETA Calculation Formula
 
 ```
-ETA = restaurantPrepTime
-    + restaurantLoadDelay
+ETA = cafePrepTime
+    + cafeLoadDelay
     + riderAssignmentTime
     + travelTime(rider → cafe)
     + travelTime(cafe → user)
@@ -111,8 +111,8 @@ Authorization: Bearer <token>
 
 Body:
 {
-  "restaurantId": "rest_123",
-  "restaurantLocation": {
+  "cafeId": "rest_123",
+  "cafeLocation": {
     "latitude": 23.2599,
     "longitude": 77.4126
   },
@@ -267,8 +267,8 @@ When creating an order, ETA is automatically calculated:
 ```javascript
 // In orderController.js - already integrated
 const etaResult = await etaCalculationService.calculateInitialETA({
-  restaurantId: assignedRestaurantId,
-  restaurantLocation,
+  cafeId: assignedCafeId,
+  cafeLocation,
   userLocation
 });
 ```
@@ -279,7 +279,7 @@ const etaResult = await etaCalculationService.calculateInitialETA({
 import etaEventService from '../services/etaEventService.js';
 
 // When cafe accepts order
-await etaEventService.handleRestaurantAccepted(orderId, new Date());
+await etaEventService.handleCafeAccepted(orderId, new Date());
 ```
 
 ### 3. Rider Assignment
@@ -297,7 +297,7 @@ await etaEventService.handleRiderAssigned(orderId, riderId);
 import etaEventService from '../services/etaEventService.js';
 
 // When rider reaches cafe
-await etaEventService.handleRiderReachedRestaurant(orderId);
+await etaEventService.handleRiderReachedCafe(orderId);
 ```
 
 ### 5. Food Not Ready
@@ -413,8 +413,8 @@ const etaLogs = await ETALog.find({
 import etaCalculationService from './services/etaCalculationService.js';
 
 const eta = await etaCalculationService.calculateInitialETA({
-  restaurantId: 'rest_123',
-  restaurantLocation: { latitude: 23.2599, longitude: 77.4126 },
+  cafeId: 'rest_123',
+  cafeLocation: { latitude: 23.2599, longitude: 77.4126 },
   userLocation: { latitude: 23.2600, longitude: 77.4127 }
 });
 
@@ -427,7 +427,7 @@ console.log('ETA:', eta);
 import etaEventService from './services/etaEventService.js';
 
 // Test cafe accepted
-await etaEventService.handleRestaurantAccepted(orderId, new Date());
+await etaEventService.handleCafeAccepted(orderId, new Date());
 ```
 
 ## Performance Considerations

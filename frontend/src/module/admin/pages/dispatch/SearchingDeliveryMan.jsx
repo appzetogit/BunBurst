@@ -17,7 +17,7 @@ export default function SearchingDeliveryMan() {
     order: true,
     date: true,
     customer: true,
-    restaurant: true,
+    cafe: true,
     total: true,
     status: true,
     actions: true,
@@ -120,7 +120,7 @@ export default function SearchingDeliveryMan() {
   } = useGenericTableManagement(
     orders,
     "Searching For Deliverymen Orders",
-    ["id", "customerName", "restaurant", "customerPhone"]
+    ["id", "customerName", "cafe", "customerPhone"]
   )
 
   const resetColumns = () => {
@@ -129,7 +129,7 @@ export default function SearchingDeliveryMan() {
       order: true,
       date: true,
       customer: true,
-      restaurant: true,
+      cafe: true,
       total: true,
       status: true,
       actions: true,
@@ -193,7 +193,7 @@ export default function SearchingDeliveryMan() {
           order: "Order",
           date: "Date",
           customer: "Customer",
-          restaurant: "Restaurant",
+          cafe: "Cafe",
           total: "Total Amount",
           status: "Order Status",
           actions: "Actions",

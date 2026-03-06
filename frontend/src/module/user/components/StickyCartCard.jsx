@@ -38,12 +38,12 @@ export default function StickyCartCard() {
     }
   }, [])
 
-  // Get restaurant info from first cart item or use default
-  const restaurantName = cart[0]?.restaurant || "Restaurant"
-  const restaurantImage = cart[0]?.image || "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&h=200&fit=crop"
+  // Get cafe info from first cart item or use default
+  const cafeName = cart[0]?.cafe || "Cafe"
+  const cafeImage = cart[0]?.image || "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&h=200&fit=crop"
 
-  // Create restaurant slug from restaurant name
-  const restaurantSlug = restaurantName.toLowerCase().replace(/\s+/g, "-")
+  // Create cafe slug from cafe name
+  const cafeSlug = cafeName.toLowerCase().replace(/\s+/g, "-")
 
   // Calculate total price
   const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity * 83), 0)
@@ -96,19 +96,19 @@ export default function StickyCartCard() {
           <div className="max-w-7xl md:max-w-none mx-auto md:mx-0 pointer-events-auto">
             <div className="bg-card text-foreground rounded-3xl shadow-2xl border border-border overflow-hidden md:max-w-md md:w-[400px]">
               <div className="flex items-center gap-3 p-3 md:p-4">
-                {/* Restaurant Image */}
+                {/* Cafe Image */}
                 <div className="flex-shrink-0">
                   <img
-                    src={restaurantImage}
-                    alt={restaurantName}
+                    src={cafeImage}
+                    alt={cafeName}
                     className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-cover"
                   />
                 </div>
 
-                {/* Restaurant Info */}
-                <Link to={`/user/restaurants/${restaurantSlug}`} className="flex-1 min-w-0">
+                {/* Cafe Info */}
+                <Link to={`/user/cafes/${cafeSlug}`} className="flex-1 min-w-0">
                   <h3 className="font-bold text-foreground text-base md:text-lg mb-0.5 line-clamp-1">
-                    {restaurantName}
+                    {cafeName}
                   </h3>
                   <div className="flex items-center gap-1 text-muted-foreground text-sm md:text-base">
                     <span>View Menu</span>

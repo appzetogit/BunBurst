@@ -41,13 +41,13 @@ const sbiLogo = "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=
 // Mock data removed in favor of dynamic fetching
 const diningCategories = []
 
-const limelightRestaurants = []
+const limelightCafes = []
 
 const bankOffers = []
 
 const MOCK_BANK_OFFERS = bankOffers
 
-const popularRestaurants = []
+const popularCafes = []
 // Animated placeholder for search - shared with home page
 const placeholders = [
   "Search \"burger\"",
@@ -62,13 +62,13 @@ const placeholders = [
 
 // Static data removed in favor of dynamic fetching
 const MOCK_CATEGORIES = diningCategories
-const MOCK_LIMELIGHT = limelightRestaurants
+const MOCK_LIMELIGHT = limelightCafes
 const MOCK_MUST_TRIES = []
-const MOCK_RESTAURANTS = popularRestaurants
+const MOCK_CAFES = popularCafes
 
 export default function Dining() {
   const navigate = useNavigate()
-  const [currentRestaurantIndex, setCurrentRestaurantIndex] = useState(0)
+  const [currentCafeIndex, setCurrentCafeIndex] = useState(0)
   const [activeFilters, setActiveFilters] = useState(new Set())
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [activeFilterTab, setActiveFilterTab] = useState('sort')
@@ -87,7 +87,7 @@ export default function Dining() {
   const [categories, setCategories] = useState([])
   const [limelightItems, setLimelightItems] = useState([])
   const [mustTryItems, setMustTryItems] = useState([])
-  const [restaurantList, setRestaurantList] = useState([])
+  const [cafeList, setCafeList] = useState([])
   const [bankOfferItems, setBankOfferItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [diningHeroBanner, setDiningHeroBanner] = useState(null)
@@ -129,7 +129,7 @@ export default function Dining() {
           diningAPI.getCategories(),
           diningAPI.getOfferBanners(),
           diningAPI.getStories(),
-          diningAPI.getRestaurants(location?.city ? { city: location.city } : {}),
+          diningAPI.getCafes(location?.city ? { city: location.city } : {}),
           diningAPI.getBankOffers()
         ])
 
@@ -138,7 +138,7 @@ export default function Dining() {
           setLimelightItems(limes.data.data)
         }
         if (tries.data.success && tries.data.data.length > 0) setMustTryItems(tries.data.data)
-        if (rests.data.success && rests.data.data.length > 0) setRestaurantList(rests.data.data)
+        if (rests.data.success && rests.data.data.length > 0) setCafeList(rests.data.data)
         if (offers.data.success && offers.data.data.length > 0) setBankOfferItems(offers.data.data)
       } catch (error) {
         console.error("Failed to fetch dining data", error)
@@ -161,8 +161,8 @@ export default function Dining() {
     })
   }
 
-  const filteredRestaurants = useMemo(() => {
-    let filtered = [...restaurantList]
+  const filteredCafes = useMemo(() => {
+    let filtered = [...cafeList]
 
     if (activeFilters.has('delivery-under-30')) {
       filtered = filtered.filter(r => {
@@ -220,7 +220,7 @@ export default function Dining() {
     if (limelightItems.length === 0) return
 
     const interval = setInterval(() => {
-      setCurrentRestaurantIndex((prev) => (prev + 1) % limelightItems.length)
+      setCurrentCafeIndex((prev) => (prev + 1) % limelightItems.length)
     }, 2000) // Change every 2 seconds
 
     return () => clearInterval(interval)
@@ -351,17 +351,17 @@ export default function Dining() {
             {/* Carousel Container */}
             <div
               className="flex h-full transition-transform duration-700 ease-in-out"
-              style={{ transform: `translateX(-${currentRestaurantIndex * 100}%)` }}
+              style={{ transform: `translateX(-${currentCafeIndex * 100}%)` }}
             >
-              {limelightItems.map((restaurant, index) => (
+              {limelightItems.map((cafe, index) => (
                 <div
-                  key={restaurant._id || restaurant.id}
+                  key={cafe._id || cafe.id}
                   className="min-w-full h-full relative flex-shrink-0 w-full"
                 >
-                  {/* Restaurant Image */}
+                  {/* Cafe Image */}
                   <OptimizedImage
-                    src={restaurant.imageUrl}
-                    alt={restaurant.tagline}
+                    src={cafe.imageUrl}
+                    alt={cafe.tagline}
                     className="w-full h-full"
                     objectFit="cover"
                     sizes="100vw"
@@ -382,18 +382,18 @@ export default function Dining() {
                       className="bg-primary text-primary-foreground px-3 py-1 rounded-full shadow-lg mb-1"
                     >
                       <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-                        {restaurant.percentageOff}
+                        {cafe.percentageOff}
                       </span>
                     </motion.div>
 
-                    {/* Restaurant Name */}
+                    {/* Cafe Name */}
                     <motion.h4
                       initial={{ opacity: 0, y: 10 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
                       className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-lg"
                     >
-                      {restaurant.restaurant?.name}
+                      {cafe.cafe?.name}
                     </motion.h4>
 
                     {/* Tagline */}
@@ -403,7 +403,7 @@ export default function Dining() {
                       transition={{ delay: 0.4 }}
                       className="text-sm sm:text-base font-medium text-white/80 line-clamp-1 max-w-[90%]"
                     >
-                      {restaurant.tagline}
+                      {cafe.tagline}
                     </motion.p>
                   </div>
                 </div>
@@ -415,8 +415,8 @@ export default function Dining() {
               {limelightItems.map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => setCurrentRestaurantIndex(index)}
-                  className={`h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full transition-all ${index === currentRestaurantIndex
+                  onClick={() => setCurrentCafeIndex(index)}
+                  className={`h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full transition-all ${index === currentCafeIndex
                     ? "bg-primary w-6 sm:w-8"
                     : "bg-primary/50"
                     }`}
@@ -507,7 +507,7 @@ export default function Dining() {
           </div> */}
         </div>
 
-        {/* Popular Restaurants Around You Section */}
+        {/* Popular Cafes Around You Section */}
         <div className="mb-6 mt-8 sm:mt-12">
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4 px-1">
@@ -566,34 +566,34 @@ export default function Dining() {
             </div>
           </section>
 
-          {/* Restaurant Cards */}
+          {/* Cafe Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6 lg:gap-8">
-            {/* First 2 Restaurants */}
-            {filteredRestaurants.slice(0, 2).map((restaurant, index) => {
-              const restaurantSlug = restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, "-")
-              const favorite = isFavorite(restaurantSlug)
+            {/* First 2 Cafes */}
+            {filteredCafes.slice(0, 2).map((cafe, index) => {
+              const cafeSlug = cafe.slug || cafe.name.toLowerCase().replace(/\s+/g, "-")
+              const favorite = isFavorite(cafeSlug)
 
               const handleToggleFavorite = (e) => {
                 e.preventDefault()
                 e.stopPropagation()
                 if (favorite) {
-                  removeFavorite(restaurantSlug)
+                  removeFavorite(cafeSlug)
                 } else {
                   addFavorite({
-                    slug: restaurantSlug,
-                    name: restaurant.name,
-                    cuisine: restaurant.cuisine,
-                    rating: restaurant.rating,
-                    deliveryTime: restaurant.deliveryTime,
-                    distance: restaurant.distance,
-                    image: restaurant.image
+                    slug: cafeSlug,
+                    name: cafe.name,
+                    cuisine: cafe.cuisine,
+                    rating: cafe.rating,
+                    deliveryTime: cafe.deliveryTime,
+                    distance: cafe.distance,
+                    image: cafe.image
                   })
                 }
               }
 
               return (
                 <motion.div
-                  key={restaurant._id || restaurant.id}
+                  key={cafe._id || cafe.id}
                   className="h-full"
                   initial={{ opacity: 0, y: 30, scale: 0.95 }}
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -629,7 +629,7 @@ export default function Dining() {
                       }
                     }}
                   >
-                    <Link to={`/user/restaurants/${restaurantSlug}`} className="h-full flex">
+                    <Link to={`/user/cafes/${cafeSlug}`} className="h-full flex">
                       <Card className="overflow-hidden gap-0 cursor-pointer border-0 group bg-card shadow-md transition-all duration-500 py-0 rounded-2xl h-full flex flex-col w-full relative">
                         {/* Image Section */}
                         <div className="relative h-48 sm:h-56 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-2xl flex-shrink-0">
@@ -642,8 +642,8 @@ export default function Dining() {
                             transition={{ duration: 0.6, ease: "easeOut" }}
                           >
                             <OptimizedImage
-                              src={restaurant.image}
-                              alt={restaurant.name}
+                              src={cafe.image}
+                              alt={cafe.name}
                               className="w-full h-full"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                               objectFit="cover"
@@ -688,7 +688,7 @@ export default function Dining() {
                             transition={{ duration: 0.3 }}
                           >
                             <div className="bg-background/80 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium shadow-lg">
-                              {restaurant.featuredDish} · ₹{restaurant.featuredPrice}
+                              {cafe.featuredDish} · ₹{cafe.featuredPrice}
                             </div>
                           </motion.div>
 
@@ -720,7 +720,7 @@ export default function Dining() {
                                 </p>
                                 <div className="h-px bg-primary-foreground/30 mb-2 w-24"></div>
                                 <p className="text-primary-foreground text-base sm:text-lg font-bold">
-                                  {restaurant.offer}
+                                  {cafe.offer}
                                 </p>
                               </div>
                             </div>
@@ -736,7 +736,7 @@ export default function Dining() {
                           transition={{ duration: 0.4, ease: "easeOut" }}
                         >
                           <CardContent className="p-3 sm:p-4 pt-3 sm:pt-4">
-                            {/* Restaurant Name & Rating */}
+                            {/* Cafe Name & Rating */}
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <div className="flex-1 min-w-0">
                                 <motion.h3
@@ -747,7 +747,7 @@ export default function Dining() {
                                   }}
                                   transition={{ duration: 0.3 }}
                                 >
-                                  {restaurant.name}
+                                  {cafe.name}
                                 </motion.h3>
                               </div>
                               <motion.div
@@ -758,7 +758,7 @@ export default function Dining() {
                                 }}
                                 transition={{ duration: 0.3, type: "spring", stiffness: 400 }}
                               >
-                                <span className="text-sm font-bold">{restaurant.rating}</span>
+                                <span className="text-sm font-bold">{cafe.rating}</span>
                                 <Star className="h-3 w-3 fill-primary-foreground text-primary-foreground" />
                               </motion.div>
                             </div>
@@ -766,16 +766,16 @@ export default function Dining() {
                             {/* Delivery Time & Distance */}
                             <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                               <Clock className="h-4 w-4" strokeWidth={1.5} />
-                              <span className="font-medium">{restaurant.deliveryTime}</span>
+                              <span className="font-medium">{cafe.deliveryTime}</span>
                               <span className="mx-1">|</span>
-                              <span className="font-medium">{restaurant.distance}</span>
+                              <span className="font-medium">{cafe.distance}</span>
                             </div>
 
                             {/* Offer Badge */}
-                            {restaurant.offer && (
+                            {cafe.offer && (
                               <div className="flex items-center gap-2 text-sm">
                                 <BadgePercent className="h-4 w-4 text-primary" strokeWidth={2} />
-                                <span className="text-muted-foreground font-medium">{restaurant.offer}</span>
+                                <span className="text-muted-foreground font-medium">{cafe.offer}</span>
                               </div>
                             )}
                           </CardContent>
@@ -787,32 +787,32 @@ export default function Dining() {
               )
             })}
 
-            {/* Remaining Restaurants */}
-            {filteredRestaurants.slice(2).map((restaurant, index) => {
-              const restaurantSlug = restaurant.slug || restaurant.name.toLowerCase().replace(/\s+/g, "-")
-              const favorite = isFavorite(restaurantSlug)
+            {/* Remaining Cafes */}
+            {filteredCafes.slice(2).map((cafe, index) => {
+              const cafeSlug = cafe.slug || cafe.name.toLowerCase().replace(/\s+/g, "-")
+              const favorite = isFavorite(cafeSlug)
 
               const handleToggleFavorite = (e) => {
                 e.preventDefault()
                 e.stopPropagation()
                 if (favorite) {
-                  removeFavorite(restaurantSlug)
+                  removeFavorite(cafeSlug)
                 } else {
                   addFavorite({
-                    slug: restaurantSlug,
-                    name: restaurant.name,
-                    cuisine: restaurant.cuisine,
-                    rating: restaurant.rating,
-                    deliveryTime: restaurant.deliveryTime,
-                    distance: restaurant.distance,
-                    image: restaurant.image
+                    slug: cafeSlug,
+                    name: cafe.name,
+                    cuisine: cafe.cuisine,
+                    rating: cafe.rating,
+                    deliveryTime: cafe.deliveryTime,
+                    distance: cafe.distance,
+                    image: cafe.image
                   })
                 }
               }
 
               return (
                 <motion.div
-                  key={restaurant._id || restaurant.id}
+                  key={cafe._id || cafe.id}
                   className="h-full"
                   initial={{ opacity: 0, y: 30, scale: 0.95 }}
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -848,7 +848,7 @@ export default function Dining() {
                       }
                     }}
                   >
-                    <Link to={`/user/restaurants/${restaurantSlug}`} className="h-full flex">
+                    <Link to={`/user/cafes/${cafeSlug}`} className="h-full flex">
                       <Card className="overflow-hidden cursor-pointer border-0 group bg-card shadow-md transition-all duration-500 py-0 rounded-2xl h-full flex flex-col w-full relative">
                         {/* Image Section */}
                         <div className="relative h-48 sm:h-56 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-2xl flex-shrink-0">
@@ -861,8 +861,8 @@ export default function Dining() {
                             transition={{ duration: 0.6, ease: "easeOut" }}
                           >
                             <OptimizedImage
-                              src={restaurant.image}
-                              alt={restaurant.name}
+                              src={cafe.image}
+                              alt={cafe.name}
                               className="w-full h-full"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                               objectFit="cover"
@@ -899,7 +899,7 @@ export default function Dining() {
                           {/* Featured Dish Badge - Top Left */}
                           <div className="absolute top-3 left-3">
                             <div className="bg-background/80 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium">
-                              {restaurant.featuredDish} · ₹{restaurant.featuredPrice}
+                              {cafe.featuredDish} · ₹{cafe.featuredPrice}
                             </div>
                           </div>
 
@@ -922,7 +922,7 @@ export default function Dining() {
                                 </p>
                                 <div className="h-px bg-primary-foreground/30 mb-2 w-24"></div>
                                 <p className="text-primary-foreground text-base sm:text-lg font-bold">
-                                  {restaurant.offer}
+                                  {cafe.offer}
                                 </p>
                               </div>
                             </div>
@@ -931,15 +931,15 @@ export default function Dining() {
 
                         {/* Content Section */}
                         <CardContent className="p-3 sm:p-4 pt-3 sm:pt-4">
-                          {/* Restaurant Name & Rating */}
+                          {/* Cafe Name & Rating */}
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex-1 min-w-0">
                               <h3 className="text-lg sm:text-xl font-bold text-foreground line-clamp-1">
-                                {restaurant.name}
+                                {cafe.name}
                               </h3>
                             </div>
                             <div className="flex-shrink-0 bg-primary text-primary-foreground px-2 py-1 rounded-lg flex items-center gap-1">
-                              <span className="text-sm font-bold">{restaurant.rating}</span>
+                              <span className="text-sm font-bold">{cafe.rating}</span>
                               <Star className="h-3 w-3 fill-primary-foreground text-primary-foreground" />
                             </div>
                           </div>
@@ -947,16 +947,16 @@ export default function Dining() {
                           {/* Delivery Time & Distance */}
                           <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                             <Clock className="h-4 w-4" strokeWidth={1.5} />
-                            <span className="font-medium">{restaurant.deliveryTime}</span>
+                            <span className="font-medium">{cafe.deliveryTime}</span>
                             <span className="mx-1">|</span>
-                            <span className="font-medium">{restaurant.distance}</span>
+                            <span className="font-medium">{cafe.distance}</span>
                           </div>
 
                           {/* Offer Badge */}
-                          {restaurant.offer && (
+                          {cafe.offer && (
                             <div className="flex items-center gap-2 text-sm">
                               <BadgePercent className="h-4 w-4 text-primary" strokeWidth={2} />
-                              <span className="text-muted-foreground font-medium">{restaurant.offer}</span>
+                              <span className="text-muted-foreground font-medium">{cafe.offer}</span>
                             </div>
                           )}
                         </CardContent>
@@ -1221,7 +1221,7 @@ export default function Dining() {
                   }`}
               >
                 {activeFilters.size > 0 || sortBy || selectedCuisine
-                  ? `Show ${filteredRestaurants.length} results`
+                  ? `Show ${filteredCafes.length} results`
                   : 'Show results'}
               </button>
             </div>

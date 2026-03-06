@@ -230,12 +230,12 @@ export default function WishlistPage() {
                     </div>
                   </div>
                 ) : (
-                  // Restaurant Item Card
+                  // Cafe Item Card
                   <div 
                     className="p-4 cursor-pointer"
                     onClick={() => {
-                      // Navigate to restaurant page
-                      // TODO: Add restaurant navigation
+                      // Navigate to cafe page
+                      // TODO: Add cafe navigation
                     }}
                   >
                     <div className="flex gap-4">

@@ -3,7 +3,7 @@ import {
   getAllWithdrawalRequests,
   approveWithdrawalRequest,
   rejectWithdrawalRequest,
-} from "../../restaurant/controllers/withdrawalController.js";
+} from "../../cafe/controllers/withdrawalController.js";
 import {
   getDashboardStats,
   getAdmins,
@@ -17,26 +17,26 @@ import {
   getUsers,
   getUserById,
   updateUserStatus,
-  getRestaurants,
-  getRestaurantById,
-  createRestaurant,
-  updateRestaurant,
-  updateRestaurantStatus,
-  getRestaurantJoinRequests,
-  approveRestaurant,
-  rejectRestaurant,
-  reverifyRestaurant,
-  deleteRestaurant,
-  updateRestaurantDiningSettings,
-  updateRestaurantZone,
+  getCafes,
+  getCafeById,
+  createCafe,
+  updateCafe,
+  updateCafeStatus,
+  getCafeJoinRequests,
+  approveCafe,
+  rejectCafe,
+  reverifyCafe,
+  deleteCafe,
+  updateCafeDiningSettings,
+  updateCafeZone,
   getAllOffers,
-  getRestaurantAnalytics,
+  getCafeAnalytics,
   getCustomerWalletReport,
 } from "../controllers/adminController.js";
 import {
   getMenuByAdmin,
   updateMenuByAdmin,
-} from "../../restaurant/controllers/menuController.js";
+} from "../../cafe/controllers/menuController.js";
 import {
   getBusinessSettings,
   updateBusinessSettings,
@@ -119,7 +119,7 @@ import {
   getComplaintDetails,
   updateComplaintStatus,
   updateInternalNotes,
-} from "../controllers/restaurantComplaintController.js";
+} from "../controllers/cafeComplaintController.js";
 import {
   getAddons,
   getAddonById,
@@ -130,9 +130,9 @@ import {
 } from "../controllers/addonController.js";
 import {
   getOrderSettlementDetails,
-  getRestaurantSettlements,
+  getCafeSettlements,
   getDeliverySettlements,
-  getRestaurantSettlementReport,
+  getCafeSettlementReport,
   getDeliverySettlementReport,
   markSettlementsProcessed,
   getAdminWalletSummary,
@@ -193,13 +193,13 @@ import {
   processRefund,
   getOngoingOrders,
   getTransactionReport,
-  getRestaurantReport,
+  getCafeReport,
   manualAssignOrder,
 } from "../controllers/orderController.js";
 import {
   getAllReviews,
   getReviewByOrderId,
-  getReviewsByRestaurant,
+  getReviewsByCafe,
   getDeliverymanReviews,
 } from "../controllers/reviewController.js";
 import {
@@ -268,27 +268,27 @@ router.get("/users/:id", getUserById);
 router.put("/users/:id/status", updateUserStatus);
 router.get("/customer-wallet-report", getCustomerWalletReport);
 
-// Restaurant Management
-router.put("/restaurants/:id/zone", (req, res, next) => {
+// Cafe Management
+router.put("/cafes/:id/zone", (req, res, next) => {
   console.log("✅ ZONE UPDATE ROUTE HIT! ID:", req.params.id);
   next();
-}, updateRestaurantZone);
-router.get("/restaurants", getRestaurants);
-router.get("/restaurants/:id", getRestaurantById);
-router.post("/restaurants", createRestaurant);
-router.put("/restaurants/:id", updateRestaurant);
-// router.get("/restaurants/requests", getRestaurantJoinRequests);
-router.get("/restaurant-analytics/:restaurantId", getRestaurantAnalytics);
-// router.post("/restaurants/:id/approve", approveRestaurant);
-// router.post("/restaurants/:id/reject", rejectRestaurant);
-// router.post("/restaurants/:id/reverify", reverifyRestaurant);
-router.put("/restaurants/:id/status", updateRestaurantStatus);
-router.put("/restaurants/:id/dining-settings", updateRestaurantDiningSettings);
+}, updateCafeZone);
+router.get("/cafes", getCafes);
+router.get("/cafes/:id", getCafeById);
+router.post("/cafes", createCafe);
+router.put("/cafes/:id", updateCafe);
+// router.get("/cafes/requests", getCafeJoinRequests);
+router.get("/cafe-analytics/:cafeId", getCafeAnalytics);
+// router.post("/cafes/:id/approve", approveCafe);
+// router.post("/cafes/:id/reject", rejectCafe);
+// router.post("/cafes/:id/reverify", reverifyCafe);
+router.put("/cafes/:id/status", updateCafeStatus);
+router.put("/cafes/:id/dining-settings", updateCafeDiningSettings);
 
 
-router.get("/restaurants/:id/menu", getMenuByAdmin);
-router.put("/restaurants/:id/menu", updateMenuByAdmin);
-router.delete("/restaurants/:id", deleteRestaurant);
+router.get("/cafes/:id/menu", getMenuByAdmin);
+router.put("/cafes/:id/menu", updateMenuByAdmin);
+router.delete("/cafes/:id", deleteCafe);
 
 // Category Management
 router.get("/categories", getCategories);
@@ -363,11 +363,11 @@ router.put("/delivery-support-tickets/:id", updateTicket);
 
 
 
-// Restaurant Complaint Management
-router.get("/restaurant-complaints", getAllComplaints);
-router.get("/restaurant-complaints/:id", getComplaintDetails);
-router.put("/restaurant-complaints/:id/status", updateComplaintStatus);
-router.put("/restaurant-complaints/:id/notes", updateInternalNotes);
+// Cafe Complaint Management
+router.get("/cafe-complaints", getAllComplaints);
+router.get("/cafe-complaints/:id", getComplaintDetails);
+router.put("/cafe-complaints/:id/status", updateComplaintStatus);
+router.put("/cafe-complaints/:id/notes", updateInternalNotes);
 
 // Global Addon Management
 router.get("/addons", getAddons);
@@ -438,7 +438,7 @@ router.get("/orders", getOrders);
 router.get("/orders/searching-deliveryman", getSearchingDeliverymanOrders);
 router.get("/orders/ongoing", getOngoingOrders);
 router.get("/orders/transaction-report", getTransactionReport);
-router.get("/orders/restaurant-report", getRestaurantReport);
+router.get("/orders/cafe-report", getCafeReport);
 router.post("/orders/:orderId/assign", manualAssignOrder);
 
 // Order Refund - MUST be before /orders/:id to avoid route conflicts
@@ -516,7 +516,7 @@ console.log(
 // Review Management
 router.get("/reviews", getAllReviews);
 router.get("/reviews/:orderId", getReviewByOrderId);
-router.get("/reviews/restaurant/:restaurantId", getReviewsByRestaurant);
+router.get("/reviews/cafe/:cafeId", getReviewsByCafe);
 
 // Get order by ID (must be last to avoid matching other routes)
 router.get("/orders/:id", getOrderById);
@@ -534,11 +534,11 @@ router.put(
 
 // Settlement Routes
 router.get("/settlements/order/:orderId", getOrderSettlementDetails);
-router.get("/settlements/restaurants", getRestaurantSettlements);
+router.get("/settlements/cafes", getCafeSettlements);
 router.get("/settlements/delivery", getDeliverySettlements);
 router.get(
-  "/settlements/restaurants/:restaurantId/report",
-  getRestaurantSettlementReport,
+  "/settlements/cafes/:cafeId/report",
+  getCafeSettlementReport,
 );
 router.get(
   "/settlements/delivery/:deliveryId/report",

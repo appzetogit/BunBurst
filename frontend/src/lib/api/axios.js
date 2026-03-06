@@ -57,17 +57,17 @@ function getTokenForCurrentRoute() {
   if (path.startsWith("/admin")) {
     return localStorage.getItem("admin_accessToken");
   } else if (
-    path.startsWith("/restaurant") &&
-    !path.startsWith("/restaurants") &&
-    !path.startsWith("/restaurant/list") &&
-    !path.startsWith("/restaurant/under-250")
+    path.startsWith("/cafe") &&
+    !path.startsWith("/cafes") &&
+    !path.startsWith("/cafe/list") &&
+    !path.startsWith("/cafe/under-250")
   ) {
-    // /restaurant/* is for restaurant module, /restaurants/* is for user module viewing restaurants
-    return localStorage.getItem("restaurant_accessToken");
+    // /cafe/* is for cafe module, /cafes/* is for user module viewing cafes
+    return localStorage.getItem("cafe_accessToken");
   } else if (path.startsWith("/delivery")) {
     return localStorage.getItem("delivery_accessToken");
   } else {
-    // Default to user module for /, /user/*, /auth/*, /restaurants/*, etc.
+    // Default to user module for /, /user/*, /auth/*, /cafes/*, etc.
     return localStorage.getItem("user_accessToken") || localStorage.getItem("accessToken");
   }
 }
@@ -100,39 +100,39 @@ apiClient.interceptors.request.use(
     const path = window.location.pathname;
     const requestUrl = config.url || "";
 
-    // Check if this is a public restaurant route (should not require authentication)
-    const isPublicRestaurantRoute =
-      requestUrl.includes("/restaurant/list") ||
-      requestUrl.includes("/restaurant/under-250") ||
-      (requestUrl.includes("/restaurant/") &&
-        !requestUrl.includes("/restaurant/orders") &&
-        !requestUrl.includes("/restaurant/auth") &&
-        !requestUrl.includes("/restaurant/menu") &&
-        !requestUrl.includes("/restaurant/profile") &&
-        !requestUrl.includes("/restaurant/staff") &&
-        !requestUrl.includes("/restaurant/offers") &&
-        !requestUrl.includes("/restaurant/inventory") &&
-        !requestUrl.includes("/restaurant/categories") &&
+    // Check if this is a public cafe route (should not require authentication)
+    const isPublicCafeRoute =
+      requestUrl.includes("/cafe/list") ||
+      requestUrl.includes("/cafe/under-250") ||
+      (requestUrl.includes("/cafe/") &&
+        !requestUrl.includes("/cafe/orders") &&
+        !requestUrl.includes("/cafe/auth") &&
+        !requestUrl.includes("/cafe/menu") &&
+        !requestUrl.includes("/cafe/profile") &&
+        !requestUrl.includes("/cafe/staff") &&
+        !requestUrl.includes("/cafe/offers") &&
+        !requestUrl.includes("/cafe/inventory") &&
+        !requestUrl.includes("/cafe/categories") &&
         !requestUrl.includes("/dining/") &&
-        !requestUrl.includes("/restaurant/onboarding") &&
-        !requestUrl.includes("/restaurant/delivery-status") &&
-        !requestUrl.includes("/restaurant/finance") &&
-        !requestUrl.includes("/restaurant/wallet") &&
-        !requestUrl.includes("/restaurant/analytics") &&
-        !requestUrl.includes("/restaurant/complaints") &&
-        (requestUrl.match(/\/restaurant\/[^/]+$/) ||
-          requestUrl.match(/\/restaurant\/[^/]+\/menu/) ||
-          requestUrl.match(/\/restaurant\/[^/]+\/addons/) ||
-          requestUrl.match(/\/restaurant\/[^/]+\/inventory/) ||
-          requestUrl.match(/\/restaurant\/[^/]+\/offers/)));
+        !requestUrl.includes("/cafe/onboarding") &&
+        !requestUrl.includes("/cafe/delivery-status") &&
+        !requestUrl.includes("/cafe/finance") &&
+        !requestUrl.includes("/cafe/wallet") &&
+        !requestUrl.includes("/cafe/analytics") &&
+        !requestUrl.includes("/cafe/complaints") &&
+        (requestUrl.match(/\/cafe\/[^/]+$/) ||
+          requestUrl.match(/\/cafe\/[^/]+\/menu/) ||
+          requestUrl.match(/\/cafe\/[^/]+\/addons/) ||
+          requestUrl.match(/\/cafe\/[^/]+\/inventory/) ||
+          requestUrl.match(/\/cafe\/[^/]+\/offers/)));
 
     const isAuthenticatedRoute =
       (path.startsWith("/admin") ||
-        (path.startsWith("/restaurant") &&
-          !path.startsWith("/restaurants") &&
-          !isPublicRestaurantRoute) ||
+        (path.startsWith("/cafe") &&
+          !path.startsWith("/cafes") &&
+          !isPublicCafeRoute) ||
         path.startsWith("/delivery")) &&
-      !isPublicRestaurantRoute;
+      !isPublicCafeRoute;
 
     // For authenticated routes, ALWAYS ensure Authorization header is set if we have a token
     // This ensures FormData requests and other requests always have the token
@@ -163,7 +163,7 @@ apiClient.interceptors.request.use(
               admin: localStorage.getItem("admin_accessToken")
                 ? "exists"
                 : "missing",
-              restaurant: localStorage.getItem("restaurant_accessToken")
+              cafe: localStorage.getItem("cafe_accessToken")
                 ? "exists"
                 : "missing",
               delivery: localStorage.getItem("delivery_accessToken")
@@ -185,9 +185,9 @@ apiClient.interceptors.request.use(
         }
       }
     } else {
-      // For non-authenticated routes (including public restaurant routes), don't add token
-      // Public routes like /restaurant/list should work without authentication
-      if (isPublicRestaurantRoute) {
+      // For non-authenticated routes (including public cafe routes), don't add token
+      // Public routes like /cafe/list should work without authentication
+      if (isPublicCafeRoute) {
         // Remove any existing Authorization header for public routes
         delete config.headers.Authorization;
       } else if (
@@ -262,12 +262,12 @@ apiClient.interceptors.response.use(
         tokenKey = "admin_accessToken";
         expectedRole = "admin";
       } else if (
-        currentPath.startsWith("/restaurant") &&
-        !currentPath.startsWith("/restaurants")
+        currentPath.startsWith("/cafe") &&
+        !currentPath.startsWith("/cafes")
       ) {
-        // /restaurant/* is for restaurant module, /restaurants/* is for user module viewing restaurants
-        tokenKey = "restaurant_accessToken";
-        expectedRole = "restaurant";
+        // /cafe/* is for cafe module, /cafes/* is for user module viewing cafes
+        tokenKey = "cafe_accessToken";
+        expectedRole = "cafe";
       } else if (currentPath.startsWith("/delivery")) {
         tokenKey = "delivery_accessToken";
         expectedRole = "delivery";
@@ -275,9 +275,9 @@ apiClient.interceptors.response.use(
         currentPath.startsWith("/user") ||
         currentPath.startsWith("/usermain") ||
         currentPath === "/" ||
-        currentPath.startsWith("/restaurants")
+        currentPath.startsWith("/cafes")
       ) {
-        // User module includes /restaurants/* and /usermain/* paths
+        // User module includes /cafes/* and /usermain/* paths
         tokenKey = "user_accessToken";
         expectedRole = "user";
       }
@@ -309,11 +309,11 @@ apiClient.interceptors.response.use(
         if (currentPath.startsWith("/admin")) {
           refreshEndpoint = "/admin/auth/refresh-token";
         } else if (
-          currentPath.startsWith("/restaurant") &&
-          !currentPath.startsWith("/restaurants")
+          currentPath.startsWith("/cafe") &&
+          !currentPath.startsWith("/cafes")
         ) {
-          // /restaurant/* is for restaurant module, /restaurants/* is for user module viewing restaurants
-          refreshEndpoint = "/restaurant/auth/refresh-token";
+          // /cafe/* is for cafe module, /cafes/* is for user module viewing cafes
+          refreshEndpoint = "/cafe/auth/refresh-token";
         } else if (currentPath.startsWith("/delivery")) {
           refreshEndpoint = "/delivery/auth/refresh-token";
         }
@@ -340,11 +340,11 @@ apiClient.interceptors.response.use(
             tokenKey = "admin_accessToken";
             expectedRole = "admin";
           } else if (
-            currentPath.startsWith("/restaurant") &&
-            !currentPath.startsWith("/restaurants")
+            currentPath.startsWith("/cafe") &&
+            !currentPath.startsWith("/cafes")
           ) {
-            tokenKey = "restaurant_accessToken";
-            expectedRole = "restaurant";
+            tokenKey = "cafe_accessToken";
+            expectedRole = "cafe";
           } else if (currentPath.startsWith("/delivery")) {
             tokenKey = "delivery_accessToken";
             expectedRole = "delivery";
@@ -418,12 +418,12 @@ apiClient.interceptors.response.use(
               window.location.href = "/admin/login";
             }
           } else if (
-            currentPath.startsWith("/restaurant") &&
-            !currentPath.startsWith("/restaurants")
+            currentPath.startsWith("/cafe") &&
+            !currentPath.startsWith("/cafes")
           ) {
-            clearModuleAuth("restaurant");
-            if (currentPath !== "/restaurant/login") {
-              window.location.href = "/restaurant/login";
+            clearModuleAuth("cafe");
+            if (currentPath !== "/cafe/login") {
+              window.location.href = "/cafe/login";
             }
           } else if (currentPath.startsWith("/delivery")) {
             clearModuleAuth("delivery");
@@ -431,7 +431,7 @@ apiClient.interceptors.response.use(
               window.location.href = "/delivery/sign-in";
             }
           } else {
-            // User module includes /restaurants/* paths
+            // User module includes /cafes/* paths
             clearModuleAuth("user");
 
             // Also clear legacy token to prevent it from being used as fallback
@@ -582,19 +582,19 @@ apiClient.interceptors.response.use(
             },
           );
         }
-        // Show toast for restaurant routes (but not for getRestaurantById which can legitimately return 404)
-        else if (url.includes("/restaurant/")) {
-          // Only show error for critical restaurant endpoints like /restaurant/list
-          // Individual restaurant lookups (like /restaurant/:id) can legitimately return 404 if restaurant doesn't exist
+        // Show toast for cafe routes (but not for getCafeById which can legitimately return 404)
+        else if (url.includes("/cafe/")) {
+          // Only show error for critical cafe endpoints like /cafe/list
+          // Individual cafe lookups (like /cafe/:id) can legitimately return 404 if cafe doesn't exist
           // So we silently handle those 404s
-          const isIndividualRestaurantLookup =
-            /\/restaurant\/[a-f0-9]{24}$/i.test(url) ||
-            (url.match(/\/restaurant\/[^/]+$/) &&
-              !url.includes("/restaurant/list"));
+          const isIndividualCafeLookup =
+            /\/cafe\/[a-f0-9]{24}$/i.test(url) ||
+            (url.match(/\/cafe\/[^/]+$/) &&
+              !url.includes("/cafe/list"));
 
           if (
-            !isIndividualRestaurantLookup &&
-            url.includes("/restaurant/list")
+            !isIndividualCafeLookup &&
+            url.includes("/cafe/list")
           ) {
             toast.error(
               "Cafe API endpoint not found. Check backend routes.",
@@ -613,8 +613,8 @@ apiClient.interceptors.response.use(
               },
             );
           }
-          // Silently handle 404 for individual restaurant lookups (getRestaurantById)
-          // These are expected to fail if restaurant doesn't exist in DB
+          // Silently handle 404 for individual cafe lookups (getCafeById)
+          // These are expected to fail if cafe doesn't exist in DB
         }
       }
       return Promise.reject(error);

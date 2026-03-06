@@ -106,7 +106,7 @@ export default function AddonActivation() {
                     onToggle={() => handleToggle(addon.id)}
                   />
 
-                  {/* Settings Icon (only for Restaurant app) */}
+                  {/* Settings Icon (only for Cafe app) */}
                   {addon.hasSettings && (
                     <button
                       type="button"

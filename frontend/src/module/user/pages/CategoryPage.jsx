@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 // Import shared food images - prevents duplication
 import { foodImages } from "@/constants/images"
 import api from "@/lib/api"
-import { restaurantAPI, adminAPI } from "@/lib/api"
+import { cafeAPI, adminAPI } from "@/lib/api"
 import { useProfile } from "../context/ProfileContext"
 import { useLocation } from "../hooks/useLocation"
 import { useZone } from "../hooks/useZone"
@@ -50,9 +50,9 @@ export default function CategoryPage() {
   const [categories, setCategories] = useState([])
   const [loadingCategories, setLoadingCategories] = useState(true)
 
-  // State for restaurants from backend
-  const [restaurantsData, setRestaurantsData] = useState([])
-  const [loadingRestaurants, setLoadingRestaurants] = useState(true)
+  // State for cafes from backend
+  const [cafesData, setCafesData] = useState([])
+  const [loadingCafes, setLoadingCafes] = useState(true)
   const [categoryKeywords, setCategoryKeywords] = useState({})
 
   // Fetch categories from admin API
@@ -200,20 +200,20 @@ export default function CategoryPage() {
     return allDishes.length > 0 ? allDishes[0] : null
   }
 
-  // Fetch restaurants from API
+  // Fetch cafes from API
   useEffect(() => {
-    const fetchRestaurants = async () => {
+    const fetchCafes = async () => {
       try {
-        setLoadingRestaurants(true)
-        // Optional: Add zoneId if available (for sorting/filtering, but show all restaurants)
+        setLoadingCafes(true)
+        // Optional: Add zoneId if available (for sorting/filtering, but show all cafes)
         const params = {}
         if (zoneId) {
           params.zoneId = zoneId
         }
-        const response = await restaurantAPI.getRestaurants(params)
+        const response = await cafeAPI.getCafes(params)
 
-        if (response.data && response.data.success && response.data.data && response.data.data.restaurants) {
-          const restaurantsArray = response.data.data.restaurants
+        if (response.data && response.data.success && response.data.data && response.data.data.cafes) {
+          const cafesArray = response.data.data.cafes
 
           // Helper function to check if value is a default/mock value
           const isDefaultValue = (value, fieldName) => {
@@ -236,82 +236,82 @@ export default function CategoryPage() {
             return false
           }
 
-          // Transform restaurants - filter out default values
-          const restaurantsWithIds = restaurantsArray
-            .filter((restaurant) => {
-              const hasName = restaurant.name && restaurant.name.trim().length > 0
-              const hasRealImage = restaurant.profileImage?.url ||
-                (restaurant.coverImages && restaurant.coverImages.length > 0) ||
-                (restaurant.menuImages && restaurant.menuImages.length > 0)
+          // Transform cafes - filter out default values
+          const cafesWithIds = cafesArray
+            .filter((cafe) => {
+              const hasName = cafe.name && cafe.name.trim().length > 0
+              const hasRealImage = cafe.profileImage?.url ||
+                (cafe.coverImages && cafe.coverImages.length > 0) ||
+                (cafe.menuImages && cafe.menuImages.length > 0)
               return hasName && hasRealImage
             })
-            .map((restaurant) => {
-              let deliveryTime = restaurant.estimatedDeliveryTime || null
-              let distance = restaurant.distance || null
-              let offer = restaurant.offer || null
+            .map((cafe) => {
+              let deliveryTime = cafe.estimatedDeliveryTime || null
+              let distance = cafe.distance || null
+              let offer = cafe.offer || null
 
               if (isDefaultValue(deliveryTime, 'deliveryTime')) deliveryTime = null
               if (isDefaultValue(distance, 'distance')) distance = null
               if (isDefaultValue(offer, 'offer')) offer = null
 
-              const cuisine = restaurant.cuisines && restaurant.cuisines.length > 0
-                ? restaurant.cuisines.join(", ")
+              const cuisine = cafe.cuisines && cafe.cuisines.length > 0
+                ? cafe.cuisines.join(", ")
                 : null
 
-              const coverImages = restaurant.coverImages && restaurant.coverImages.length > 0
-                ? restaurant.coverImages.map(img => img.url || img).filter(Boolean)
+              const coverImages = cafe.coverImages && cafe.coverImages.length > 0
+                ? cafe.coverImages.map(img => img.url || img).filter(Boolean)
                 : []
 
-              const fallbackImages = restaurant.menuImages && restaurant.menuImages.length > 0
-                ? restaurant.menuImages.map(img => img.url || img).filter(Boolean)
+              const fallbackImages = cafe.menuImages && cafe.menuImages.length > 0
+                ? cafe.menuImages.map(img => img.url || img).filter(Boolean)
                 : []
 
               const allImages = coverImages.length > 0
                 ? coverImages
                 : (fallbackImages.length > 0
                   ? fallbackImages
-                  : (restaurant.profileImage?.url ? [restaurant.profileImage.url] : []))
+                  : (cafe.profileImage?.url ? [cafe.profileImage.url] : []))
 
               const image = allImages[0] || null
-              const restaurantId = restaurant.restaurantId || restaurant._id
+              const cafeId = cafe.cafeId || cafe._id
 
-              let featuredDish = restaurant.featuredDish || null
-              let featuredPrice = restaurant.featuredPrice || null
+              let featuredDish = cafe.featuredDish || null
+              let featuredPrice = cafe.featuredPrice || null
 
               if (featuredPrice && isDefaultValue(featuredPrice, 'featuredPrice')) {
                 featuredPrice = null
               }
 
               return {
-                id: restaurantId,
-                name: restaurant.name,
+                id: cafeId,
+                name: cafe.name,
                 cuisine: cuisine,
-                rating: restaurant.rating || null,
+                rating: cafe.rating || null,
                 deliveryTime: deliveryTime,
                 distance: distance,
                 image: image,
                 images: allImages,
-                priceRange: restaurant.priceRange || null,
+                priceRange: cafe.priceRange || null,
                 featuredDish: featuredDish,
                 featuredPrice: featuredPrice,
                 offer: offer,
-                slug: restaurant.slug || restaurant.name?.toLowerCase().replace(/\s+/g, '-'),
-                restaurantId: restaurantId,
+                slug: cafe.slug || cafe.name?.toLowerCase().replace(/\s+/g, '-'),
+                cafeId: cafeId,
                 hasPaneer: false,
                 category: 'all',
               }
             })
 
-          // Fetch menus for all restaurants
-          const menuPromises = restaurantsWithIds.map(async (restaurant) => {
+          // Fetch menus for all cafes
+          const menuPromises = cafesWithIds.map(async (cafe) => {
             try {
-              const menuResponse = await restaurantAPI.getMenuByRestaurantId(restaurant.restaurantId)
+              const menuResponse = await cafeAPI.getMenuByCafeId(cafe.cafeId)
               if (menuResponse.data && menuResponse.data.success && menuResponse.data.data && menuResponse.data.data.menu) {
                 const menu = menuResponse.data.data.menu
                 const hasPaneer = checkCategoryInMenu(menu, 'paneer-tikka')
 
-                let featuredDish = restaurant.featuredDish
-                let featuredPrice = restaurant.featuredPrice
+                let featuredDish = cafe.featuredDish
+                let featuredPrice = cafe.featuredPrice
 
                 if (!featuredDish || !featuredPrice) {
                   for (const section of (menu.sections || [])) {
@@ -331,7 +331,7 @@ export default function CategoryPage() {
                 }
 
                 return {
-                  ...restaurant,
+                  ...cafe,
                   menu: menu,
                   hasPaneer: hasPaneer,
                   featuredDish: featuredDish || null,
@@ -340,15 +340,15 @@ export default function CategoryPage() {
                 }
               }
               return {
-                ...restaurant,
+                ...cafe,
                 menu: null,
                 hasPaneer: false,
                 categoryMatches: {},
               }
             } catch (error) {
-              console.warn(`Failed to fetch menu for restaurant ${restaurant.restaurantId}:`, error)
+              console.warn(`Failed to fetch menu for cafe ${cafe.cafeId}:`, error)
               return {
-                ...restaurant,
+                ...cafe,
                 menu: null,
                 hasPaneer: false,
                 categoryMatches: {},
@@ -356,20 +356,20 @@ export default function CategoryPage() {
             }
           })
 
-          const transformedRestaurants = await Promise.all(menuPromises)
-          setRestaurantsData(transformedRestaurants)
+          const transformedCafes = await Promise.all(menuPromises)
+          setCafesData(transformedCafes)
         } else {
-          setRestaurantsData([])
+          setCafesData([])
         }
       } catch (error) {
         console.error('Error fetching cafes:', error)
-        setRestaurantsData([])
+        setCafesData([])
       } finally {
-        setLoadingRestaurants(false)
+        setLoadingCafes(false)
       }
     }
 
-    fetchRestaurants()
+    fetchCafes()
   }, [zoneId, isOutOfService])
 
   // Update selected category when URL changes
@@ -449,10 +449,10 @@ export default function CategoryPage() {
     })
   }
 
-  // Filter restaurants based on active filters and selected category
-  // If category is selected, expand restaurants into dish cards (one card per matching dish)
+  // Filter cafes based on active filters and selected category
+  // If category is selected, expand cafes into dish cards (one card per matching dish)
   const filteredRecommended = useMemo(() => {
-    const sourceData = restaurantsData.length > 0 ? restaurantsData : []
+    const sourceData = cafesData.length > 0 ? cafesData : []
     let filtered = [...sourceData]
 
     // Filter by category - Dynamic filtering based on menu items
@@ -482,7 +482,7 @@ export default function CategoryPage() {
                 })
               })
             } else {
-              // If no dishes found but menu exists, skip this restaurant
+              // If no dishes found but menu exists, skip this cafe
             }
           }
         } else {
@@ -539,14 +539,14 @@ export default function CategoryPage() {
     }
 
     return filtered
-  }, [selectedCategory, activeFilters, searchQuery, restaurantsData, categoryKeywords, vegMode])
+  }, [selectedCategory, activeFilters, searchQuery, cafesData, categoryKeywords, vegMode])
 
-  const filteredAllRestaurants = useMemo(() => {
-    const sourceData = restaurantsData.length > 0 ? restaurantsData : []
+  const filteredAllCafes = useMemo(() => {
+    const sourceData = cafesData.length > 0 ? cafesData : []
     let filtered = [...sourceData]
 
     // Filter by category - Dynamic filtering based on menu items
-    // If category is selected, expand restaurants into dish cards (one card per matching dish)
+    // If category is selected, expand cafes into dish cards (one card per matching dish)
     if (selectedCategory && selectedCategory !== 'all') {
       const expandedDishes = []
 
@@ -636,12 +636,12 @@ export default function CategoryPage() {
     }
 
     return filtered
-  }, [selectedCategory, activeFilters, searchQuery, restaurantsData, categoryKeywords, vegMode])
+  }, [selectedCategory, activeFilters, searchQuery, cafesData, categoryKeywords, vegMode])
 
-  // Get unique cuisines from restaurant data for filters
+  // Get unique cuisines from cafe data for filters
   const availableCuisines = useMemo(() => {
     const cuisinesSet = new Set()
-    restaurantsData.forEach(r => {
+    cafesData.forEach(r => {
       if (r.cuisine) {
         r.cuisine.split(',').forEach(c => {
           const trimmed = c.trim()
@@ -655,7 +655,7 @@ export default function CategoryPage() {
     const result = Array.from(cuisinesSet).sort()
 
     return result.length > 0 ? result : fallbacks
-  }, [restaurantsData])
+  }, [cafesData])
 
   const handleCategorySelect = (category) => {
     const categorySlug = category.slug || category.id
@@ -852,31 +852,31 @@ export default function CategoryPage() {
                 RECOMMENDED FOR YOU
               </h2>
 
-              {/* Small Restaurant Cards - Grid - Show all dishes when category is selected */}
+              {/* Small Cafe Cards - Grid - Show all dishes when category is selected */}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
                 {(selectedCategory && selectedCategory !== 'all'
                   ? filteredRecommended
                   : filteredRecommended.slice(0, 6)
-                ).map((restaurant) => {
+                ).map((cafe) => {
                   return (
                     <Link
-                      key={restaurant.id}
-                      to={`/user/restaurants/${restaurant.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      key={cafe.id}
+                      to={`/user/cafes/${cafe.name.toLowerCase().replace(/\s+/g, '-')}`}
                       className="block"
                     >
                       <div className={`group ${shouldShowGrayscale ? 'grayscale opacity-75' : ''}`}>
                         {/* Image Container */}
                         <div className="relative aspect-square rounded-xl md:rounded-2xl overflow-hidden mb-2">
-                          {/* Use category dish image if available, otherwise restaurant image */}
-                          {restaurant.categoryDishImage ? (
+                          {/* Use category dish image if available, otherwise cafe image */}
+                          {cafe.categoryDishImage ? (
                             <img
-                              src={restaurant.categoryDishImage}
-                              alt={restaurant.categoryDishName || restaurant.name}
+                              src={cafe.categoryDishImage}
+                              alt={cafe.categoryDishName || cafe.name}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               onError={(e) => {
-                                // Fallback to restaurant image if dish image fails
-                                if (restaurant.image) {
-                                  e.target.src = restaurant.image
+                                // Fallback to cafe image if dish image fails
+                                if (cafe.image) {
+                                  e.target.src = cafe.image
                                 } else {
                                   // Show emoji placeholder
                                   e.target.style.display = 'none'
@@ -887,10 +887,10 @@ export default function CategoryPage() {
                                 }
                               }}
                             />
-                          ) : restaurant.image ? (
+                          ) : cafe.image ? (
                             <img
-                              src={restaurant.image}
-                              alt={restaurant.name}
+                              src={cafe.image}
+                              alt={cafe.name}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               onError={(e) => {
                                 // Show emoji placeholder
@@ -908,26 +908,26 @@ export default function CategoryPage() {
                           )}
 
                           {/* Offer Badge */}
-                          {restaurant.offer && (
+                          {cafe.offer && (
                             <div className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[10px] md:text-xs font-semibold px-1.5 py-0.5 rounded">
-                              {restaurant.offer}
+                              {cafe.offer}
                             </div>
                           )}
 
                           {/* Rating Badge (NOW ON IMAGE, bottom-left with white border) */}
                           <div className="absolute bottom-0 left-0 bg-primary border-[4px] rounded-md border-background text-primary-foreground text-[11px] md:text-xs font-bold px-1.5 py-0.5 flex items-center gap-0.5">
-                            {restaurant.rating}
+                            {cafe.rating}
                             <Star className="h-2.5 w-2.5 md:h-3 md:w-3 fill-primary-foreground" />
                           </div>
                         </div>
 
-                        {/* Restaurant Info - Show category dish name if available, otherwise restaurant name */}
+                        {/* Cafe Info - Show category dish name if available, otherwise cafe name */}
                         <h3 className="font-semibold text-foreground text-xs md:text-sm line-clamp-1">
-                          {restaurant.categoryDishName || restaurant.name}
+                          {cafe.categoryDishName || cafe.name}
                         </h3>
                         <div className="flex items-center gap-1 text-muted-foreground text-[10px] md:text-xs">
                           <Clock className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                          <span>{restaurant.deliveryTime || 'Not available'}</span>
+                          <span>{cafe.deliveryTime || 'Not available'}</span>
                         </div>
                       </div>
                     </Link>
@@ -937,10 +937,10 @@ export default function CategoryPage() {
             </section>
           )}
 
-          {/* ALL RESTAURANTS Section */}
+          {/* ALL CAFES Section */}
           <section className="relative">
             <h2 className="text-xs sm:text-sm md:text-base font-semibold text-muted-foreground tracking-widest uppercase mb-4 md:mb-6">
-              ALL RESTAURANTS
+              ALL CAFES
             </h2>
 
             {/* Loading Overlay */}
@@ -953,28 +953,28 @@ export default function CategoryPage() {
               </div>
             )}
 
-            {/* Large Restaurant Cards */}
+            {/* Large Cafe Cards */}
             <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6 xl:gap-7 items-stretch ${isLoadingFilterResults ? 'opacity-50' : 'opacity-100'} transition-opacity duration-300`}>
-              {filteredAllRestaurants.map((restaurant) => {
-                const restaurantSlug = restaurant.name.toLowerCase().replace(/\s+/g, "-")
-                const isFavorite = favorites.has(restaurant.id)
+              {filteredAllCafes.map((cafe) => {
+                const cafeSlug = cafe.name.toLowerCase().replace(/\s+/g, "-")
+                const isFavorite = favorites.has(cafe.id)
 
                 return (
-                  <Link key={restaurant.id} to={`/user/restaurants/${restaurantSlug}`} className="h-full flex">
+                  <Link key={cafe.id} to={`/user/cafes/${cafeSlug}`} className="h-full flex">
                     <Card className={`overflow-hidden cursor-pointer gap-0 border-0 group bg-card shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-md h-full flex flex-col w-full ${shouldShowGrayscale ? 'grayscale opacity-75' : ''
                       }`}>
                       {/* Image Section */}
                       <div className="relative h-44 sm:h-52 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-md flex-shrink-0">
-                        {/* Use category dish image if available, otherwise restaurant image */}
-                        {restaurant.categoryDishImage ? (
+                        {/* Use category dish image if available, otherwise cafe image */}
+                        {cafe.categoryDishImage ? (
                           <img
-                            src={restaurant.categoryDishImage}
-                            alt={restaurant.categoryDishName || restaurant.name}
+                            src={cafe.categoryDishImage}
+                            alt={cafe.categoryDishName || cafe.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             onError={(e) => {
-                              // Fallback to restaurant image if dish image fails
-                              if (restaurant.image) {
-                                e.target.src = restaurant.image
+                              // Fallback to cafe image if dish image fails
+                              if (cafe.image) {
+                                e.target.src = cafe.image
                               } else {
                                 // Show emoji placeholder
                                 e.target.style.display = 'none'
@@ -985,10 +985,10 @@ export default function CategoryPage() {
                               }
                             }}
                           />
-                        ) : restaurant.image ? (
+                        ) : cafe.image ? (
                           <img
-                            src={restaurant.image}
-                            alt={restaurant.name}
+                            src={cafe.image}
+                            alt={cafe.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             onError={(e) => {
                               // Show emoji placeholder
@@ -1006,16 +1006,16 @@ export default function CategoryPage() {
                         )}
 
                         {/* Category Dish Badge - Top Left (shows category dish if available, otherwise featured dish) */}
-                        {(restaurant.categoryDishName || restaurant.featuredDish) && (
+                        {(cafe.categoryDishName || cafe.featuredDish) && (
                           <div className="absolute top-3 left-3">
                             <div className="bg-background/80 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-xs sm:text-sm md:text-base font-medium">
-                              {restaurant.categoryDishName || restaurant.featuredDish} · ₹{restaurant.categoryDishPrice || restaurant.featuredPrice}
+                              {cafe.categoryDishName || cafe.featuredDish} · ₹{cafe.categoryDishPrice || cafe.featuredPrice}
                             </div>
                           </div>
                         )}
 
                         {/* Ad Badge */}
-                        {restaurant.isAd && (
+                        {cafe.isAd && (
                           <div className="absolute top-3 right-14 bg-background/80 backdrop-blur-sm text-foreground text-[10px] md:text-xs px-2 py-0.5 rounded">
                             Ad
                           </div>
@@ -1029,7 +1029,7 @@ export default function CategoryPage() {
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            toggleFavorite(restaurant.id)
+                            toggleFavorite(cafe.id)
                           }}
                         >
                           <Bookmark className={`h-5 w-5 md:h-6 md:w-6 ${isFavorite ? "fill-foreground text-foreground" : "text-muted-foreground"}`} strokeWidth={2} />
@@ -1038,15 +1038,15 @@ export default function CategoryPage() {
 
                       {/* Content Section */}
                       <CardContent className="p-3 sm:p-4 md:p-5 lg:p-6 gap-0 flex-1 flex flex-col">
-                        {/* Restaurant Name & Rating */}
+                        {/* Cafe Name & Rating */}
                         <div className="flex items-start justify-between gap-2 mb-2 lg:mb-3">
                           <div className="flex-1 min-w-0">
                             <h3 className="text-md md:text-xl lg:text-2xl font-bold text-foreground line-clamp-1 lg:line-clamp-2">
-                              {restaurant.name}
+                              {cafe.name}
                             </h3>
                           </div>
                           <div className="flex-shrink-0 bg-primary text-primary-foreground px-2 md:px-3 lg:px-4 py-1 lg:py-1.5 rounded-lg flex items-center gap-1">
-                            <span className="text-sm md:text-base lg:text-lg font-bold">{restaurant.rating}</span>
+                            <span className="text-sm md:text-base lg:text-lg font-bold">{cafe.rating}</span>
                             <Star className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 fill-primary-foreground text-primary-foreground" />
                           </div>
                         </div>
@@ -1054,20 +1054,20 @@ export default function CategoryPage() {
                         {/* Delivery Time & Distance */}
                         <div className="flex items-center gap-1 text-sm md:text-base lg:text-lg text-muted-foreground mb-2 lg:mb-3">
                           <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
-                          <span className="font-medium">{restaurant.deliveryTime || 'Not available'}</span>
-                          {restaurant.distance && (
+                          <span className="font-medium">{cafe.deliveryTime || 'Not available'}</span>
+                          {cafe.distance && (
                             <>
                               <span className="mx-1">|</span>
-                              <span className="font-medium">{restaurant.distance}</span>
+                              <span className="font-medium">{cafe.distance}</span>
                             </>
                           )}
                         </div>
 
                         {/* Offer Badge */}
-                        {restaurant.offer && (
+                        {cafe.offer && (
                           <div className="flex items-center gap-2 text-sm md:text-base lg:text-lg mt-auto">
                             <BadgePercent className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-primary" strokeWidth={2} />
-                            <span className="text-muted-foreground font-medium">{restaurant.offer}</span>
+                            <span className="text-muted-foreground font-medium">{cafe.offer}</span>
                           </div>
                         )}
                       </CardContent>
@@ -1078,11 +1078,11 @@ export default function CategoryPage() {
             </div>
 
             {/* Empty State */}
-            {filteredAllRestaurants.length === 0 && (
+            {filteredAllCafes.length === 0 && (
               <div className="text-center py-12 md:py-16">
                 <p className="text-muted-foreground text-sm md:text-base">
                   {searchQuery
-                    ? `No restaurants found for "${searchQuery}"`
+                    ? `No cafes found for "${searchQuery}"`
                     : "No cafes found with selected filters"}
                 </p>
                 <Button

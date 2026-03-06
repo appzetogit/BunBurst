@@ -19,10 +19,10 @@ const heroBannerSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  linkedRestaurants: {
+  linkedCafes: {
     type: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Restaurant'
+      ref: 'Cafe'
     }],
     default: []
   },

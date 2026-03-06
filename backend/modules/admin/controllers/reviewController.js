@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
  */
 export const getAllReviews = asyncHandler(async (req, res) => {
   try {
-    const { page = 1, limit = 20, restaurantId, rating, sortBy = 'submittedAt', sortOrder = 'desc' } = req.query;
+    const { page = 1, limit = 20, cafeId, rating, sortBy = 'submittedAt', sortOrder = 'desc' } = req.query;
     
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
@@ -21,8 +21,8 @@ export const getAllReviews = asyncHandler(async (req, res) => {
       'review.rating': { $exists: true, $ne: null }
     };
     
-    if (restaurantId) {
-      query.restaurantId = restaurantId;
+    if (cafeId) {
+      query.cafeId = cafeId;
     }
     
     if (rating) {
@@ -45,9 +45,9 @@ export const getAllReviews = asyncHandler(async (req, res) => {
     // Fetch reviews with pagination
     const reviews = await Order.find(query)
       .populate('userId', 'name phone email')
-      .populate('restaurantId', 'name')
+      .populate('cafeId', 'name')
       .populate('deliveryPartnerId', 'name phone')
-      .select('orderId restaurantId restaurantName userId review deliveredAt createdAt items deliveryPartnerId')
+      .select('orderId cafeId cafeName userId review deliveredAt createdAt items deliveryPartnerId')
       .sort(sortOptions)
       .skip(skip)
       .limit(limitNum)
@@ -88,8 +88,8 @@ export const getAllReviews = asyncHandler(async (req, res) => {
       reviews: reviews.map(review => ({
         orderId: review.orderId,
         orderMongoId: review._id,
-        restaurantId: review.restaurantId?._id || review.restaurantId,
-        restaurantName: review.restaurantName || review.restaurantId?.name,
+        cafeId: review.cafeId?._id || review.cafeId,
+        cafeName: review.cafeName || review.cafeId?.name,
         customer: {
           id: review.userId?._id || review.userId,
           name: review.userId?.name,
@@ -143,8 +143,8 @@ export const getReviewByOrderId = asyncHandler(async (req, res) => {
       'review.rating': { $exists: true, $ne: null }
     })
       .populate('userId', 'name phone email')
-      .populate('restaurantId', 'name')
-      .select('orderId restaurantId restaurantName userId review deliveredAt createdAt')
+      .populate('cafeId', 'name')
+      .select('orderId cafeId cafeName userId review deliveredAt createdAt')
       .lean();
     
     if (!order) {
@@ -154,8 +154,8 @@ export const getReviewByOrderId = asyncHandler(async (req, res) => {
     return successResponse(res, 200, 'Review fetched successfully', {
       orderId: order.orderId,
       orderMongoId: order._id,
-      restaurantId: order.restaurantId?._id || order.restaurantId,
-      restaurantName: order.restaurantName || order.restaurantId?.name,
+      cafeId: order.cafeId?._id || order.cafeId,
+      cafeName: order.cafeName || order.cafeId?.name,
       customer: {
         id: order.userId?._id || order.userId,
         name: order.userId?.name,
@@ -175,12 +175,12 @@ export const getReviewByOrderId = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get reviews by restaurant ID (Admin)
- * GET /api/admin/reviews/restaurant/:restaurantId
+ * Get reviews by cafe ID (Admin)
+ * GET /api/admin/reviews/cafe/:cafeId
  */
-export const getReviewsByRestaurant = asyncHandler(async (req, res) => {
+export const getReviewsByCafe = asyncHandler(async (req, res) => {
   try {
-    const { restaurantId } = req.params;
+    const { cafeId } = req.params;
     const { page = 1, limit = 20, rating, sortBy = 'submittedAt', sortOrder = 'desc' } = req.query;
     
     const pageNum = parseInt(page);
@@ -188,7 +188,7 @@ export const getReviewsByRestaurant = asyncHandler(async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
     
     const query = {
-      restaurantId: restaurantId,
+      cafeId: cafeId,
       status: 'delivered',
       'review.rating': { $exists: true, $ne: null }
     };
@@ -258,7 +258,7 @@ export const getReviewsByRestaurant = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching cafe reviews:', error);
-    return errorResponse(res, 500, `Failed to fetch restaurant reviews: ${error.message}`);
+    return errorResponse(res, 500, `Failed to fetch cafe reviews: ${error.message}`);
   }
 });
 

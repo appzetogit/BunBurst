@@ -78,7 +78,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
   const [isAssigning, setIsAssigning] = useState(false)
   const [showDigitalBillPopup, setShowDigitalBillPopup] = useState(false)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
-  const [fetchedRestaurantAddress, setFetchedRestaurantAddress] = useState("")
+  const [fetchedCafeAddress, setFetchedCafeAddress] = useState("")
 
   const isPartnerOnline = (partner) => {
     if (typeof partner?.availability?.isOnline === "boolean") {
@@ -179,27 +179,27 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
     }
 
     const run = async () => {
-      setFetchedRestaurantAddress('')
+      setFetchedCafeAddress('')
 
       // Step 1 — try text address fields directly from the order prop
       const directText = [
-        order?.restaurantAddress,
-        order?.restaurantLocation?.formattedAddress,
-        order?.restaurantLocation?.address,
-        order?.deliveryState?.restaurantAddress,
+        order?.cafeAddress,
+        order?.cafeLocation?.formattedAddress,
+        order?.cafeLocation?.address,
+        order?.deliveryState?.cafeAddress,
       ].find(isValidText)
 
       if (directText) {
-        if (!isCancelled) setFetchedRestaurantAddress(directText)
+        if (!isCancelled) setFetchedCafeAddress(directText)
         return
       }
 
-      // Step 2 — extract coordinates from restaurantLocation and reverse geocode
-      const coords = extractCoords(order?.restaurantLocation)
+      // Step 2 — extract coordinates from cafeLocation and reverse geocode
+      const coords = extractCoords(order?.cafeLocation)
       if (coords) {
         const geocoded = await reverseGeocode(coords.lat, coords.lng)
         if (!isCancelled && geocoded) {
-          setFetchedRestaurantAddress(geocoded)
+          setFetchedCafeAddress(geocoded)
           return
         }
       }
@@ -214,27 +214,27 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
         const detailed = resp?.data?.data?.order || resp?.data?.order
         if (detailed) {
           // Try text fields from detailed order
-          const rest = (detailed.restaurantId && typeof detailed.restaurantId === 'object') ? detailed.restaurantId
-            : (detailed.restaurant && typeof detailed.restaurant === 'object') ? detailed.restaurant : {}
+          const rest = (detailed.cafeId && typeof detailed.cafeId === 'object') ? detailed.cafeId
+            : (detailed.cafe && typeof detailed.cafe === 'object') ? detailed.cafe : {}
 
           const detailText = [
-            detailed?.restaurantAddress,
+            detailed?.cafeAddress,
             rest?.address,
             rest?.location?.formattedAddress,
             rest?.location?.address,
           ].find(isValidText)
 
           if (detailText) {
-            if (!isCancelled) setFetchedRestaurantAddress(detailText)
+            if (!isCancelled) setFetchedCafeAddress(detailText)
             return
           }
 
           // Try coordinates from the detailed order
-          const detailCoords = extractCoords(detailed?.restaurantLocation) || extractCoords(rest?.location)
+          const detailCoords = extractCoords(detailed?.cafeLocation) || extractCoords(rest?.location)
           if (detailCoords) {
             const geocoded = await reverseGeocode(detailCoords.lat, detailCoords.lng)
             if (!isCancelled && geocoded) {
-              setFetchedRestaurantAddress(geocoded)
+              setFetchedCafeAddress(geocoded)
             }
           }
         }
@@ -307,29 +307,29 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
     return parts.length ? parts.join(", ") : null
   }
 
-  const getRestaurantInvoiceAddress = (orderData) => {
-    const restaurant = (orderData?.restaurantId && typeof orderData.restaurantId === "object")
-      ? orderData.restaurantId
-      : (orderData?.restaurant && typeof orderData.restaurant === "object" ? orderData.restaurant : {})
+  const getCafeInvoiceAddress = (orderData) => {
+    const cafe = (orderData?.cafeId && typeof orderData.cafeId === "object")
+      ? orderData.cafeId
+      : (orderData?.cafe && typeof orderData.cafe === "object" ? orderData.cafe : {})
 
     const candidates = [
-      orderData?.restaurantAddress,
-      orderData?.restaurantIdAddress,
-      orderData?.restaurantLocation?.formattedAddress,
-      orderData?.restaurantLocation?.address,
-      buildAddressFromLocation(orderData?.restaurantLocation),
+      orderData?.cafeAddress,
+      orderData?.cafeIdAddress,
+      orderData?.cafeLocation?.formattedAddress,
+      orderData?.cafeLocation?.address,
+      buildAddressFromLocation(orderData?.cafeLocation),
       // Check for explicit lat/lng fields if text isn't available
-      (orderData?.restaurantLocation?.latitude && orderData?.restaurantLocation?.longitude)
-        ? `${orderData.restaurantLocation.latitude}, ${orderData.restaurantLocation.longitude}`
+      (orderData?.cafeLocation?.latitude && orderData?.cafeLocation?.longitude)
+        ? `${orderData.cafeLocation.latitude}, ${orderData.cafeLocation.longitude}`
         : null,
-      orderData?.deliveryState?.restaurantAddress,
-      restaurant?.address,
-      restaurant?.location?.formattedAddress,
-      restaurant?.location?.address,
-      buildAddressFromLocation(restaurant?.location),
-      // Additional paths for populated restaurant objects
-      restaurant?.addressLine1 ? [restaurant.addressLine1, restaurant.addressLine2, restaurant.city, restaurant.state, restaurant.pincode].filter(Boolean).join(', ') : null,
-      restaurant?.street ? [restaurant.street, restaurant.area, restaurant.city, restaurant.state].filter(Boolean).join(', ') : null,
+      orderData?.deliveryState?.cafeAddress,
+      cafe?.address,
+      cafe?.location?.formattedAddress,
+      cafe?.location?.address,
+      buildAddressFromLocation(cafe?.location),
+      // Additional paths for populated cafe objects
+      cafe?.addressLine1 ? [cafe.addressLine1, cafe.addressLine2, cafe.city, cafe.state, cafe.pincode].filter(Boolean).join(', ') : null,
+      cafe?.street ? [cafe.street, cafe.area, cafe.city, cafe.state].filter(Boolean).join(', ') : null,
       orderData?.pickupAddress?.formattedAddress,
       orderData?.pickupAddress?.address,
       buildAddressFromLocation(orderData?.pickupAddress),
@@ -410,7 +410,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                       <p className="text-xs text-red-600 mt-1">
                         <span className="font-medium">
                           {order.cancelledBy === 'user' ? 'Cancelled by User - ' :
-                            order.cancelledBy === 'restaurant' ? 'Cancelled by Cafe - ' :
+                            order.cancelledBy === 'cafe' ? 'Cancelled by Cafe - ' :
                               'Cancellation '}Reason:
                         </span> {order.cancellationReason}
                       </p>
@@ -489,13 +489,13 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
               </div>
             </div>
 
-            {/* Restaurant Information */}
-            {order.restaurant && (
+            {/* Cafe Information */}
+            {order.cafe && (
               <div className="border-t border-[#F5F5F5] pt-4">
                 <h3 className="text-sm font-semibold text-[#1E1E1E] mb-4">Cafe Information</h3>
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Cafe Name</p>
-                  <p className="text-sm font-medium text-[#1E1E1E]">{order.restaurant}</p>
+                  <p className="text-sm font-medium text-[#1E1E1E]">{order.cafe}</p>
                 </div>
               </div>
             )}
@@ -623,8 +623,8 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                   onClick={async () => {
                     setIsLoadingBill(true);
                     try {
-                      const restaurantName = order.restaurant || order.restaurantName || order.restaurantId?.name || 'Restaurant';
-                      const restaurantAddress = getRestaurantInvoiceAddress(order);
+                      const cafeName = order.cafe || order.cafeName || order.cafeId?.name || 'Cafe';
+                      const cafeAddress = getCafeInvoiceAddress(order);
                       const customerName = order.customerName || order.userId?.name || order.userName || 'Customer';
                       const customerAddress = formatAddress(order.address);
 
@@ -759,8 +759,8 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
       <div class="section">
         <div class="section-title">From</div>
         <div class="info-box">
-          <h3>${restaurantName}</h3>
-          <p>${restaurantAddress}</p>
+          <h3>${cafeName}</h3>
+          <p>${cafeAddress}</p>
         </div>
       </div>
 
@@ -1072,16 +1072,16 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
 
             {/* Bill Content */}
             <div className="p-6 space-y-5">
-              {/* Restaurant Info */}
+              {/* Cafe Info */}
               <div className="border-b border-[#F5F5F5] pb-4">
                 <p className="text-xs text-[#1E1E1E] uppercase tracking-wide mb-2">From</p>
                 <h3 className="text-lg font-bold text-[#1E1E1E]">
-                  {order.restaurant || order.restaurantName || order.restaurantId?.name || 'Restaurant'}
+                  {order.cafe || order.cafeName || order.cafeId?.name || 'Cafe'}
                 </h3>
                 <div className="text-sm text-[#1E1E1E] mt-1">
-                  {fetchedRestaurantAddress && isValidDisplayAddress(fetchedRestaurantAddress)
-                    ? fetchedRestaurantAddress
-                    : (getRestaurantInvoiceAddress(order) || "Address not available")}
+                  {fetchedCafeAddress && isValidDisplayAddress(fetchedCafeAddress)
+                    ? fetchedCafeAddress
+                    : (getCafeInvoiceAddress(order) || "Address not available")}
                 </div>
               </div>
 

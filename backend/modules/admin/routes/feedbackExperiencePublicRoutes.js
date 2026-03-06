@@ -2,14 +2,14 @@ import express from 'express';
 import { createFeedbackExperience } from '../controllers/feedbackExperienceController.js';
 import jwtService from '../../auth/services/jwtService.js';
 import User from '../../auth/models/User.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import { errorResponse } from '../../../shared/utils/response.js';
 
 const router = express.Router();
 
 /**
  * Flexible Authentication Middleware
- * Accepts both user and restaurant tokens
+ * Accepts both user and cafe tokens
  */
 const authenticateFlexible = async (req, res, next) => {
   try {
@@ -41,17 +41,17 @@ const authenticateFlexible = async (req, res, next) => {
       return next();
     }
 
-    // Check if token is for restaurant
-    if (decoded.role === 'restaurant') {
-      const restaurant = await Restaurant.findById(decoded.userId).select('-password');
+    // Check if token is for cafe
+    if (decoded.role === 'cafe') {
+      const cafe = await Cafe.findById(decoded.userId).select('-password');
       
-      if (!restaurant) {
+      if (!cafe) {
         return errorResponse(res, 401, 'Cafe not found');
       }
 
-      // For feedback, attach restaurant as user for compatibility with controller
-      req.user = restaurant; // Controller expects req.user
-      req.restaurant = restaurant; // Also attach as req.restaurant for clarity
+      // For feedback, attach cafe as user for compatibility with controller
+      req.user = cafe; // Controller expects req.user
+      req.cafe = cafe; // Also attach as req.cafe for clarity
       req.token = decoded;
       return next();
     }
@@ -77,7 +77,7 @@ const authenticateFlexible = async (req, res, next) => {
   }
 };
 
-// Public route for creating feedback experience (requires user/restaurant/delivery authentication)
+// Public route for creating feedback experience (requires user/cafe/delivery authentication)
 router.post('/feedback-experience', authenticateFlexible, createFeedbackExperience);
 
 export default router;

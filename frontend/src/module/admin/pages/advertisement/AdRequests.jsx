@@ -16,13 +16,13 @@ export default function AdRequests() {
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [filters, setFilters] = useState({
     adsType: "",
-    restaurant: "",
+    cafe: "",
   })
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     adsId: true,
     adsTitle: true,
-    restaurantInfo: true,
+    cafeInfo: true,
     adsType: true,
     duration: true,
     actions: true,
@@ -32,7 +32,7 @@ export default function AdRequests() {
     si: "Serial Number",
     adsId: "Ads ID",
     adsTitle: "Ads Title",
-    restaurantInfo: "Cafe Info",
+    cafeInfo: "Cafe Info",
     adsType: "Ads Type",
     duration: "Duration",
     actions: "Actions",
@@ -55,7 +55,7 @@ export default function AdRequests() {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(request =>
         request.adsId?.toLowerCase().includes(query) ||
-        request.restaurantName?.toLowerCase().includes(query) ||
+        request.cafeName?.toLowerCase().includes(query) ||
         request.adsTitle?.toLowerCase().includes(query)
       )
     }
@@ -65,9 +65,9 @@ export default function AdRequests() {
       result = result.filter(r => r.adsType === filters.adsType)
     }
     
-    // Filter by restaurant
-    if (filters.restaurant) {
-      result = result.filter(r => r.restaurantName === filters.restaurant)
+    // Filter by cafe
+    if (filters.cafe) {
+      result = result.filter(r => r.cafeName === filters.cafe)
     }
     
     return result
@@ -121,7 +121,7 @@ export default function AdRequests() {
       si: true,
       adsId: true,
       adsTitle: true,
-      restaurantInfo: true,
+      cafeInfo: true,
       adsType: true,
       duration: true,
       actions: true,
@@ -135,11 +135,11 @@ export default function AdRequests() {
   const handleResetFilters = () => {
     setFilters({
       adsType: "",
-      restaurant: "",
+      cafe: "",
     })
   }
 
-  const restaurants = [...new Set(requests.map(r => r.restaurantName))].filter(Boolean)
+  const cafes = [...new Set(requests.map(r => r.cafeName))].filter(Boolean)
   const adsTypes = [...new Set(requests.map(r => r.adsType))].filter(Boolean)
 
   const tabs = [
@@ -262,7 +262,7 @@ export default function AdRequests() {
                 {visibleColumns.si && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">SI</th>}
                 {visibleColumns.adsId && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads ID</th>}
                 {visibleColumns.adsTitle && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Title</th>}
-                {visibleColumns.restaurantInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Cafe Info</th>}
+                {visibleColumns.cafeInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Cafe Info</th>}
                 {visibleColumns.adsType && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Ads Type</th>}
                 {visibleColumns.duration && <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Duration</th>}
                 {visibleColumns.actions && <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Action</th>}
@@ -297,15 +297,15 @@ export default function AdRequests() {
                         <span className="text-sm font-medium text-slate-900">{request.adsTitle}</span>
                       </td>
                     )}
-                    {visibleColumns.restaurantInfo && (
+                    {visibleColumns.cafeInfo && (
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                             <Building2 className="w-5 h-5 text-orange-600" />
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-slate-900">{request.restaurantName}</span>
-                            <span className="text-xs text-slate-500">{request.restaurantEmail}</span>
+                            <span className="text-sm font-medium text-slate-900">{request.cafeName}</span>
+                            <span className="text-xs text-slate-500">{request.cafeEmail}</span>
                           </div>
                         </div>
                       </td>
@@ -397,13 +397,13 @@ export default function AdRequests() {
                 Cafe
               </label>
               <select
-                value={filters.restaurant}
-                onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
+                value={filters.cafe}
+                onChange={(e) => setFilters(prev => ({ ...prev, cafe: e.target.value }))}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
               >
                 <option value="">All Cafes</option>
-                {restaurants.map(restaurant => (
-                  <option key={restaurant} value={restaurant}>{restaurant}</option>
+                {cafes.map(cafe => (
+                  <option key={cafe} value={cafe}>{cafe}</option>
                 ))}
               </select>
             </div>
@@ -454,11 +454,11 @@ export default function AdRequests() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Cafe Name</p>
-                  <p className="text-sm text-slate-900">{selectedRequest.restaurantName}</p>
+                  <p className="text-sm text-slate-900">{selectedRequest.cafeName}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Cafe Email</p>
-                  <p className="text-sm text-slate-900">{selectedRequest.restaurantEmail}</p>
+                  <p className="text-sm text-slate-900">{selectedRequest.cafeEmail}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Ads Type</p>

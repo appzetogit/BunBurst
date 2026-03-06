@@ -11,7 +11,7 @@ import Loader from "@/components/Loader"
 export default function TableBookingConfirmation() {
     const location = useLocation()
     const navigate = useNavigate()
-    const { restaurant, guests, date, timeSlot, discount } = location.state || {}
+    const { cafe, guests, date, timeSlot, discount } = location.state || {}
 
     const [specialRequest, setSpecialRequest] = useState("")
     const [user, setUser] = useState(null)
@@ -19,7 +19,7 @@ export default function TableBookingConfirmation() {
     const [bookingInProgress, setBookingInProgress] = useState(false)
 
     useEffect(() => {
-        if (!restaurant) {
+        if (!cafe) {
             navigate("/dining")
             return
         }
@@ -38,13 +38,13 @@ export default function TableBookingConfirmation() {
             }
         }
         fetchUser()
-    }, [restaurant, navigate])
+    }, [cafe, navigate])
 
     const handleBooking = async () => {
         try {
             setBookingInProgress(true)
             const response = await diningAPI.createBooking({
-                restaurant: restaurant._id,
+                cafe: cafe._id,
                 guests,
                 date,
                 timeSlot,
@@ -102,11 +102,11 @@ export default function TableBookingConfirmation() {
                                 <MapPin className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                                <p className="font-bold text-foreground">{restaurant.name}</p>
+                                <p className="font-bold text-foreground">{cafe.name}</p>
                                 <p className="text-muted-foreground text-xs mt-0.5 line-clamp-1">
-                                    {typeof restaurant.location === 'string'
-                                        ? restaurant.location
-                                        : (restaurant.location?.formattedAddress || restaurant.location?.address || `${restaurant.location?.city || ''}${restaurant.location?.area ? ', ' + restaurant.location.area : ''}`)}
+                                    {typeof cafe.location === 'string'
+                                        ? cafe.location
+                                        : (cafe.location?.formattedAddress || cafe.location?.address || `${cafe.location?.city || ''}${cafe.location?.area ? ', ' + cafe.location.area : ''}`)}
                                 </p>
                             </div>
                         </div>

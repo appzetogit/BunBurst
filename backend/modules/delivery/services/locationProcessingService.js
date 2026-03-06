@@ -183,7 +183,7 @@ export async function snapToRoad(points, riderId = null) {
  * Generate route polyline using Google Directions API
  * OPTIMIZED: Added caching to avoid repeated API calls for same routes
  * @param {Object} start - {lat, lng}
- * @param {Object} waypoint - {lat, lng} (restaurant)
+ * @param {Object} waypoint - {lat, lng} (cafe)
  * @param {Object} end - {lat, lng} (customer)
  * @returns {Promise<Object>} {points: Array, totalDistance: number}
  */
@@ -480,7 +480,7 @@ export async function calculateRouteProgress(orderId, currentLocation) {
  * @param {string} riderId - Rider ID
  * @param {string} orderId - Order ID
  * @param {Object} rawLocation - {lat, lng, speed, bearing, accuracy}
- * @param {Object} routeInfo - {restaurant: {lat, lng}, customer: {lat, lng}}
+ * @param {Object} routeInfo - {cafe: {lat, lng}, customer: {lat, lng}}
  * @returns {Promise<Object>} Processed location ready for broadcast
  */
 export async function processLocationUpdate(riderId, orderId, rawLocation, routeInfo) {
@@ -502,7 +502,7 @@ export async function processLocationUpdate(riderId, orderId, rawLocation, route
     if (!routePolylines.has(orderId) && routeInfo) {
       const route = await generateRoutePolyline(
         smoothedLocation,
-        routeInfo.restaurant,
+        routeInfo.cafe,
         routeInfo.customer
       );
       if (route) {

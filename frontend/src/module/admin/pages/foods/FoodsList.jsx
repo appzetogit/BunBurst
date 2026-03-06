@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
 import { Search, Trash2, Loader2 } from "lucide-react"
-import { adminAPI, restaurantAPI } from "@/lib/api"
+import { adminAPI, cafeAPI } from "@/lib/api"
 import apiClient from "@/lib/api"
 import { toast } from "sonner"
 
@@ -10,31 +10,31 @@ export default function FoodsList() {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
 
-  // Fetch all foods from all restaurants
+  // Fetch all foods from all cafes
   useEffect(() => {
     const fetchAllFoods = async () => {
       try {
         setLoading(true)
         
-        // First, fetch all restaurants
-        const restaurantsResponse = await adminAPI.getRestaurants({ limit: 1000 })
-        const restaurants = restaurantsResponse?.data?.data?.restaurants || 
-                          restaurantsResponse?.data?.restaurants || 
+        // First, fetch all cafes
+        const cafesResponse = await adminAPI.getCafes({ limit: 1000 })
+        const cafes = cafesResponse?.data?.data?.cafes || 
+                          cafesResponse?.data?.cafes || 
                           []
         
-        if (restaurants.length === 0) {
+        if (cafes.length === 0) {
           setFoods([])
           setLoading(false)
           return
         }
 
-        // Fetch menu for each restaurant and extract all food items
+        // Fetch menu for each cafe and extract all food items
         const allFoods = []
         
-        for (const restaurant of restaurants) {
+        for (const cafe of cafes) {
           try {
-            const restaurantId = restaurant._id || restaurant.id
-            const menuResponse = await restaurantAPI.getMenuByRestaurantId(restaurantId)
+            const cafeId = cafe._id || cafe.id
+            const menuResponse = await cafeAPI.getMenuByCafeId(cafeId)
             const menu = menuResponse?.data?.data?.menu || menuResponse?.data?.menu
             
             if (menu && menu.sections) {
@@ -44,14 +44,14 @@ export default function FoodsList() {
                 if (section.items && Array.isArray(section.items)) {
                   section.items.forEach((item) => {
                     allFoods.push({
-                      id: item.id || `${restaurantId}-${section.id}-${item.name}`,
+                      id: item.id || `${cafeId}-${section.id}-${item.name}`,
                       _id: item._id,
                       name: item.name || "Unnamed Item",
                       image: item.image || item.images?.[0] || "https://via.placeholder.com/40",
                       priority: "Normal", // Default priority
                       status: item.isAvailable !== false && item.approvalStatus !== 'rejected',
-                      restaurantId: restaurantId,
-                      restaurantName: restaurant.name || "Unknown Cafe",
+                      cafeId: cafeId,
+                      cafeName: cafe.name || "Unknown Cafe",
                       sectionName: section.name || "Unknown Section",
                       price: item.price || 0,
                       foodType: item.foodType || "Non-Veg",
@@ -67,14 +67,14 @@ export default function FoodsList() {
                     if (subsection.items && Array.isArray(subsection.items)) {
                       subsection.items.forEach((item) => {
                         allFoods.push({
-                          id: item.id || `${restaurantId}-${section.id}-${subsection.id}-${item.name}`,
+                          id: item.id || `${cafeId}-${section.id}-${subsection.id}-${item.name}`,
                           _id: item._id,
                           name: item.name || "Unnamed Item",
                           image: item.image || item.images?.[0] || "https://via.placeholder.com/40",
                           priority: "Normal", // Default priority
                           status: item.isAvailable !== false && item.approvalStatus !== 'rejected',
-                          restaurantId: restaurantId,
-                          restaurantName: restaurant.name || "Unknown Cafe",
+                          cafeId: cafeId,
+                          cafeName: cafe.name || "Unknown Cafe",
                           sectionName: section.name || "Unknown Section",
                           subsectionName: subsection.name || "Unknown Subsection",
                           price: item.price || 0,
@@ -89,8 +89,8 @@ export default function FoodsList() {
               })
             }
           } catch (error) {
-            // Silently skip restaurants that don't have menus or have errors
-            console.warn(`Failed to fetch menu for restaurant ${restaurant._id || restaurant.id}:`, error.message)
+            // Silently skip cafes that don't have menus or have errors
+            console.warn(`Failed to fetch menu for cafe ${cafe._id || cafe.id}:`, error.message)
           }
         }
         
@@ -148,7 +148,7 @@ export default function FoodsList() {
       result = result.filter(food =>
         food.name.toLowerCase().includes(query) ||
         food.id.toString().includes(query) ||
-        food.restaurantName?.toLowerCase().includes(query)
+        food.cafeName?.toLowerCase().includes(query)
       )
     }
 
@@ -166,8 +166,8 @@ export default function FoodsList() {
     try {
       setDeleting(true)
       
-      // Get the restaurant's menu
-      const menuResponse = await restaurantAPI.getMenuByRestaurantId(food.restaurantId)
+      // Get the cafe's menu
+      const menuResponse = await cafeAPI.getMenuByCafeId(food.cafeId)
       const menu = menuResponse?.data?.data?.menu || menuResponse?.data?.menu
       
       if (!menu || !menu.sections) {
@@ -215,14 +215,14 @@ export default function FoodsList() {
 
       // Update menu in backend
       // Note: Since we're admin, we need to use a workaround
-      // The restaurant menu update endpoint requires restaurant authentication
-      // For now, we'll try using the restaurant endpoint directly
-      // TODO: Create admin endpoint: PUT /api/admin/restaurants/:id/menu
+      // The cafe menu update endpoint requires cafe authentication
+      // For now, we'll try using the cafe endpoint directly
+      // TODO: Create admin endpoint: PUT /api/admin/cafes/:id/menu
       try {
-        // Try using restaurant menu update endpoint
-        // This might fail if backend doesn't allow admin to update restaurant menus
+        // Try using cafe menu update endpoint
+        // This might fail if backend doesn't allow admin to update cafe menus
         const response = await apiClient.put(
-          `/restaurant/menu`,
+          `/cafe/menu`,
           { sections: updatedSections }
         )
         
@@ -352,9 +352,9 @@ export default function FoodsList() {
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-slate-900">{food.name}</span>
                         <span className="text-xs text-slate-500">ID #{formatFoodId(food.id)}</span>
-                        {food.restaurantName && (
+                        {food.cafeName && (
                           <span className="text-xs text-slate-400 mt-0.5">
-                            {food.restaurantName}
+                            {food.cafeName}
                           </span>
                         )}
                       </div>

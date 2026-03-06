@@ -93,7 +93,7 @@ export default function Chattings() {
   }
 
   const filteredConversations = conversations.filter(conv => {
-    const participant = activeTab === "customer" ? conv.user : conv.restaurant
+    const participant = activeTab === "customer" ? conv.user : conv.cafe
     if (!participant) return false
 
     if (searchQuery.trim()) {
@@ -158,10 +158,10 @@ export default function Chattings() {
                   </button>
                   <button
                     onClick={() => {
-                      setActiveTab("restaurant")
+                      setActiveTab("cafe")
                       setSelectedConversation(null)
                     }}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "restaurant"
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "cafe"
                       ? "border-blue-600 text-blue-600"
                       : "border-transparent text-slate-600 hover:text-slate-900"
                       }`}
@@ -187,7 +187,7 @@ export default function Chattings() {
                 ) : (
                   <div className="divide-y divide-slate-100">
                     {filteredConversations.map((conversation) => {
-                      const participant = activeTab === "customer" ? conversation.user : conversation.restaurant
+                      const participant = activeTab === "customer" ? conversation.user : conversation.cafe
                       if (!participant) return null
 
                       return (
@@ -242,7 +242,7 @@ export default function Chattings() {
                   <div className="p-6 border-b border-slate-200">
                     <div className="flex items-center gap-3">
                       {(() => {
-                        const participant = activeTab === "customer" ? selectedConversation.user : selectedConversation.restaurant
+                        const participant = activeTab === "customer" ? selectedConversation.user : selectedConversation.cafe
                         return (
                           <>
                             <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 overflow-hidden text-lg">

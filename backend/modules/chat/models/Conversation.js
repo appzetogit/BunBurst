@@ -7,9 +7,9 @@ const conversationSchema = new mongoose.Schema(
             ref: 'User',
             required: false
         },
-        restaurant: {
+        cafe: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Restaurant',
+            ref: 'Cafe',
             required: false
         },
         admin: {
@@ -19,7 +19,7 @@ const conversationSchema = new mongoose.Schema(
         },
         type: {
             type: String,
-            enum: ['customer', 'restaurant'],
+            enum: ['customer', 'cafe'],
             required: true
         },
         lastMessage: {
@@ -43,7 +43,7 @@ const conversationSchema = new mongoose.Schema(
 // Index for performance
 conversationSchema.index({ type: 1 });
 conversationSchema.index({ user: 1 });
-conversationSchema.index({ restaurant: 1 });
+conversationSchema.index({ cafe: 1 });
 conversationSchema.index({ admin: 1 });
 conversationSchema.index({ lastMessageAt: -1 });
 

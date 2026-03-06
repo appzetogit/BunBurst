@@ -115,11 +115,11 @@ export default function MyOrders() {
     return `${day} ${month}, ${displayHours}:${minutes}${ampm}`
   }
 
-  // Get restaurant location/address
-  const getRestaurantLocation = (order) => {
-    // Try restaurant address first
-    if (order.restaurantId?.location?.formattedAddress) {
-      const addr = order.restaurantId.location.formattedAddress
+  // Get cafe location/address
+  const getCafeLocation = (order) => {
+    // Try cafe address first
+    if (order.cafeId?.location?.formattedAddress) {
+      const addr = order.cafeId.location.formattedAddress
       // Extract area/city from formatted address
       const parts = addr.split(',')
       if (parts.length >= 2) {
@@ -127,8 +127,8 @@ export default function MyOrders() {
       }
       return addr
     }
-    if (order.restaurantId?.location?.area) {
-      return order.restaurantId.location.area + ', ' + (order.restaurantId.location.city || '')
+    if (order.cafeId?.location?.area) {
+      return order.cafeId.location.area + ', ' + (order.cafeId.location.city || '')
     }
     // Fallback to order address city
     if (order.address?.city) {
@@ -137,13 +137,13 @@ export default function MyOrders() {
     return 'Location not available'
   }
 
-  // Get restaurant image (first item image or placeholder)
-  const getRestaurantImage = (order) => {
+  // Get cafe image (first item image or placeholder)
+  const getCafeImage = (order) => {
     if (order.items && order.items.length > 0 && order.items[0].image) {
       return order.items[0].image
     }
-    if (order.restaurantId?.profileImage?.url) {
-      return order.restaurantId.profileImage.url
+    if (order.cafeId?.profileImage?.url) {
+      return order.cafeId.profileImage.url
     }
     return "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?auto=format&fit=crop&w=100&q=80"
   }
@@ -173,9 +173,9 @@ export default function MyOrders() {
   const filteredOrders = orders.filter(order => {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
-    const restaurantName = (order.restaurantName || order.restaurantId?.name || '').toLowerCase()
+    const cafeName = (order.cafeName || order.cafeId?.name || '').toLowerCase()
     const itemNames = (order.items || []).map(item => item.name?.toLowerCase() || '').join(' ')
-    return restaurantName.includes(query) || itemNames.includes(query)
+    return cafeName.includes(query) || itemNames.includes(query)
   })
 
   // Debug: Log filtered orders
@@ -248,9 +248,9 @@ export default function MyOrders() {
         ) : (
           <div className="space-y-4">
             {filteredOrders.map((order) => {
-              const restaurantName = order.restaurantName || order.restaurantId?.name || 'Restaurant'
-              const restaurantLocation = getRestaurantLocation(order)
-              const restaurantImage = getRestaurantImage(order)
+              const cafeName = order.cafeName || order.cafeId?.name || 'Cafe'
+              const cafeLocation = getCafeLocation(order)
+              const cafeImage = getCafeImage(order)
               const orderDate = formatOrderDate(order.createdAt)
               const orderStatus = getOrderStatus(order)
               const orderPrice = order.pricing?.total || order.total || 0
@@ -263,14 +263,14 @@ export default function MyOrders() {
               
               return (
                 <div key={orderKey} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                  {/* Card Header: Restaurant Info */}
+                  {/* Card Header: Cafe Info */}
                   <div className="flex items-start justify-between p-4 pb-2">
                     <div className="flex gap-3">
-                      {/* Restaurant/Food Image */}
+                      {/* Cafe/Food Image */}
                       <div className="w-14 h-14 rounded-lg bg-gray-200 overflow-hidden shrink-0">
             <img 
-                          src={restaurantImage} 
-                          alt={restaurantName}
+                          src={cafeImage} 
+                          alt={cafeName}
               className="w-full h-full object-cover"
                           onError={(e) => {
                             e.target.src = "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?auto=format&fit=crop&w=100&q=80"
@@ -279,10 +279,10 @@ export default function MyOrders() {
       </div>
 
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-800 text-lg leading-tight">{restaurantName}</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">{restaurantLocation}</p>
+                        <h3 className="font-semibold text-gray-800 text-lg leading-tight">{cafeName}</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">{cafeLocation}</p>
                         <button 
-                          onClick={() => navigate(`/restaurant/${order.restaurantId?.slug || order.restaurantId?._id || order.restaurantId}`)}
+                          onClick={() => navigate(`/cafe/${order.cafeId?.slug || order.cafeId?._id || order.cafeId}`)}
                           className="text-xs text-red-500 font-medium flex items-center mt-1 hover:text-red-600"
                         >
                           View menu <span className="ml-0.5">▸</span>
@@ -370,9 +370,9 @@ export default function MyOrders() {
                     {/* Right Side: Reorder Button */}
               <button
                       onClick={() => {
-                        // Navigate to restaurant or reorder functionality
-                        if (order.restaurantId) {
-                          navigate(`/restaurant/${order.restaurantId?.slug || order.restaurantId?._id || order.restaurantId}`)
+                        // Navigate to cafe or reorder functionality
+                        if (order.cafeId) {
+                          navigate(`/cafe/${order.cafeId?.slug || order.cafeId?._id || order.cafeId}`)
                         }
                       }}
                       className="bg-[#E23744] hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 shadow-sm transition-colors"

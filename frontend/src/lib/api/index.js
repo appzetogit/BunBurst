@@ -1,6 +1,6 @@
 /**
  * API Client
- * Centralized API client for all modules (user, restaurant, delivery, admin)
+ * Centralized API client for all modules (user, cafe, delivery, admin)
  *
  * Usage:
  * import api from '@/lib/api'
@@ -107,7 +107,7 @@ export const authAPI = {
   },
 
   // Login/Register via Firebase Google ID token
-  firebaseGoogleLogin: (idToken, role = "restaurant") => {
+  firebaseGoogleLogin: (idToken, role = "cafe") => {
     return apiClient.post(API_ENDPOINTS.AUTH.FIREBASE_GOOGLE_LOGIN, {
       idToken,
       role,
@@ -279,14 +279,14 @@ export const zoneAPI = {
   },
 };
 
-// Export restaurant API helper functions
-export const restaurantAPI = {
-  // Restaurant Authentication
+// Export cafe API helper functions
+export const cafeAPI = {
+  // Cafe Authentication
   sendOTP: (phone = null, purpose = "login", email = null) => {
     const payload = { purpose };
     if (phone) payload.phone = phone;
     if (email) payload.email = email;
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.AUTH.SEND_OTP, payload);
+    return apiClient.post(API_ENDPOINTS.CAFE.AUTH.SEND_OTP, payload);
   },
 
   verifyOTP: (
@@ -305,7 +305,7 @@ export const restaurantAPI = {
     if (email != null) payload.email = email;
     if (name != null) payload.name = name;
     if (password != null) payload.password = password;
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.AUTH.VERIFY_OTP, payload);
+    return apiClient.post(API_ENDPOINTS.CAFE.AUTH.VERIFY_OTP, payload);
   },
 
   register: (
@@ -317,7 +317,7 @@ export const restaurantAPI = {
     ownerEmail = null,
     ownerPhone = null,
   ) => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.AUTH.REGISTER, {
+    return apiClient.post(API_ENDPOINTS.CAFE.AUTH.REGISTER, {
       name,
       email,
       password,
@@ -329,60 +329,60 @@ export const restaurantAPI = {
   },
 
   login: (email, password) => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.AUTH.LOGIN, {
+    return apiClient.post(API_ENDPOINTS.CAFE.AUTH.LOGIN, {
       email,
       password,
     });
   },
 
   firebaseGoogleLogin: (idToken) => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.AUTH.FIREBASE_GOOGLE_LOGIN, {
+    return apiClient.post(API_ENDPOINTS.CAFE.AUTH.FIREBASE_GOOGLE_LOGIN, {
       idToken,
     });
   },
 
   refreshToken: () => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.AUTH.REFRESH_TOKEN);
+    return apiClient.post(API_ENDPOINTS.CAFE.AUTH.REFRESH_TOKEN);
   },
 
   logout: () => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.AUTH.LOGOUT);
+    return apiClient.post(API_ENDPOINTS.CAFE.AUTH.LOGOUT);
   },
 
-  getCurrentRestaurant: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.AUTH.ME);
+  getCurrentCafe: () => {
+    return apiClient.get(API_ENDPOINTS.CAFE.AUTH.ME);
   },
 
   reverify: () => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.AUTH.REVERIFY);
+    return apiClient.post(API_ENDPOINTS.CAFE.AUTH.REVERIFY);
   },
 
   resetPassword: (email, otp, newPassword) => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.AUTH.RESET_PASSWORD, {
+    return apiClient.post(API_ENDPOINTS.CAFE.AUTH.RESET_PASSWORD, {
       email,
       otp,
       newPassword,
     });
   },
 
-  // Get restaurant profile
+  // Get cafe profile
   getProfile: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.PROFILE);
+    return apiClient.get(API_ENDPOINTS.CAFE.PROFILE);
   },
 
-  // Update restaurant profile
+  // Update cafe profile
   updateProfile: (data) => {
-    return apiClient.put(API_ENDPOINTS.RESTAURANT.PROFILE, data);
+    return apiClient.put(API_ENDPOINTS.CAFE.PROFILE, data);
   },
 
-  // Delete restaurant account
+  // Delete cafe account
   deleteAccount: () => {
-    return apiClient.delete(API_ENDPOINTS.RESTAURANT.PROFILE);
+    return apiClient.delete(API_ENDPOINTS.CAFE.PROFILE);
   },
 
   // Update delivery status (isAcceptingOrders)
   updateDeliveryStatus: (isAcceptingOrders) => {
-    return apiClient.put(API_ENDPOINTS.RESTAURANT.DELIVERY_STATUS, {
+    return apiClient.put(API_ENDPOINTS.CAFE.DELIVERY_STATUS, {
       isAcceptingOrders,
     });
   },
@@ -392,7 +392,7 @@ export const restaurantAPI = {
     const formData = new FormData();
     formData.append("file", file);
     return apiClient.post(
-      `${API_ENDPOINTS.RESTAURANT.PROFILE}/image`,
+      `${API_ENDPOINTS.CAFE.PROFILE}/image`,
       formData,
       {
         headers: {
@@ -407,7 +407,7 @@ export const restaurantAPI = {
     const formData = new FormData();
     formData.append("file", file);
     return apiClient.post(
-      `${API_ENDPOINTS.RESTAURANT.PROFILE}/menu-image`,
+      `${API_ENDPOINTS.CAFE.PROFILE}/menu-image`,
       formData,
       {
         headers: {
@@ -428,78 +428,78 @@ export const restaurantAPI = {
           },
         }
         : {};
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.STAFF, data, config);
+    return apiClient.post(API_ENDPOINTS.CAFE.STAFF, data, config);
   },
   getStaff: (role) => {
     const url = role
-      ? `${API_ENDPOINTS.RESTAURANT.STAFF}?role=${role}`
-      : API_ENDPOINTS.RESTAURANT.STAFF;
+      ? `${API_ENDPOINTS.CAFE.STAFF}?role=${role}`
+      : API_ENDPOINTS.CAFE.STAFF;
     return apiClient.get(url);
   },
   getStaffById: (id) => {
-    return apiClient.get(`${API_ENDPOINTS.RESTAURANT.STAFF}/${id}`);
+    return apiClient.get(`${API_ENDPOINTS.CAFE.STAFF}/${id}`);
   },
   updateStaff: (id, data) => {
-    return apiClient.put(`${API_ENDPOINTS.RESTAURANT.STAFF}/${id}`, data);
+    return apiClient.put(`${API_ENDPOINTS.CAFE.STAFF}/${id}`, data);
   },
   deleteStaff: (id) => {
-    return apiClient.delete(`${API_ENDPOINTS.RESTAURANT.STAFF}/${id}`);
+    return apiClient.delete(`${API_ENDPOINTS.CAFE.STAFF}/${id}`);
   },
 
   // Menu operations
   getMenu: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.MENU);
+    return apiClient.get(API_ENDPOINTS.CAFE.MENU);
   },
   updateMenu: (menuData) => {
-    return apiClient.put(API_ENDPOINTS.RESTAURANT.MENU, menuData);
+    return apiClient.put(API_ENDPOINTS.CAFE.MENU, menuData);
   },
   addSection: (name) => {
-    return apiClient.post(`${API_ENDPOINTS.RESTAURANT.MENU}/section`, { name });
+    return apiClient.post(`${API_ENDPOINTS.CAFE.MENU}/section`, { name });
   },
   addItemToSection: (sectionId, item) => {
-    return apiClient.post(`${API_ENDPOINTS.RESTAURANT.MENU}/section/item`, {
+    return apiClient.post(`${API_ENDPOINTS.CAFE.MENU}/section/item`, {
       sectionId,
       item,
     });
   },
   addSubsectionToSection: (sectionId, name) => {
     return apiClient.post(
-      `${API_ENDPOINTS.RESTAURANT.MENU}/section/subsection`,
+      `${API_ENDPOINTS.CAFE.MENU}/section/subsection`,
       { sectionId, name },
     );
   },
   addItemToSubsection: (sectionId, subsectionId, item) => {
-    return apiClient.post(`${API_ENDPOINTS.RESTAURANT.MENU}/subsection/item`, {
+    return apiClient.post(`${API_ENDPOINTS.CAFE.MENU}/subsection/item`, {
       sectionId,
       subsectionId,
       item,
     });
   },
-  getMenuByRestaurantId: (restaurantId) => {
+  getMenuByCafeId: (cafeId) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.MENU_BY_RESTAURANT_ID.replace(
+      API_ENDPOINTS.CAFE.MENU_BY_CAFE_ID.replace(
         ":id",
-        restaurantId,
+        cafeId,
       ),
     );
   },
 
   // Get orders
   getOrders: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.ORDERS, { params });
+    return apiClient.get(API_ENDPOINTS.CAFE.ORDERS, { params });
   },
 
   // Get order by ID
   getOrderById: (id) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.ORDER_BY_ID.replace(":id", id),
+      API_ENDPOINTS.CAFE.ORDER_BY_ID.replace(":id", id),
     );
   },
 
   // Accept order
   acceptOrder: (id, preparationTime = null) => {
     return apiClient.patch(
-      API_ENDPOINTS.RESTAURANT.ORDER_ACCEPT.replace(":id", id),
+      API_ENDPOINTS.CAFE.ORDER_ACCEPT.replace(":id", id),
       {
         preparationTime,
       },
@@ -509,7 +509,7 @@ export const restaurantAPI = {
   // Reject order
   rejectOrder: (id, reason = "") => {
     return apiClient.patch(
-      API_ENDPOINTS.RESTAURANT.ORDER_REJECT.replace(":id", id),
+      API_ENDPOINTS.CAFE.ORDER_REJECT.replace(":id", id),
       {
         reason,
       },
@@ -518,7 +518,7 @@ export const restaurantAPI = {
 
   // Mark order as preparing
   markOrderPreparing: (id, options = {}) => {
-    const url = API_ENDPOINTS.RESTAURANT.ORDER_PREPARING.replace(":id", id);
+    const url = API_ENDPOINTS.CAFE.ORDER_PREPARING.replace(":id", id);
     // Add resend query parameter if provided
     if (options.resend) {
       return apiClient.patch(`${url}?resend=true`);
@@ -529,14 +529,14 @@ export const restaurantAPI = {
   // Mark order as ready
   markOrderReady: (id) => {
     return apiClient.patch(
-      API_ENDPOINTS.RESTAURANT.ORDER_READY.replace(":id", id),
+      API_ENDPOINTS.CAFE.ORDER_READY.replace(":id", id),
     );
   },
 
   // Resend delivery notification for unassigned order
   resendDeliveryNotification: (id) => {
     return apiClient.post(
-      API_ENDPOINTS.RESTAURANT.ORDER_RESEND_DELIVERY_NOTIFICATION.replace(
+      API_ENDPOINTS.CAFE.ORDER_RESEND_DELIVERY_NOTIFICATION.replace(
         ":id",
         id,
       ),
@@ -545,91 +545,91 @@ export const restaurantAPI = {
 
   // Get wallet
   getWallet: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.WALLET);
+    return apiClient.get(API_ENDPOINTS.CAFE.WALLET);
   },
   getWalletTransactions: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.WALLET_TRANSACTIONS, {
+    return apiClient.get(API_ENDPOINTS.CAFE.WALLET_TRANSACTIONS, {
       params,
     });
   },
   getWalletStats: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.WALLET_STATS, { params });
+    return apiClient.get(API_ENDPOINTS.CAFE.WALLET_STATS, { params });
   },
   // Withdrawal
   createWithdrawalRequest: (amount) => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.WITHDRAWAL_REQUEST, {
+    return apiClient.post(API_ENDPOINTS.CAFE.WITHDRAWAL_REQUEST, {
       amount,
     });
   },
   getWithdrawalRequests: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.WITHDRAWAL_REQUESTS, {
+    return apiClient.get(API_ENDPOINTS.CAFE.WITHDRAWAL_REQUESTS, {
       params,
     });
   },
 
   // Get analytics
   getAnalytics: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.ANALYTICS, { params });
+    return apiClient.get(API_ENDPOINTS.CAFE.ANALYTICS, { params });
   },
 
-  // Get all restaurants (for user module)
-  getRestaurants: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.LIST, { params });
+  // Get all cafes (for user module)
+  getCafes: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.CAFE.LIST, { params });
   },
 
-  // Get restaurants with dishes under ₹250
-  getRestaurantsUnder250: (zoneId) => {
+  // Get cafes with dishes under ₹250
+  getCafesUnder250: (zoneId) => {
     const params = zoneId ? { zoneId } : {};
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.UNDER_250, { params });
+    return apiClient.get(API_ENDPOINTS.CAFE.UNDER_250, { params });
   },
 
-  // Get restaurant by ID or slug
-  getRestaurantById: (id) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.BY_ID.replace(":id", id));
+  // Get cafe by ID or slug
+  getCafeById: (id) => {
+    return apiClient.get(API_ENDPOINTS.CAFE.BY_ID.replace(":id", id));
   },
   // Get coupons for item (public - for user cart)
-  getCouponsByItemIdPublic: (restaurantId, itemId) => {
+  getCouponsByItemIdPublic: (cafeId, itemId) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.COUPONS_BY_ITEM_ID_PUBLIC.replace(
-        ":restaurantId",
-        restaurantId,
+      API_ENDPOINTS.CAFE.COUPONS_BY_ITEM_ID_PUBLIC.replace(
+        ":cafeId",
+        cafeId,
       ).replace(":itemId", itemId),
     );
   },
   // Get public offers (for user offers page)
   getPublicOffers: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.OFFERS_PUBLIC);
+    return apiClient.get(API_ENDPOINTS.CAFE.OFFERS_PUBLIC);
   },
 
-  // Get restaurant by owner (for restaurant module)
-  getRestaurantByOwner: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.BY_OWNER);
+  // Get cafe by owner (for cafe module)
+  getCafeByOwner: () => {
+    return apiClient.get(API_ENDPOINTS.CAFE.BY_OWNER);
   },
 
-  // Menu operations (for restaurant module)
+  // Menu operations (for cafe module)
   getMenu: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.MENU);
+    return apiClient.get(API_ENDPOINTS.CAFE.MENU);
   },
   updateMenu: (menuData) => {
-    return apiClient.put(API_ENDPOINTS.RESTAURANT.MENU, menuData);
+    return apiClient.put(API_ENDPOINTS.CAFE.MENU, menuData);
   },
   addSection: (name) => {
-    return apiClient.post(`${API_ENDPOINTS.RESTAURANT.MENU}/section`, { name });
+    return apiClient.post(`${API_ENDPOINTS.CAFE.MENU}/section`, { name });
   },
   addItemToSection: (sectionId, item) => {
-    return apiClient.post(`${API_ENDPOINTS.RESTAURANT.MENU}/section/item`, {
+    return apiClient.post(`${API_ENDPOINTS.CAFE.MENU}/section/item`, {
       sectionId,
       item,
     });
   },
   addSubsectionToSection: (sectionId, name) => {
     return apiClient.post(
-      `${API_ENDPOINTS.RESTAURANT.MENU}/section/subsection`,
+      `${API_ENDPOINTS.CAFE.MENU}/section/subsection`,
       { sectionId, name },
     );
   },
   addItemToSubsection: (sectionId, subsectionId, item) => {
-    return apiClient.post(`${API_ENDPOINTS.RESTAURANT.MENU}/subsection/item`, {
+    return apiClient.post(`${API_ENDPOINTS.CAFE.MENU}/subsection/item`, {
       sectionId,
       subsectionId,
       item,
@@ -638,36 +638,36 @@ export const restaurantAPI = {
 
   // Add-on operations
   addAddon: (addonData) => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.ADDON, addonData);
+    return apiClient.post(API_ENDPOINTS.CAFE.ADDON, addonData);
   },
   getAddons: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.ADDONS);
+    return apiClient.get(API_ENDPOINTS.CAFE.ADDONS);
   },
   updateAddon: (id, addonData) => {
     return apiClient.put(
-      API_ENDPOINTS.RESTAURANT.ADDON_BY_ID.replace(":id", id),
+      API_ENDPOINTS.CAFE.ADDON_BY_ID.replace(":id", id),
       addonData,
     );
   },
   deleteAddon: (id) => {
     return apiClient.delete(
-      API_ENDPOINTS.RESTAURANT.ADDON_BY_ID.replace(":id", id),
+      API_ENDPOINTS.CAFE.ADDON_BY_ID.replace(":id", id),
     );
   },
-  getAddonsByRestaurantId: (restaurantId) => {
+  getAddonsByCafeId: (cafeId) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.ADDONS_BY_RESTAURANT_ID.replace(
+      API_ENDPOINTS.CAFE.ADDONS_BY_CAFE_ID.replace(
         ":id",
-        restaurantId,
+        cafeId,
       ),
     );
   },
 
-  getMenuByRestaurantId: (restaurantId) => {
+  getMenuByCafeId: (cafeId) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.MENU_BY_RESTAURANT_ID.replace(
+      API_ENDPOINTS.CAFE.MENU_BY_CAFE_ID.replace(
         ":id",
-        restaurantId,
+        cafeId,
       ),
     );
   },
@@ -675,13 +675,13 @@ export const restaurantAPI = {
   // Menu item scheduling operations
   scheduleItemAvailability: (scheduleData) => {
     return apiClient.post(
-      API_ENDPOINTS.RESTAURANT.MENU_ITEM_SCHEDULE,
+      API_ENDPOINTS.CAFE.MENU_ITEM_SCHEDULE,
       scheduleData,
     );
   },
   cancelScheduledAvailability: (scheduleId) => {
     return apiClient.delete(
-      API_ENDPOINTS.RESTAURANT.MENU_ITEM_SCHEDULE_BY_ID.replace(
+      API_ENDPOINTS.CAFE.MENU_ITEM_SCHEDULE_BY_ID.replace(
         ":scheduleId",
         scheduleId,
       ),
@@ -689,116 +689,116 @@ export const restaurantAPI = {
   },
   getItemSchedule: (sectionId, itemId) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.MENU_ITEM_SCHEDULE_BY_ITEM.replace(
+      API_ENDPOINTS.CAFE.MENU_ITEM_SCHEDULE_BY_ITEM.replace(
         ":sectionId",
         sectionId,
       ).replace(":itemId", itemId),
     );
   },
 
-  // Category operations (for restaurant module)
+  // Category operations (for cafe module)
   getCategories: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.CATEGORIES);
+    return apiClient.get(API_ENDPOINTS.CAFE.CATEGORIES);
   },
   getAllCategories: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.CATEGORIES_ALL);
+    return apiClient.get(API_ENDPOINTS.CAFE.CATEGORIES_ALL);
   },
   createCategory: (categoryData) => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.CATEGORIES, categoryData);
+    return apiClient.post(API_ENDPOINTS.CAFE.CATEGORIES, categoryData);
   },
   updateCategory: (id, categoryData) => {
     return apiClient.put(
-      API_ENDPOINTS.RESTAURANT.CATEGORY_BY_ID.replace(":id", id),
+      API_ENDPOINTS.CAFE.CATEGORY_BY_ID.replace(":id", id),
       categoryData,
     );
   },
   deleteCategory: (id) => {
     return apiClient.delete(
-      API_ENDPOINTS.RESTAURANT.CATEGORY_BY_ID.replace(":id", id),
+      API_ENDPOINTS.CAFE.CATEGORY_BY_ID.replace(":id", id),
     );
   },
   reorderCategories: (categories) => {
-    return apiClient.put(API_ENDPOINTS.RESTAURANT.CATEGORIES_REORDER, {
+    return apiClient.put(API_ENDPOINTS.CAFE.CATEGORIES_REORDER, {
       categories,
     });
   },
 
-  // Inventory operations (for restaurant module)
+  // Inventory operations (for cafe module)
   getInventory: () => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.INVENTORY);
+    return apiClient.get(API_ENDPOINTS.CAFE.INVENTORY);
   },
   updateInventory: (inventoryData) => {
-    return apiClient.put(API_ENDPOINTS.RESTAURANT.INVENTORY, inventoryData);
+    return apiClient.put(API_ENDPOINTS.CAFE.INVENTORY, inventoryData);
   },
-  getInventoryByRestaurantId: (restaurantId) => {
+  getInventoryByCafeId: (cafeId) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.INVENTORY_BY_RESTAURANT_ID.replace(
+      API_ENDPOINTS.CAFE.INVENTORY_BY_CAFE_ID.replace(
         ":id",
-        restaurantId,
+        cafeId,
       ),
     );
   },
 
-  // Offer operations (for restaurant module)
+  // Offer operations (for cafe module)
   createOffer: (offerData) => {
-    return apiClient.post(API_ENDPOINTS.RESTAURANT.OFFERS, offerData);
+    return apiClient.post(API_ENDPOINTS.CAFE.OFFERS, offerData);
   },
   getOffers: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.OFFERS, { params });
+    return apiClient.get(API_ENDPOINTS.CAFE.OFFERS, { params });
   },
   getOfferById: (id) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.OFFER_BY_ID.replace(":id", id),
+      API_ENDPOINTS.CAFE.OFFER_BY_ID.replace(":id", id),
     );
   },
   updateOfferStatus: (id, status) => {
     return apiClient.put(
-      API_ENDPOINTS.RESTAURANT.OFFER_STATUS.replace(":id", id),
+      API_ENDPOINTS.CAFE.OFFER_STATUS.replace(":id", id),
       { status },
     );
   },
   deleteOffer: (id) => {
     return apiClient.delete(
-      API_ENDPOINTS.RESTAURANT.OFFER_BY_ID.replace(":id", id),
+      API_ENDPOINTS.CAFE.OFFER_BY_ID.replace(":id", id),
     );
   },
   getCouponsByItemId: (itemId) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.COUPONS_BY_ITEM_ID.replace(":itemId", itemId),
+      API_ENDPOINTS.CAFE.COUPONS_BY_ITEM_ID.replace(":itemId", itemId),
     );
   },
 
-  // Finance operations (for restaurant module)
+  // Finance operations (for cafe module)
   getFinance: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.FINANCE, { params });
+    return apiClient.get(API_ENDPOINTS.CAFE.FINANCE, { params });
   },
 
   // Complaint operations
   getComplaints: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.RESTAURANT.COMPLAINTS, { params });
+    return apiClient.get(API_ENDPOINTS.CAFE.COMPLAINTS, { params });
   },
   getComplaintById: (id) => {
     return apiClient.get(
-      API_ENDPOINTS.RESTAURANT.COMPLAINT_BY_ID.replace(":id", id),
+      API_ENDPOINTS.CAFE.COMPLAINT_BY_ID.replace(":id", id),
     );
   },
   respondToComplaint: (id, response) => {
     return apiClient.put(
-      API_ENDPOINTS.RESTAURANT.COMPLAINT_BY_ID.replace(":id", id),
+      API_ENDPOINTS.CAFE.COMPLAINT_BY_ID.replace(":id", id),
       { response },
     );
   },
 
   // FCM Token operations
   saveFcmToken: (token, platform = "web") => {
-    return apiClient.post(API_ENDPOINTS.NOTIFICATION.RESTAURANT_FCM_TOKEN, {
+    return apiClient.post(API_ENDPOINTS.NOTIFICATION.CAFE_FCM_TOKEN, {
       token,
       platform,
     });
   },
   removeFcmToken: (token, platform = "web") => {
     return apiClient.delete(
-      API_ENDPOINTS.NOTIFICATION.REMOVE_RESTAURANT_FCM_TOKEN,
+      API_ENDPOINTS.NOTIFICATION.REMOVE_CAFE_FCM_TOKEN,
       {
         data: { token, platform },
       },
@@ -1119,59 +1119,59 @@ export const adminAPI = {
     });
   },
 
-  // Get restaurants
-  getRestaurants: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.RESTAURANTS, { params });
+  // Get cafes
+  getCafes: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.CAFES, { params });
   },
 
-  // Create restaurant
-  createRestaurant: (data) => {
-    return apiClient.post(API_ENDPOINTS.ADMIN.RESTAURANTS, data);
+  // Create cafe
+  createCafe: (data) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.CAFES, data);
   },
 
-  // Update restaurant
-  updateRestaurant: (id, data) => {
+  // Update cafe
+  updateCafe: (id, data) => {
     return apiClient.put(
-      API_ENDPOINTS.ADMIN.RESTAURANT_BY_ID.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_BY_ID.replace(":id", id),
       data,
     );
   },
 
-  // Get restaurant by ID
-  getRestaurantById: (id) => {
+  // Get cafe by ID
+  getCafeById: (id) => {
     return apiClient.get(
-      API_ENDPOINTS.ADMIN.RESTAURANT_BY_ID.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_BY_ID.replace(":id", id),
     );
   },
 
-  // Get restaurant analytics
-  getRestaurantAnalytics: (restaurantId) => {
+  // Get cafe analytics
+  getCafeAnalytics: (cafeId) => {
     return apiClient.get(
-      API_ENDPOINTS.ADMIN.RESTAURANT_ANALYTICS.replace(
-        ":restaurantId",
-        restaurantId,
+      API_ENDPOINTS.ADMIN.CAFE_ANALYTICS.replace(
+        ":cafeId",
+        cafeId,
       ),
     );
   },
 
-  // Update restaurant status
-  updateRestaurantStatus: (id, isActive) => {
+  // Update cafe status
+  updateCafeStatus: (id, isActive) => {
     return apiClient.put(
-      API_ENDPOINTS.ADMIN.RESTAURANT_STATUS.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_STATUS.replace(":id", id),
       { isActive },
     );
   },
 
-  // Update restaurant dining settings
-  updateRestaurantDiningSettings: (id, diningSettings) => {
-    return apiClient.put(`/admin/restaurants/${id}/dining-settings`, {
+  // Update cafe dining settings
+  updateCafeDiningSettings: (id, diningSettings) => {
+    return apiClient.put(`/admin/cafes/${id}/dining-settings`, {
       diningSettings,
     });
   },
 
-  // Update restaurant zone
-  updateRestaurantZone: (id, zoneId) => {
-    return apiClient.put(`/admin/restaurants/${id}/zone`, { zoneId });
+  // Update cafe zone
+  updateCafeZone: (id, zoneId) => {
+    return apiClient.put(`/admin/cafes/${id}/zone`, { zoneId });
   },
 
   // Get dining categories
@@ -1179,98 +1179,98 @@ export const adminAPI = {
     return apiClient.get("/admin/dining/categories");
   },
 
-  // Get restaurant join requests
-  getRestaurantJoinRequests: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.RESTAURANT_REQUESTS, { params });
+  // Get cafe join requests
+  getCafeJoinRequests: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.CAFE_REQUESTS, { params });
   },
 
-  // Approve restaurant
-  approveRestaurant: (id) => {
+  // Approve cafe
+  approveCafe: (id) => {
     return apiClient.post(
-      API_ENDPOINTS.ADMIN.RESTAURANT_APPROVE.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_APPROVE.replace(":id", id),
     );
   },
 
-  // Reject restaurant
-  rejectRestaurant: (id, reason) => {
+  // Reject cafe
+  rejectCafe: (id, reason) => {
     return apiClient.post(
-      API_ENDPOINTS.ADMIN.RESTAURANT_REJECT.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_REJECT.replace(":id", id),
       { reason },
     );
   },
 
-  // Delete restaurant
-  deleteRestaurant: (id) => {
+  // Delete cafe
+  deleteCafe: (id) => {
     return apiClient.delete(
-      API_ENDPOINTS.ADMIN.RESTAURANT_DELETE.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_DELETE.replace(":id", id),
     );
   },
 
-  // Get all offers (with restaurant and dish details)
+  // Get all offers (with cafe and dish details)
   getAllOffers: (params = {}) => {
     return apiClient.get(API_ENDPOINTS.ADMIN.OFFERS, { params });
   },
 
-  // Restaurant Commission Management
-  getRestaurantCommissions: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION, { params });
+  // Cafe Commission Management
+  getCafeCommissions: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.CAFE_COMMISSION, { params });
   },
 
-  getApprovedRestaurants: (params = {}) => {
+  getApprovedCafes: (params = {}) => {
     return apiClient.get(
-      API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION_APPROVED_RESTAURANTS,
+      API_ENDPOINTS.ADMIN.CAFE_COMMISSION_APPROVED_CAFES,
       { params },
     );
   },
 
-  getRestaurantCommissionById: (id) => {
+  getCafeCommissionById: (id) => {
     return apiClient.get(
-      API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION_BY_ID.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_COMMISSION_BY_ID.replace(":id", id),
     );
   },
 
-  getCommissionByRestaurantId: (restaurantId) => {
+  getCommissionByCafeId: (cafeId) => {
     return apiClient.get(
-      API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION_BY_RESTAURANT_ID.replace(
-        ":restaurantId",
-        restaurantId,
+      API_ENDPOINTS.ADMIN.CAFE_COMMISSION_BY_CAFE_ID.replace(
+        ":cafeId",
+        cafeId,
       ),
     );
   },
 
-  createRestaurantCommission: (data) => {
-    return apiClient.post(API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION, data);
+  createCafeCommission: (data) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.CAFE_COMMISSION, data);
   },
 
-  updateRestaurantCommission: (id, data) => {
+  updateCafeCommission: (id, data) => {
     return apiClient.put(
-      API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION_BY_ID.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_COMMISSION_BY_ID.replace(":id", id),
       data,
     );
   },
 
-  deleteRestaurantCommission: (id) => {
+  deleteCafeCommission: (id) => {
     return apiClient.delete(
-      API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION_BY_ID.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_COMMISSION_BY_ID.replace(":id", id),
     );
   },
 
-  toggleRestaurantCommissionStatus: (id) => {
+  toggleCafeCommissionStatus: (id) => {
     return apiClient.patch(
-      API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION_STATUS.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_COMMISSION_STATUS.replace(":id", id),
     );
   },
 
-  calculateRestaurantCommission: (restaurantId, orderAmount) => {
-    return apiClient.post(API_ENDPOINTS.ADMIN.RESTAURANT_COMMISSION_CALCULATE, {
-      restaurantId,
+  calculateCafeCommission: (cafeId, orderAmount) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.CAFE_COMMISSION_CALCULATE, {
+      cafeId,
       orderAmount,
     });
   },
 
-  // Restaurant Complaint Management
-  getRestaurantComplaints: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.RESTAURANT_COMPLAINTS, { params });
+  // Cafe Complaint Management
+  getCafeComplaints: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.CAFE_COMPLAINTS, { params });
   },
 
   // Addon Management
@@ -1297,19 +1297,19 @@ export const adminAPI = {
   toggleAddonStatus: (id) => {
     return apiClient.patch(API_ENDPOINTS.ADMIN.ADDON_STATUS.replace(":id", id));
   },
-  getRestaurantComplaintById: (id) => {
+  getCafeComplaintById: (id) => {
     return apiClient.get(
-      API_ENDPOINTS.ADMIN.RESTAURANT_COMPLAINT_BY_ID.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_COMPLAINT_BY_ID.replace(":id", id),
     );
   },
-  updateRestaurantComplaintStatus: (
+  updateCafeComplaintStatus: (
     id,
     status,
     adminResponse,
     internalNotes,
   ) => {
     return apiClient.put(
-      API_ENDPOINTS.ADMIN.RESTAURANT_COMPLAINT_STATUS.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_COMPLAINT_STATUS.replace(":id", id),
       {
         status,
         adminResponse,
@@ -1317,9 +1317,9 @@ export const adminAPI = {
       },
     );
   },
-  updateRestaurantComplaintNotes: (id, internalNotes) => {
+  updateCafeComplaintNotes: (id, internalNotes) => {
     return apiClient.put(
-      API_ENDPOINTS.ADMIN.RESTAURANT_COMPLAINT_NOTES.replace(":id", id),
+      API_ENDPOINTS.ADMIN.CAFE_COMPLAINT_NOTES.replace(":id", id),
       {
         internalNotes,
       },
@@ -1450,9 +1450,9 @@ export const adminAPI = {
     });
   },
 
-  // Get restaurant report
-  getRestaurantReport: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.ADMIN.ORDERS_RESTAURANT_REPORT, {
+  // Get cafe report
+  getCafeReport: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.ORDERS_CAFE_REPORT, {
       params,
     });
   },
@@ -1499,15 +1499,15 @@ export const adminAPI = {
   },
 
   // Menu Management
-  getRestaurantMenu: (restaurantId) => {
+  getCafeMenu: (cafeId) => {
     return apiClient.get(
-      API_ENDPOINTS.ADMIN.RESTAURANT_MENU.replace(":id", restaurantId),
+      API_ENDPOINTS.ADMIN.CAFE_MENU.replace(":id", cafeId),
     );
   },
 
-  updateRestaurantMenu: (restaurantId, menuData) => {
+  updateCafeMenu: (cafeId, menuData) => {
     return apiClient.put(
-      API_ENDPOINTS.ADMIN.RESTAURANT_MENU.replace(":id", restaurantId),
+      API_ENDPOINTS.ADMIN.CAFE_MENU.replace(":id", cafeId),
       menuData,
     );
   },
@@ -1901,15 +1901,15 @@ export const orderAPI = {
 
 // Export dining API helper functions
 export const diningAPI = {
-  // Get dining restaurants (with optional filters)
-  getRestaurants: (params = {}) => {
-    return apiClient.get(API_ENDPOINTS.DINING.RESTAURANTS, { params });
+  // Get dining cafes (with optional filters)
+  getCafes: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.DINING.CAFES, { params });
   },
 
-  // Get restaurant by slug
-  getRestaurantBySlug: (slug) => {
+  // Get cafe by slug
+  getCafeBySlug: (slug) => {
     return apiClient.get(
-      API_ENDPOINTS.DINING.RESTAURANT_BY_SLUG.replace(":slug", slug),
+      API_ENDPOINTS.DINING.CAFE_BY_SLUG.replace(":slug", slug),
     );
   },
 
@@ -1950,12 +1950,12 @@ export const diningAPI = {
   getBookings: () => {
     return apiClient.get(API_ENDPOINTS.DINING.BOOKING_MY);
   },
-  // Get bookings for a specific restaurant (for owners)
-  getRestaurantBookings: (restaurantId) => {
+  // Get bookings for a specific cafe (for owners)
+  getCafeBookings: (cafeId) => {
     return apiClient.get(
-      API_ENDPOINTS.DINING.BOOKING_RESTAURANT.replace(
-        ":restaurantId",
-        restaurantId,
+      API_ENDPOINTS.DINING.BOOKING_CAFE.replace(
+        ":cafeId",
+        cafeId,
       ),
     );
   },
@@ -1966,10 +1966,10 @@ export const diningAPI = {
       { status },
     );
   },
-  // Update booking status (for restaurant owners)
-  updateBookingStatusRestaurant: (bookingId, status) => {
+  // Update booking status (for cafe owners)
+  updateBookingStatusCafe: (bookingId, status) => {
     return apiClient.patch(
-      API_ENDPOINTS.DINING.BOOKING_STATUS_RESTAURANT.replace(
+      API_ENDPOINTS.DINING.BOOKING_STATUS_CAFE.replace(
         ":bookingId",
         bookingId,
       ),
@@ -1984,13 +1984,13 @@ export const diningAPI = {
 
 // Export hero banner API helper functions
 export const heroBannerAPI = {
-  // Get Top 10 restaurants (public)
-  getTop10Restaurants: () => {
+  // Get Top 10 cafes (public)
+  getTop10Cafes: () => {
     return apiClient.get(API_ENDPOINTS.HERO_BANNER.TOP_10_PUBLIC);
   },
 
-  // Get Gourmet restaurants (public)
-  getGourmetRestaurants: () => {
+  // Get Gourmet cafes (public)
+  getGourmetCafes: () => {
     return apiClient.get(API_ENDPOINTS.HERO_BANNER.GOURMET_PUBLIC);
   },
 };

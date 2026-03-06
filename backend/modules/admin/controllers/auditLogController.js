@@ -132,18 +132,18 @@ export const getEntityAuditLogs = asyncHandler(async (req, res) => {
 /**
  * Get commission change audit logs
  * GET /api/admin/audit-logs/commission-changes
- * Query params: restaurantId, startDate, endDate
+ * Query params: cafeId, startDate, endDate
  */
 export const getCommissionChangeLogs = asyncHandler(async (req, res) => {
   try {
-    const { restaurantId, startDate, endDate } = req.query;
+    const { cafeId, startDate, endDate } = req.query;
 
     const query = {
       actionType: 'commission_change'
     };
 
-    if (restaurantId) {
-      query['commissionChange.restaurantId'] = restaurantId;
+    if (cafeId) {
+      query['commissionChange.cafeId'] = cafeId;
     }
 
     if (startDate && endDate) {

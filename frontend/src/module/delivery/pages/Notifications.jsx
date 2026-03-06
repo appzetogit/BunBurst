@@ -8,7 +8,7 @@ import {
   Package
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 
 export default function Notifications() {
   const navigate = useNavigate()

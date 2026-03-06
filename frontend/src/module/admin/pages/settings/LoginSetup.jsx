@@ -12,7 +12,7 @@ const panelLoginUrls = [
   {
     id: 2,
     panelName: "Cafe Panel",
-    loginUrl: "https://restaurant.stackfood.com/login",
+    loginUrl: "https://cafe.stackfood.com/login",
     status: "active"
   },
   {

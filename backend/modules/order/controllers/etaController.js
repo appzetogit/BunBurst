@@ -44,18 +44,18 @@ export const getLiveETA = asyncHandler(async (req, res) => {
  */
 export const calculateInitialETA = asyncHandler(async (req, res) => {
   const {
-    restaurantId,
-    restaurantLocation,
+    cafeId,
+    cafeLocation,
     userLocation
   } = req.body;
 
-  if (!restaurantId || !restaurantLocation || !userLocation) {
-    return errorResponse(res, 400, 'Missing required fields: restaurantId, restaurantLocation, userLocation');
+  if (!cafeId || !cafeLocation || !userLocation) {
+    return errorResponse(res, 400, 'Missing required fields: cafeId, cafeLocation, userLocation');
   }
 
   const eta = await etaCalculationService.calculateInitialETA({
-    restaurantId,
-    restaurantLocation,
+    cafeId,
+    cafeLocation,
     userLocation
   });
 
@@ -136,10 +136,10 @@ export const recalculateETA = asyncHandler(async (req, res) => {
 });
 
 /**
- * Handle restaurant accepted order (triggers ETA update)
- * This should be called when restaurant accepts an order
+ * Handle cafe accepted order (triggers ETA update)
+ * This should be called when cafe accepts an order
  */
-export const handleRestaurantAccepted = asyncHandler(async (req, res) => {
+export const handleCafeAccepted = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   const { acceptedAt } = req.body;
 
@@ -148,7 +148,7 @@ export const handleRestaurantAccepted = asyncHandler(async (req, res) => {
     return errorResponse(res, 404, 'Order not found');
   }
 
-  const result = await etaEventService.handleRestaurantAccepted(
+  const result = await etaEventService.handleCafeAccepted(
     order._id.toString(),
     acceptedAt ? new Date(acceptedAt) : new Date()
   );
@@ -179,9 +179,9 @@ export const handleRiderAssigned = asyncHandler(async (req, res) => {
 });
 
 /**
- * Handle rider reached restaurant (triggers ETA update)
+ * Handle rider reached cafe (triggers ETA update)
  */
-export const handleRiderReachedRestaurant = asyncHandler(async (req, res) => {
+export const handleRiderReachedCafe = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
 
   const order = await findOrderById(orderId);
@@ -189,7 +189,7 @@ export const handleRiderReachedRestaurant = asyncHandler(async (req, res) => {
     return errorResponse(res, 404, 'Order not found');
   }
 
-  const result = await etaEventService.handleRiderReachedRestaurant(order._id.toString());
+  const result = await etaEventService.handleRiderReachedCafe(order._id.toString());
 
   return successResponse(res, 200, 'Rider reached cafe event processed', result);
 });

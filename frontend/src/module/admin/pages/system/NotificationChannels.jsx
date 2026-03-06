@@ -71,7 +71,7 @@ const adminNotifications = [
   }
 ]
 
-const restaurantNotifications = [
+const cafeNotifications = [
   {
     id: 1,
     topic: "New Order Received",
@@ -274,7 +274,7 @@ const deliverymanNotifications = [
 
 const tabs = [
   { id: "admin", label: "Admin" },
-  { id: "restaurant", label: "Restaurant" },
+  { id: "cafe", label: "Cafe" },
   { id: "customers", label: "Customers" },
   { id: "deliveryman", label: "Deliveryman" }
 ]
@@ -311,8 +311,8 @@ export default function NotificationChannels() {
     switch(tab) {
       case "admin":
         return adminNotifications
-      case "restaurant":
-        return restaurantNotifications
+      case "cafe":
+        return cafeNotifications
       case "customers":
         return customerNotifications
       case "deliveryman":

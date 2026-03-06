@@ -61,9 +61,9 @@ class ETAWebSocketService {
         io.to(`user:${order.userId}`).emit('ETA_UPDATED', etaUpdate);
       }
 
-      // Emit to restaurant room
-      io.of('/restaurant')
-        .to(`restaurant:${order.restaurantId}`)
+      // Emit to cafe room
+      io.of('/cafe')
+        .to(`cafe:${order.cafeId}`)
         .emit('ETA_UPDATED', etaUpdate);
 
       // Emit to delivery partner if assigned

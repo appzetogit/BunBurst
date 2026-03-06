@@ -12,13 +12,13 @@ import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey'
  * 
  * <GoogleMapsTracking
  *   deliveryLocation={{ lat: deliveryBoyLat, lng: deliveryBoyLng }}
- *   storeLocation={{ lat: restaurantLat, lng: restaurantLng, name: "Restaurant Name" }}
+ *   storeLocation={{ lat: cafeLat, lng: cafeLng, name: "Cafe Name" }}
  *   customerLocation={{ lat: customerLat, lng: customerLng }}
  *   isTracking={true}
  *   showRoute={true}
  *   routeOrigin={{ lat: deliveryBoyLat, lng: deliveryBoyLng }}
- *   routeDestination={{ lat: restaurantLat, lng: restaurantLng }}
- *   destinationName="Restaurant Name"
+ *   routeDestination={{ lat: cafeLat, lng: cafeLng }}
+ *   destinationName="Cafe Name"
  *   onRouteInfoUpdate={(info) => {
  *     *   }}
  *   lastUpdate={new Date()}
@@ -27,7 +27,7 @@ import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey'
  * When delivery partner accepts order:
  * - Set showRoute={true}
  * - Set routeOrigin to delivery partner's current location
- * - Set routeDestination to restaurant location
+ * - Set routeDestination to cafe location
  * - The component will automatically calculate and display the driving route polyline
  */
 

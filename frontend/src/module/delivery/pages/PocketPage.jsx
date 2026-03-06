@@ -25,7 +25,7 @@ import {
   calculateDeliveryBalances,
   calculatePeriodEarnings
 } from "../utils/deliveryWalletState"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 import { useGigStore } from "../store/gigStore"
 import { useProgressStore } from "../store/progressStore"
 import { getAllDeliveryOrders } from "../utils/deliveryOrderStatus"

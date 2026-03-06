@@ -36,7 +36,7 @@ function ReviewModal({ booking, onClose, onSubmit }) {
 
                 <div className="p-6 space-y-6">
                     <div className="flex flex-col items-center">
-                        <p className="text-sm font-medium text-muted-foreground mb-3">How was your visit to {booking.restaurant?.name}?</p>
+                        <p className="text-sm font-medium text-muted-foreground mb-3">How was your visit to {booking.cafe?.name}?</p>
                         <div className="flex gap-2">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <button
@@ -131,14 +131,14 @@ export default function MyBookings() {
                         <div key={booking._id} className="bg-card rounded-2xl p-4 shadow-sm border border-border flex items-start gap-4">
                             <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-muted">
                                 <img
-                                    src={booking.restaurant?.image || booking.restaurant?.profileImage?.url || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=200&q=80"}
+                                    src={booking.cafe?.image || booking.cafe?.profileImage?.url || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=200&q=80"}
                                     className="w-full h-full object-cover"
-                                    alt={booking.restaurant?.name}
+                                    alt={booking.cafe?.name}
                                 />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start">
-                                    <h3 className="font-bold text-foreground truncate">{booking.restaurant?.name}</h3>
+                                    <h3 className="font-bold text-foreground truncate">{booking.cafe?.name}</h3>
                                     <Badge className={`${booking.status === 'confirmed' ? 'bg-primary/10 text-primary' :
                                         booking.status === 'checked-in' ? 'bg-primary/10 text-primary' :
                                             booking.status === 'completed' ? 'bg-primary/10 text-primary' :
@@ -150,9 +150,9 @@ export default function MyBookings() {
                                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                     <MapPin className="w-3 h-3" />
                                     <span className="truncate">
-                                        {typeof booking.restaurant?.location === 'string'
-                                            ? booking.restaurant.location
-                                            : (booking.restaurant?.location?.formattedAddress || booking.restaurant?.location?.address || `${booking.restaurant?.location?.city || ''}${booking.restaurant?.location?.area ? ', ' + booking.restaurant.location.area : ''}`)}
+                                        {typeof booking.cafe?.location === 'string'
+                                            ? booking.cafe.location
+                                            : (booking.cafe?.location?.formattedAddress || booking.cafe?.location?.address || `${booking.cafe?.location?.city || ''}${booking.cafe?.location?.area ? ', ' + booking.cafe.location.area : ''}`)}
                                     </span>
                                 </p>
 

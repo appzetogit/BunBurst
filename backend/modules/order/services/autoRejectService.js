@@ -1,5 +1,5 @@
 import Order from '../models/Order.js';
-import { notifyRestaurantOrderUpdate } from './restaurantNotificationService.js';
+import { notifyCafeOrderUpdate } from './cafeNotificationService.js';
 import { calculateCancellationRefund } from './cancellationRefundService.js';
 
 /**
@@ -14,7 +14,7 @@ export async function processAutoRejectOrders() {
     const ACCEPT_TIME_LIMIT_MS = ACCEPT_TIME_LIMIT_SECONDS * 1000;
 
     // Find all orders with status 'pending' or 'confirmed' that haven't been accepted yet
-    // These are orders waiting for restaurant to accept
+    // These are orders waiting for cafe to accept
     const validPendingOrders = await Order.find({
       status: { $in: ['pending', 'confirmed'] }
     }).lean();
@@ -48,7 +48,7 @@ export async function processAutoRejectOrders() {
           // Update order status to cancelled
           currentOrder.status = 'cancelled';
           currentOrder.cancellationReason = 'Order not accepted within time limit. Cafe did not respond in time.';
-          currentOrder.cancelledBy = 'restaurant';
+          currentOrder.cancelledBy = 'cafe';
           currentOrder.cancelledAt = now;
 
           await currentOrder.save();
@@ -76,7 +76,7 @@ export async function processAutoRejectOrders() {
 
           // Notify about status update
           try {
-            await notifyRestaurantOrderUpdate(currentOrder._id.toString(), 'cancelled');
+            await notifyCafeOrderUpdate(currentOrder._id.toString(), 'cancelled');
           } catch (notifError) {
             console.error(`❌ Error sending notification for order ${currentOrder.orderId}:`, notifError);
           }

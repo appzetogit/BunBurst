@@ -34,9 +34,9 @@ const zoneSchema = new mongoose.Schema(
       required: false,
       trim: true
     },
-    restaurantId: {
+    cafeId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Restaurant',
+      ref: 'Cafe',
       required: false
     },
     unit: {
@@ -112,7 +112,7 @@ const zoneSchema = new mongoose.Schema(
 );
 
 // Indexes
-zoneSchema.index({ restaurantId: 1 });
+zoneSchema.index({ cafeId: 1 });
 zoneSchema.index({ isActive: 1 });
 zoneSchema.index({ boundary: '2dsphere' }); // For spatial queries
 zoneSchema.index({ serviceLocation: 'text', name: 'text' }); // For text search

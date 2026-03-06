@@ -14,14 +14,14 @@ export function useOrdersManagement(orders, statusKey, title) {
     maxAmount: "",
     fromDate: "",
     toDate: "",
-    restaurant: "",
+    cafe: "",
   })
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
     orderId: true,
     orderDate: true,
     customer: true,
-    restaurant: true,
+    cafe: true,
     foodItems: true,
     totalAmount: true,
     paymentType: true,
@@ -30,9 +30,9 @@ export function useOrdersManagement(orders, statusKey, title) {
     actions: true,
   })
 
-  // Get unique restaurants from orders
-  const restaurants = useMemo(() => {
-    return [...new Set(orders.map(o => o.restaurant))]
+  // Get unique cafes from orders
+  const cafes = useMemo(() => {
+    return [...new Set(orders.map(o => o.cafe))]
   }, [orders])
 
   // Apply search and filters
@@ -79,7 +79,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       result = result.filter(order => 
         order.orderId.toLowerCase().includes(query) ||
         order.customerName.toLowerCase().includes(query) ||
-        order.restaurant.toLowerCase().includes(query) ||
+        order.cafe.toLowerCase().includes(query) ||
         order.customerPhone.includes(query) ||
         order.totalAmount.toString().includes(query)
       )
@@ -102,8 +102,8 @@ export function useOrdersManagement(orders, statusKey, title) {
       result = result.filter(order => order.totalAmount <= parseFloat(filters.maxAmount))
     }
 
-    if (filters.restaurant) {
-      result = result.filter(order => order.restaurant === filters.restaurant)
+    if (filters.cafe) {
+      result = result.filter(order => order.cafe === filters.cafe)
     }
 
     // Helper function to parse date format "16 JUL 2025"
@@ -161,7 +161,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       maxAmount: "",
       fromDate: "",
       toDate: "",
-      restaurant: "",
+      cafe: "",
     })
   }
 
@@ -226,11 +226,11 @@ export function useOrdersManagement(orders, statusKey, title) {
         order?.user?.phone ||
         order?.deliveryAddress?.phone
       )
-      const restaurantName = valueOrNA(
-        order?.restaurant ||
-        order?.restaurantName ||
-        order?.restaurantDetails?.name ||
-        order?.restaurant?.name
+      const cafeName = valueOrNA(
+        order?.cafe ||
+        order?.cafeName ||
+        order?.cafeDetails?.name ||
+        order?.cafe?.name
       )
       const deliveryType = valueOrNA(order?.deliveryType || order?.orderType)
       const paymentType = valueOrNA(order?.paymentType || order?.payment?.method || order?.paymentMethod)
@@ -287,7 +287,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       doc.setFontSize(10)
       doc.text(`Customer: ${customerName}`, 18, startY + 8)
       doc.text(`Phone: ${customerPhone}`, 18, startY + 14)
-      doc.text(`Restaurant: ${restaurantName}`, 18, startY + 20)
+      doc.text(`Cafe: ${cafeName}`, 18, startY + 20)
       doc.text(`Date: ${orderDate}`, pageWidth - 18, startY + 8, { align: "right" })
       doc.text(`Delivery: ${deliveryType}`, pageWidth - 18, startY + 14, { align: "right" })
       doc.text(`Status: ${orderStatus}`, pageWidth - 18, startY + 20, { align: "right" })
@@ -377,7 +377,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       orderId: true,
       orderDate: true,
       customer: true,
-      restaurant: true,
+      cafe: true,
       foodItems: true,
       totalAmount: true,
       paymentType: true,
@@ -403,7 +403,7 @@ export function useOrdersManagement(orders, statusKey, title) {
     filteredOrders,
     count,
     activeFiltersCount,
-    restaurants,
+    cafes,
     handleApplyFilters,
     handleResetFilters,
     handleExport,

@@ -30,7 +30,7 @@ async function fixDuplicateIndexes() {
     const db = mongoose.connection.db;
 
     // Collections to check
-    const collections = ['users', 'restaurants', 'restaurantcategories'];
+    const collections = ['users', 'cafes', 'cafecategories'];
 
     for (const collectionName of collections) {
       console.log(`\n📋 Checking ${collectionName}...`);
@@ -85,8 +85,8 @@ async function fixDuplicateIndexes() {
         // Check for specific problematic indexes
         const problematicIndexes = {
           'users': ['email_1', 'phone_1', 'googleId_1'],
-          'restaurants': ['email_1', 'phone_1', 'googleId_1'],
-          'restaurantcategories': ['name_1']
+          'cafes': ['email_1', 'phone_1', 'googleId_1'],
+          'cafecategories': ['name_1']
         };
         
         if (problematicIndexes[collectionName]) {
