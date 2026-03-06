@@ -352,16 +352,60 @@ app.use(cookieParser());
 // Data sanitization
 app.use(mongoSanitize());
 
-// Rate limiting (disabled in development mode)
+// ─────────────────────────────── Rate Limiting ───────────────────────────────
+// Tiered strategy: different endpoints get different limits.
+//
+// /api/order/calculate  — read-only pricing endpoint, legitimately called many
+//   times per cart session (qty changes, coupon apply/remove, address changes).
+//   120 req/min per IP is very generous and still prevents abuse.
+//
+// POST /api/order       — actual order creation. 20/min prevents bulk abuse
+//   while being plenty for real concurrent users.
+//
+// Global fallback       — raised from 100 to 500 per 15 min so regular cart
+//   browsing (restaurant, menu, addon, coupon calls) never gets blocked.
 if (process.env.NODE_ENV === 'production') {
-  const limiter = rateLimit({
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.'
+  // 1. Generous limiter for the read-only pricing/calculate endpoint
+  const orderCalculateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute window
+    max: parseInt(process.env.ORDER_CALCULATE_RATE_LIMIT) || 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message: 'Too many pricing requests. Please wait a moment and try again.'
+    }
   });
+  app.use('/api/order/calculate', orderCalculateLimiter);
 
-  app.use('/api/', limiter);
-  console.log('Rate limiting enabled (production mode)');
+  // 2. Stricter limiter for actual order creation (POST /api/order)
+  const orderCreateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute window
+    max: parseInt(process.env.ORDER_CREATE_RATE_LIMIT) || 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message: 'Too many order requests. Please wait a moment and try again.'
+    }
+  });
+  app.post('/api/order', orderCreateLimiter);
+
+  // 3. Global fallback limiter for all other /api/ routes
+  //    Raised from 100 to 500 per 15 min — covers restaurant, menu, coupon, addon calls
+  const globalLimiter = rateLimit({
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message: 'Too many requests from this IP, please try again later.'
+    }
+  });
+  app.use('/api/', globalLimiter);
+
+  console.log('Rate limiting enabled (production mode) — calculate=120/min | create=20/min | global=500/15min');
 } else {
   console.log('Rate limiting disabled (development mode)');
 }
