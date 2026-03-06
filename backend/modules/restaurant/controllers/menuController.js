@@ -593,6 +593,7 @@ export const addItemToSubsection = asyncHandler(async (req, res) => {
 export const getMenuByRestaurantId = async (req, res) => {
   try {
     const { id } = req.params;
+    const { dietary } = req.query; // 'pure-veg', 'veg', 'non-veg'
 
     // Find restaurant by ID, slug, or restaurantId
     const restaurant = await Restaurant.findOne({
@@ -663,7 +664,18 @@ export const getMenuByRestaurantId = async (req, res) => {
         const availableItems = (sectionData.items || []).filter(item => {
           const isAvailable = item.isAvailable !== false;
           const isApproved = item.approvalStatus === 'approved' || !item.approvalStatus; // Include approved or legacy items without approvalStatus
-          const shouldShow = isAvailable && isApproved;
+
+          // Dietary filtering
+          let passesDietary = true;
+          if (dietary === 'pure-veg' || dietary === 'veg') {
+            // Show only veg dishes
+            passesDietary = (item.foodType === 'Veg' || item.foodType === 'Pure Veg' || item.dishType === 'veg');
+          } else if (dietary === 'non-veg') {
+            // Show only non-veg dishes
+            passesDietary = (item.foodType === 'Non-Veg' || item.foodType === 'Egg' || item.dishType === 'nonVeg');
+          }
+
+          const shouldShow = isAvailable && isApproved && passesDietary;
 
           // Debug logging for filtered items
           if (!shouldShow) {
@@ -689,7 +701,18 @@ export const getMenuByRestaurantId = async (req, res) => {
             const availableSubsectionItems = (subsectionData.items || []).filter(item => {
               const isAvailable = item.isAvailable !== false;
               const isApproved = item.approvalStatus === 'approved' || !item.approvalStatus; // Include approved or legacy items without approvalStatus
-              const shouldShow = isAvailable && isApproved;
+
+              // Dietary filtering
+              let passesDietary = true;
+              if (dietary === 'pure-veg' || dietary === 'veg') {
+                // Show only veg dishes
+                passesDietary = (item.foodType === 'Veg' || item.foodType === 'Pure Veg' || item.dishType === 'veg');
+              } else if (dietary === 'non-veg') {
+                // Show only non-veg dishes
+                passesDietary = (item.foodType === 'Non-Veg' || item.foodType === 'Egg' || item.dishType === 'nonVeg');
+              }
+
+              const shouldShow = isAvailable && isApproved && passesDietary;
 
               return shouldShow;
             }).map(item => {

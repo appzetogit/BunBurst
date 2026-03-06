@@ -25,7 +25,7 @@ export default function Orders() {
       return new Set()
     }
   })
-  
+
   // Save to localStorage whenever shownRatingForOrders changes
   useEffect(() => {
     try {
@@ -44,11 +44,11 @@ export default function Orders() {
     const createdAt = new Date(order.createdAt)
     const now = new Date()
     const elapsedMinutes = Math.floor((now - createdAt) / (1000 * 60))
-    
+
     // Get max ETA (use eta.max if available, otherwise estimatedDeliveryTime)
     const maxETA = order.eta?.max || order.estimatedDeliveryTime || 30
     const remainingMinutes = Math.max(0, maxETA - elapsedMinutes)
-    
+
     return remainingMinutes > 0 ? remainingMinutes : null
   }
 
@@ -88,20 +88,16 @@ export default function Orders() {
       return
     }
 
-    console.log('🔍 Checking for delivered orders to show rating popup...', {
-      totalOrders: orders.length,
-      shownRatingForOrders: Array.from(shownRatingForOrders)
-    })
 
     // Find delivered orders that haven't been rated and haven't shown popup yet
     const deliveredOrders = orders.filter(order => {
       // Check originalStatus first (from backend), then fallback to transformed status
       const originalStatus = order.originalStatus || order.status || ''
       const transformedStatus = order.status || ''
-      
+
       // Check if order is delivered - check both original and transformed status
-      const isDelivered = 
-        originalStatus === 'delivered' || 
+      const isDelivered =
+        originalStatus === 'delivered' ||
         originalStatus === 'completed' ||
         originalStatus.toLowerCase() === 'delivered' ||
         originalStatus.toLowerCase() === 'completed' ||
@@ -109,60 +105,36 @@ export default function Orders() {
         transformedStatus === 'completed' ||
         transformedStatus.toLowerCase() === 'delivered' ||
         transformedStatus.toLowerCase() === 'completed'
-      
+
       // Check if order has rating - check multiple places where rating might be stored
-      const hasRating = 
+      const hasRating =
         (order.rating !== null && order.rating !== undefined && order.rating !== '') ||
         (order.review?.rating !== null && order.review?.rating !== undefined) ||
         (order.review !== null && order.review !== undefined)
-      
+
       const orderId = order.id || order._id || order.mongoId
       const hasShownPopup = shownRatingForOrders.has(orderId)
-      
+
       // Also check if order has deliveredAt timestamp (indicates it was delivered)
       const hasDeliveredAt = order.deliveredAt !== null && order.deliveredAt !== undefined
-      
+
       const shouldShow = (isDelivered || hasDeliveredAt) && !hasRating && !hasShownPopup
-      
-      console.log(`📦 Order ${orderId}:`, {
-        originalStatus,
-        transformedStatus,
-        isDelivered,
-        hasDeliveredAt,
-        hasRating,
-        rating: order.rating,
-        review: order.review,
-        hasShownPopup,
-        shouldShow
-      })
-      
+
+
       return shouldShow
     })
 
-    console.log('✅ Found delivered orders needing rating:', deliveredOrders.length)
 
     // Show popup for the first delivered order that needs rating
     if (deliveredOrders.length > 0) {
       const orderToRate = deliveredOrders[0]
       const orderId = orderToRate.id || orderToRate._id || orderToRate.mongoId
-      
-      console.log('🎯 Showing rating popup for order:', {
-        orderId,
-        restaurant: orderToRate.restaurant,
-        status: orderToRate.status
-      })
-      
+
       // Mark as shown to prevent multiple popups (before showing to prevent race conditions)
       setShownRatingForOrders(prev => new Set([...prev, orderId]))
-      
+
       // Small delay to ensure smooth UX
       setTimeout(() => {
-        console.log('✨ Opening rating modal for order:', {
-          orderId: orderId,
-          restaurant: orderToRate.restaurant,
-          status: orderToRate.status,
-          originalStatus: orderToRate.originalStatus
-        })
         setRatingModal({ open: true, order: orderToRate })
         setSelectedRating(null)
         setFeedbackText("")
@@ -176,15 +148,15 @@ export default function Orders() {
     const fetchOrders = async () => {
       try {
         setLoading(true)
-        
+
         const response = await orderAPI.getOrders({
           limit: 100, // Get all orders
           page: 1
         })
-        
+
         // Check multiple possible response structures
         let ordersData = []
-        
+
         if (response?.data?.success && response?.data?.data?.orders) {
           ordersData = response.data.data.orders || []
         } else if (response?.data?.orders) {
@@ -195,7 +167,7 @@ export default function Orders() {
           setOrders([])
           return
         }
-        
+
         if (ordersData.length > 0) {
           console.log('📦 Raw orders from API:', ordersData.slice(0, 3).map(o => ({
             id: o.orderId || o._id,
@@ -204,11 +176,11 @@ export default function Orders() {
             deliveredAt: o.deliveredAt,
             restaurant: o.restaurantId?.name || o.restaurantName
           })))
-          
+
           // Transform API orders to match UI structure
           const transformedOrders = ordersData.map(order => {
             const createdAt = order.createdAt ? new Date(order.createdAt) : new Date()
-            
+
             // Check if cancelled by restaurant or user
             const isCancelled = order.status === 'cancelled'
             const cancellationReason = order.cancellationReason || ''
@@ -221,7 +193,7 @@ export default function Orders() {
 
             // Get original status from backend before transformation
             const originalStatus = order.status
-            
+
             return {
               id: order.orderId || order._id?.toString() || `ORD-${order._id}`,
               mongoId: order._id,
@@ -268,10 +240,10 @@ export default function Orders() {
               note: order.note || null
             }
           })
-          
+
           // Sort by date (newest first)
           transformedOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          
+
           console.log('✅ Orders fetched and transformed:', {
             total: transformedOrders.length,
             delivered: transformedOrders.filter(o => o.status === 'delivered' || o.originalStatus === 'delivered').length,
@@ -284,7 +256,7 @@ export default function Orders() {
               deliveredAt: o.deliveredAt
             }))
           })
-          
+
           setOrders(transformedOrders)
         } else {
           console.log('⚠️ No orders data in response')
@@ -306,7 +278,7 @@ export default function Orders() {
     }
 
     fetchOrders()
-    
+
     // Poll for order updates every 20 seconds to detect delivered orders
     // This ensures rating popup shows quickly when order is delivered
     const pollInterval = setInterval(() => {
@@ -325,20 +297,20 @@ export default function Orders() {
     const minutes = date.getMinutes().toString().padStart(2, '0')
     const ampm = hours >= 12 ? 'PM' : 'AM'
     const displayHours = hours % 12 || 12
-    
+
     return `${day} ${month}, ${displayHours}:${minutes}${ampm}`
   }
 
   // Filter orders based on search query
   const filteredOrders = orders.filter(order => {
     if (!searchQuery.trim()) return true
-    
+
     const query = searchQuery.toLowerCase()
     const restaurantMatch = order.restaurant?.toLowerCase().includes(query)
-    const itemsMatch = order.items.some(item => 
+    const itemsMatch = order.items.some(item =>
       (item.name || item.foodName || '').toLowerCase().includes(query)
     )
-    
+
     return restaurantMatch || itemsMatch
   })
 
@@ -435,8 +407,8 @@ Order again from this restaurant in the ${companyName} app.`
       // Update local state so UI shows "You rated"
       setOrders(prev =>
         prev.map(o =>
-          o.id === order.id ? { 
-            ...o, 
+          o.id === order.id ? {
+            ...o,
             rating: selectedRating,
             review: { rating: selectedRating, comment: feedbackText || undefined }
           } : o
@@ -444,17 +416,17 @@ Order again from this restaurant in the ${companyName} app.`
       )
 
       toast.success("Thanks for rating your order! 🎉")
-      
+
       // Mark this order as rated so popup doesn't show again (before closing modal)
       const orderId = order.id || order._id || order.mongoId
       setShownRatingForOrders(prev => new Set([...prev, orderId]))
-      
+
       handleCloseRating()
     } catch (error) {
       console.error("Error submitting order rating:", error)
       toast.error(
         error?.response?.data?.message ||
-          "Failed to submit rating. Please try again."
+        "Failed to submit rating. Please try again."
       )
     } finally {
       setSubmittingRating(false)
@@ -513,9 +485,9 @@ Order again from this restaurant in the ${companyName} app.`
         <div className="w-full lg:max-w-[1100px] mx-auto">
           <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
             <Search className="w-5 h-5 text-red-500" />
-            <input 
-              type="text" 
-              placeholder="Search by cafe or dish" 
+            <input
+              type="text"
+              placeholder="Search by cafe or dish"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 ml-3 outline-none text-gray-600 placeholder-gray-400"
@@ -533,27 +505,27 @@ Order again from this restaurant in the ${companyName} app.`
         ) : (
           filteredOrders.map((order) => {
             // Check payment method - COD/wallet orders have 'pending' status which is normal
-            const isCodOrWallet = order.payment?.method === 'cash' || 
-                                 order.payment?.method === 'cod' || 
-                                 order.payment?.method === 'wallet' ||
-                                 order.paymentMethod === 'cash' ||
-                                 order.paymentMethod === 'cod' ||
-                                 order.paymentMethod === 'wallet'
-            
+            const isCodOrWallet = order.payment?.method === 'cash' ||
+              order.payment?.method === 'cod' ||
+              order.payment?.method === 'wallet' ||
+              order.paymentMethod === 'cash' ||
+              order.paymentMethod === 'cod' ||
+              order.paymentMethod === 'wallet'
+
             // Payment failed only for online payments (razorpay) that actually failed
             // Don't show payment failed for COD/wallet or cancelled orders
             const isCancelled = order.status === 'cancelled' || order.status === 'restaurant_cancelled'
-            const paymentFailed = !isCodOrWallet && 
-                                 !isCancelled && 
-                                 (order.payment?.status === 'failed')
-            
+            const paymentFailed = !isCodOrWallet &&
+              !isCancelled &&
+              (order.payment?.status === 'failed')
+
             const isDelivered = order.status === 'delivered'
             const isRestaurantCancelled = order.isRestaurantCancelled || order.status === 'restaurant_cancelled'
             const isUserCancelled = order.isUserCancelled || (isCancelled && order.cancelledBy === 'user')
             // Prefer food image from first item; fallback to restaurant image, then generic food photo
             const firstItemImage = order.items?.[0]?.image
-            const restaurantImage = firstItemImage 
-              || order.restaurantImage 
+            const restaurantImage = firstItemImage
+              || order.restaurantImage
               || "https://images.unsplash.com/photo-1604908176997-125188eb3c52?auto=format&fit=crop&w=200&q=80"
             const location = order.restaurantLocation || `${order.address?.city || ''}, ${order.address?.state || ''}`.trim() || 'Location not available'
 
@@ -564,16 +536,16 @@ Order again from this restaurant in the ${companyName} app.`
                   <div className="flex gap-3">
                     {/* Restaurant Image */}
                     <div className="w-14 h-14 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0">
-                      <img 
-                        src={restaurantImage} 
-                        alt={order.restaurant} 
+                      <img
+                        src={restaurantImage}
+                        alt={order.restaurant}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.target.src = "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?auto=format&fit=crop&w=100&q=80"
                         }}
                       />
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 text-lg leading-tight">{order.restaurant}</h3>
                       <p className="text-xs text-gray-500 mt-0.5">{location}</p>
@@ -595,7 +567,7 @@ Order again from this restaurant in the ${companyName} app.`
                       )}
                     </div>
                   </div>
-                  
+
                   <button
                     type="button"
                     onClick={() => toggleMenuForOrder(order.id)}
@@ -638,14 +610,14 @@ Order again from this restaurant in the ${companyName} app.`
                       const itemPrice = item.price || 0
                       const itemTotal = itemQuantity * itemPrice
                       const itemImage = item.image || null
-                      
+
                       return (
                         <div key={item._id || item.id || item.itemId || idx} className="flex items-start gap-3">
                           {/* Item Image */}
                           {itemImage && (
                             <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                              <img 
-                                src={itemImage} 
+                              <img
+                                src={itemImage}
                                 alt={itemName}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
@@ -654,7 +626,7 @@ Order again from this restaurant in the ${companyName} app.`
                               />
                             </div>
                           )}
-                          
+
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start gap-2">
                               {/* Veg/Non-Veg Icon */}
@@ -738,17 +710,16 @@ Order again from this restaurant in the ${companyName} app.`
                       <p className="text-xs text-gray-500 mt-1">
                         Payment: <span className="font-medium capitalize">
                           {order.payment.method === 'cash' || order.payment.method === 'cod' ? 'Cash on Delivery' :
-                           order.payment.method === 'wallet' ? 'Wallet' :
-                           order.payment.method === 'razorpay' ? 'Online' :
-                           order.payment.method || 'N/A'}
+                            order.payment.method === 'wallet' ? 'Wallet' :
+                              order.payment.method === 'razorpay' ? 'Online' :
+                                order.payment.method || 'N/A'}
                         </span>
                         {order.payment.status && (
-                          <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                            order.payment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            order.payment.status === 'failed' ? 'bg-red-100 text-red-700' :
-                            order.payment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
+                          <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium ${order.payment.status === 'completed' ? 'bg-green-100 text-green-700' :
+                              order.payment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                order.payment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-gray-100 text-gray-700'
+                            }`}>
                             {order.payment.status}
                           </span>
                         )}
@@ -835,7 +806,7 @@ Order again from this restaurant in the ${companyName} app.`
 
                   {/* Right Side: Reorder Button */}
                   {isDelivered && !paymentFailed && (
-                    <button 
+                    <button
                       onClick={() => handleReorder(order)}
                       className="bg-[#E23744] hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 shadow-sm transition-colors"
                     >
@@ -896,11 +867,10 @@ Order again from this restaurant in the ${companyName} app.`
                         className="p-2 transition-transform hover:scale-125 active:scale-95"
                       >
                         <Star
-                          className={`w-10 h-10 transition-all ${
-                            isActive
+                          className={`w-10 h-10 transition-all ${isActive
                               ? "text-yellow-400 fill-yellow-400 drop-shadow-lg"
                               : "text-gray-300 hover:text-yellow-200"
-                          }`}
+                            }`}
                         />
                       </button>
                     )
@@ -956,7 +926,7 @@ Order again from this restaurant in the ${companyName} app.`
                   </>
                 )}
               </button>
-              
+
               {selectedRating === null && (
                 <p className="text-xs text-center text-red-500 mt-2">Please select a rating to continue</p>
               )}

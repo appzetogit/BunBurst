@@ -34,6 +34,8 @@ import {
   Eye,
   Users,
   AlertCircle,
+  Leaf,
+  CircleSlash2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -79,7 +81,7 @@ export default function RestaurantDetails() {
   const [expandedSections, setExpandedSections] = useState(new Set([0])) // Default: Recommended section is expanded
   const [filters, setFilters] = useState({
     sortBy: null, // "low-to-high" | "high-to-low"
-    vegNonVeg: null, // "veg" | "non-veg"
+    vegNonVeg: null, // "veg" | "non-veg" | "pure-veg"
   })
 
   // Addon states
@@ -92,6 +94,40 @@ export default function RestaurantDetails() {
   const [loadingRestaurant, setLoadingRestaurant] = useState(true)
   const [restaurantError, setRestaurantError] = useState(null)
   const fetchedRestaurantRef = useRef(false) // Track if restaurant has been fetched for current slug
+
+  // Prevent background scrolling when any modal/sheet is open
+  useEffect(() => {
+    const isAnyModalOpen =
+      showItemDetail ||
+      showManageCollections ||
+      showFilterSheet ||
+      showLocationSheet ||
+      showScheduleSheet ||
+      showOffersSheet ||
+      showMenuSheet ||
+      showLargeOrderMenu ||
+      showMenuOptionsSheet;
+
+    if (isAnyModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [
+    showItemDetail,
+    showManageCollections,
+    showFilterSheet,
+    showLocationSheet,
+    showScheduleSheet,
+    showOffersSheet,
+    showMenuSheet,
+    showLargeOrderMenu,
+    showMenuOptionsSheet
+  ]);
 
   // Fetch restaurant data from API
   useEffect(() => {
@@ -121,7 +157,6 @@ export default function RestaurantDetails() {
           response = await diningAPI.getRestaurantBySlug(slug)
           if (response.data && response.data.success && response.data.data) {
             apiRestaurant = response.data.data
-            console.log('✅ Found cafe in dining API:', apiRestaurant)
           }
         } catch (diningError) {
           // If dining API fails with 404, try restaurant API
@@ -181,13 +216,6 @@ export default function RestaurantDetails() {
         }
 
         if (apiRestaurant) {
-          console.log('✅ Fetched cafe from API:', apiRestaurant)
-          console.log('📋 Cafe data keys:', Object.keys(apiRestaurant))
-          console.log('📋 Cafe name field:', apiRestaurant?.name)
-          console.log('📋 Cafe restaurantId:', apiRestaurant?.restaurantId)
-          console.log('📋 Cafe _id:', apiRestaurant?._id)
-          console.log('📋 Cafe.cafe:', apiRestaurant?.restaurant)
-
           // Check if this is a dining restaurant with nested restaurant data
           const actualRestaurant = apiRestaurant?.restaurant || apiRestaurant
 
@@ -287,10 +315,7 @@ export default function RestaurantDetails() {
 
           // Get location object for address formatting
           const locationObj = actualRestaurant?.location || apiRestaurant?.location
-          console.log('📍 Location Object for formatting:', locationObj)
-          console.log('📍 formattedAddress field:', locationObj?.formattedAddress)
           const formattedAddress = formatRestaurantAddress(locationObj)
-          console.log('📍 Final Formatted Address:', formattedAddress)
 
           // Calculate distance from user to restaurant
           const calculateDistance = (lat1, lng1, lat2, lng2) => {
@@ -310,13 +335,9 @@ export default function RestaurantDetails() {
           const restaurantLat = locationObj?.latitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[1] : null)
           const restaurantLng = locationObj?.longitude || (locationObj?.coordinates && Array.isArray(locationObj.coordinates) ? locationObj.coordinates[0] : null)
 
-          console.log('📍 Cafe coordinates:', { restaurantLat, restaurantLng, locationObj })
-
           // Get user coordinates
           const userLat = userLocation?.latitude
           const userLng = userLocation?.longitude
-
-          console.log('📍 User location:', { userLat, userLng, userLocation })
 
           // Calculate distance if both coordinates are available
           let calculatedDistance = null
@@ -330,7 +351,6 @@ export default function RestaurantDetails() {
               const distanceInMeters = Math.round(distanceInKm * 1000)
               calculatedDistance = `${distanceInMeters} m`
             }
-            console.log('✅ Calculated distance from user to cafe:', calculatedDistance, 'km:', distanceInKm)
           } else {
             console.warn('⚠️ Cannot calculate distance - missing coordinates:', {
               hasUserLocation: !!(userLat && userLng),
@@ -410,9 +430,6 @@ export default function RestaurantDetails() {
             isAcceptingOrders: actualRestaurant?.isAcceptingOrders !== false, // Default to true if not specified
           }
 
-          console.log('✅ Transformed cafe:', transformedRestaurant)
-          console.log('✅ Cafe ID for menu fetch:', transformedRestaurant.id)
-
           if (!transformedRestaurant.id) {
             console.error('❌ No cafe ID found! Cannot fetch menu.')
           }
@@ -464,8 +481,9 @@ export default function RestaurantDetails() {
 
           if (restaurantIdForMenu) {
             try {
-              console.log('📋 Fetching menu for cafe ID:', restaurantIdForMenu)
-              const menuResponse = await restaurantAPI.getMenuByRestaurantId(restaurantIdForMenu)
+              const menuResponse = await restaurantAPI.getMenuByRestaurantId(restaurantIdForMenu, {
+                dietary: vegMode ? 'veg' : undefined
+              })
               if (menuResponse.data && menuResponse.data.success && menuResponse.data.data && menuResponse.data.data.menu) {
                 const menuSections = menuResponse.data.data.menu.sections || []
                 const normalizedMenuSections = menuSections.map((section) => ({
@@ -520,23 +538,6 @@ export default function RestaurantDetails() {
                   }
                 })
 
-                // Debug log to verify recommended items and their isRecommended values
-                console.log('Recommended items collected:', recommendedItems.map(item => ({
-                  name: item.name,
-                  isRecommended: item.isRecommended,
-                  isRecommendedType: typeof item.isRecommended,
-                  preparationTime: item.preparationTime
-                })))
-
-                // Debug log to check preparationTime in menu sections
-                console.log('Menu sections with preparationTime:', menuSections.map(section => ({
-                  sectionName: section.name,
-                  items: section.items?.map(item => ({
-                    name: item.name,
-                    preparationTime: item.preparationTime
-                  })) || []
-                })))
-
                 // Always create recommended section (even if empty) - will show "No dish Yet" if empty
                 const finalMenuSections = [{ name: "Recommended for you", items: recommendedItems, subsections: [] }, ...normalizedMenuSections]
 
@@ -548,8 +549,6 @@ export default function RestaurantDetails() {
                 // Set first 3 sections (Recommended, Starters, Main Course) as expanded by default
                 const defaultExpandedSections = new Set([0, 1, 2]) // Index 0, 1, 2
                 setExpandedSections(defaultExpandedSections)
-
-                console.log('Fetched menu sections with recommended items:', finalMenuSections)
               }
             } catch (menuError) {
               if (menuError.response && menuError.response.status === 404) {
@@ -560,7 +559,6 @@ export default function RestaurantDetails() {
             }
 
             try {
-              console.log('📋 Fetching inventory for cafe ID:', restaurantIdForMenu)
               const inventoryResponse = await restaurantAPI.getInventoryByRestaurantId(restaurantIdForMenu)
               if (inventoryResponse.data && inventoryResponse.data.success && inventoryResponse.data.data && inventoryResponse.data.data.inventory) {
                 const inventoryCategories = inventoryResponse.data.data.inventory.categories || []
@@ -589,7 +587,6 @@ export default function RestaurantDetails() {
                   ...prev,
                   inventory: normalizedInventory,
                 }))
-                console.log('✅ Fetched and normalized inventory categories:', normalizedInventory)
               }
             } catch (inventoryError) {
               if (inventoryError.response && inventoryError.response.status === 404) {
@@ -1150,13 +1147,13 @@ export default function RestaurantDetails() {
       }
 
       // Veg/Non-veg filter (local filter override)
-      if (filters.vegNonVeg === "veg") {
+      if (filters.vegNonVeg === "veg" || filters.vegNonVeg === "pure-veg") {
         // Show only veg items
-        if (item.foodType !== "Veg") return false
+        if (item.foodType !== "Veg" && item.foodType !== "Pure Veg" && item.dishType !== "veg") return false
       }
       if (filters.vegNonVeg === "non-veg") {
         // Show only non-veg items
-        if (item.foodType !== "Non-Veg") return false
+        if (item.foodType === "Veg" || item.foodType === "Pure Veg" || item.dishType === "veg") return false
       }
 
 
@@ -1482,6 +1479,24 @@ export default function RestaurantDetails() {
               <Button
                 variant="outline"
                 size="sm"
+                className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 bg-white rounded-full ${filters.vegNonVeg === "pure-veg" ? "border-green-600 bg-green-50" : ""
+                  }`}
+                onClick={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    vegNonVeg: prev.vegNonVeg === "pure-veg" ? null : "pure-veg",
+                  }))
+                }
+              >
+                <Leaf className={`h-3 w-3 ${filters.vegNonVeg === "pure-veg" ? "text-green-600" : "text-green-500"}`} />
+                Pure Veg
+                {filters.vegNonVeg === "pure-veg" && (
+                  <X className="h-3 w-3 text-gray-600" />
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 bg-white rounded-full ${filters.vegNonVeg === "non-veg" ? "border-amber-700 bg-amber-50" : ""
                   }`}
                 onClick={() =>
@@ -1600,12 +1615,9 @@ export default function RestaurantDetails() {
                       {sortMenuItems(filterMenuItems(section.items)).map((item) => {
                         const quantity = quantities[item.id] || 0
                         // Determine veg/non-veg based on foodType
-                        const isVeg = item.foodType === "Veg"
+                        const isVeg = item.foodType === "Veg" || item.foodType === "Pure Veg"
 
                         // Debug: Log preparationTime for troubleshooting
-                        if (item.preparationTime) {
-                          console.log(`[FRONTEND] Item "${item.name}" preparationTime:`, item.preparationTime, 'Type:', typeof item.preparationTime)
-                        }
 
                         return (
                           <div
@@ -1820,12 +1832,9 @@ export default function RestaurantDetails() {
                                 {sortMenuItems(filterMenuItems(subsection.items)).map((item) => {
                                   const quantity = quantities[item.id] || 0
                                   // Determine veg/non-veg based on foodType
-                                  const isVeg = item.foodType === "Veg"
+                                  const isVeg = item.foodType === "Veg" || item.foodType === "Pure Veg"
 
                                   // Debug: Log preparationTime for troubleshooting
-                                  if (item.preparationTime) {
-                                    console.log(`[FRONTEND] Subsection item "${item.name}" preparationTime:`, item.preparationTime)
-                                  }
 
                                   return (
                                     <div

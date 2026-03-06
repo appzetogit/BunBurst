@@ -2,7 +2,7 @@ import { useSearchParams, Link, useNavigate } from "react-router-dom"
 import React, { useRef, useEffect, useState, useMemo, useCallback } from "react"
 import { createPortal } from "react-dom"
 import Lenis from "lenis"
-import { Star, Clock, MapPin, Heart, Search, Tag, Flame, ShoppingBag, ShoppingCart, Mic, SlidersHorizontal, CheckCircle2, Bookmark, BadgePercent, X, ArrowDownUp, Timer, CalendarClock, ShieldCheck, IndianRupee, UtensilsCrossed, Leaf, AlertCircle, Loader2, Plus, Check, Share2, ChevronRight, ChevronLeft } from "lucide-react"
+import { Star, Clock, MapPin, Heart, Search, Tag, Flame, ShoppingBag, ShoppingCart, Mic, SlidersHorizontal, CheckCircle2, Bookmark, BadgePercent, X, ArrowDownUp, Timer, CalendarClock, ShieldCheck, IndianRupee, UtensilsCrossed, Leaf, CircleSlash2, AlertCircle, Loader2, Plus, Check, Share2, ChevronRight, ChevronLeft } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import Footer from "../components/Footer"
 import AddToCartButton from "../components/AddToCartButton"
@@ -558,6 +558,15 @@ export default function Home() {
         params.topRated = 'true'
       } else if (filters.activeFilters?.has('trusted')) {
         params.trusted = 'true'
+      }
+
+      // Dietary filters
+      if (filters.activeFilters?.has('pure-veg')) {
+        params.dietary = 'pure-veg'
+      } else if (filters.activeFilters?.has('veg')) {
+        params.dietary = 'veg'
+      } else if (filters.activeFilters?.has('non-veg')) {
+        params.dietary = 'non-veg'
       }
 
       // Optional: Add zoneId if available (for sorting/filtering, but show all restaurants)
@@ -1723,6 +1732,7 @@ export default function Home() {
                     { id: 'time', label: 'Time', icon: Timer },
                     { id: 'rating', label: 'Rating', icon: Star },
                     { id: 'distance', label: 'Distance', icon: MapPin },
+                    { id: 'dietary', label: 'Dietary', icon: Leaf },
                     { id: 'price', label: 'Dish Price', icon: IndianRupee },
                     { id: 'cuisine', label: 'Cuisine', icon: UtensilsCrossed },
                     { id: 'offers', label: 'Offers', icon: BadgePercent },
@@ -1886,6 +1896,52 @@ export default function Home() {
                         <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-2km') ? 'text-primary' : 'text-muted-foreground'}`} strokeWidth={1.5} />
                         <span className={`text-sm font-medium ${activeFilters.has('distance-under-2km') ? 'text-primary' : 'text-foreground'}`}>Under 2 km</span>
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Dietary Tab */}
+                  <div
+                    ref={el => filterSectionRefs.current['dietary'] = el}
+                    data-section-id="dietary"
+                    className="space-y-4 mb-8"
+                  >
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Dietary Preference</h3>
+                    <div className="flex flex-col gap-3">
+                      {[
+                        { id: 'pure-veg', label: 'Pure Veg Restaurants Only', icon: Leaf, color: 'text-green-600', bgColor: 'bg-green-50' },
+                        { id: 'veg', label: 'Veg Restaurants', icon: CircleSlash2, color: 'text-green-500', bgColor: 'bg-green-50' },
+                        { id: 'non-veg', label: 'Non-Veg Restaurants', icon: CircleSlash2, color: 'text-red-500', bgColor: 'bg-red-50' },
+                      ].map((opt) => {
+                        const Icon = opt.icon;
+                        const isActive = activeFilters.has(opt.id);
+                        return (
+                          <button
+                            key={opt.id}
+                            onClick={() => {
+                              // Ensure only one dietary filter is active at a time
+                              setActiveFilters(prev => {
+                                const newSet = new Set(prev);
+                                ['pure-veg', 'veg', 'non-veg'].forEach(id => {
+                                  if (id !== opt.id) newSet.delete(id);
+                                });
+                                if (newSet.has(opt.id)) {
+                                  newSet.delete(opt.id);
+                                } else {
+                                  newSet.add(opt.id);
+                                }
+                                return newSet;
+                              });
+                            }}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${isActive
+                              ? `border-primary ${opt.bgColor}`
+                              : 'border-border hover:border-primary'
+                              }`}
+                          >
+                            <Icon className={`h-5 w-5 ${isActive ? opt.color : 'text-muted-foreground'}`} />
+                            <span className={`text-sm font-medium ${isActive ? opt.color : 'text-foreground'}`}>{opt.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 

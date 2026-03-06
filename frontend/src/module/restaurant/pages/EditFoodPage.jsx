@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import Lenis from "lenis"
-import { 
+import {
   ArrowLeft,
   Home,
   ShoppingBag,
@@ -132,7 +132,7 @@ export default function EditFoodPage() {
   const handleVariationChange = (id, field, value) => {
     setFormData(prev => ({
       ...prev,
-      variations: prev.variations.map(v => 
+      variations: prev.variations.map(v =>
         v.id === id ? { ...v, [field]: value } : v
       )
     }))
@@ -219,7 +219,7 @@ export default function EditFoodPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     // Validate required fields
     if (!formData.name || !formData.image || formData.price <= 0) {
       alert("Please fill in all required fields (Name, Image, Price)")
@@ -230,9 +230,9 @@ export default function EditFoodPage() {
     const foodDataToSave = {
       ...formData,
       // Calculate discount display string if discount exists
-      discount: formData.discountAmount > 0 
-        ? (formData.discountType === "Percent" 
-          ? `${formData.discountAmount}% OFF` 
+      discount: formData.discountAmount > 0
+        ? (formData.discountType === "Percent"
+          ? `${formData.discountAmount}% OFF`
           : formData.discountAmount)
         : null,
       // Calculate originalPrice if discount exists
@@ -243,7 +243,7 @@ export default function EditFoodPage() {
 
     // Save food to localStorage
     const savedFood = saveFood(foodDataToSave)
-    
+
     if (savedFood) {
       // Navigate to food details page
       navigate(`/restaurant/food/${savedFood.id}`)
@@ -257,7 +257,7 @@ export default function EditFoodPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="px-4 py-3 flex items-center gap-4">
-          <button 
+          <button
             onClick={() => navigate(`/restaurant/food/${id}`)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
@@ -276,7 +276,7 @@ export default function EditFoodPage() {
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Food Image</h2>
               <div className="flex justify-center">
                 <div className="relative">
-                  <img 
+                  <img
                     src={formData.image}
                     alt={formData.name}
                     className="w-32 h-32 md:w-40 md:h-40 rounded-lg object-cover"
@@ -299,7 +299,7 @@ export default function EditFoodPage() {
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -345,7 +345,7 @@ export default function EditFoodPage() {
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">General Info</h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -374,6 +374,7 @@ export default function EditFoodPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff8100] focus:border-transparent outline-none"
                   >
                     <option value="Veg">Veg</option>
+                    <option value="Pure Veg">Pure veg</option>
                     <option value="Non-Veg">Non-Veg</option>
                     <option value="Vegan">Vegan</option>
                   </select>
@@ -386,7 +387,7 @@ export default function EditFoodPage() {
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Price Information</h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -436,21 +437,19 @@ export default function EditFoodPage() {
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Availability</h2>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm md:text-base font-medium text-gray-900">Available</span>
                   <button
                     type="button"
                     onClick={() => handleInputChange("isAvailable", !formData.isAvailable)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      formData.isAvailable ? 'bg-[#ff8100]' : 'bg-gray-300'
-                    }`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.isAvailable ? 'bg-[#ff8100]' : 'bg-gray-300'
+                      }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        formData.isAvailable ? 'translate-x-6' : 'translate-x-1'
-                      }`}
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isAvailable ? 'translate-x-6' : 'translate-x-1'
+                        }`}
                     />
                   </button>
                 </div>
@@ -460,14 +459,12 @@ export default function EditFoodPage() {
                   <button
                     type="button"
                     onClick={() => handleInputChange("isRecommended", !formData.isRecommended)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      formData.isRecommended ? 'bg-[#ff8100]' : 'bg-gray-300'
-                    }`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.isRecommended ? 'bg-[#ff8100]' : 'bg-gray-300'
+                      }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        formData.isRecommended ? 'translate-x-6' : 'translate-x-1'
-                      }`}
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isRecommended ? 'translate-x-6' : 'translate-x-1'
+                        }`}
                     />
                   </button>
                 </div>
@@ -516,7 +513,7 @@ export default function EditFoodPage() {
                   Add Variation
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 {formData.variations.map((variation) => (
                   <div key={variation.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
@@ -572,7 +569,7 @@ export default function EditFoodPage() {
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Tags</h2>
-              
+
               <div className="flex flex-wrap gap-2 mb-4">
                 {formData.tags.map((tag, index) => (
                   <span
@@ -615,7 +612,7 @@ export default function EditFoodPage() {
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Nutrition</h2>
-              
+
               <div className="flex flex-wrap gap-2 mb-4">
                 {formData.nutrition.map((item, index) => (
                   <span
@@ -658,7 +655,7 @@ export default function EditFoodPage() {
           <Card className="bg-white shadow-sm border-0">
             <CardContent className="p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Allergies</h2>
-              
+
               <div className="flex flex-wrap gap-2 mb-4">
                 {formData.allergies.map((allergy, index) => (
                   <span
@@ -714,7 +711,7 @@ export default function EditFoodPage() {
 
       {/* Bottom Navigation Bar - Mobile Only */}
       <BottomNavbar onMenuClick={() => setShowMenu(true)} />
-      
+
       {/* Menu Overlay */}
       <MenuOverlay showMenu={showMenu} setShowMenu={setShowMenu} />
     </div>

@@ -91,8 +91,8 @@ export default function Favorites() {
           <button
             onClick={() => setActiveTab("restaurants")}
             className={`px-4 py-2 font-medium transition-colors ${activeTab === "restaurants"
-                ? "border-b-2 border-primary-orange text-primary-orange"
-                : "text-gray-500 hover:text-gray-700"
+              ? "border-b-2 border-primary-orange text-primary-orange"
+              : "text-gray-500 hover:text-gray-700"
               }`}
           >
             Cafes ({restaurantFavorites.length})
@@ -100,8 +100,8 @@ export default function Favorites() {
           <button
             onClick={() => setActiveTab("dishes")}
             className={`px-4 py-2 font-medium transition-colors ${activeTab === "dishes"
-                ? "border-b-2 border-primary-orange text-primary-orange"
-                : "text-gray-500 hover:text-gray-700"
+              ? "border-b-2 border-primary-orange text-primary-orange"
+              : "text-gray-500 hover:text-gray-700"
               }`}
           >
             Dishes ({dishFavorites.length})
@@ -239,7 +239,7 @@ export default function Favorites() {
                           </div>
                           <div className="flex items-center justify-between text-xs pt-2 border-t">
                             <div className="flex items-center gap-1">
-                              {dish.foodType === "Veg" ? (
+                              {dish.foodType === "Veg" || dish.foodType === "Pure Veg" ? (
                                 <div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center rounded-sm">
                                   <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
                                 </div>

@@ -475,12 +475,13 @@ export const restaurantAPI = {
       item,
     });
   },
-  getMenuByRestaurantId: (restaurantId) => {
+  getMenuByRestaurantId: (restaurantId, params = {}) => {
     return apiClient.get(
       API_ENDPOINTS.RESTAURANT.MENU_BY_RESTAURANT_ID.replace(
         ":id",
         restaurantId,
       ),
+      { params }
     );
   },
 
@@ -663,12 +664,13 @@ export const restaurantAPI = {
     );
   },
 
-  getMenuByRestaurantId: (restaurantId) => {
+  getMenuByRestaurantId: (restaurantId, params = {}) => {
     return apiClient.get(
       API_ENDPOINTS.RESTAURANT.MENU_BY_RESTAURANT_ID.replace(
         ":id",
         restaurantId,
       ),
+      { params }
     );
   },
 

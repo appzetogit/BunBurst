@@ -94,7 +94,7 @@ export default function ItemDetailsPage() {
         setItemSizeQuantity(item.itemSizeQuantity || "")
         setItemSizeUnit(item.itemSizeUnit || "piece")
         setItemDescription(item.description || "")
-        setFoodType(item.foodType === "Veg" ? "Veg" : (item.foodType === "Egg" ? "Egg" : "Non-Veg"))
+        setFoodType(item.foodType === "Pure Veg" ? "Pure Veg" : (item.foodType === "Veg" ? "Veg" : (item.foodType === "Egg" ? "Egg" : "Non-Veg")))
         setBasePrice(item.price?.toString() || "0")
         setPreparationTime(item.preparationTime || "")
         setGst(item.gst?.toString() || "5.0")
@@ -186,7 +186,7 @@ export default function ItemDetailsPage() {
             setItemSizeQuantity(foundItem.itemSizeQuantity || "")
             setItemSizeUnit(foundItem.itemSizeUnit || "piece")
             setItemDescription(foundItem.description || "")
-            setFoodType(foundItem.foodType === "Veg" ? "Veg" : (foundItem.foodType === "Egg" ? "Egg" : "Non-Veg"))
+            setFoodType(foundItem.foodType === "Pure Veg" ? "Pure Veg" : (foundItem.foodType === "Veg" ? "Veg" : (foundItem.foodType === "Egg" ? "Egg" : "Non-Veg")))
             setBasePrice(foundItem.price?.toString() || "0")
             setPreparationTime(foundItem.preparationTime || "")
             setGst(foundItem.gst?.toString() || "5.0")
@@ -859,8 +859,8 @@ export default function ItemDetailsPage() {
                         setCurrentImageIndex(index)
                       }}
                       className={`transition-all duration-300 rounded-full ${index === currentImageIndex
-                          ? "w-8 h-2 bg-gray-900"
-                          : "w-2 h-2 bg-gray-300 hover:bg-gray-400"
+                        ? "w-8 h-2 bg-gray-900"
+                        : "w-2 h-2 bg-gray-300 hover:bg-gray-400"
                         }`}
                     />
                   ))}
@@ -977,8 +977,8 @@ export default function ItemDetailsPage() {
               <button
                 onClick={() => setFoodType("Veg")}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${foodType === "Veg"
-                    ? "border-green-600 border-2 text-green-600"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "border-green-600 border-2 text-green-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
               >
                 {foodType === "Veg" && <Check className="w-4 h-4" />}
@@ -987,8 +987,8 @@ export default function ItemDetailsPage() {
               <button
                 onClick={() => setFoodType("Non-Veg")}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${foodType === "Non-Veg"
-                    ? "border-red-600 border-2 text-red-600"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "border-red-600 border-2 text-red-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
               >
                 {foodType === "Non-Veg" && <Check className="w-4 h-4" />}
@@ -997,12 +997,22 @@ export default function ItemDetailsPage() {
               <button
                 onClick={() => setFoodType("Egg")}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${foodType === "Egg"
-                    ? "border-yellow-600 border-2 text-yellow-600"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "border-yellow-600 border-2 text-yellow-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
               >
                 {foodType === "Egg" && <Check className="w-4 h-4" />}
                 <span>Egg</span>
+              </button>
+              <button
+                onClick={() => setFoodType("Pure Veg")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${foodType === "Pure Veg"
+                  ? "border-green-600 border-2 text-green-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+              >
+                {foodType === "Pure Veg" && <Check className="w-4 h-4" />}
+                <span>Pure Veg</span>
               </button>
             </div>
           </div>
@@ -1082,8 +1092,8 @@ export default function ItemDetailsPage() {
             <button
               onClick={() => setIsRecommended(!isRecommended)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isRecommended
-                  ? "bg-blue-100 text-blue-700"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                ? "bg-blue-100 text-blue-700"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
             >
               <ThumbsUp className="w-4 h-4" />
@@ -1170,8 +1180,8 @@ export default function ItemDetailsPage() {
                         key={cat.id}
                         onClick={() => handleCategorySelect(cat.id, cat.name)}
                         className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${category === cat.name
-                            ? "bg-gray-900 text-white"
-                            : "bg-gray-50 text-gray-900 hover:bg-gray-100"
+                          ? "bg-gray-900 text-white"
+                          : "bg-gray-50 text-gray-900 hover:bg-gray-100"
                           }`}
                       >
                         {cat.name}
@@ -1252,8 +1262,8 @@ export default function ItemDetailsPage() {
             onClick={handleSave}
             disabled={uploadingImages}
             className={`${isNewItem ? 'w-full' : 'flex-1'} py-3 px-4 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${!uploadingImages
-                ? "bg-black text-white hover:bg-black"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              ? "bg-black text-white hover:bg-black"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
           >
             {uploadingImages ? (

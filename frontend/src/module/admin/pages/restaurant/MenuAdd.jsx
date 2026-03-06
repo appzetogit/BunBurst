@@ -1137,6 +1137,7 @@ export default function MenuAdd() {
                                             className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
                                         >
                                             <option value="Veg">Veg</option>
+                                            <option value="Pure Veg">Pure veg</option>
                                             <option value="Non-Veg">Non-Veg</option>
                                         </select>
                                     </div>

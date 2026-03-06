@@ -106,6 +106,7 @@ export const getRestaurants = async (req, res) => {
       maxDistance,
       maxPrice,
       hasOffers,
+      dietary, // Can be "pure-veg", "veg", "non-veg"
       zoneId // User's zone ID (optional - if provided, filters by zone)
     } = req.query;
 
@@ -121,6 +122,7 @@ export const getRestaurants = async (req, res) => {
 
     // Build query
     const query = { isActive: true };
+    const conditions = [];
 
     // Cuisine filter
     if (cuisine) {
@@ -140,21 +142,19 @@ export const getRestaurants = async (req, res) => {
       query.totalRatings = { $gte: 100 }; // At least 100 ratings to be "trusted"
     }
 
-    // Delivery time filter (estimatedDeliveryTime contains time in format "25-30 mins")
+    // Delivery time filter
     if (maxDeliveryTime) {
-      const maxTime = parseInt(maxDeliveryTime);
-      query.$or = [
-        { estimatedDeliveryTime: { $regex: new RegExp(`(\\d+)-?\\d*\\s*mins?`, 'i') } }
-      ];
+      conditions.push({
+        estimatedDeliveryTime: { $regex: new RegExp(`(\\d+)-?\\d*\\s*mins?`, 'i') }
+      });
       // We'll filter this in application logic since it's a string field
     }
 
-    // Distance filter (distance is stored as string like "1.2 km")
+    // Distance filter
     if (maxDistance) {
-      const maxDist = parseFloat(maxDistance);
-      query.$or = [
-        { distance: { $regex: new RegExp(`\\d+\\.?\\d*\\s*km`, 'i') } }
-      ];
+      conditions.push({
+        distance: { $regex: new RegExp(`\\d+\\.?\\d*\\s*km`, 'i') }
+      });
       // We'll filter this in application logic since it's a string field
     }
 
@@ -168,10 +168,83 @@ export const getRestaurants = async (req, res) => {
 
     // Offers filter
     if (hasOffers === 'true') {
-      query.$or = [
-        { offer: { $exists: true, $ne: null, $ne: '' } },
-        { featuredPrice: { $exists: true } }
-      ];
+      conditions.push({
+        $or: [
+          { offer: { $exists: true, $ne: null, $ne: '' } },
+          { featuredPrice: { $exists: true } }
+        ]
+      });
+    }
+
+    // Dietary filter
+    if (dietary && ['pure-veg', 'veg', 'non-veg'].includes(dietary)) {
+      // Find restaurants matching dietary requirements via the Menu collection
+      // Robust regex catch for variations like "Non-Veg", "non-veg", "Non Veg", "egg"
+      const nonVegRegex = /non-?veg|egg/i;
+
+      // Find all restaurant IDs that have AT LEAST ONE non-veg item
+      const menusWithNonVeg = await Menu.distinct('restaurant', {
+        $or: [
+          { 'sections.items.foodType': { $regex: nonVegRegex } },
+          { 'sections.subsections.items.foodType': { $regex: nonVegRegex } },
+          { 'sections.items.dishType': 'nonVeg' },
+          { 'sections.subsections.items.dishType': 'nonVeg' }
+        ]
+      });
+
+      // Find all restaurant IDs that have AT LEAST ONE veg item
+      const menusWithVeg = await Menu.distinct('restaurant', {
+        $or: [
+          { 'sections.items.foodType': { $regex: /veg/i } },
+          { 'sections.subsections.items.foodType': { $regex: /veg/i } },
+          { 'sections.items.dishType': 'veg' },
+          { 'sections.subsections.items.dishType': 'veg' }
+        ]
+      });
+
+      console.log(`[DIETARY] Filtering ${dietary}: menusWithNonVeg: ${menusWithNonVeg.length}, menusWithVeg: ${menusWithVeg.length}`);
+
+      if (dietary === 'pure-veg') {
+        const pureVegConditions = [];
+
+        // Strictly exclude ANY restaurant that has any non-veg item
+        if (menusWithNonVeg.length > 0) {
+          pureVegConditions.push({ _id: { $nin: menusWithNonVeg } });
+        }
+
+        // Strictly exclude non-veg type
+        pureVegConditions.push({ restaurantType: { $ne: 'nonVeg' } });
+
+        // Must either be pureVeg type OR have some veg items in menu
+        pureVegConditions.push({
+          $or: [
+            { restaurantType: 'pureVeg' },
+            { _id: { $in: menusWithVeg } }
+          ]
+        });
+
+        conditions.push({ $and: pureVegConditions });
+      } else if (dietary === 'veg') {
+        conditions.push({
+          $or: [
+            { restaurantType: { $in: ['veg', 'pureVeg'] } },
+            { _id: { $in: menusWithVeg } }
+          ]
+        });
+      } else if (dietary === 'non-veg') {
+        conditions.push({
+          $or: [
+            { restaurantType: 'nonVeg' },
+            { _id: { $in: menusWithNonVeg } }
+          ]
+        });
+      }
+    }
+
+    // Apply all conditions to the query using $and
+    if (conditions.length > 0) {
+      query.$and = query.$and || [];
+      query.$and.push(...conditions);
     }
 
     // Build sort object
@@ -312,7 +385,8 @@ export const getRestaurants = async (req, res) => {
         maxDeliveryTime,
         maxDistance,
         maxPrice,
-        hasOffers
+        hasOffers,
+        dietary
       }
     });
   } catch (error) {
@@ -970,7 +1044,7 @@ export const getRestaurantsWithDishesUnder250 = async (req, res) => {
               price: getFinalPrice(item),
               originalPrice: item.originalPrice || item.price,
               image: item.image || (item.images && item.images.length > 0 ? item.images[0] : ""),
-              isVeg: item.foodType === 'Veg',
+              isVeg: item.foodType === 'Veg' || item.foodType === 'Pure Veg',
               bestPrice: item.discountAmount > 0 || (item.originalPrice && item.originalPrice > getFinalPrice(item)),
               description: item.description || "",
               category: item.category || item.sectionName || "",

@@ -63,7 +63,6 @@ export function LocationProvider({ children }) {
       }
 
       await userAPI.updateLocation(locationPayload)
-      console.log("✅ Live location successfully stored in database")
     } catch (err) {
       if (err.code !== "ERR_NETWORK" && err.response?.status !== 404 && err.response?.status !== 401) {
         console.error("❌ DB location update error:", err)

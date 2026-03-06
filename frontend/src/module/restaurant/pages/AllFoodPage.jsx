@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import Lenis from "lenis"
-import { 
+import {
   ArrowLeft,
   Search,
   Filter,
@@ -108,20 +108,20 @@ export default function AllFoodPage() {
 
   // Filter foods based on category, search, food type, and stock
   const filteredFoods = transformedFoods.filter(food => {
-    const matchesCategory = activeCategory === "All" || 
+    const matchesCategory = activeCategory === "All" ||
       food.category?.toLowerCase() === activeCategory.toLowerCase() ||
       food.category === activeCategory
     const matchesSearch = food.name.toLowerCase().includes(searchQuery.toLowerCase())
-    
+
     // Food type filter
-    const matchesFoodType = foodTypeFilter === "all" || 
-      (foodTypeFilter === "veg" && food.foodType === "Veg") ||
+    const matchesFoodType = foodTypeFilter === "all" ||
+      (foodTypeFilter === "veg" && (food.foodType === "Veg" || food.foodType === "Pure Veg")) ||
       (foodTypeFilter === "nonVeg" && food.foodType === "Non-Veg")
-    
+
     // Stock filter
     const matchesStock = stockFilter === "all" ||
       (stockFilter === "outOfStock" && (food.stock === 0 || food.stock === "Out of Stock"))
-    
+
     return matchesCategory && matchesSearch && matchesFoodType && matchesStock
   })
 
@@ -150,7 +150,7 @@ export default function AllFoodPage() {
           >
             <ArrowLeft className="w-5 h-5 text-gray-800" />
           </motion.button>
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: 0.1 }}
@@ -196,11 +196,10 @@ export default function AllFoodPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveCategory(category)}
-              className={`relative px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
-                activeCategory === category
+              className={`relative px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${activeCategory === category
                   ? "text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+                }`}
             >
               {activeCategory === category && (
                 <motion.div
@@ -223,70 +222,70 @@ export default function AllFoodPage() {
           </div>
         ) : (
           filteredFoods.map((food, index) => (
-          <motion.div
-            key={food.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.05, ease: [0.4, 0, 0.2, 1] }}
-            whileHover={{ y: -4, scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => navigate(`/restaurant/food/${food.id}`)}
-          >
-            <div className="flex gap-3 p-3">
-              {/* Food Image */}
-              <div className="relative flex-shrink-0 w-24 h-24 md:w-28 md:h-28 rounded-lg overflow-hidden">
-                <img
-                  src={food.image}
-                  alt={food.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
-                  }}
-                />
-                {/* Discount Badge */}
-                {food.discount && (
-                  <div className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                    {food.discount}
-                  </div>
-                )}
-                {/* Dietary Icon */}
-                <div className="absolute bottom-1 right-1 w-4 h-4 bg-red-500 rounded border border-white">
-                  <div className="w-full h-full rounded-full bg-white/80 m-0.5"></div>
-                </div>
-              </div>
-
-              {/* Food Details */}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-gray-900 mb-1 line-clamp-1">{food.name}</h3>
-                <p className="text-xs text-gray-600 mb-2">{food.category}</p>
-                
-                {/* Rating */}
-                <div className="flex items-center gap-1 mb-2">
-                  <Star className={`w-3 h-3 ${food.rating > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                  <span className="text-xs text-gray-700">
-                    {food.rating.toFixed(1)} ({food.reviews})
-                  </span>
-                </div>
-
-                {/* Price */}
-                <div className="flex items-center gap-2">
-                  {food.originalPrice ? (
-                    <>
-                      <span className="text-xs text-gray-400 line-through">{formatCurrency(food.originalPrice)}</span>
-                      <span className="text-sm font-bold text-[#ff8100]">{formatCurrency(food.price)}</span>
-                    </>
-                  ) : (
-                    <span className="text-sm font-bold text-[#ff8100]">{formatCurrency(food.price)}</span>
+            <motion.div
+              key={food.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: index * 0.05, ease: [0.4, 0, 0.2, 1] }}
+              whileHover={{ y: -4, scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => navigate(`/restaurant/food/${food.id}`)}
+            >
+              <div className="flex gap-3 p-3">
+                {/* Food Image */}
+                <div className="relative flex-shrink-0 w-24 h-24 md:w-28 md:h-28 rounded-lg overflow-hidden">
+                  <img
+                    src={food.image}
+                    alt={food.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"
+                    }}
+                  />
+                  {/* Discount Badge */}
+                  {food.discount && (
+                    <div className="absolute top-1 left-1 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                      {food.discount}
+                    </div>
                   )}
+                  {/* Dietary Icon */}
+                  <div className="absolute bottom-1 right-1 w-4 h-4 bg-red-500 rounded border border-white">
+                    <div className="w-full h-full rounded-full bg-white/80 m-0.5"></div>
+                  </div>
                 </div>
 
-                {/* Stock */}
-                <p className="text-xs text-gray-600 mt-1">Stock : {food.stock}</p>
+                {/* Food Details */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-gray-900 mb-1 line-clamp-1">{food.name}</h3>
+                  <p className="text-xs text-gray-600 mb-2">{food.category}</p>
+
+                  {/* Rating */}
+                  <div className="flex items-center gap-1 mb-2">
+                    <Star className={`w-3 h-3 ${food.rating > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                    <span className="text-xs text-gray-700">
+                      {food.rating.toFixed(1)} ({food.reviews})
+                    </span>
+                  </div>
+
+                  {/* Price */}
+                  <div className="flex items-center gap-2">
+                    {food.originalPrice ? (
+                      <>
+                        <span className="text-xs text-gray-400 line-through">{formatCurrency(food.originalPrice)}</span>
+                        <span className="text-sm font-bold text-[#ff8100]">{formatCurrency(food.price)}</span>
+                      </>
+                    ) : (
+                      <span className="text-sm font-bold text-[#ff8100]">{formatCurrency(food.price)}</span>
+                    )}
+                  </div>
+
+                  {/* Stock */}
+                  <p className="text-xs text-gray-600 mt-1">Stock : {food.stock}</p>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )))}
+            </motion.div>
+          )))}
       </div>
 
       {/* Floating Action Button - Add Food */}
@@ -304,7 +303,7 @@ export default function AllFoodPage() {
 
       {/* Bottom Navigation Bar - Mobile Only */}
       <BottomNavbar onMenuClick={() => setShowMenu(true)} />
-      
+
       {/* Menu Overlay */}
       <MenuOverlay showMenu={showMenu} setShowMenu={setShowMenu} />
 
