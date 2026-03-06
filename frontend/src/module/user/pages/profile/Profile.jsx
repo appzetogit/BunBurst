@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/dialog"
 import { authAPI, userAPI } from "@/lib/api"
 import { firebaseAuth } from "@/lib/firebase"
-import { getCurrentFcmToken } from "@/lib/firebaseMessaging"
+import { getCurrentFcmToken, unregisterFCMToken } from "@/lib/firebaseMessaging"
 import { clearModuleAuth } from "@/lib/utils/auth"
 import { toast } from "sonner"
 
@@ -210,6 +210,13 @@ export default function Profile() {
     setIsLoggingOut(true)
 
     try {
+      // Unregister FCM token from backend BEFORE local data is deleted
+      try {
+        await unregisterFCMToken()
+      } catch (fcmError) {
+        console.warn(`${LOG_PREFIX} Failed to unregister push token during logout:`, fcmError)
+      }
+
       // Call backend logout API to invalidate refresh token
       try {
         await authAPI.logout()

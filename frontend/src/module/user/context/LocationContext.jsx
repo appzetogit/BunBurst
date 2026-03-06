@@ -4,23 +4,48 @@ import { locationAPI, userAPI } from "@/lib/api"
 const LocationContext = createContext(null)
 
 export function LocationProvider({ children }) {
-  const [location, setLocation] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [location, setLocation] = useState(() => {
+    const stored = localStorage.getItem("userLocation")
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (parsed && (parsed.latitude || parsed.lat)) {
+          return parsed
+        }
+      } catch (e) {
+        console.error("Error parsing stored location:", e)
+      }
+    }
+    return null
+  })
+
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [permissionGranted, setPermissionGranted] = useState(false)
+  const [permissionGranted, setPermissionGranted] = useState(() => {
+    return !!localStorage.getItem("userLocation")
+  })
 
   const watchIdRef = useRef(null)
   const updateTimerRef = useRef(null)
   const prevLocationCoordsRef = useRef({ latitude: null, longitude: null })
 
+  // Sync state with localStorage
+  useEffect(() => {
+    if (location) {
+      localStorage.setItem("userLocation", JSON.stringify(location))
+    }
+  }, [location])
+
   /* ===================== DB UPDATE ===================== */
   const updateLocationInDB = useCallback(async (locationData) => {
+    if (!locationData) return
+
     try {
       const hasPlaceholder =
         locationData?.city === "Current Location" ||
         locationData?.address === "Select location" ||
         locationData?.formattedAddress === "Select location" ||
-        (!locationData?.city && !locationData?.address && !locationData?.formattedAddress);
+        (!locationData?.city && !locationData?.address && !locationData?.formattedAddress && !locationData?.area);
 
       if (hasPlaceholder) return;
 
@@ -28,9 +53,9 @@ export function LocationProvider({ children }) {
       if (!userToken || userToken === 'null' || userToken === 'undefined') return
 
       const locationPayload = {
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-        address: locationData.address || "",
+        latitude: locationData.latitude || locationData.lat,
+        longitude: locationData.longitude || locationData.lng,
+        address: locationData.address || locationData.formattedAddress || "",
         city: locationData.city || "",
         state: locationData.state || "",
         area: locationData.area || "",
@@ -53,6 +78,10 @@ export function LocationProvider({ children }) {
 
       // Get coordinates from browser
       const position = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Geolocation not supported"))
+          return
+        }
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 10000,
@@ -74,12 +103,12 @@ export function LocationProvider({ children }) {
         city: data.city || data.locality || "Unknown",
         state: data.principalSubdivision || "",
         address: data.locality || data.city || "",
+        area: data.locality || "",
         formattedAddress: `${data.locality || ""}, ${data.city || ""}, ${data.principalSubdivision || ""}`.replace(/^,\s*/, ""),
       }
 
       setLocation(newLocation)
       setPermissionGranted(true)
-      localStorage.setItem("userLocation", JSON.stringify(newLocation))
 
       // Update DB in background
       updateLocationInDB(newLocation)
@@ -95,29 +124,17 @@ export function LocationProvider({ children }) {
   }, [updateLocationInDB])
 
   const setManualLocation = useCallback((locationData) => {
+    if (!locationData) return
     setLocation(locationData)
-    localStorage.setItem("userLocation", JSON.stringify(locationData))
     updateLocationInDB(locationData)
   }, [updateLocationInDB])
 
-  /* ===================== INIT ===================== */
+  // Initial DB update if we have a stored location
   useEffect(() => {
-    const stored = localStorage.getItem("userLocation")
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored)
-        if (parsed && parsed.latitude) {
-          setLocation(parsed)
-          setPermissionGranted(true)
-          setLoading(false)
-        }
-      } catch (e) {
-        console.error("Error parsing stored location:", e)
-      }
-    } else {
-      setLoading(false)
+    if (location) {
+      updateLocationInDB(location)
     }
-  }, [])
+  }, [updateLocationInDB])
 
   const value = {
     location,
@@ -131,6 +148,7 @@ export function LocationProvider({ children }) {
 
   return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>
 }
+
 
 export function useLocationContext() {
   const context = useContext(LocationContext)

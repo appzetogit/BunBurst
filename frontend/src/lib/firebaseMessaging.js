@@ -5,7 +5,7 @@ import {
   isFirebaseConfigAvailable,
   ensureFirebaseInitialized,
 } from "./firebase";
-import { userAPI, deliveryAPI } from "./api";
+import { userAPI, deliveryAPI, restaurantAPI } from "./api";
 
 const LOG_PREFIX = "[FCM]";
 let bootstrapStarted = false;
@@ -44,9 +44,14 @@ function getCurrentAuthContext() {
   const path = window.location.pathname || "/";
   const hasUserToken = Boolean(localStorage.getItem("user_accessToken"));
   const hasDeliveryToken = Boolean(localStorage.getItem("delivery_accessToken"));
+  const hasRestaurantToken = Boolean(localStorage.getItem("restaurant_accessToken"));
 
   if (path.startsWith("/delivery") && hasDeliveryToken) {
     return { audience: "delivery", platform: "web" };
+  }
+
+  if (path.startsWith("/restaurant") && hasRestaurantToken) {
+    return { audience: "restaurant", platform: "web" };
   }
 
   if (hasUserToken) {
@@ -226,6 +231,8 @@ async function syncTokenToBackend() {
     logInfo(`Syncing token to backend for ${context.audience}...`);
     if (context.audience === "delivery") {
       await deliveryAPI.saveFcmToken(currentFcmToken, context.platform);
+    } else if (context.audience === "restaurant") {
+      await restaurantAPI.saveFcmToken(currentFcmToken, context.platform);
     } else {
       await userAPI.saveFcmToken(currentFcmToken, context.platform);
     }
@@ -340,4 +347,50 @@ export function getCurrentFcmDebugState() {
 
 export function getCurrentFcmToken() {
   return currentFcmToken || "";
+}
+
+/**
+ * Unregister FCM token from backend (call on logout)
+ */
+export async function unregisterFCMToken() {
+  const token = currentFcmToken || "";
+  const context = getCurrentAuthContext();
+
+  if (!token || !context) {
+    logInfo("No token or context to unregister. Clearing local state only.");
+    const state = readSyncState();
+    if (context?.audience) {
+      delete state[context.audience];
+      writeSyncState(state);
+    }
+    return;
+  }
+
+  try {
+    logInfo(`Unregistering token from backend for ${context.audience}...`);
+    if (context.audience === "delivery") {
+      await deliveryAPI.removeFcmToken(token, context.platform);
+    } else if (context.audience === "restaurant") {
+      await restaurantAPI.removeFcmToken(token, context.platform);
+    } else {
+      await userAPI.removeFcmToken(token, context.platform);
+    }
+
+    // Clear sync state
+    const state = readSyncState();
+    delete state[context.audience];
+    writeSyncState(state);
+
+    logInfo(`Token unregistered from backend for ${context.audience} successfully.`);
+  } catch (error) {
+    logError(`Failed unregistering token from backend for ${context.audience}.`, error);
+  } finally {
+    currentFcmToken = "";
+    // Stop sync watcher if needed, but usually logout redirects soon anyway.
+    if (syncIntervalId) {
+      clearInterval(syncIntervalId);
+      syncIntervalId = null;
+    }
+    bootstrapStarted = false;
+  }
 }

@@ -28,6 +28,8 @@ import { clearModuleAuth } from "@/lib/utils/auth"
 import alertSound from "@/assets/audio/alert.mp3"
 import originalSound from "@/assets/audio/original.mp3"
 
+import { unregisterFCMToken } from "@/lib/firebaseMessaging"
+
 export default function ProfilePage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -119,7 +121,7 @@ export default function ProfilePage() {
           const profileData = response.data.data.profile
           setProfile(profileData)
           // Debug: Log profile image data
-          }
+        }
       } catch (error) {
         console.error("Error fetching profile:", error)
         toast.error("Failed to load profile data")
@@ -172,6 +174,13 @@ export default function ProfilePage() {
     }
 
     try {
+      // Unregister FCM token from backend BEFORE local data is deleted
+      try {
+        await unregisterFCMToken()
+      } catch (fcmError) {
+        console.warn("Failed to unregister push token during logout:", fcmError)
+      }
+
       // Call logout API to clear refresh token on server
       await deliveryAPI.logout()
     } catch (error) {
@@ -389,7 +398,7 @@ export default function ProfilePage() {
                         if (playPromise !== undefined) {
                           playPromise
                             .then(() => {
-                              })
+                            })
                             .catch(err => {
                               console.error('❌ Preview audio error:', err)
                             })
@@ -421,7 +430,7 @@ export default function ProfilePage() {
                         if (playPromise !== undefined) {
                           playPromise
                             .then(() => {
-                              })
+                            })
                             .catch(err => {
                               console.error('❌ Preview audio error:', err)
                             })

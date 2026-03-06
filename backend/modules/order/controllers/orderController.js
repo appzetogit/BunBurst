@@ -7,7 +7,8 @@ import mongoose from 'mongoose';
 import winston from 'winston';
 import { calculateOrderPricing } from '../services/orderCalculationService.js';
 import { getRazorpayCredentials } from '../../../shared/utils/envService.js';
-import { notifyRestaurantNewOrder } from '../services/restaurantNotificationService.js';
+import { notifyRestaurantNewOrder, notifyRestaurantOrderUpdate } from '../services/restaurantNotificationService.js';
+import { notifyUserOrderStatusUpdate } from '../services/userNotificationService.js';
 import { calculateOrderSettlement } from '../services/orderSettlementService.js';
 import { holdEscrow } from '../services/escrowWalletService.js';
 import { processCancellationRefund } from '../services/cancellationRefundService.js';
@@ -511,6 +512,7 @@ export const createOrder = async (req, res) => {
         // Notify restaurant about new wallet payment order
         try {
           const notifyRestaurantResult = await notifyRestaurantNewOrder(order, assignedRestaurantId, 'wallet');
+          await notifyUserOrderStatusUpdate(order, 'confirmed');
           logger.info('✅ Wallet payment order notification sent to cafe', {
             orderId: order.orderId,
             restaurantId: assignedRestaurantId,
@@ -591,6 +593,7 @@ export const createOrder = async (req, res) => {
       // Notify restaurant about new COD order via Socket.IO (non-blocking)
       try {
         const notifyRestaurantResult = await notifyRestaurantNewOrder(order, assignedRestaurantId, 'cash');
+        await notifyUserOrderStatusUpdate(order, 'confirmed');
         logger.info('✅ COD order notification sent to cafe', {
           orderId: order.orderId,
           restaurantId: assignedRestaurantId,
@@ -857,6 +860,7 @@ export const verifyOrderPayment = async (req, res) => {
       }
 
       const notificationResult = await notifyRestaurantNewOrder(order, restaurantId);
+      await notifyUserOrderStatusUpdate(order, 'confirmed');
 
       logger.info(`✅ Successfully notified restaurant about confirmed order:`, {
         orderId: order.orderId,
@@ -1128,6 +1132,15 @@ export const cancelOrder = async (req, res) => {
     order.cancelledBy = 'user';
     order.cancelledAt = new Date();
     await order.save();
+
+    // Notify user about cancellation
+    try {
+      await notifyUserOrderStatusUpdate(order, 'cancelled');
+      // Also notify restaurant
+      await notifyRestaurantOrderUpdate(order._id.toString(), 'cancelled');
+    } catch (notifError) {
+      logger.error('Error sending cancellation notification:', notifError);
+    }
 
     // Calculate refund amount only for online payments (Razorpay) and wallet
     // COD orders don't need refund since payment hasn't been made

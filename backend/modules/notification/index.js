@@ -8,7 +8,10 @@ import {
   saveDeliveryFcmToken,
   saveRestaurantFcmToken,
   sendAdminPushNotification,
-  sendTestPushNotification
+  sendTestPushNotification,
+  removeUserFcmToken,
+  removeDeliveryFcmToken,
+  removeRestaurantFcmToken
 } from './controllers/notificationController.js';
 
 const router = express.Router();
@@ -22,6 +25,10 @@ router.post('/delivery/token', authenticateDelivery, saveDeliveryFcmToken);
 router.post('/restaurant/token', authenticateRestaurant, saveRestaurantFcmToken);
 router.post('/admin/send', authenticateAdmin, sendAdminPushNotification);
 router.post('/test-notification', sendTestPushNotification);
+
+router.delete('/user/token', authenticate, removeUserFcmToken);
+router.delete('/delivery/token', authenticateDelivery, removeDeliveryFcmToken);
+router.delete('/restaurant/token', authenticateRestaurant, removeRestaurantFcmToken);
 
 // Explicit platform routes (web/mobile)
 router.post('/user/token/web', authenticate, (req, res) => {
@@ -52,4 +59,3 @@ router.post('/restaurant/token/mobile', authenticateRestaurant, (req, res) => {
 });
 
 export default router;
-

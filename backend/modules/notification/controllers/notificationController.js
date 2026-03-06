@@ -24,7 +24,9 @@ export const saveUserFcmToken = async (req, res) => {
     const field = getFieldByPlatform(platform);
     const updated = await User.findByIdAndUpdate(
       req.user._id,
-      { $set: { [field]: token.trim() } },
+      {
+        $addToSet: { [field]: token.trim() }
+      },
       { new: true, projection: { fcmTokenWeb: 1, fcmTokenMobile: 1 } }
     ).lean();
 
@@ -58,7 +60,9 @@ export const saveDeliveryFcmToken = async (req, res) => {
     const field = getFieldByPlatform(platform);
     const updated = await Delivery.findByIdAndUpdate(
       req.delivery._id,
-      { $set: { [field]: token.trim() } },
+      {
+        $addToSet: { [field]: token.trim() }
+      },
       { new: true, projection: { fcmTokenWeb: 1, fcmTokenMobile: 1 } }
     ).lean();
 
@@ -92,7 +96,9 @@ export const saveRestaurantFcmToken = async (req, res) => {
     const field = getFieldByPlatform(platform);
     const updated = await Restaurant.findByIdAndUpdate(
       req.restaurant._id,
-      { $set: { [field]: token.trim() } },
+      {
+        $addToSet: { [field]: token.trim() }
+      },
       { new: true, projection: { fcmTokenWeb: 1, fcmTokenMobile: 1 } }
     ).lean();
 
@@ -124,15 +130,17 @@ export const sendAdminPushNotification = async (req, res) => {
     const audience =
       sendToNormalized.includes('delivery')
         ? 'delivery'
-        : sendToNormalized.includes('customer') || sendToNormalized.includes('user')
-          ? 'user'
-          : null;
+        : sendToNormalized.includes('restaurant') || sendToNormalized.includes('cafe') || sendToNormalized.includes('outlet')
+          ? 'restaurant'
+          : sendToNormalized.includes('customer') || sendToNormalized.includes('user')
+            ? 'user'
+            : null;
 
     if (!audience) {
       return errorResponse(
         res,
         400,
-        "sendTo must be Customer/User or Delivery/Delivery Man"
+        "sendTo must be Customer/User, Restaurant/Cafe/Outlet or Delivery/Delivery Man"
       );
     }
 
@@ -191,7 +199,9 @@ export const sendTestPushNotification = async (req, res) => {
 
     const normalizedAudience = String(audience).toLowerCase().includes('delivery')
       ? 'delivery'
-      : 'user';
+      : String(audience).toLowerCase().includes('restaurant') || String(audience).toLowerCase().includes('cafe')
+        ? 'restaurant'
+        : 'user';
 
     const result = await sendPushNotificationToAudience({
       audience: normalizedAudience,
@@ -211,5 +221,40 @@ export const sendTestPushNotification = async (req, res) => {
     return successResponse(res, 200, 'Test push notification processed', result);
   } catch (error) {
     return errorResponse(res, 500, `Failed to send test push notification: ${error.message}`);
+  }
+};
+export const removeUserFcmToken = async (req, res) => {
+  try {
+    const { token, platform = 'web' } = req.body || {};
+    if (!token) return errorResponse(res, 400, 'Token is required');
+    const field = getFieldByPlatform(platform);
+    await User.findByIdAndUpdate(req.user._id, { $pull: { [field]: token.trim() } });
+    return successResponse(res, 200, 'User FCM token removed successfully');
+  } catch (error) {
+    return errorResponse(res, 500, `Failed to remove user FCM token: ${error.message}`);
+  }
+};
+
+export const removeDeliveryFcmToken = async (req, res) => {
+  try {
+    const { token, platform = 'web' } = req.body || {};
+    if (!token) return errorResponse(res, 400, 'Token is required');
+    const field = getFieldByPlatform(platform);
+    await Delivery.findByIdAndUpdate(req.delivery._id, { $pull: { [field]: token.trim() } });
+    return successResponse(res, 200, 'Delivery FCM token removed successfully');
+  } catch (error) {
+    return errorResponse(res, 500, `Failed to remove delivery FCM token: ${error.message}`);
+  }
+};
+
+export const removeRestaurantFcmToken = async (req, res) => {
+  try {
+    const { token, platform = 'web' } = req.body || {};
+    if (!token) return errorResponse(res, 400, 'Token is required');
+    const field = getFieldByPlatform(platform);
+    await Restaurant.findByIdAndUpdate(req.restaurant._id, { $pull: { [field]: token.trim() } });
+    return successResponse(res, 200, 'Restaurant FCM token removed successfully');
+  } catch (error) {
+    return errorResponse(res, 500, `Failed to remove restaurant FCM token: ${error.message}`);
   }
 };
