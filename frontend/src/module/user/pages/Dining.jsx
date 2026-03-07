@@ -518,7 +518,7 @@ export default function Dining() {
           </div>
 
           {/* Filters */}
-          <section className="py-1 mb-4">
+          <section className="py-1 mb-4 md:hidden">
             <div
               className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1"
               style={{
