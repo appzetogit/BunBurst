@@ -37,6 +37,7 @@ const countryCodes = [
 export default function DeliverySignIn() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
+  const [showTermsCard, setShowTermsCard] = useState(false)
   const [formData, setFormData] = useState({
     phone: "",
     countryCode: "+91",
@@ -246,18 +247,54 @@ export default function DeliverySignIn() {
           {/* Terms and Conditions */}
           <p className="text-xs text-center px-4" style={{ color: '#1E1E1E', opacity: 0.6 }}>
             By continuing, you agree to our{" "}
-            <a
-              href="/admin/pages-social-media/terms"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => setShowTermsCard(true)}
               className="hover:underline font-semibold"
               style={{ color: '#FFC400' }}
             >
               Terms and Conditions
-            </a>
+            </button>
           </p>
         </div>
       </div>
+
+      {showTermsCard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6"
+          onClick={() => setShowTermsCard(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Terms and Conditions"
+            className="w-full max-w-2xl rounded-3xl bg-white shadow-[0_24px_60px_rgba(0,0,0,0.22)] overflow-hidden border border-[#EFEFEF]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative border-b border-[#ECECEC] bg-gradient-to-b from-[#FAFAFA] to-[#FFFFFF] px-5 sm:px-6 py-4 sm:py-5">
+              <h3 className="text-3xl sm:text-4xl font-extrabold text-center text-[#111827] leading-tight pr-16 sm:pr-20">
+                Terms and Conditions
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowTermsCard(false)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-[#FF6B6B] text-3xl leading-none text-[#5B6475] hover:bg-[#FFF5F5] transition-colors"
+                aria-label="Close terms card"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="px-5 sm:px-7 py-5 sm:py-6 text-[#374151] max-h-[70vh] overflow-y-auto">
+              <p className="text-base sm:text-lg font-medium mb-3 text-[#4B5563]">This is a test Terms & Conditions</p>
+              <p className="text-2xl sm:text-3xl font-bold mb-3 text-[#1F2937]">Terms of Use</p>
+              <p className="text-lg sm:text-xl leading-relaxed text-[#374151]">
+                This Terms of Use (&quot;Terms&quot;) applies to your access to and use of the website and the mobile application (collectively, the &quot;Platform&quot;). Please read these Terms carefully.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

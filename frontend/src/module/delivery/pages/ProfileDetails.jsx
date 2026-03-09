@@ -125,12 +125,6 @@ export default function ProfileDetails() {
             </div>
             <div className="divide-y divide-[#F5F5F5]">
               <div className="p-2 px-3 flex items-center justify-between">
-                <p className="text-sm text-gray-900">Zone</p>
-                <p className="text-base text-gray-900">
-                  {profile?.availability?.zones?.length > 0 ? "Assigned" : "Not assigned"}
-                </p>
-              </div>
-              <div className="p-2 px-3 flex items-center justify-between">
                 <p className="text-sm text-gray-900">City</p>
                 <p className="text-base text-gray-900">
                   {profile?.location?.city || "N/A"}
