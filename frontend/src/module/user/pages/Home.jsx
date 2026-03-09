@@ -560,6 +560,13 @@ export default function Home() {
         params.trusted = 'true'
       }
 
+      // Dietary Preference filter
+      if (vegMode) {
+        params.dietaryPreference = vegModeOption === 'pure-veg' ? 'pure-veg' : 'veg'
+      } else {
+        params.dietaryPreference = 'non-veg'
+      }
+
       // Optional: Add zoneId if available (for sorting/filtering, but show all cafes)
       if (zoneId) {
         params.zoneId = zoneId
@@ -705,7 +712,7 @@ export default function Home() {
     } finally {
       setLoadingCafes(false)
     }
-  }, [zoneId])
+  }, [zoneId, vegMode, vegModeOption])
 
   // Fetch cafes when appliedFilters change
   useEffect(() => {

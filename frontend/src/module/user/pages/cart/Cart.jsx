@@ -370,22 +370,43 @@ export default function Cart() {
 
   const cartCount = getCartCount()
   const savedAddress = getDefaultAddress()
-  // Priority: Use live location if available, otherwise use saved address
-  const defaultAddress = currentLocation?.formattedAddress && currentLocation.formattedAddress !== "Select location"
-    ? {
-      ...savedAddress,
-      formattedAddress: currentLocation.formattedAddress,
-      address: currentLocation.address || currentLocation.formattedAddress,
-      street: currentLocation.street || currentLocation.address,
-      city: currentLocation.city,
-      state: currentLocation.state,
-      zipCode: currentLocation.postalCode,
-      area: currentLocation.area,
-      location: currentLocation.latitude && currentLocation.longitude ? {
-        coordinates: [currentLocation.longitude, currentLocation.latitude]
-      } : savedAddress?.location
+
+  // Memoize defaultAddress so it keeps the same object reference between renders
+  // as long as the actual address values haven't changed.
+  // Without this, a new object is created every render → the pricing useEffect
+  // fires on EVERY state change (including setIsPlacingOrder), causing extra API calls.
+  const addressKey = [
+    currentLocation?.formattedAddress,
+    currentLocation?.latitude,
+    currentLocation?.longitude,
+    currentLocation?.city,
+    currentLocation?.state,
+    savedAddress?.street,
+    savedAddress?.city,
+    savedAddress?.state,
+    savedAddress?.zipCode,
+  ].join('|')
+
+  const defaultAddress = useMemo(() => {
+    if (currentLocation?.formattedAddress && currentLocation.formattedAddress !== "Select location") {
+      return {
+        ...savedAddress,
+        formattedAddress: currentLocation.formattedAddress,
+        address: currentLocation.address || currentLocation.formattedAddress,
+        street: currentLocation.street || currentLocation.address,
+        city: currentLocation.city,
+        state: currentLocation.state,
+        zipCode: currentLocation.postalCode,
+        area: currentLocation.area,
+        location: currentLocation.latitude && currentLocation.longitude ? {
+          coordinates: [currentLocation.longitude, currentLocation.latitude]
+        } : savedAddress?.location
+      }
     }
-    : savedAddress
+    return savedAddress ?? null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addressKey])
+
   const defaultPayment = getDefaultPaymentMethod()
 
   // Get cafe ID from cart or cafe data
@@ -404,6 +425,14 @@ export default function Cart() {
     })
     return Array.from(unique)
   }, [cart, categoryLookup])
+
+  // Stable fingerprint of the cart — changes only when items/quantities actually change.
+  // Used as a dep instead of the raw `cart` array to avoid re-firing effects on
+  // reference-identity changes (e.g. context re-renders that produce a new array).
+  const cartKey = useMemo(
+    () => cart.map(i => `${i.id}:${i.quantity}:${(i.price || 0).toFixed(2)}`).join('|'),
+    [cart]
+  )
 
 
 
@@ -660,7 +689,8 @@ export default function Cart() {
     }
 
     fetchCategoryMatchedAddons()
-  }, [cartCategoryIds])
+    // Use stable cartCategoryIds string to avoid re-fires on reference changes
+  }, [cartCategoryIds.join(',')])
 
   // Fetch coupons for items in cart
   useEffect(() => {
@@ -721,16 +751,28 @@ export default function Cart() {
     }
 
     fetchCouponsForCartItems()
-  }, [cart, cafeId])
+    // Use cartKey (stable fingerprint) + cafeId so we only refetch when
+    // cart contents or the cafe actually change — not on every re-render.
+  }, [cartKey, cafeId])
 
-  // Calculate pricing from backend whenever cart, address, or coupon changes
+  // Calculate pricing from backend whenever cart, address, or coupon changes.
+  // Uses a 400ms debounce so rapid quantity taps don't fire a request per tap.
+  // Skips calculation when restaurantId is not yet resolved, and also skips while
+  // an order is being placed (isPlacingOrder) to avoid extra calls on click.
   useEffect(() => {
-    const calculatePricing = async () => {
-      if (cart.length === 0 || !defaultAddress) {
-        setPricing(null)
-        return
-      }
+    if (cart.length === 0 || !defaultAddress) {
+      setPricing(null)
+      return
+    }
 
+    // Skip if cafe hasn't loaded yet — the effect will re-run when it does
+    if (!cafeId) return
+
+    // Skip while an order is being placed — no point recalculating mid-placement
+    if (isPlacingOrder) return
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
       try {
         setLoadingPricing(true)
         const items = cart.map(item => ({
@@ -751,6 +793,8 @@ export default function Cart() {
           couponCode: appliedCoupon?.code || couponCode || null
         })
 
+        if (cancelled) return
+
         if (response?.data?.success && response?.data?.data?.pricing) {
           setPricing(response.data.data.pricing)
 
@@ -763,19 +807,25 @@ export default function Cart() {
           }
         }
       } catch (error) {
-        // Network errors or 404 errors - silently handle, fallback to frontend calculation
+        if (cancelled) return
         if (error.code !== 'ERR_NETWORK' && error.response?.status !== 404) {
           console.error("Error calculating pricing:", error)
         }
-        // Fallback to frontend calculation if backend fails
         setPricing(null)
       } finally {
-        setLoadingPricing(false)
+        if (!cancelled) setLoadingPricing(false)
       }
-    }
+    }, 400) // 400ms debounce — batches rapid cart changes into one request
 
-    calculatePricing()
-  }, [cart, defaultAddress, appliedCoupon, couponCode, cafeId])
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+    // addressKey (stable string) replaces defaultAddress object in deps — prevents
+    // firing on every render just because a new object reference was created.
+    // isPlacingOrder prevents extra call when Place Order button is clicked.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartKey, addressKey, appliedCoupon?.code, couponCode, cafeId, isPlacingOrder])
 
   // Fetch wallet balance
   useEffect(() => {
@@ -877,35 +927,8 @@ export default function Cart() {
     if (subtotal >= coupon.minOrder) {
       setAppliedCoupon(coupon)
       setCouponCode(coupon.code)
-      setShowCoupons(false)
-
-      // Recalculate pricing with new coupon
-      if (cart.length > 0 && defaultAddress) {
-        try {
-          const items = cart.map(item => ({
-            itemId: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity || 1,
-            image: item.image,
-            description: item.description,
-            isVeg: item.isVeg !== false
-          }))
-
-          const response = await orderAPI.calculateOrder({
-            items,
-            cafeId: cafeData?.cafeId || cafeData?._id || cafeId || null,
-            deliveryAddress: defaultAddress,
-            couponCode: coupon.code
-          })
-
-          if (response?.data?.success && response?.data?.data?.pricing) {
-            setPricing(response.data.data.pricing)
-          }
-        } catch (error) {
-          console.error("Error recalculating pricing:", error)
-        }
-      }
+      // The calculatePricing effect will automatically re-run because
+      // appliedCoupon.code and couponCode changed — no manual call needed.
     }
   }
 
@@ -913,34 +936,8 @@ export default function Cart() {
   const handleRemoveCoupon = async () => {
     setAppliedCoupon(null)
     setCouponCode("")
-
-    // Recalculate pricing without coupon
-    if (cart.length > 0 && defaultAddress) {
-      try {
-        const items = cart.map(item => ({
-          itemId: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity || 1,
-          image: item.image,
-          description: item.description,
-          isVeg: item.isVeg !== false
-        }))
-
-        const response = await orderAPI.calculateOrder({
-          items,
-          cafeId: cafeData?.cafeId || cafeData?._id || cafeId || null,
-          deliveryAddress: defaultAddress,
-          couponCode: null
-        })
-
-        if (response?.data?.success && response?.data?.data?.pricing) {
-          setPricing(response.data.data.pricing)
-        }
-      } catch (error) {
-        console.error("Error recalculating pricing:", error)
-      }
-    }
+    // The calculatePricing effect will automatically re-run because
+    // appliedCoupon.code and couponCode changed — no manual call needed.
   }
 
 

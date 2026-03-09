@@ -106,7 +106,8 @@ export const getCafes = async (req, res) => {
       maxDistance,
       maxPrice,
       hasOffers,
-      zoneId // User's zone ID (optional - if provided, filters by zone)
+      zoneId, // User's zone ID (optional - if provided, filters by zone)
+      dietaryPreference // 'veg', 'pure-veg', 'non-veg'
     } = req.query;
 
     // Optional: Zone-based filtering - if zoneId is provided, validate and filter by zone
@@ -172,6 +173,39 @@ export const getCafes = async (req, res) => {
         { offer: { $exists: true, $ne: null, $ne: '' } },
         { featuredPrice: { $exists: true } }
       ];
+    }
+
+    // Dietary Preference filter
+    if (dietaryPreference === 'pure-veg') {
+      // Find cafes that serve Non-Veg dishes
+      const nonVegMenus = await Menu.find({
+        $or: [
+          {'sections.items.foodType': 'Non-Veg'},
+          {'sections.subsections.items.foodType': 'Non-Veg'}
+        ]
+      }).select('cafe').lean();
+      const nonVegCafeIds = nonVegMenus.map(menu => menu.cafe);
+      
+      // Exclude these cafes from the query
+      if (nonVegCafeIds.length > 0) {
+        query._id = { $nin: nonVegCafeIds };
+      }
+    } else if (dietaryPreference === 'veg') {
+      // Find cafes that serve AT LEAST ONE Veg dish
+      const vegMenus = await Menu.find({
+        $or: [
+          {'sections.items.foodType': 'Veg'},
+          {'sections.subsections.items.foodType': 'Veg'}
+        ]
+      }).select('cafe').lean();
+      const vegCafeIds = vegMenus.map(menu => menu.cafe);
+      
+      if (vegCafeIds.length > 0) {
+        query._id = { $in: vegCafeIds };
+      } else {
+        // No veg cafes found, return empty
+        query._id = null; 
+      }
     }
 
     // Build sort object

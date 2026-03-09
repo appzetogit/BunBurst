@@ -220,9 +220,22 @@ export default function SignupStep2() {
     profilePhoto: false, aadharPhoto: false, panPhoto: false, drivingLicensePhoto: false
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [activeSheet, setActiveSheet] = useState(null)   // which docType has sheet open
-  const [cameraFor, setCameraFor] = useState(null)        // which docType has camera open
+  const [activeSheet, setActiveSheet] = useState(null)
+  const [cameraFor, setCameraFor] = useState(null)
+  const [showBackConfirm, setShowBackConfirm] = useState(false)
   const galleryRef = useRef({})
+
+  // Clear delivery tokens and return to sign-in
+  const handleConfirmGoBack = () => {
+    localStorage.removeItem("delivery_accessToken")
+    localStorage.removeItem("delivery_refreshToken")
+    localStorage.removeItem("delivery_authenticated")
+    localStorage.removeItem("delivery_user")
+    sessionStorage.removeItem("deliveryAuthData")
+    sessionStorage.removeItem("deliverySignupStep1")
+    window.dispatchEvent(new Event("deliveryAuthChanged"))
+    navigate("/delivery/sign-in", { replace: true })
+  }
 
   const handleFileSelect = async (docType, file) => {
     if (!file) return
@@ -367,7 +380,7 @@ export default function SignupStep2() {
         {/* Sticky Header */}
         <div className="bg-white px-4 py-3 flex items-center gap-3 sticky top-0 z-10"
           style={{ borderBottom: '1.5px solid #F5F5F5', boxShadow: '0 1px 10px rgba(0,0,0,0.07)' }}>
-          <button onClick={() => navigate(-1)} className="p-2 rounded-full"
+          <button onClick={() => setShowBackConfirm(true)} className="p-2 rounded-full"
             style={{ backgroundColor: '#F5F5F5', color: '#1E1E1E' }}>
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -475,6 +488,45 @@ export default function SignupStep2() {
             </button>
           </div>
         </>
+      )}
+
+      {/* ── Back Confirmation Popup ── */}
+      {showBackConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: '#FFF0F0' }}
+              >
+                <ArrowLeft className="w-7 h-7" style={{ color: '#e53935' }} />
+              </div>
+            </div>
+            <h2 className="text-lg font-bold text-center mb-2" style={{ color: '#1E1E1E' }}>
+              Leave signup?
+            </h2>
+            <p className="text-sm text-center mb-6" style={{ color: '#1E1E1E', opacity: 0.6 }}>
+              Are you sure you want to go back without completing the signup process?
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowBackConfirm(false)}
+                className="w-full py-3.5 rounded-xl font-bold text-base"
+                style={{ backgroundColor: '#e53935', color: '#fff' }}
+              >
+                Continue Signup
+              </button>
+              <button
+                onClick={handleConfirmGoBack}
+                className="w-full py-3.5 rounded-xl font-semibold text-base"
+                style={{ backgroundColor: '#F5F5F5', color: '#1E1E1E' }}
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── In-Browser Camera Modal ── */}

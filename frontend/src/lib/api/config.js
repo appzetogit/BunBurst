@@ -381,11 +381,6 @@ export const API_ENDPOINTS = {
     ZONE_BY_ID: "/admin/zones/:id",
     ZONE_STATUS: "/admin/zones/:id/status",
   },
-  // Chat endpoints
-  CHAT: {
-    CONVERSATIONS: "/chat/conversations",
-    MESSAGES: "/chat/conversations/:id/messages",
-  },
   // Order endpoints
   ORDER: {
     CREATE: "/order",

@@ -57,7 +57,6 @@ import locationRoutes from './modules/location/index.js';
 import heroBannerRoutes from './modules/heroBanner/index.js';
 import diningRoutes from './modules/dining/index.js';
 import diningAdminRoutes from './modules/dining/routes/diningAdminRoutes.js';
-import chatRoutes from './modules/chat/index.js';
 
 
 // Validate required environment variables
@@ -353,16 +352,78 @@ app.use(cookieParser());
 // Data sanitization
 app.use(mongoSanitize());
 
-// Rate limiting (disabled in development mode)
-if (process.env.NODE_ENV === 'production') {
-  const limiter = rateLimit({
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.'
-  });
+// ─────────────────────────────── Rate Limiting ───────────────────────────────
+// Provide proxy trust so `express-rate-limit` tracks REAL client IPs, not the load balancer IP
+app.set('trust proxy', 1);
 
-  app.use('/api/', limiter);
-  console.log('Rate limiting enabled (production mode)');
+// Tiered strategy: different endpoints get different limits.
+//
+// /api/order/calculate  — read-only pricing endpoint, legitimately called many
+//   times per cart session (qty changes, coupon apply/remove, address changes).
+//   120 req/min per IP is very generous and still prevents abuse.
+//
+// POST /api/order       — actual order creation. 20/min prevents bulk abuse
+//   while being plenty for real concurrent users.
+//
+// Global fallback       — raised from 100 to 500 per 15 min so regular cart
+//   browsing (restaurant, menu, addon, coupon calls) never gets blocked.
+if (process.env.NODE_ENV === 'production') {
+  // Custom key generator to group rate limits by Auth Token instead of IP for logged-in users.
+  // This completely solves false 429s for CGNAT mobile networks and shared office Wi-Fi setups.
+  const authBasedKeyGenerator = (req) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.split(' ')[1]) {
+      return authHeader.split(' ')[1];
+    }
+    const cfIp = req.headers['cf-connecting-ip'];
+    const forwardedFor = req.headers['x-forwarded-for'];
+    return cfIp || (forwardedFor ? forwardedFor.split(',')[0].trim() : req.ip);
+  };
+
+  // 1. Generous limiter for the read-only pricing/calculate endpoint
+  const orderCalculateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute window
+    max: parseInt(process.env.ORDER_CALCULATE_RATE_LIMIT) || 120,
+    keyGenerator: authBasedKeyGenerator,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message: 'Too many pricing requests. Please wait a moment and try again.'
+    }
+  });
+  app.use('/api/order/calculate', orderCalculateLimiter);
+
+  // 2. Stricter limiter for actual order creation (POST /api/order)
+  const orderCreateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute window
+    max: parseInt(process.env.ORDER_CREATE_RATE_LIMIT) || 20,
+    keyGenerator: authBasedKeyGenerator,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message: 'Too many order requests. Please wait a moment and try again.'
+    }
+  });
+  app.post('/api/order', orderCreateLimiter);
+
+  // 3. Global fallback limiter for all other /api/ routes
+  //    Raised from 100 to 500 per 15 min — covers restaurant, menu, coupon, addon calls
+  const globalLimiter = rateLimit({
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 800,
+    keyGenerator: authBasedKeyGenerator,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      message: 'Too many requests from this IP, please try again later.'
+    }
+  });
+  app.use('/api/', globalLimiter);
+
+  console.log('Rate limiting enabled (production mode) — calculate=120/min | create=20/min | global=800/15min');
 } else {
   console.log('Rate limiting disabled (development mode)');
 }
@@ -409,7 +470,6 @@ app.use('/api/location', locationRoutes);
 app.use('/api', heroBannerRoutes);
 app.use('/api/dining', diningRoutes);
 app.use('/api/admin/dining', diningAdminRoutes);
-app.use('/api/chat', chatRoutes);
 
 // 404 handler - but skip Socket.IO paths
 app.use((req, res, next) => {

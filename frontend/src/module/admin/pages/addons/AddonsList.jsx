@@ -17,6 +17,12 @@ import {
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 
+const normalizeSearchValue = (value) =>
+  String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+
 export default function AddonsList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [addons, setAddons] = useState([])
@@ -181,13 +187,22 @@ export default function AddonsList() {
     }
   }
 
+  const handleSearchChange = (event) => {
+    const value = event.target.value
+    const isWhitespaceOnly = value.length > 0 && value.trim().length === 0
+    setSearchQuery(isWhitespaceOnly ? "" : value)
+  }
+
   const filteredAddons = useMemo(() => {
+    const query = normalizeSearchValue(searchQuery)
+    if (!query) return addons
+
     return addons.filter(addon =>
-      addon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      normalizeSearchValue(addon.name).includes(query) ||
       (Array.isArray(addon.categoryIds) && addon.categoryIds.some((cat) =>
-        cat?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+        normalizeSearchValue(cat?.name).includes(query)
       )) ||
-      addon.categoryId?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      normalizeSearchValue(addon.categoryId?.name).includes(query)
     )
   }, [addons, searchQuery])
 
@@ -232,7 +247,7 @@ export default function AddonsList() {
                 type="text"
                 placeholder="Search addons..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 className="pl-11 pr-4 py-6 w-full lg:w-[320px] rounded-2xl border-[#F5F5F5] bg-white group-hover:bg-white group-focus:bg-white transition-all shadow-none focus:ring-[#FFC400]/20 focus:border-[#FFC400]"
               />
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#1E1E1E]/50 group-hover:text-[#1E1E1E] transition-colors" />

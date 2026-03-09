@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Download, ChevronDown, Plus, Edit, Trash2, Info, MapPin, SlidersHorizontal, ArrowDownUp, Timer, Star, IndianRupee, UtensilsCrossed, BadgePercent, ShieldCheck, X, Loader2, Upload, Sparkles, LayoutGrid, FileText, Check } from "lucide-react"
+import { Search, Download, ChevronDown, Plus, Edit, Trash2, Info, ArrowDownUp, Star, IndianRupee, UtensilsCrossed, BadgePercent, ShieldCheck, X, Loader2, Upload, Sparkles, LayoutGrid, FileText, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { adminAPI } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
@@ -600,67 +600,6 @@ export default function Category() {
         </div>
       </motion.div>
 
-      {/* Filters Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-3 mb-6">
-        <div className="flex flex-col gap-1.5">
-          {/* Row 1 */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Button
-              variant="outline"
-              onClick={() => setIsFilterOpen(true)}
-              className="h-5 px-1.5 rounded-md flex items-center gap-1 whitespace-nowrap shrink-0 transition-all bg-white border border-[#F5F5F5] hover:bg-[#fff8f7]"
-            >
-              <SlidersHorizontal className="h-2.5 w-2.5" />
-              <span className="text-[10px] font-bold text-[#1E1E1E]">Filters</span>
-            </Button>
-            {[
-              { id: 'delivery-under-30', label: 'Under 30 mins' },
-              { id: 'delivery-under-45', label: 'Under 45 mins' },
-            ].map((filter) => {
-              const isActive = activeFilters.has(filter.id)
-              return (
-                <Button
-                  key={filter.id}
-                  variant="outline"
-                  onClick={() => toggleFilter(filter.id)}
-                  className={`h-5 px-1.5 rounded-md flex items-center gap-1 whitespace-nowrap shrink-0 transition-all ${isActive
-                    ? 'bg-[#e53935] text-white border border-[#e53935] hover:bg-[#c62828]'
-                    : 'bg-white border border-[#F5F5F5] hover:bg-[#fff8f7]'
-                  }`}
-                >
-                  <span className={`text-[10px] font-bold ${isActive ? 'text-white' : 'text-[#1E1E1E]'}`}>{filter.label}</span>
-                </Button>
-              )
-            })}
-          </div>
-
-          {/* Row 2 */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {[
-              { id: 'distance-under-1km', label: 'Under 1km', icon: MapPin },
-              { id: 'distance-under-2km', label: 'Under 2km', icon: MapPin },
-            ].map((filter) => {
-              const Icon = filter.icon
-              const isActive = activeFilters.has(filter.id)
-              return (
-                <Button
-                  key={filter.id}
-                  variant="outline"
-                  onClick={() => toggleFilter(filter.id)}
-                  className={`h-5 px-1.5 rounded-md flex items-center gap-1 whitespace-nowrap shrink-0 transition-all ${isActive
-                    ? 'bg-[#e53935] text-white border border-[#e53935] hover:bg-[#c62828]'
-                    : 'bg-white border border-[#F5F5F5] hover:bg-[#fff8f7]'
-                  }`}
-                >
-                  {Icon && <Icon className={`h-2.5 w-2.5 ${isActive ? 'text-white' : 'text-[#1E1E1E]'}`} />}
-                  <span className={`text-[10px] font-bold ${isActive ? 'text-white' : 'text-[#1E1E1E]'}`}>{filter.label}</span>
-                </Button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
       {/* Table Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -811,9 +750,7 @@ export default function Category() {
                     <div className="w-24 sm:w-28 bg-white border-r flex flex-col">
                       {[
                         { id: 'sort', label: 'Sort By', icon: ArrowDownUp },
-                        { id: 'time', label: 'Time', icon: Timer },
                         { id: 'rating', label: 'Rating', icon: Star },
-                        { id: 'distance', label: 'Distance', icon: MapPin },
                         { id: 'price', label: 'Dish Price', icon: IndianRupee },
                         { id: 'cuisine', label: 'Cuisine', icon: UtensilsCrossed },
                         { id: 'offers', label: 'Offers', icon: BadgePercent },
@@ -877,37 +814,6 @@ export default function Category() {
                         </div>
                       </div>
 
-                      {/* Time Tab */}
-                      <div
-                        ref={el => filterSectionRefs.current['time'] = el}
-                        data-section-id="time"
-                        className="space-y-4 mb-8"
-                      >
-                        <h3 className="text-lg font-semibold text-[#1E1E1E] mb-4">Delivery Time</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                          <button
-                            onClick={() => toggleFilter('delivery-under-30')}
-                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('delivery-under-30')
-                              ? 'border-[#e53935] bg-[#fff8f7]'
-                              : 'border-[#F5F5F5] hover:border-[#e53935]'
-                              }`}
-                          >
-                            <Timer className={`h-6 w-6 ${activeFilters.has('delivery-under-30') ? 'text-[#e53935]' : 'text-[#1E1E1E]/70'}`} strokeWidth={1.5} />
-                            <span className={`text-sm font-medium ${activeFilters.has('delivery-under-30') ? 'text-[#e53935]' : 'text-[#1E1E1E]'}`}>Under 30 mins</span>
-                          </button>
-                          <button
-                            onClick={() => toggleFilter('delivery-under-45')}
-                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('delivery-under-45')
-                              ? 'border-[#e53935] bg-[#fff8f7]'
-                              : 'border-[#F5F5F5] hover:border-[#e53935]'
-                              }`}
-                          >
-                            <Timer className={`h-6 w-6 ${activeFilters.has('delivery-under-45') ? 'text-[#e53935]' : 'text-[#1E1E1E]/70'}`} strokeWidth={1.5} />
-                            <span className={`text-sm font-medium ${activeFilters.has('delivery-under-45') ? 'text-[#e53935]' : 'text-[#1E1E1E]'}`}>Under 45 mins</span>
-                          </button>
-                        </div>
-                      </div>
-
                       {/* Rating Tab */}
                       <div
                         ref={el => filterSectionRefs.current['rating'] = el}
@@ -945,37 +851,6 @@ export default function Category() {
                           >
                             <Star className={`h-6 w-6 ${activeFilters.has('rating-45-plus') ? 'text-[#e53935] fill-[#FFC400]' : 'text-[#1E1E1E]/45'}`} />
                             <span className={`text-sm font-medium ${activeFilters.has('rating-45-plus') ? 'text-[#e53935]' : 'text-[#1E1E1E]'}`}>Rated 4.5+</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Distance Tab */}
-                      <div
-                        ref={el => filterSectionRefs.current['distance'] = el}
-                        data-section-id="distance"
-                        className="space-y-4 mb-8"
-                      >
-                        <h3 className="text-lg font-semibold text-[#1E1E1E] mb-4">Distance</h3>
-                        <div className="grid grid-cols-2 gap-3">
-                          <button
-                            onClick={() => toggleFilter('distance-under-1km')}
-                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('distance-under-1km')
-                              ? 'border-[#e53935] bg-[#fff8f7]'
-                              : 'border-[#F5F5F5] hover:border-[#e53935]'
-                              }`}
-                          >
-                            <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-1km') ? 'text-[#e53935]' : 'text-[#1E1E1E]/70'}`} strokeWidth={1.5} />
-                            <span className={`text-sm font-medium ${activeFilters.has('distance-under-1km') ? 'text-[#e53935]' : 'text-[#1E1E1E]'}`}>Under 1 km</span>
-                          </button>
-                          <button
-                            onClick={() => toggleFilter('distance-under-2km')}
-                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('distance-under-2km')
-                              ? 'border-[#e53935] bg-[#fff8f7]'
-                              : 'border-[#F5F5F5] hover:border-[#e53935]'
-                              }`}
-                          >
-                            <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-2km') ? 'text-[#e53935]' : 'text-[#1E1E1E]/70'}`} strokeWidth={1.5} />
-                            <span className={`text-sm font-medium ${activeFilters.has('distance-under-2km') ? 'text-[#e53935]' : 'text-[#1E1E1E]'}`}>Under 2 km</span>
                           </button>
                         </div>
                       </div>

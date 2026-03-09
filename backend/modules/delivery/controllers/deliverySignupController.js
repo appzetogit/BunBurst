@@ -98,12 +98,12 @@ export const submitSignupDetails = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error saving signup details: ${error.message}`);
-    
+
     // Handle duplicate email error
     if (error.code === 11000) {
       return errorResponse(res, 400, 'Email already exists');
     }
-    
+
     return errorResponse(res, 500, 'Failed to save signup details');
   }
 });
@@ -193,7 +193,9 @@ export const submitSignupDocuments = asyncHandler(async (req, res) => {
         }
       },
       // Mark signup as complete - status remains pending until admin approval
-      status: 'pending'
+      status: 'pending',
+      // Mark full signup as complete so re-login bypasses signup flow
+      signupComplete: true
     };
 
     const updatedDelivery = await Delivery.findByIdAndUpdate(

@@ -261,6 +261,11 @@ const deliverySchema = new mongoose.Schema(
     rejectedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Admin'
+    },
+    // Tracks whether the full signup process (details + documents) has been completed
+    signupComplete: {
+      type: Boolean,
+      default: false
     }
   },
   {

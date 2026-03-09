@@ -26,7 +26,7 @@ export default function DiningCategory() {
   const rightContentRef = useRef(null)
   const { openLocationSelector } = useLocationSelector()
   const { location } = useLocationHook()
-  const { addFavorite, removeFavorite, isFavorite } = useProfile()
+  const { addFavorite, removeFavorite, isFavorite, vegMode } = useProfile()
   const cityName = location?.city || "Select"
 
   // Fetch cafes
@@ -34,7 +34,13 @@ export default function DiningCategory() {
     const fetchCafes = async () => {
       try {
         setIsLoading(true)
-        const response = await cafeAPI.getCafes()
+        const params = {}
+        if (vegMode) {
+          params.dietaryPreference = 'veg'
+        } else {
+          params.dietaryPreference = 'non-veg'
+        }
+        const response = await cafeAPI.getCafes(params)
         if (response.data && response.data.success) {
           // Map backend data to UI format
           const mappedData = (response.data.data.cafes || response.data.data || [])
@@ -64,7 +70,7 @@ export default function DiningCategory() {
       }
     }
     fetchCafes()
-  }, [])
+  }, [vegMode])
 
   // Category headings mapping
   const categoryHeadings = {

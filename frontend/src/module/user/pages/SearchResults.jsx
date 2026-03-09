@@ -30,6 +30,7 @@ export default function SearchResults() {
   const navigate = useNavigate()
   const { location } = useLocation()
   const { zoneId, isOutOfService } = useZone(location)
+  const { vegMode } = useProfile()
   const [searchQuery, setSearchQuery] = useState(query)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [activeFilters, setActiveFilters] = useState(new Set())
@@ -166,11 +167,18 @@ export default function SearchResults() {
     const fetchCafes = async () => {
       try {
         setLoadingCafes(true)
-        // Optional: Add zoneId if available (for sorting/filtering, but show all cafes)
         const params = {}
         if (zoneId) {
           params.zoneId = zoneId
         }
+
+        // Add dietary preference filter
+        if (vegMode) {
+          params.dietaryPreference = 'veg'
+        } else {
+          params.dietaryPreference = 'non-veg'
+        }
+
         const response = await cafeAPI.getCafes(params)
 
         if (response.data && response.data.success && response.data.data && response.data.data.cafes) {
@@ -371,7 +379,7 @@ export default function SearchResults() {
     }
 
     fetchCafes()
-  }, [zoneId, isOutOfService])
+  }, [zoneId, isOutOfService, vegMode])
 
   // Update search query when URL changes
   useEffect(() => {

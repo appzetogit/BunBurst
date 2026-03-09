@@ -33,8 +33,8 @@ const COMPLAINT_TYPE_OPTIONS = [
 const normalizeSearchValue = (value) =>
   String(value ?? '')
     .toLowerCase()
-    .replace(/\s+/g, '')
     .trim()
+    .replace(/\s+/g, ' ')
 
 export default function CafeComplaints() {
   const [complaints, setComplaints] = useState([])
@@ -140,6 +140,17 @@ export default function CafeComplaints() {
     }
   }
 
+  const handleSearchChange = (event) => {
+    const value = event.target.value
+    const isWhitespaceOnly = value.length > 0 && value.trim().length === 0
+
+    setFilters({
+      ...filters,
+      search: isWhitespaceOnly ? '' : value,
+      page: 1
+    })
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -155,7 +166,7 @@ export default function CafeComplaints() {
               type="text"
               placeholder="Search by order, customer, cafe..."
               value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+              onChange={handleSearchChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
