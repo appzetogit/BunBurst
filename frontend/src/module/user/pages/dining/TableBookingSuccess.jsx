@@ -146,7 +146,7 @@ export default function TableBookingSuccess() {
                 className="mt-12 w-full max-w-sm space-y-3"
             >
                 <Button
-                    onClick={() => navigate("/dining/my-bookings")}
+                    onClick={() => navigate("/bookings")}
                     className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
                 >
                     <List className="w-5 h-5" />

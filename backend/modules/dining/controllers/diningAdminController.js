@@ -1,6 +1,8 @@
 import DiningCategory from '../models/DiningCategory.js';
 import DiningOfferBanner from '../models/DiningOfferBanner.js';
 import DiningStory from '../models/DiningStory.js';
+import DiningSlot from '../models/DiningSlot.js';
+import DiningTable from '../models/DiningTable.js';
 import Cafe from '../../cafe/models/Cafe.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { uploadToCloudinary } from '../../../shared/utils/cloudinaryService.js';
@@ -272,5 +274,141 @@ export const updateDiningStory = async (req, res) => {
     } catch (error) {
         console.error('Error updating story:', error);
         return errorResponse(res, 500, 'Failed to update story');
+    }
+};
+
+const normalizeDate = (inputDate) => {
+    const parsed = new Date(inputDate);
+    if (Number.isNaN(parsed.getTime())) {
+        return null;
+    }
+    return new Date(`${parsed.toISOString().split("T")[0]}T00:00:00.000Z`);
+};
+
+const normalizeTimeSlot = (slot) => ({
+    startTime: String(slot.startTime || "").trim(),
+    endTime: String(slot.endTime || "").trim(),
+    isActive: slot.isActive !== false,
+});
+
+// ==================== DINING CONFIG (DATES, SLOTS, TABLES) ====================
+
+export const createDiningDateSlot = async (req, res) => {
+    try {
+        const { cafeId, date } = req.body;
+        if (!cafeId || !date) {
+            return errorResponse(res, 400, "cafeId and date are required");
+        }
+
+        const normalizedDate = normalizeDate(date);
+        if (!normalizedDate) {
+            return errorResponse(res, 400, "Invalid date format");
+        }
+
+        const slot = await DiningSlot.findOneAndUpdate(
+            { cafeId, date: normalizedDate },
+            { $setOnInsert: { cafeId, date: normalizedDate, timeSlots: [] } },
+            { upsert: true, new: true },
+        );
+
+        return successResponse(res, 201, "Dining date created successfully", { slot });
+    } catch (error) {
+        console.error("Error creating dining date:", error);
+        return errorResponse(res, 500, "Failed to create dining date");
+    }
+};
+
+export const addDiningTimeSlots = async (req, res) => {
+    try {
+        const { cafeId, date, timeSlots } = req.body;
+        if (!cafeId || !date || !Array.isArray(timeSlots) || timeSlots.length === 0) {
+            return errorResponse(res, 400, "cafeId, date and timeSlots are required");
+        }
+
+        const normalizedDate = normalizeDate(date);
+        if (!normalizedDate) {
+            return errorResponse(res, 400, "Invalid date format");
+        }
+
+        const normalizedIncomingSlots = timeSlots
+            .map(normalizeTimeSlot)
+            .filter((slot) => slot.startTime && slot.endTime);
+
+        if (normalizedIncomingSlots.length === 0) {
+            return errorResponse(res, 400, "At least one valid time slot is required");
+        }
+
+        const slotDoc = await DiningSlot.findOneAndUpdate(
+            { cafeId, date: normalizedDate },
+            { $setOnInsert: { cafeId, date: normalizedDate, timeSlots: [] } },
+            { upsert: true, new: true },
+        );
+
+        const existingMap = new Map(
+            slotDoc.timeSlots.map((slot) => [`${slot.startTime}-${slot.endTime}`, slot]),
+        );
+
+        for (const incomingSlot of normalizedIncomingSlots) {
+            const key = `${incomingSlot.startTime}-${incomingSlot.endTime}`;
+            if (existingMap.has(key)) {
+                existingMap.get(key).isActive = incomingSlot.isActive;
+            } else {
+                slotDoc.timeSlots.push(incomingSlot);
+            }
+        }
+
+        await slotDoc.save();
+
+        return successResponse(res, 200, "Dining time slots updated successfully", { slot: slotDoc });
+    } catch (error) {
+        console.error("Error adding dining time slots:", error);
+        return errorResponse(res, 500, "Failed to add dining time slots");
+    }
+};
+
+export const addDiningTable = async (req, res) => {
+    try {
+        const { cafeId, tableNumber, capacity } = req.body;
+        if (!cafeId || !tableNumber || !capacity) {
+            return errorResponse(res, 400, "cafeId, tableNumber and capacity are required");
+        }
+
+        const table = await DiningTable.create({
+            cafeId,
+            tableNumber: String(tableNumber).trim(),
+            capacity: Number(capacity),
+            isActive: true,
+        });
+
+        return successResponse(res, 201, "Dining table created successfully", { table });
+    } catch (error) {
+        if (error?.code === 11000) {
+            return errorResponse(res, 409, "Table number already exists for this cafe");
+        }
+        console.error("Error adding dining table:", error);
+        return errorResponse(res, 500, "Failed to add dining table");
+    }
+};
+
+export const getDiningConfigByCafe = async (req, res) => {
+    try {
+        const { cafeId } = req.params;
+        if (!cafeId) {
+            return errorResponse(res, 400, "cafeId is required");
+        }
+
+        const slots = await DiningSlot.find({ cafeId }).sort({ date: 1 }).lean();
+        const tables = await DiningTable.find({ cafeId }).sort({ tableNumber: 1 }).lean();
+
+        const availableDates = slots.map((slot) => slot.date);
+
+        return successResponse(res, 200, "Dining config fetched successfully", {
+            availableDates,
+            timeSlots: slots,
+            tables,
+        });
+    } catch (error) {
+        console.error("Error fetching dining config:", error);
+        return errorResponse(res, 500, "Failed to fetch dining config");
     }
 };

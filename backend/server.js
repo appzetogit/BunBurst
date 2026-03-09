@@ -57,6 +57,7 @@ import locationRoutes from './modules/location/index.js';
 import heroBannerRoutes from './modules/heroBanner/index.js';
 import diningRoutes from './modules/dining/index.js';
 import diningAdminRoutes from './modules/dining/routes/diningAdminRoutes.js';
+import diningTablesAdminRoutes from './modules/dining/routes/diningTablesAdminRoutes.js';
 
 
 // Validate required environment variables
@@ -470,6 +471,7 @@ app.use('/api/location', locationRoutes);
 app.use('/api', heroBannerRoutes);
 app.use('/api/dining', diningRoutes);
 app.use('/api/admin/dining', diningAdminRoutes);
+app.use('/api/admin/tables', diningTablesAdminRoutes);
 
 // 404 handler - but skip Socket.IO paths
 app.use((req, res, next) => {
@@ -729,6 +731,24 @@ function initializeScheduledTasks() {
     console.log('✅ Auto-reject order scheduler initialized (runs every 30 seconds)');
   }).catch((error) => {
     console.error('❌ Failed to initialize auto-reject service:', error);
+  });
+  // Import dining auto-cancel service
+  import('./modules/dining/services/autoCancelDiningBookingsService.js').then(({ processAutoCancelDiningBookings }) => {
+    // Run every minute to auto-cancel no-show bookings
+    cron.schedule('* * * * *', async () => {
+      try {
+        const result = await processAutoCancelDiningBookings();
+        if (result.processed > 0) {
+          console.log(`[Dining Auto Cancel Cron] ${result.message}`);
+        }
+      } catch (error) {
+        console.error('[Dining Auto Cancel Cron] Error:', error);
+      }
+    });
+
+    console.log('Dining auto-cancel scheduler initialized (runs every minute)');
+  }).catch((error) => {
+    console.error('Failed to initialize dining auto-cancel service:', error);
   });
 }
 

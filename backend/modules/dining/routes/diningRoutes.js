@@ -9,9 +9,14 @@ import {
   getOfferBanners,
   getStories,
   createBooking,
+  createDiningBooking,
+  getDiningDates,
+  getDiningAvailability,
   getUserBookings,
+  getMyDiningBookings,
   getCafeBookings,
   updateBookingStatus,
+  checkInDiningBooking,
   createDiningReview,
 } from "../controllers/diningController.js";
 import { authenticate as authenticateUser } from "../../auth/middleware/auth.js";
@@ -27,6 +32,11 @@ router.get("/bank-offers", getBankOffers);
 router.get("/must-tries", getMustTries);
 router.get("/offer-banners", getOfferBanners);
 router.get("/stories", getStories);
+router.get("/dates", getDiningDates);
+router.get("/availability", getDiningAvailability);
+router.post("/book", authenticateUser, createDiningBooking);
+router.get("/my-bookings", authenticateUser, getMyDiningBookings);
+router.post("/checkin/:bookingId", authenticateUser, checkInDiningBooking);
 
 // Booking Routes
 router.post("/bookings", authenticateUser, createBooking);

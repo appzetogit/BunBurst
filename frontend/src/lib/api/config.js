@@ -380,6 +380,10 @@ export const API_ENDPOINTS = {
     ZONES: "/admin/zones",
     ZONE_BY_ID: "/admin/zones/:id",
     ZONE_STATUS: "/admin/zones/:id/status",
+    DINING_DATE: "/admin/dining/date",
+    DINING_TIMESLOTS: "/admin/dining/timeslots",
+    DINING_CONFIG: "/admin/dining/config/:cafeId",
+    DINING_TABLES: "/admin/tables",
   },
   // Order endpoints
   ORDER: {
@@ -439,6 +443,11 @@ export const API_ENDPOINTS = {
     MUST_TRIES: "/dining/must-tries",
     OFFER_BANNERS: "/dining/offer-banners",
     STORIES: "/dining/stories",
+    DATES: "/dining/dates",
+    AVAILABILITY: "/dining/availability",
+    BOOK: "/dining/book",
+    MY_BOOKINGS: "/dining/my-bookings",
+    CHECKIN: "/dining/checkin/:bookingId",
     BOOKING_CREATE: "/dining/bookings",
     BOOKING_MY: "/dining/bookings/my",
     BOOKING_CAFE: "/dining/bookings/cafe/:cafeId",

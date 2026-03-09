@@ -1052,8 +1052,10 @@ export const getMenuByAdmin = asyncHandler(async (req, res) => {
     return errorResponse(res, 400, 'Invalid cafe ID');
   }
 
-  // Find or create menu
-  let menu = await Menu.findOne({ cafe: id });
+  // Find menu using current field (cafe) or legacy field (restaurant)
+  let menu = await Menu.findOne({
+    $or: [{ cafe: id }, { restaurant: id }],
+  });
 
   if (!menu) {
     // Check if cafe exists
@@ -1062,12 +1064,17 @@ export const getMenuByAdmin = asyncHandler(async (req, res) => {
       return errorResponse(res, 404, 'Cafe not found');
     }
 
-    // Create empty menu
+    // Create empty menu (set legacy "restaurant" key too for old unique index compatibility)
     menu = new Menu({
       cafe: id,
       sections: [],
       isActive: true,
     });
+    menu.set("restaurant", id, { strict: false });
+    await menu.save();
+  } else if (!menu.cafe) {
+    // Migrate legacy menu document in-place
+    menu.set("cafe", id);
     await menu.save();
   }
 
@@ -1084,6 +1091,17 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { sections } = req.body;
   const adminId = req.user._id;
+  const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
+  const toObjectIdOrNull = (value) => {
+    if (!value) return null;
+    return isValidObjectId(value) ? value : null;
+  };
+  const normalizeApprovalStatus = (value) => {
+    const normalized = String(value || "").toLowerCase();
+    return ["pending", "approved", "rejected"].includes(normalized)
+      ? normalized
+      : "approved";
+  };
 
   // Validate cafe ID
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1101,8 +1119,10 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
     return errorResponse(res, 404, 'Cafe not found');
   }
 
-  // Get existing menu
-  const existingMenu = await Menu.findOne({ cafe: id });
+  // Get existing menu (supports legacy "restaurant" field)
+  const existingMenu = await Menu.findOne({
+    $or: [{ cafe: id }, { restaurant: id }],
+  });
 
   // Normalize and validate sections (allow admin to modify everything including approval status)
   const normalizedSections = Array.isArray(sections) ? sections.map((section, index) => {
@@ -1113,6 +1133,9 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
         // Find existing item to preserve timestamps if needed
         const existingSection = existingMenu?.sections?.find(s => s.id === section.id);
         const existingItem = existingSection?.items?.find(i => String(i.id) === String(item.id));
+        const approvalStatus = normalizeApprovalStatus(item.approvalStatus);
+        const categoryId = toObjectIdOrNull(item.categoryId);
+        const approvedByFromItem = toObjectIdOrNull(item.approvedBy);
 
         return {
           id: String(item.id || Date.now() + Math.random()),
@@ -1123,7 +1146,7 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
           rating: item.rating ?? 0.0,
           reviews: item.reviews ?? 0,
           price: item.price || 0,
-          categoryId: item.categoryId || null,
+          categoryId,
           stock: item.stock || "Unlimited",
           discount: item.discount || null,
           originalPrice: item.originalPrice || null,
@@ -1154,12 +1177,12 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
           preparationTime: item.preparationTime || "",
           images: Array.isArray(item.images) ? item.images : (item.image ? [item.image] : []),
           // Admin can set approval status directly
-          approvalStatus: item.approvalStatus || 'approved', // Default to approved if modified by admin
+          approvalStatus, // Default to approved if modified by admin
           rejectionReason: item.rejectionReason || '',
           requestedAt: existingItem?.requestedAt || item.requestedAt || new Date(),
-          approvedAt: item.approvalStatus === 'approved' ? (item.approvedAt || new Date()) : undefined,
-          approvedBy: item.approvalStatus === 'approved' ? (item.approvedBy || adminId) : undefined,
-          rejectedAt: item.approvalStatus === 'rejected' ? (item.rejectedAt || new Date()) : undefined,
+          approvedAt: approvalStatus === 'approved' ? (item.approvedAt || new Date()) : undefined,
+          approvedBy: approvalStatus === 'approved' ? (approvedByFromItem || adminId) : undefined,
+          rejectedAt: approvalStatus === 'rejected' ? (item.rejectedAt || new Date()) : undefined,
         };
       }) : [],
       subsections: Array.isArray(section.subsections) ? section.subsections.map(subsection => {
@@ -1170,6 +1193,9 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
             const existingSection = existingMenu?.sections?.find(s => s.id === section.id);
             const existingSubsection = existingSection?.subsections?.find(s => s.id === subsection.id);
             const existingItem = existingSubsection?.items?.find(i => String(i.id) === String(item.id));
+            const approvalStatus = normalizeApprovalStatus(item.approvalStatus);
+            const categoryId = toObjectIdOrNull(item.categoryId);
+            const approvedByFromItem = toObjectIdOrNull(item.approvedBy);
 
             return {
               id: String(item.id || Date.now() + Math.random()),
@@ -1180,7 +1206,7 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
               rating: item.rating ?? 0.0,
               reviews: item.reviews ?? 0,
               price: item.price || 0,
-              categoryId: item.categoryId || null,
+              categoryId,
               stock: item.stock || "Unlimited",
               discount: item.discount || null,
               originalPrice: item.originalPrice || null,
@@ -1211,12 +1237,12 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
               preparationTime: item.preparationTime || "",
               images: Array.isArray(item.images) ? item.images : (item.image ? [item.image] : []),
               // Admin can set approval status directly
-              approvalStatus: item.approvalStatus || 'approved',
+              approvalStatus,
               rejectionReason: item.rejectionReason || '',
               requestedAt: existingItem?.requestedAt || item.requestedAt || new Date(),
-              approvedAt: item.approvalStatus === 'approved' ? (item.approvedAt || new Date()) : undefined,
-              approvedBy: item.approvalStatus === 'approved' ? (item.approvedBy || adminId) : undefined,
-              rejectedAt: item.approvalStatus === 'rejected' ? (item.rejectedAt || new Date()) : undefined,
+              approvedAt: approvalStatus === 'approved' ? (item.approvedAt || new Date()) : undefined,
+              approvedBy: approvalStatus === 'approved' ? (approvedByFromItem || adminId) : undefined,
+              rejectedAt: approvalStatus === 'rejected' ? (item.rejectedAt || new Date()) : undefined,
             };
           }) : [],
         };
@@ -1226,8 +1252,10 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
     };
   }) : [];
 
-  // Find or create menu
-  let menu = await Menu.findOne({ cafe: id });
+  // Find or create menu (supports legacy "restaurant" field)
+  let menu = await Menu.findOne({
+    $or: [{ cafe: id }, { restaurant: id }],
+  });
 
   if (!menu) {
     menu = new Menu({
@@ -1235,7 +1263,11 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
       sections: normalizedSections,
       isActive: true,
     });
+    menu.set("restaurant", id, { strict: false });
   } else {
+    if (!menu.cafe) {
+      menu.set("cafe", id);
+    }
     menu.set('sections', normalizedSections);
     menu.markModified('sections');
     menu.isNew = false;

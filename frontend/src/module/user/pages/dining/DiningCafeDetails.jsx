@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { cafeAPI } from "@/lib/api"
+import { diningAPI } from "@/lib/api"
 import {
     ArrowLeft,
     MapPin,
@@ -34,8 +34,7 @@ export default function DiningCafeDetails() {
             if (!slug) return
             try {
                 setLoading(true)
-                // Try fetch by ID/Slug
-                const response = await cafeAPI.getCafeById(slug)
+                const response = await diningAPI.getCafeBySlug(slug)
 
                 if (response.data && response.data.success) {
                     const apiCafe = response.data.data
@@ -55,9 +54,9 @@ export default function DiningCafeDetails() {
                 // FAILSAFE: If API by slug fails, let's try to get list and find match (temporary fix for development if slug isn't unique ID)
                 // In a real app, backend should support slug lookup reliably.
                 try {
-                    const listResp = await cafeAPI.getCafes()
-                    if (listResp.data?.data?.cafes) {
-                        const match = listResp.data.data.cafes.find(r =>
+                    const listResp = await diningAPI.getCafes()
+                    if (Array.isArray(listResp.data?.data)) {
+                        const match = listResp.data.data.find(r =>
                             r.slug === slug ||
                             r.name.toLowerCase().replace(/\s+/g, '-') === slug.toLowerCase()
                         )

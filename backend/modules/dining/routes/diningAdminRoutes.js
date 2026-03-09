@@ -13,7 +13,11 @@ import {
     createDiningStory,
     deleteDiningStory,
     updateDiningStory,
-    getActiveCafes
+    getActiveCafes,
+    createDiningDateSlot,
+    addDiningTimeSlots,
+    addDiningTable,
+    getDiningConfigByCafe
 } from '../controllers/diningAdminController.js';
 
 const router = express.Router();
@@ -37,5 +41,11 @@ router.get('/stories', authenticateAdmin, getAdminDiningStories);
 router.post('/stories', authenticateAdmin, uploadMiddleware.single('image'), createDiningStory);
 router.put('/stories/:id', authenticateAdmin, uploadMiddleware.single('image'), updateDiningStory);
 router.delete('/stories/:id', authenticateAdmin, deleteDiningStory);
+
+// Dining config
+router.post('/date', authenticateAdmin, createDiningDateSlot);
+router.post('/timeslots', authenticateAdmin, addDiningTimeSlots);
+router.post('/tables', authenticateAdmin, addDiningTable);
+router.get('/config/:cafeId', authenticateAdmin, getDiningConfigByCafe);
 
 export default router;

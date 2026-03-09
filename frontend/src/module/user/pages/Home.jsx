@@ -561,10 +561,11 @@ export default function Home() {
       }
 
       // Dietary Preference filter
-      if (vegMode) {
-        params.dietaryPreference = vegModeOption === 'pure-veg' ? 'pure-veg' : 'veg'
-      } else {
-        params.dietaryPreference = 'non-veg'
+      // In veg mode:
+      // - "all" should keep all cafes visible
+      // - "pure-veg" should filter to pure veg cafes only
+      if (vegMode && vegModeOption === 'pure-veg') {
+        params.dietaryPreference = 'pure-veg'
       }
 
       // Optional: Add zoneId if available (for sorting/filtering, but show all cafes)

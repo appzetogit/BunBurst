@@ -81,6 +81,7 @@ export default function MyBookings() {
     const [bookings, setBookings] = useState([])
     const [loading, setLoading] = useState(true)
     const [selectedBooking, setSelectedBooking] = useState(null)
+    const [checkInLoadingId, setCheckInLoadingId] = useState(null)
 
     useEffect(() => {
         const fetchBookings = async () => {
@@ -113,6 +114,28 @@ export default function MyBookings() {
         }
     }
 
+    const handleCheckIn = async (bookingId) => {
+        try {
+            setCheckInLoadingId(bookingId)
+            const response = await diningAPI.checkInBooking(bookingId)
+            if (response.data.success) {
+                toast.success("Checked in successfully")
+                setBookings((prev) =>
+                    prev.map((booking) =>
+                        booking._id === bookingId
+                            ? { ...booking, checkInStatus: true, status: "checked-in", bookingStatus: "confirmed" }
+                            : booking
+                    )
+                )
+            }
+        } catch (error) {
+            console.error("Error checking in:", error)
+            toast.error(error.response?.data?.message || "Failed to check in")
+        } finally {
+            setCheckInLoadingId(null)
+        }
+    }
+
     if (loading) return <Loader />
 
     return (
@@ -139,12 +162,12 @@ export default function MyBookings() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start">
                                     <h3 className="font-bold text-foreground truncate">{booking.cafe?.name}</h3>
-                                    <Badge className={`${booking.status === 'confirmed' ? 'bg-primary/10 text-primary' :
+                                    <Badge className={`${(booking.bookingStatus || booking.status) === 'confirmed' ? 'bg-primary/10 text-primary' :
                                         booking.status === 'checked-in' ? 'bg-primary/10 text-primary' :
-                                            booking.status === 'completed' ? 'bg-primary/10 text-primary' :
+                                            (booking.bookingStatus || booking.status) === 'completed' ? 'bg-primary/10 text-primary' :
                                                 'bg-muted text-muted-foreground'
                                         }`}>
-                                        {booking.status}
+                                        {booking.status === "checked-in" ? "checked-in" : (booking.bookingStatus || booking.status)}
                                     </Badge>
                                 </div>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -170,6 +193,16 @@ export default function MyBookings() {
                                         {booking.guests} Guests
                                     </div>
                                 </div>
+
+                                {(booking.bookingStatus === "confirmed" || booking.status === "confirmed") && !booking.checkInStatus && (
+                                    <button
+                                        onClick={() => handleCheckIn(booking._id)}
+                                        disabled={checkInLoadingId === booking._id}
+                                        className="mt-3 w-full py-2 bg-primary text-primary-foreground text-[11px] font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
+                                    >
+                                        {checkInLoadingId === booking._id ? "Checking In..." : "CHECK IN"}
+                                    </button>
+                                )}
 
                                 {booking.status === 'completed' && (
                                     <button

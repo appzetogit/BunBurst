@@ -11,7 +11,7 @@ import Loader from "@/components/Loader"
 export default function TableBookingConfirmation() {
     const location = useLocation()
     const navigate = useNavigate()
-    const { cafe, guests, date, timeSlot, discount } = location.state || {}
+    const { cafe, guests, date, timeSlot, table } = location.state || {}
 
     const [specialRequest, setSpecialRequest] = useState("")
     const [user, setUser] = useState(null)
@@ -43,12 +43,12 @@ export default function TableBookingConfirmation() {
     const handleBooking = async () => {
         try {
             setBookingInProgress(true)
-            const response = await diningAPI.createBooking({
-                cafe: cafe._id,
+            const response = await diningAPI.bookTable({
+                cafeId: cafe._id,
                 guests,
                 date,
                 timeSlot,
-                specialRequest
+                tableId: table?._id,
             })
 
             if (response.data.success) {
@@ -94,6 +94,9 @@ export default function TableBookingConfirmation() {
                                     <Users className="w-4 h-4" />
                                     <span>{guests} guests</span>
                                 </div>
+                                {table && (
+                                    <p className="text-xs text-muted-foreground mt-1">Table {table.tableNumber} ({table.capacity} seats)</p>
+                                )}
                             </div>
                         </div>
 
@@ -145,7 +148,7 @@ export default function TableBookingConfirmation() {
                                 </div>
                                 <div>
                                     <p className="font-bold text-foreground text-sm">Modification available</p>
-                                    <p className="text-xs text-muted-foreground">Valid till {timeSlot}, today</p>
+                                    <p className="text-xs text-muted-foreground">Valid till {timeSlot}</p>
                                 </div>
                             </div>
                             <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -158,7 +161,7 @@ export default function TableBookingConfirmation() {
                                 </div>
                                 <div>
                                     <p className="font-bold text-foreground text-sm">Cancellation available</p>
-                                    <p className="text-xs text-muted-foreground">Valid till {timeSlot}, today</p>
+                                    <p className="text-xs text-muted-foreground">Valid till {timeSlot}</p>
                                 </div>
                             </div>
                             <ChevronRight className="w-4 h-4 text-muted-foreground" />

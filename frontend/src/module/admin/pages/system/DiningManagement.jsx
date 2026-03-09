@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, Layout, Link as LinkIcon, Tag, UtensilsCrossed, FileText, Edit, X } from "lucide-react"
+import { Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, Layout, Link as LinkIcon, Tag, UtensilsCrossed, FileText, Edit, X, CalendarDays, Clock3, Table2 } from "lucide-react"
 import api from "@/lib/api"
 import { getModuleToken } from "@/lib/utils/auth"
 import { Input } from "@/components/ui/input"
@@ -41,6 +41,21 @@ export default function DiningManagement() {
     const [editingStoryId, setEditingStoryId] = useState(null)
     const storyFileInputRef = useRef(null)
 
+    // Reservations config
+    const [configCafeId, setConfigCafeId] = useState("")
+    const [configLoading, setConfigLoading] = useState(false)
+    const [configData, setConfigData] = useState({ availableDates: [], timeSlots: [], tables: [] })
+    const [dateInput, setDateInput] = useState("")
+    const [dateSubmitting, setDateSubmitting] = useState(false)
+    const [slotDateInput, setSlotDateInput] = useState("")
+    const [slotStartTime, setSlotStartTime] = useState("")
+    const [slotEndTime, setSlotEndTime] = useState("")
+    const [pendingSlots, setPendingSlots] = useState([])
+    const [slotSubmitting, setSlotSubmitting] = useState(false)
+    const [tableNumber, setTableNumber] = useState("")
+    const [tableCapacity, setTableCapacity] = useState("")
+    const [tableSubmitting, setTableSubmitting] = useState(false)
+
     // Common
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(null)
@@ -63,6 +78,14 @@ export default function DiningManagement() {
         fetchStories()
         fetchCafesList()
     }, [])
+
+    useEffect(() => {
+        if (configCafeId) {
+            fetchDiningConfig(configCafeId)
+        } else {
+            setConfigData({ availableDates: [], timeSlots: [], tables: [] })
+        }
+    }, [configCafeId])
 
     // ==================== CATEGORIES ====================
     const fetchCategories = async () => {
@@ -252,10 +275,132 @@ export default function DiningManagement() {
         finally { setStoriesDeleting(null) }
     }
 
+    const fetchDiningConfig = async (cafeId) => {
+        try {
+            setConfigLoading(true)
+            const response = await api.get(`/admin/dining/config/${cafeId}`, getAuthConfig())
+            if (response.data?.success) {
+                setConfigData({
+                    availableDates: response.data.data?.availableDates || [],
+                    timeSlots: response.data.data?.timeSlots || [],
+                    tables: response.data.data?.tables || [],
+                })
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to load dining config")
+        } finally {
+            setConfigLoading(false)
+        }
+    }
+
+    const handleCreateDate = async () => {
+        if (!configCafeId || !dateInput) {
+            setError("Cafe and date are required")
+            return
+        }
+
+        try {
+            setDateSubmitting(true)
+            const response = await api.post(
+                "/admin/dining/date",
+                { cafeId: configCafeId, date: dateInput },
+                getAuthConfig(),
+            )
+            if (response.data?.success) {
+                setSuccess("Dining date added")
+                setDateInput("")
+                fetchDiningConfig(configCafeId)
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to add dining date")
+        } finally {
+            setDateSubmitting(false)
+        }
+    }
+
+    const addPendingSlot = () => {
+        if (!slotStartTime || !slotEndTime) {
+            setError("Start and end time are required")
+            return
+        }
+
+        const slotKey = `${slotStartTime}-${slotEndTime}`
+        const exists = pendingSlots.some((slot) => `${slot.startTime}-${slot.endTime}` === slotKey)
+        if (exists) {
+            setError("This time slot is already added")
+            return
+        }
+
+        setPendingSlots((prev) => [...prev, { startTime: slotStartTime, endTime: slotEndTime }])
+        setSlotStartTime("")
+        setSlotEndTime("")
+    }
+
+    const removePendingSlot = (index) => {
+        setPendingSlots((prev) => prev.filter((_, idx) => idx !== index))
+    }
+
+    const handleSubmitTimeSlots = async () => {
+        if (!configCafeId || !slotDateInput || pendingSlots.length === 0) {
+            setError("Cafe, date and at least one time slot are required")
+            return
+        }
+
+        try {
+            setSlotSubmitting(true)
+            const response = await api.post(
+                "/admin/dining/timeslots",
+                { cafeId: configCafeId, date: slotDateInput, timeSlots: pendingSlots },
+                getAuthConfig(),
+            )
+            if (response.data?.success) {
+                setSuccess("Time slots updated")
+                setPendingSlots([])
+                setSlotDateInput("")
+                fetchDiningConfig(configCafeId)
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to add time slots")
+        } finally {
+            setSlotSubmitting(false)
+        }
+    }
+
+    const handleAddTable = async () => {
+        if (!configCafeId || !tableNumber || !tableCapacity) {
+            setError("Cafe, table number and capacity are required")
+            return
+        }
+
+        try {
+            setTableSubmitting(true)
+            const response = await api.post(
+                "/admin/tables",
+                {
+                    cafeId: configCafeId,
+                    tableNumber: tableNumber.trim(),
+                    capacity: Number(tableCapacity),
+                },
+                getAuthConfig(),
+            )
+            if (response.data?.success) {
+                setSuccess("Dining table added")
+                setTableNumber("")
+                setTableCapacity("")
+                fetchDiningConfig(configCafeId)
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to add table")
+        } finally {
+            setTableSubmitting(false)
+        }
+    }
+
     const tabs = [
         { id: 'categories', label: 'Dining Categories', icon: Layout },
         { id: 'banners', label: 'Dining Banners', icon: ImageIcon },
         { id: 'stories', label: 'Dining Stories', icon: FileText },
+        { id: 'reservations', label: 'Dining Reservations', icon: CalendarDays },
     ]
 
     return (
@@ -459,6 +604,151 @@ export default function DiningManagement() {
                                             </div>
                                         ))}
                                         {stories.length === 0 && <p className="text-slate-500 text-center col-span-full py-8">No stories found.</p>}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'reservations' && (
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        <div className="space-y-6 xl:col-span-1">
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                <h2 className="text-lg font-bold text-slate-900 mb-4">Select Cafe</h2>
+                                <select
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                                    value={configCafeId}
+                                    onChange={e => setConfigCafeId(e.target.value)}
+                                >
+                                    <option value="">Select Cafe</option>
+                                    {cafesList.map((cafe) => (
+                                        <option key={cafe._id} value={cafe._id}>{cafe.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                    <CalendarDays className="w-4 h-4 text-blue-600" />
+                                    Add Dining Date
+                                </h2>
+                                <div className="space-y-3">
+                                    <Input type="date" value={dateInput} onChange={e => setDateInput(e.target.value)} />
+                                    <Button onClick={handleCreateDate} disabled={dateSubmitting} className="w-full bg-blue-600 hover:bg-blue-700">
+                                        {dateSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Date"}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                    <Clock3 className="w-4 h-4 text-blue-600" />
+                                    Add Time Slots
+                                </h2>
+                                <div className="space-y-3">
+                                    <Input type="date" value={slotDateInput} onChange={e => setSlotDateInput(e.target.value)} />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Input type="time" value={slotStartTime} onChange={e => setSlotStartTime(e.target.value)} />
+                                        <Input type="time" value={slotEndTime} onChange={e => setSlotEndTime(e.target.value)} />
+                                    </div>
+                                    <Button type="button" variant="outline" onClick={addPendingSlot} className="w-full">Add Slot</Button>
+                                    {pendingSlots.length > 0 && (
+                                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                                            {pendingSlots.map((slot, idx) => (
+                                                <div key={`${slot.startTime}-${slot.endTime}-${idx}`} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                                                    <span>{slot.startTime} - {slot.endTime}</span>
+                                                    <button onClick={() => removePendingSlot(idx)} className="text-red-600 hover:text-red-700">
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <Button onClick={handleSubmitTimeSlots} disabled={slotSubmitting} className="w-full bg-blue-600 hover:bg-blue-700">
+                                        {slotSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Time Slots"}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                    <Table2 className="w-4 h-4 text-blue-600" />
+                                    Add Table
+                                </h2>
+                                <div className="space-y-3">
+                                    <Input value={tableNumber} onChange={e => setTableNumber(e.target.value)} placeholder="Table number (e.g. T1)" />
+                                    <Input type="number" min="1" value={tableCapacity} onChange={e => setTableCapacity(e.target.value)} placeholder="Capacity" />
+                                    <Button onClick={handleAddTable} disabled={tableSubmitting} className="w-full bg-blue-600 hover:bg-blue-700">
+                                        {tableSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Table"}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="xl:col-span-2">
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                <h2 className="text-lg font-bold text-slate-900 mb-4">Current Dining Configuration</h2>
+                                {!configCafeId ? (
+                                    <p className="text-slate-500">Select a cafe to load dining configuration.</p>
+                                ) : configLoading ? (
+                                    <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="font-semibold text-slate-800 mb-2">Available Dates</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(configData.availableDates || []).map((dateValue, idx) => (
+                                                    <span key={`${dateValue}-${idx}`} className="px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                                                        {new Date(dateValue).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </span>
+                                                ))}
+                                                {(!configData.availableDates || configData.availableDates.length === 0) && (
+                                                    <p className="text-slate-500 text-sm">No dates configured.</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="font-semibold text-slate-800 mb-2">Time Slots</h3>
+                                            <div className="space-y-3">
+                                                {(configData.timeSlots || []).map((slotDoc) => (
+                                                    <div key={slotDoc._id} className="border border-slate-200 rounded-lg p-3">
+                                                        <p className="text-sm font-semibold text-slate-800 mb-2">
+                                                            {new Date(slotDoc.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {(slotDoc.timeSlots || []).filter(slot => slot.isActive !== false).map((slot, idx) => (
+                                                                <span key={`${slot.startTime}-${slot.endTime}-${idx}`} className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
+                                                                    {slot.startTime}-{slot.endTime}
+                                                                </span>
+                                                            ))}
+                                                            {(!slotDoc.timeSlots || slotDoc.timeSlots.filter(slot => slot.isActive !== false).length === 0) && (
+                                                                <p className="text-slate-500 text-xs">No active slots.</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {(!configData.timeSlots || configData.timeSlots.length === 0) && (
+                                                    <p className="text-slate-500 text-sm">No time slots configured.</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="font-semibold text-slate-800 mb-2">Tables</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {(configData.tables || []).map((table) => (
+                                                    <div key={table._id} className="border border-slate-200 rounded-lg p-3">
+                                                        <p className="font-semibold text-slate-900">Table {table.tableNumber}</p>
+                                                        <p className="text-xs text-slate-600 mt-1">{table.capacity} seats</p>
+                                                    </div>
+                                                ))}
+                                                {(!configData.tables || configData.tables.length === 0) && (
+                                                    <p className="text-slate-500 text-sm">No tables configured.</p>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>

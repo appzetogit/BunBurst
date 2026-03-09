@@ -1631,6 +1631,22 @@ export const adminAPI = {
     return apiClient.get(API_ENDPOINTS.ADMIN.ZONES, { params });
   },
 
+  // Dining Config Management
+  createDiningDate: (payload) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.DINING_DATE, payload);
+  },
+  addDiningTimeSlots: (payload) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.DINING_TIMESLOTS, payload);
+  },
+  addDiningTable: (payload) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.DINING_TABLES, payload);
+  },
+  getDiningConfig: (cafeId) => {
+    return apiClient.get(
+      API_ENDPOINTS.ADMIN.DINING_CONFIG.replace(":cafeId", cafeId),
+    );
+  },
+
   getZoneById: (id) => {
     return apiClient.get(API_ENDPOINTS.ADMIN.ZONE_BY_ID.replace(":id", id));
   },
@@ -1909,7 +1925,10 @@ export const diningAPI = {
   // Get cafe by slug
   getCafeBySlug: (slug) => {
     return apiClient.get(
-      API_ENDPOINTS.DINING.CAFE_BY_SLUG.replace(":slug", slug),
+      API_ENDPOINTS.DINING.CAFE_BY_SLUG.replace(
+        ":slug",
+        encodeURIComponent(slug),
+      ),
     );
   },
 
@@ -1942,13 +1961,35 @@ export const diningAPI = {
   getStories: () => {
     return apiClient.get(API_ENDPOINTS.DINING.STORIES);
   },
+  // Get available dates
+  getDates: (cafeId) => {
+    return apiClient.get(API_ENDPOINTS.DINING.DATES, {
+      params: { cafeId },
+    });
+  },
+  // Get dynamic availability for selected date and guest count
+  getAvailability: ({ cafeId, date, guests }) => {
+    return apiClient.get(API_ENDPOINTS.DINING.AVAILABILITY, {
+      params: { cafeId, date, guests },
+    });
+  },
+  // Create booking using new endpoint
+  bookTable: (bookingData) => {
+    return apiClient.post(API_ENDPOINTS.DINING.BOOK, bookingData);
+  },
   // Create a new table booking
   createBooking: (bookingData) => {
     return apiClient.post(API_ENDPOINTS.DINING.BOOKING_CREATE, bookingData);
   },
   // Get current user's bookings
   getBookings: () => {
-    return apiClient.get(API_ENDPOINTS.DINING.BOOKING_MY);
+    return apiClient.get(API_ENDPOINTS.DINING.MY_BOOKINGS);
+  },
+  // Check in booking
+  checkInBooking: (bookingId) => {
+    return apiClient.post(
+      API_ENDPOINTS.DINING.CHECKIN.replace(":bookingId", bookingId),
+    );
   },
   // Get bookings for a specific cafe (for owners)
   getCafeBookings: (cafeId) => {
