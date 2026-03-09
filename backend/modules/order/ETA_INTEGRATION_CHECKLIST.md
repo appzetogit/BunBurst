@@ -12,12 +12,12 @@
 - **Line**: ~202-244
 
 ### 2. Cafe Accepts Order
-- **File**: `modules/cafe/controllers/restaurantOrderController.js`
+- **File**: `modules/cafe/controllers/cafeOrderController.js`
 - **Status**: ✅ Integrated
 - **What it does**:
-  - Calls `etaEventService.handleRestaurantAccepted()` when cafe accepts
+  - Calls `etaEventService.handleCafeAccepted()` when cafe accepts
   - Triggers ETA recalculation if cafe accepted late
-  - Creates RESTAURANT_ACCEPTED or RESTAURANT_ACCEPTED_LATE event
+  - Creates CAFE_ACCEPTED or CAFE_ACCEPTED_LATE event
 - **Line**: ~251-258
 
 ### 3. Rider Assignment
@@ -62,11 +62,11 @@
 
 2. Cafe accepts order
    ↓
-   handleRestaurantAccepted() called
+   handleCafeAccepted() called
    ↓
    ETA recalculated (if late acceptance)
    ↓
-   RESTAURANT_ACCEPTED event logged
+   CAFE_ACCEPTED event logged
    ↓
    WebSocket: ETA_UPDATED emitted
 
@@ -82,11 +82,11 @@
 
 4. Rider reaches cafe
    ↓
-   handleRiderReachedRestaurant() called
+   handleRiderReachedCafe() called
    ↓
    ETA recalculated (remaining time)
    ↓
-   RIDER_REACHED_RESTAURANT event logged
+   RIDER_REACHED_CAFE event logged
    ↓
    WebSocket: ETA_UPDATED emitted
 
@@ -143,7 +143,7 @@ This will test:
 
 3. **WebSocket**: Real-time updates require Socket.IO connection
    - User must join `order:${orderId}` room
-   - Cafe must join `cafe:${restaurantId}` room
+   - Cafe must join `cafe:${cafeId}` room
    - Delivery partner must join `delivery:${deliveryPartnerId}` room
 
 4. **Error Handling**: All ETA operations have try-catch blocks
@@ -155,7 +155,7 @@ This will test:
 These can be integrated when needed:
 
 1. **Delivery Controller - Reached Pickup**
-   - Call `etaEventService.handleRiderReachedRestaurant()`
+   - Call `etaEventService.handleRiderReachedCafe()`
 
 2. **Delivery Controller - Food Not Ready**
    - Call `etaEventService.handleFoodNotReady(orderId, waitingTime)`

@@ -41,7 +41,7 @@ export default function LandingPageSettings({ type = "admin" }) {
     placeholder: "Enter location to search cafe",
   });
   const [reactBusinessStats, setReactBusinessStats] = useState({
-    restaurant: "200",
+    cafe: "200",
     happyCustomer: "10000",
     averageDelivery: "30",
   });
@@ -128,7 +128,7 @@ export default function LandingPageSettings({ type = "admin" }) {
         placeholder: "Enter location to search cafe",
       });
       setReactBusinessStats({
-        restaurant: "200",
+        cafe: "200",
         happyCustomer: "10000",
         averageDelivery: "30",
       });
@@ -1292,9 +1292,9 @@ export default function LandingPageSettings({ type = "admin" }) {
                   </label>
                   <input
                     type="number"
-                    value={reactBusinessStats.restaurant}
+                    value={reactBusinessStats.cafe}
                     onChange={(e) =>
-                      setReactBusinessStats((prev) => ({ ...prev, restaurant: e.target.value }))
+                      setReactBusinessStats((prev) => ({ ...prev, cafe: e.target.value }))
                     }
                     className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />

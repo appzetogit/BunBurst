@@ -21,9 +21,9 @@ const diningOfferBannerSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    restaurant: {
+    cafe: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Restaurant',
+        ref: 'Cafe',
         required: true
     },
     isActive: {

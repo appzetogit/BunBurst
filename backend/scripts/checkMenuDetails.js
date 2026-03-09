@@ -4,8 +4,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // Import models
-import Restaurant from "../modules/restaurant/models/Restaurant.js";
-import Menu from "../modules/restaurant/models/Menu.js";
+import Cafe from "../modules/cafe/models/Cafe.js";
+import Menu from "../modules/cafe/models/Menu.js";
 
 // Setup environment
 const __filename = fileURLToPath(import.meta.url);
@@ -24,24 +24,24 @@ const connectDB = async () => {
 
 const checkMenuDetails = async () => {
     try {
-        const restaurantId = "REST-1771312074475-1182";
+        const cafeId = "REST-1771312074475-1182";
 
-        console.log(`\n🔍 Checking detailed menu data for: ${restaurantId}\n`);
+        console.log(`\n🔍 Checking detailed menu data for: ${cafeId}\n`);
 
-        // Find restaurant
-        const restaurant = await Restaurant.findOne({ restaurantId });
+        // Find cafe
+        const cafe = await Cafe.findOne({ cafeId });
 
-        if (!restaurant) {
+        if (!cafe) {
             console.log("❌ Cafe not found!");
             process.exit(1);
         }
 
         console.log("✅ Cafe found:");
-        console.log(`   - _id: ${restaurant._id}`);
-        console.log(`   - Name: ${restaurant.name}`);
+        console.log(`   - _id: ${cafe._id}`);
+        console.log(`   - Name: ${cafe.name}`);
 
         // Check Menu
-        const menu = await Menu.findOne({ restaurant: restaurant._id });
+        const menu = await Menu.findOne({ cafe: cafe._id });
 
         if (menu) {
             console.log("\n📋 Menu Details:");

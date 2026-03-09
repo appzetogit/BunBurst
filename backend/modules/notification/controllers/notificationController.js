@@ -1,7 +1,7 @@
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import User from '../../auth/models/User.js';
 import Delivery from '../../delivery/models/Delivery.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import {
   sendPushNotificationToAudience,
   sendPushNotificationToSingleToken
@@ -83,7 +83,7 @@ export const saveDeliveryFcmToken = async (req, res) => {
   }
 };
 
-export const saveRestaurantFcmToken = async (req, res) => {
+export const saveCafeFcmToken = async (req, res) => {
   try {
     const { token, platform = 'web' } = req.body || {};
     if (!token || typeof token !== 'string') {
@@ -94,8 +94,8 @@ export const saveRestaurantFcmToken = async (req, res) => {
     }
 
     const field = getFieldByPlatform(platform);
-    const updated = await Restaurant.findByIdAndUpdate(
-      req.restaurant._id,
+    const updated = await Cafe.findByIdAndUpdate(
+      req.cafe._id,
       {
         $addToSet: { [field]: token.trim() }
       },
@@ -103,7 +103,7 @@ export const saveRestaurantFcmToken = async (req, res) => {
     ).lean();
 
     console.log('[Push] Saved cafe token', {
-      restaurantId: req.restaurant?._id?.toString(),
+      cafeId: req.cafe?._id?.toString(),
       platform,
       field,
       tokenPreview: `${token.trim().slice(0, 12)}...`
@@ -115,7 +115,7 @@ export const saveRestaurantFcmToken = async (req, res) => {
       fcmTokenMobile: updated?.fcmTokenMobile || null
     });
   } catch (error) {
-    return errorResponse(res, 500, `Failed to save restaurant FCM token: ${error.message}`);
+    return errorResponse(res, 500, `Failed to save cafe FCM token: ${error.message}`);
   }
 };
 
@@ -130,8 +130,8 @@ export const sendAdminPushNotification = async (req, res) => {
     const audience =
       sendToNormalized.includes('delivery')
         ? 'delivery'
-        : sendToNormalized.includes('restaurant') || sendToNormalized.includes('cafe') || sendToNormalized.includes('outlet')
-          ? 'restaurant'
+        : sendToNormalized.includes('cafe') || sendToNormalized.includes('cafe') || sendToNormalized.includes('outlet')
+          ? 'cafe'
           : sendToNormalized.includes('customer') || sendToNormalized.includes('user')
             ? 'user'
             : null;
@@ -140,7 +140,7 @@ export const sendAdminPushNotification = async (req, res) => {
       return errorResponse(
         res,
         400,
-        "sendTo must be Customer/User, Restaurant/Cafe/Outlet or Delivery/Delivery Man"
+        "sendTo must be Customer/User, Cafe/Cafe/Outlet or Delivery/Delivery Man"
       );
     }
 
@@ -199,8 +199,8 @@ export const sendTestPushNotification = async (req, res) => {
 
     const normalizedAudience = String(audience).toLowerCase().includes('delivery')
       ? 'delivery'
-      : String(audience).toLowerCase().includes('restaurant') || String(audience).toLowerCase().includes('cafe')
-        ? 'restaurant'
+      : String(audience).toLowerCase().includes('cafe') || String(audience).toLowerCase().includes('cafe')
+        ? 'cafe'
         : 'user';
 
     const result = await sendPushNotificationToAudience({
@@ -247,14 +247,14 @@ export const removeDeliveryFcmToken = async (req, res) => {
   }
 };
 
-export const removeRestaurantFcmToken = async (req, res) => {
+export const removeCafeFcmToken = async (req, res) => {
   try {
     const { token, platform = 'web' } = req.body || {};
     if (!token) return errorResponse(res, 400, 'Token is required');
     const field = getFieldByPlatform(platform);
-    await Restaurant.findByIdAndUpdate(req.restaurant._id, { $pull: { [field]: token.trim() } });
-    return successResponse(res, 200, 'Restaurant FCM token removed successfully');
+    await Cafe.findByIdAndUpdate(req.cafe._id, { $pull: { [field]: token.trim() } });
+    return successResponse(res, 200, 'Cafe FCM token removed successfully');
   } catch (error) {
-    return errorResponse(res, 500, `Failed to remove restaurant FCM token: ${error.message}`);
+    return errorResponse(res, 500, `Failed to remove cafe FCM token: ${error.message}`);
   }
 };

@@ -95,7 +95,7 @@ export const getEarnings = asyncHandler(async (req, res) => {
     const orders = await Order.find({
       _id: { $in: orderIds }
     })
-      .select('orderId restaurantName deliveredAt createdAt')
+      .select('orderId cafeName deliveredAt createdAt')
       .lean();
 
     // Create order map for quick lookup
@@ -110,7 +110,7 @@ export const getEarnings = asyncHandler(async (req, res) => {
       return {
         transactionId: transaction._id?.toString(),
         orderId: order?.orderId || transaction.orderId?.toString() || 'Unknown',
-        restaurantName: order?.restaurantName || 'Unknown Cafe',
+        cafeName: order?.cafeName || 'Unknown Cafe',
         amount: 0, // Force to 0 for salaried model
         description: transaction.description || '',
         deliveredAt: order?.deliveredAt || transaction.createdAt || transaction.processedAt,

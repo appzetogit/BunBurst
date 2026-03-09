@@ -27,7 +27,7 @@ import { errorHandler } from './shared/middleware/errorHandler.js';
 // Import routes
 import authRoutes from './modules/auth/index.js';
 import userRoutes from './modules/user/index.js';
-import restaurantRoutes from './modules/restaurant/index.js';
+import cafeRoutes from './modules/cafe/index.js';
 import deliveryRoutes from './modules/delivery/index.js';
 import orderRoutes from './modules/order/index.js';
 import paymentRoutes from './modules/payment/index.js';
@@ -158,11 +158,11 @@ export function getIO() {
   return io;
 }
 
-// Restaurant namespace for order notifications
-const restaurantNamespace = io.of('/restaurant');
+// Cafe namespace for order notifications
+const cafeNamespace = io.of('/cafe');
 
 // Add connection error handling before connection event
-restaurantNamespace.use((socket, next) => {
+cafeNamespace.use((socket, next) => {
   try {
     // Log connection attempt
     console.log('🍽️ Cafe connection attempt:', {
@@ -183,55 +183,55 @@ restaurantNamespace.use((socket, next) => {
   }
 });
 
-restaurantNamespace.on('connection', (socket) => {
+cafeNamespace.on('connection', (socket) => {
   console.log('🍽️ Cafe client connected:', socket.id);
   console.log('🍽️ Socket auth:', socket.handshake.auth);
   console.log('🍽️ Socket query:', socket.handshake.query);
   console.log('🍽️ Socket headers:', socket.handshake.headers);
 
-  // Restaurant joins their room
-  socket.on('join-restaurant', (restaurantId) => {
-    if (restaurantId) {
-      // Normalize restaurantId to string (handle both ObjectId and string)
-      const normalizedRestaurantId = restaurantId?.toString() || restaurantId;
-      const room = `restaurant:${normalizedRestaurantId}`;
+  // Cafe joins their room
+  socket.on('join-cafe', (cafeId) => {
+    if (cafeId) {
+      // Normalize cafeId to string (handle both ObjectId and string)
+      const normalizedCafeId = cafeId?.toString() || cafeId;
+      const room = `cafe:${normalizedCafeId}`;
 
       // Log room join attempt with detailed info
-      console.log(`🍽️ Restaurant attempting to join room:`, {
-        restaurantId: restaurantId,
-        normalizedRestaurantId: normalizedRestaurantId,
+      console.log(`🍽️ Cafe attempting to join room:`, {
+        cafeId: cafeId,
+        normalizedCafeId: normalizedCafeId,
         room: room,
         socketId: socket.id,
         socketAuth: socket.handshake.auth
       });
 
       socket.join(room);
-      const roomSize = restaurantNamespace.adapter.rooms.get(room)?.size || 0;
-      console.log(`✅ Restaurant ${normalizedRestaurantId} joined room: ${room}`);
+      const roomSize = cafeNamespace.adapter.rooms.get(room)?.size || 0;
+      console.log(`✅ Cafe ${normalizedCafeId} joined room: ${room}`);
       console.log(`📊 Total sockets in room ${room}: ${roomSize}`);
 
       // Also join with ObjectId format if it's a valid ObjectId (for compatibility)
-      if (mongoose.Types.ObjectId.isValid(normalizedRestaurantId)) {
-        const objectIdRoom = `restaurant:${new mongoose.Types.ObjectId(normalizedRestaurantId).toString()}`;
+      if (mongoose.Types.ObjectId.isValid(normalizedCafeId)) {
+        const objectIdRoom = `cafe:${new mongoose.Types.ObjectId(normalizedCafeId).toString()}`;
         if (objectIdRoom !== room) {
           socket.join(objectIdRoom);
-          const objectIdRoomSize = restaurantNamespace.adapter.rooms.get(objectIdRoom)?.size || 0;
-          console.log(`✅ Restaurant also joined ObjectId room: ${objectIdRoom} (${objectIdRoomSize} sockets)`);
+          const objectIdRoomSize = cafeNamespace.adapter.rooms.get(objectIdRoom)?.size || 0;
+          console.log(`✅ Cafe also joined ObjectId room: ${objectIdRoom} (${objectIdRoomSize} sockets)`);
         }
       }
 
       // Send confirmation back to client
-      socket.emit('restaurant-room-joined', {
-        restaurantId: normalizedRestaurantId,
+      socket.emit('cafe-room-joined', {
+        cafeId: normalizedCafeId,
         room: room,
         socketId: socket.id
       });
 
       // Log all rooms this socket is now in
-      const socketRooms = Array.from(socket.rooms).filter(r => r.startsWith('restaurant:'));
-      console.log(`📋 Socket ${socket.id} is now in restaurant rooms:`, socketRooms);
+      const socketRooms = Array.from(socket.rooms).filter(r => r.startsWith('cafe:'));
+      console.log(`📋 Socket ${socket.id} is now in cafe rooms:`, socketRooms);
     } else {
-      console.warn('⚠️ Cafe tried to join without restaurantId');
+      console.warn('⚠️ Cafe tried to join without cafeId');
       console.warn('⚠️ Socket ID:', socket.id);
       console.warn('⚠️ Socket auth:', socket.handshake.auth);
     }
@@ -368,10 +368,23 @@ app.set('trust proxy', 1);
 // Global fallback       — raised from 100 to 500 per 15 min so regular cart
 //   browsing (restaurant, menu, addon, coupon calls) never gets blocked.
 if (process.env.NODE_ENV === 'production') {
+  // Custom key generator to group rate limits by Auth Token instead of IP for logged-in users.
+  // This completely solves false 429s for CGNAT mobile networks and shared office Wi-Fi setups.
+  const authBasedKeyGenerator = (req) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.split(' ')[1]) {
+      return authHeader.split(' ')[1];
+    }
+    const cfIp = req.headers['cf-connecting-ip'];
+    const forwardedFor = req.headers['x-forwarded-for'];
+    return cfIp || (forwardedFor ? forwardedFor.split(',')[0].trim() : req.ip);
+  };
+
   // 1. Generous limiter for the read-only pricing/calculate endpoint
   const orderCalculateLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute window
     max: parseInt(process.env.ORDER_CALCULATE_RATE_LIMIT) || 120,
+    keyGenerator: authBasedKeyGenerator,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -385,6 +398,7 @@ if (process.env.NODE_ENV === 'production') {
   const orderCreateLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute window
     max: parseInt(process.env.ORDER_CREATE_RATE_LIMIT) || 20,
+    keyGenerator: authBasedKeyGenerator,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -398,7 +412,8 @@ if (process.env.NODE_ENV === 'production') {
   //    Raised from 100 to 500 per 15 min — covers restaurant, menu, coupon, addon calls
   const globalLimiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500,
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 800,
+    keyGenerator: authBasedKeyGenerator,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -408,7 +423,7 @@ if (process.env.NODE_ENV === 'production') {
   });
   app.use('/api/', globalLimiter);
 
-  console.log('Rate limiting enabled (production mode) — calculate=120/min | create=20/min | global=500/15min');
+  console.log('Rate limiting enabled (production mode) — calculate=120/min | create=20/min | global=800/15min');
 } else {
   console.log('Rate limiting disabled (development mode)');
 }
@@ -425,7 +440,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api', authRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/restaurant', restaurantRoutes);
+app.use('/api/cafe', cafeRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/payment', paymentRoutes);
@@ -459,7 +474,7 @@ app.use('/api/admin/dining', diningAdminRoutes);
 // 404 handler - but skip Socket.IO paths
 app.use((req, res, next) => {
   // Skip Socket.IO paths - Socket.IO handles its own routing
-  if (req.path.startsWith('/socket.io/') || req.path.startsWith('/restaurant') || req.path.startsWith('/delivery')) {
+  if (req.path.startsWith('/socket.io/') || req.path.startsWith('/cafe') || req.path.startsWith('/delivery')) {
     return next();
   }
 
@@ -660,7 +675,7 @@ httpServer.listen(PORT, () => {
 // Initialize scheduled tasks
 function initializeScheduledTasks() {
   // Import menu schedule service
-  import('./modules/restaurant/services/menuScheduleService.js').then(({ processScheduledAvailability }) => {
+  import('./modules/cafe/services/menuScheduleService.js').then(({ processScheduledAvailability }) => {
     // Run every minute to check for due schedules
     cron.schedule('* * * * *', async () => {
       try {

@@ -25,7 +25,7 @@ const DEFAULT_STATE = {
   
   // Cache data
   cache: {
-    restaurants: [],
+    cafes: [],
     orders: [],
     lastUpdated: null
   },
@@ -154,7 +154,7 @@ export const useDeliveryStore = create(
 
       /**
        * Update cache data
-       * @param {string} key - Cache key ('restaurants' | 'orders')
+       * @param {string} key - Cache key ('cafes' | 'orders')
        * @param {any} data - Data to cache
        */
       updateCache: (key, data) => {
@@ -175,7 +175,7 @@ export const useDeliveryStore = create(
         if (key === 'all') {
           set({
             cache: {
-              restaurants: [],
+              cafes: [],
               orders: [],
               lastUpdated: null
             }
@@ -184,7 +184,7 @@ export const useDeliveryStore = create(
           set(state => ({
             cache: {
               ...state.cache,
-              [key]: key === 'restaurants' ? [] : [],
+              [key]: key === 'cafes' ? [] : [],
               lastUpdated: new Date().toISOString()
             }
           }))

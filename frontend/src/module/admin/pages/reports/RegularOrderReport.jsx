@@ -37,12 +37,12 @@ export default function RegularOrderReport() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [zones, setZones] = useState([])
-  const [restaurants, setRestaurants] = useState([])
+  const [cafes, setCafes] = useState([])
   const [customers, setCustomers] = useState([])
 
   const [filters, setFilters] = useState({
     zone: "All Zones",
-    restaurant: "All cafes",
+    cafe: "All cafes",
     customer: "All customers",
     time: "All Time",
   })
@@ -51,7 +51,7 @@ export default function RegularOrderReport() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  // Fetch zones, restaurants, and customers for filter dropdowns
+  // Fetch zones, cafes, and customers for filter dropdowns
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
@@ -61,10 +61,10 @@ export default function RegularOrderReport() {
           setZones(zonesRes.data.data.zones || [])
         }
 
-        // Fetch restaurants
-        const restaurantsRes = await adminAPI.getRestaurants({ limit: 100 })
-        if (restaurantsRes.data?.success) {
-          setRestaurants(restaurantsRes.data.data.restaurants || [])
+        // Fetch cafes
+        const cafesRes = await adminAPI.getCafes({ limit: 100 })
+        if (cafesRes.data?.success) {
+          setCafes(cafesRes.data.data.cafes || [])
         }
 
         // Fetch customers (users)
@@ -122,7 +122,7 @@ export default function RegularOrderReport() {
           limit: 10000, // Fetch all orders for report (can be optimized later)
           search: searchQuery || undefined,
           zone: filters.zone !== "All Zones" ? filters.zone : undefined,
-          restaurant: filters.restaurant !== "All cafes" ? filters.restaurant : undefined,
+          cafe: filters.cafe !== "All cafes" ? filters.cafe : undefined,
           customer: filters.customer !== "All customers" ? filters.customer : undefined,
           fromDate: fromDate ? fromDate.toISOString().split('T')[0] : undefined,
           toDate: toDate ? toDate.toISOString().split('T')[0] : undefined,
@@ -134,7 +134,7 @@ export default function RegularOrderReport() {
           // Transform backend orders to match frontend format
           const transformedOrders = (response.data.data.orders || []).map(order => ({
             orderId: order.orderId,
-            restaurant: order.restaurant,
+            cafe: order.cafe,
             customerName: order.customerName,
             totalItemAmount: order.totalItemAmount || 0,
             itemDiscount: order.itemDiscount || 0,
@@ -174,7 +174,7 @@ export default function RegularOrderReport() {
     }
     const headers = [
       { key: "orderId", label: "Order ID" },
-      { key: "restaurant", label: "Restaurant" },
+      { key: "cafe", label: "Cafe" },
       { key: "customerName", label: "Customer Name" },
       { key: "totalItemAmount", label: "Total Item Amount" },
       { key: "itemDiscount", label: "Item Discount" },
@@ -201,13 +201,13 @@ export default function RegularOrderReport() {
   const handleResetFilters = () => {
     setFilters({
       zone: "All Zones",
-      restaurant: "All cafes",
+      cafe: "All cafes",
       customer: "All customers",
       time: "All Time",
     })
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All cafes" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.cafe !== "All cafes" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE))
 
@@ -334,14 +334,14 @@ export default function RegularOrderReport() {
 
             <div className="relative flex-1 min-w-0">
               <select
-                value={filters.restaurant}
-                onChange={(e) => handleFilterChange("restaurant", e.target.value)}
+                value={filters.cafe}
+                onChange={(e) => handleFilterChange("cafe", e.target.value)}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs appearance-none cursor-pointer"
               >
                 <option value="All cafes">All cafes</option>
-                {restaurants.map((restaurant) => (
-                  <option key={restaurant._id} value={restaurant.name}>
-                    {restaurant.name}
+                {cafes.map((cafe) => (
+                  <option key={cafe._id} value={cafe.name}>
+                    {cafe.name}
                   </option>
                 ))}
               </select>
@@ -540,7 +540,7 @@ export default function RegularOrderReport() {
                         <span className="text-[10px] text-blue-600 hover:underline cursor-pointer">{order.orderId}</span>
                       </td>
                       <td className="px-1.5 py-1">
-                        <span className="text-[10px] text-slate-700 truncate block">{order.restaurant}</span>
+                        <span className="text-[10px] text-slate-700 truncate block">{order.cafe}</span>
                       </td>
                       <td className="px-1.5 py-1">
                         <span className="text-[10px] text-slate-700 truncate block">{order.customerName}</span>

@@ -6,7 +6,7 @@ import {
   Clock,
   IndianRupee
 } from "lucide-react"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 import WeekSelector from "../components/WeekSelector"
 import { deliveryAPI } from "@/lib/api"
 import { fetchWalletTransactions } from "../utils/deliveryWalletState"
@@ -243,9 +243,9 @@ export default function PocketStatement() {
                         Order #{orderId || "—"}
                       </p>
                       <p className="text-gray-500 text-xs">{dateText}</p>
-                      {trip.restaurantName && (
+                      {trip.cafeName && (
                         <p className="text-gray-500 text-xs mt-0.5">
-                          {trip.restaurantName}
+                          {trip.cafeName}
                         </p>
                       )}
                     </div>

@@ -19,13 +19,13 @@ const orderSettlementSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  restaurantId: {
+  cafeId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Restaurant',
+    ref: 'Cafe',
     required: true,
     index: true
   },
-  restaurantName: {
+  cafeName: {
     type: String,
     required: true
   },
@@ -47,8 +47,8 @@ const orderSettlementSchema = new mongoose.Schema({
     total: { type: Number, required: true, min: 0 }
   },
   
-  // Restaurant Earnings
-  restaurantEarning: {
+  // Cafe Earnings
+  cafeEarning: {
     foodPrice: { type: Number, required: true, min: 0 },
     commission: { type: Number, required: true, min: 0 },
     commissionPercentage: { type: Number, default: 0 },
@@ -114,7 +114,7 @@ const orderSettlementSchema = new mongoose.Schema({
     enum: ['pending', 'partial', 'completed', 'cancelled'],
     default: 'pending'
   },
-  restaurantSettled: {
+  cafeSettled: {
     type: Boolean,
     default: false
   },
@@ -137,7 +137,7 @@ const orderSettlementSchema = new mongoose.Schema({
       sparse: true
     },
     refundAmount: { type: Number, default: 0, min: 0 },
-    restaurantCompensation: { type: Number, default: 0, min: 0 },
+    cafeCompensation: { type: Number, default: 0, min: 0 },
     refundStatus: {
       type: String,
       enum: ['pending', 'requested', 'initiated', 'processed', 'failed'],
@@ -166,11 +166,11 @@ const orderSettlementSchema = new mongoose.Schema({
 });
 
 // Indexes
-orderSettlementSchema.index({ restaurantId: 1, settlementStatus: 1 });
+orderSettlementSchema.index({ cafeId: 1, settlementStatus: 1 });
 orderSettlementSchema.index({ deliveryPartnerId: 1, settlementStatus: 1 });
 orderSettlementSchema.index({ settlementStatus: 1, createdAt: -1 });
 orderSettlementSchema.index({ escrowStatus: 1 });
-orderSettlementSchema.index({ 'restaurantEarning.status': 1 });
+orderSettlementSchema.index({ 'cafeEarning.status': 1 });
 orderSettlementSchema.index({ 'deliveryPartnerEarning.status': 1 });
 orderSettlementSchema.index({ createdAt: -1 });
 
@@ -188,8 +188,8 @@ orderSettlementSchema.statics.findOrCreateByOrderId = async function(orderId) {
       orderId,
       orderNumber: order.orderId,
       userId: order.userId,
-      restaurantId: order.restaurantId,
-      restaurantName: order.restaurantName
+      cafeId: order.cafeId,
+      cafeName: order.cafeName
     });
   }
   

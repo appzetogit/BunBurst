@@ -21,7 +21,7 @@ const statusConfig = {
   "food-on-the-way": { title: "Food On The Way Orders", color: "amber", icon: Package },
   "delivered": { title: "Delivered Orders", color: "emerald", icon: Package },
   "canceled": { title: "Canceled Orders", color: "rose", icon: Package },
-  "restaurant-cancelled": { title: "Cafe Cancelled Orders", color: "red", icon: Package },
+  "cafe-cancelled": { title: "Cafe Cancelled Orders", color: "red", icon: Package },
   "payment-failed": { title: "Payment Failed Orders", color: "red", icon: Package },
   "refunded": { title: "Refunded Orders", color: "sky", icon: Package },
   "offline-payments": { title: "Offline Payments", color: "slate", icon: Package },
@@ -45,8 +45,8 @@ export default function OrdersPage({ statusKey = "all" }) {
           page: 1,
           limit: 1000, // Fetch all orders for now (can be optimized with pagination later)
           status: statusKey === "all" ? undefined : 
-                 statusKey === "restaurant-cancelled" ? "cancelled" : statusKey,
-          cancelledBy: statusKey === "restaurant-cancelled" ? "restaurant" : undefined
+                 statusKey === "cafe-cancelled" ? "cancelled" : statusKey,
+          cancelledBy: statusKey === "cafe-cancelled" ? "cafe" : undefined
         }
         
         const response = await adminAPI.getOrders(params)
@@ -129,8 +129,8 @@ export default function OrdersPage({ statusKey = "all" }) {
           page: 1,
           limit: 1000,
           status: statusKey === "all" ? undefined : 
-                 statusKey === "restaurant-cancelled" ? "cancelled" : statusKey,
-          cancelledBy: statusKey === "restaurant-cancelled" ? "restaurant" : undefined
+                 statusKey === "cafe-cancelled" ? "cancelled" : statusKey,
+          cancelledBy: statusKey === "cafe-cancelled" ? "cafe" : undefined
         }
         const refreshResponse = await adminAPI.getOrders(params)
         if (refreshResponse.data?.success && refreshResponse.data?.data?.orders) {
@@ -219,7 +219,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     filteredOrders,
     count,
     activeFiltersCount,
-    restaurants,
+    cafes,
     handleApplyFilters,
     handleResetFilters,
     handleExport,
@@ -259,7 +259,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         setFilters={setFilters}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-        restaurants={restaurants}
+        cafes={cafes}
       />
       <SettingsDialog
         isOpen={isSettingsOpen}

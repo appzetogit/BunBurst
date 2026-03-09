@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { ArrowLeft, Star, Clock, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { restaurantAPI } from "@/lib/api"
+import { cafeAPI } from "@/lib/api"
 import { toast } from "sonner"
 
 // Import banner image
@@ -20,7 +20,7 @@ export default function Offers() {
     try {
       setLoading(true)
       setError(null)
-      const response = await restaurantAPI.getPublicOffers()
+      const response = await cafeAPI.getPublicOffers()
       const data = response?.data?.data
 
       if (data) {
@@ -98,21 +98,21 @@ export default function Offers() {
                     {offerText}
                   </h2>
 
-                  {/* Restaurant Cards - Grid Layout */}
+                  {/* Cafe Cards - Grid Layout */}
                   <div
                     className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6"
                   >
                     {dishes.slice(0, 8).map((dish) => (
                       <Link
                         key={dish.id}
-                        to={`/user/restaurants/${dish.restaurantSlug}`}
+                        to={`/user/cafes/${dish.cafeSlug}`}
                         className="w-full"
                       >
                         <div className="group">
                           {/* Image Container */}
                           <div className="relative h-32 sm:h-36 rounded-xl overflow-hidden mb-2">
                             <img
-                              src={dish.dishImage || dish.restaurantImage || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
+                              src={dish.dishImage || dish.cafeImage || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop"}
                               alt={dish.dishName}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
@@ -125,14 +125,14 @@ export default function Offers() {
                           {/* Rating Badge */}
                           <div className="flex items-center gap-1 mb-1">
                             <div className="bg-green-600 text-white text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                              {dish.restaurantRating?.toFixed(1) || '0.0'}
+                              {dish.cafeRating?.toFixed(1) || '0.0'}
                               <Star className="h-2.5 w-2.5 fill-white" />
                             </div>
                           </div>
 
-                          {/* Restaurant Info */}
+                          {/* Cafe Info */}
                           <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm line-clamp-1">
-                            {dish.restaurantName}
+                            {dish.cafeName}
                           </h3>
                           <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1 mb-1">
                             {dish.dishName} - ₹{dish.discountedPrice}

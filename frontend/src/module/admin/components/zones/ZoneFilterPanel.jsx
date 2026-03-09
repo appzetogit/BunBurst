@@ -68,7 +68,7 @@ export default function ZoneFilterPanel({ isOpen, onClose, filters, setFilters, 
             </div>
           </div>
 
-          {/* Restaurants Range */}
+          {/* Cafes Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -76,8 +76,8 @@ export default function ZoneFilterPanel({ isOpen, onClose, filters, setFilters, 
               </label>
               <input
                 type="number"
-                value={filters.minRestaurants || ""}
-                onChange={(e) => setFilters(prev => ({ ...prev, minRestaurants: e.target.value }))}
+                value={filters.minCafes || ""}
+                onChange={(e) => setFilters(prev => ({ ...prev, minCafes: e.target.value }))}
                 placeholder="0"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
@@ -88,8 +88,8 @@ export default function ZoneFilterPanel({ isOpen, onClose, filters, setFilters, 
               </label>
               <input
                 type="number"
-                value={filters.maxRestaurants || ""}
-                onChange={(e) => setFilters(prev => ({ ...prev, maxRestaurants: e.target.value }))}
+                value={filters.maxCafes || ""}
+                onChange={(e) => setFilters(prev => ({ ...prev, maxCafes: e.target.value }))}
                 placeholder="100"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />

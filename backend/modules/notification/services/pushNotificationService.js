@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import User from '../../auth/models/User.js';
 import Delivery from '../../delivery/models/Delivery.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import { getFirebaseCredentials } from '../../../shared/utils/envService.js';
 
 function normalizePrivateKey(privateKey) {
@@ -84,11 +84,11 @@ async function removeInvalidTokensFromDatabase(invalidTokens = []) {
       { fcmTokenMobile: { $in: invalidTokens } },
       { $pull: { fcmTokenMobile: { $in: invalidTokens } } }
     ),
-    Restaurant.updateMany(
+    Cafe.updateMany(
       { fcmTokenWeb: { $in: invalidTokens } },
       { $pull: { fcmTokenWeb: { $in: invalidTokens } } }
     ),
-    Restaurant.updateMany(
+    Cafe.updateMany(
       { fcmTokenMobile: { $in: invalidTokens } },
       { $pull: { fcmTokenMobile: { $in: invalidTokens } } }
     )
@@ -181,8 +181,8 @@ export async function sendPushNotificationToAudience({
   let docs = [];
   if (audience === 'delivery') {
     docs = await Delivery.find({}, { fcmTokenWeb: 1, fcmTokenMobile: 1 }).lean();
-  } else if (audience === 'restaurant') {
-    docs = await Restaurant.find({}, { fcmTokenWeb: 1, fcmTokenMobile: 1 }).lean();
+  } else if (audience === 'cafe') {
+    docs = await Cafe.find({}, { fcmTokenWeb: 1, fcmTokenMobile: 1 }).lean();
   } else {
     docs = await User.find({ role: 'user' }, { fcmTokenWeb: 1, fcmTokenMobile: 1 }).lean();
   }

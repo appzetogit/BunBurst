@@ -64,7 +64,7 @@ export default function AcceptedOrderDetails() {
       address: "R9HC+GHV, Dhaka 1216,",
       image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=100&h=100&fit=crop&q=80"
     },
-    restaurant: {
+    cafe: {
       name: "Hungry Puppets",
       address: "House: 00, Road: 00, Tes..",
       rating: 3.3
@@ -175,7 +175,7 @@ export default function AcceptedOrderDetails() {
                 </button>
                 <button
                   onClick={() => {
-                    const address = encodeURIComponent(orderData.restaurant.address)
+                    const address = encodeURIComponent(orderData.cafe.address)
                     window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank')
                   }}
                   className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-300 flex items-center justify-center hover:bg-gray-400 transition-colors flex-shrink-0"
@@ -187,7 +187,7 @@ export default function AcceptedOrderDetails() {
           </div>
         </div>
 
-        {/* Restaurant Details */}
+        {/* Cafe Details */}
         <div>
           <h3 className="text-gray-900 font-semibold mb-3">Cafe Details</h3>
           <div className="bg-gray-50 rounded-lg p-4">
@@ -196,13 +196,13 @@ export default function AcceptedOrderDetails() {
                 <ChefHat className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-gray-900 font-medium mb-1">{orderData.restaurant.name}</p>
-                <p className="text-gray-600 text-sm mb-1 whitespace-nowrap overflow-hidden text-ellipsis">{orderData.restaurant.address}</p>
+                <p className="text-gray-900 font-medium mb-1">{orderData.cafe.name}</p>
+                <p className="text-gray-600 text-sm mb-1 whitespace-nowrap overflow-hidden text-ellipsis">{orderData.cafe.address}</p>
                 <div className="flex items-center gap-1">
                   <div className="w-4 h-4 bg-[#ff8100] rounded-full flex items-center justify-center">
                     <span className="text-white text-[8px]">★</span>
                   </div>
-                  <span className="text-gray-600 text-sm">({orderData.restaurant.rating})</span>
+                  <span className="text-gray-600 text-sm">({orderData.cafe.rating})</span>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -224,7 +224,7 @@ export default function AcceptedOrderDetails() {
                 </button>
                 <button
                   onClick={() => {
-                    const address = encodeURIComponent(orderData.restaurant.address)
+                    const address = encodeURIComponent(orderData.cafe.address)
                     window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank')
                   }}
                   className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-300 flex items-center justify-center hover:bg-gray-400 transition-colors flex-shrink-0"

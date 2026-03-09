@@ -5,7 +5,7 @@ import {
   isFirebaseConfigAvailable,
   ensureFirebaseInitialized,
 } from "./firebase";
-import { userAPI, deliveryAPI, restaurantAPI } from "./api";
+import { userAPI, deliveryAPI, cafeAPI } from "./api";
 
 const LOG_PREFIX = "[FCM]";
 let bootstrapStarted = false;
@@ -44,14 +44,14 @@ function getCurrentAuthContext() {
   const path = window.location.pathname || "/";
   const hasUserToken = Boolean(localStorage.getItem("user_accessToken"));
   const hasDeliveryToken = Boolean(localStorage.getItem("delivery_accessToken"));
-  const hasRestaurantToken = Boolean(localStorage.getItem("restaurant_accessToken"));
+  const hasCafeToken = Boolean(localStorage.getItem("cafe_accessToken"));
 
   if (path.startsWith("/delivery") && hasDeliveryToken) {
     return { audience: "delivery", platform: "web" };
   }
 
-  if (path.startsWith("/restaurant") && hasRestaurantToken) {
-    return { audience: "restaurant", platform: "web" };
+  if (path.startsWith("/cafe") && hasCafeToken) {
+    return { audience: "cafe", platform: "web" };
   }
 
   if (hasUserToken) {
@@ -231,8 +231,8 @@ async function syncTokenToBackend() {
     logInfo(`Syncing token to backend for ${context.audience}...`);
     if (context.audience === "delivery") {
       await deliveryAPI.saveFcmToken(currentFcmToken, context.platform);
-    } else if (context.audience === "restaurant") {
-      await restaurantAPI.saveFcmToken(currentFcmToken, context.platform);
+    } else if (context.audience === "cafe") {
+      await cafeAPI.saveFcmToken(currentFcmToken, context.platform);
     } else {
       await userAPI.saveFcmToken(currentFcmToken, context.platform);
     }
@@ -370,8 +370,8 @@ export async function unregisterFCMToken() {
     logInfo(`Unregistering token from backend for ${context.audience}...`);
     if (context.audience === "delivery") {
       await deliveryAPI.removeFcmToken(token, context.platform);
-    } else if (context.audience === "restaurant") {
-      await restaurantAPI.removeFcmToken(token, context.platform);
+    } else if (context.audience === "cafe") {
+      await cafeAPI.removeFcmToken(token, context.platform);
     } else {
       await userAPI.removeFcmToken(token, context.platform);
     }

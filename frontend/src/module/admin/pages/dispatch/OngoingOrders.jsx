@@ -19,7 +19,7 @@ export default function OngoingOrders() {
     order: true,
     date: true,
     customer: true,
-    restaurant: true,
+    cafe: true,
     total: true,
     status: true,
     actions: true,
@@ -120,7 +120,7 @@ export default function OngoingOrders() {
   } = useGenericTableManagement(
     orders,
     "On Going Orders",
-    ["id", "customerName", "restaurant", "customerPhone"]
+    ["id", "customerName", "cafe", "customerPhone"]
   )
 
   const resetColumns = () => {
@@ -129,7 +129,7 @@ export default function OngoingOrders() {
       order: true,
       date: true,
       customer: true,
-      restaurant: true,
+      cafe: true,
       total: true,
       status: true,
       actions: true,
@@ -178,7 +178,7 @@ export default function OngoingOrders() {
           order: "Order",
           date: "Date",
           customer: "Customer",
-          restaurant: "Restaurant",
+          cafe: "Cafe",
           total: "Total Amount",
           status: "Order Status",
           actions: "Actions",

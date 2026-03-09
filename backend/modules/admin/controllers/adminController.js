@@ -1,7 +1,7 @@
 import Admin from "../models/Admin.js";
 import Order from "../../order/models/Order.js";
-import Restaurant from "../../restaurant/models/Restaurant.js";
-import Offer from "../../restaurant/models/Offer.js";
+import Cafe from "../../cafe/models/Cafe.js";
+import Offer from "../../cafe/models/Offer.js";
 import OrderSettlement from "../../order/models/OrderSettlement.js";
 import AdminWallet from "../models/AdminWallet.js";
 import {
@@ -54,7 +54,7 @@ const normalizeImageSubdoc = (value) => {
   return null;
 };
 
-const normalizeRestaurantLocation = (incomingLocation = {}, existingLocation = {}) => {
+const normalizeCafeLocation = (incomingLocation = {}, existingLocation = {}) => {
   const normalizedLocation = { ...existingLocation, ...incomingLocation };
 
   const latNum = Number(normalizedLocation.latitude);
@@ -264,7 +264,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     const totalOrders = await Order.countDocuments({ status: "delivered" });
 
     // Get active partners count
-    const activeRestaurants = await Restaurant.countDocuments({
+    const activeCafes = await Cafe.countDocuments({
       isActive: true,
     });
     // Note: Delivery partners are stored in User model
@@ -273,17 +273,17 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
       role: "delivery",
       isActive: true,
     });
-    const activePartners = activeRestaurants + activeDeliveryPartners;
+    const activePartners = activeCafes + activeDeliveryPartners;
 
     // Get additional stats
-    // Total restaurants (only active/approved restaurants)
-    // This matches the admin restaurants list which shows only active restaurants by default
-    const totalRestaurants = await Restaurant.countDocuments({
+    // Total cafes (only active/approved cafes)
+    // This matches the admin cafes list which shows only active cafes by default
+    const totalCafes = await Cafe.countDocuments({
       isActive: true,
     });
 
-    // Restaurant requests pending (inactive restaurants with completed onboarding, no rejection)
-    const pendingRestaurantRequestsQuery = {
+    // Cafe requests pending (inactive cafes with completed onboarding, no rejection)
+    const pendingCafeRequestsQuery = {
       isActive: false,
       $and: [
         {
@@ -310,8 +310,8 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
         },
       ],
     };
-    const pendingRestaurantRequests = await Restaurant.countDocuments(
-      pendingRestaurantRequestsQuery,
+    const pendingCafeRequests = await Cafe.countDocuments(
+      pendingCafeRequestsQuery,
     );
 
     // Total delivery boys (all delivery users)
@@ -326,7 +326,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
 
     // Total foods (Menu items) - Count all individual menu items from active menus
     // Count ALL items (including disabled sections, unavailable items, pending/approved, excluding only rejected)
-    const Menu = (await import("../../restaurant/models/Menu.js")).default;
+    const Menu = (await import("../../cafe/models/Menu.js")).default;
     // Get all active menus and count items in sections and subsections
     const activeMenus = await Menu.find({ isActive: true })
       .select("sections")
@@ -417,7 +417,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     const recentOrders = await Order.countDocuments({
       createdAt: { $gte: last24Hours },
     });
-    const recentRestaurants = await Restaurant.countDocuments({
+    const recentCafes = await Cafe.countDocuments({
       createdAt: { $gte: last24Hours },
       isActive: true,
     });
@@ -487,7 +487,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
         // Get commission from matching settlement
         const settlement = settlementMap.get(order._id.toString());
         if (settlement && settlement.adminEarning) {
-          // Only add commission (restaurant commission), not totalEarning
+          // Only add commission (cafe commission), not totalEarning
           monthCommission += settlement.adminEarning.commission || 0;
         }
       });
@@ -551,20 +551,20 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
       },
       partners: {
         total: activePartners,
-        restaurants: activeRestaurants,
+        cafes: activeCafes,
         delivery: activeDeliveryPartners,
       },
       recentActivity: {
         orders: recentOrders,
-        restaurants: recentRestaurants,
+        cafes: recentCafes,
         period: "last24Hours",
       },
       monthlyData: monthlyData, // Add monthly data for graphs
       // Additional stats
-      restaurants: {
-        total: totalRestaurants,
-        active: activeRestaurants,
-        pendingRequests: pendingRestaurantRequests,
+      cafes: {
+        total: totalCafes,
+        active: activeCafes,
+        pendingRequests: pendingCafeRequests,
       },
       deliveryBoys: {
         total: totalDeliveryBoys,
@@ -950,7 +950,7 @@ export const getUsers = asyncHandler(async (req, res) => {
     const User = (await import("../../auth/models/User.js")).default;
 
     // Build query
-    const query = { role: "user" }; // Only get users, not restaurants/delivery/admins
+    const query = { role: "user" }; // Only get users, not cafes/delivery/admins
 
     // Search filter
     if (search) {
@@ -1109,7 +1109,7 @@ export const getUserById = asyncHandler(async (req, res) => {
               status: "$status",
               total: "$pricing.total",
               createdAt: "$createdAt",
-              restaurantName: "$restaurantName",
+              cafeName: "$cafeName",
             },
           },
         },
@@ -1206,27 +1206,27 @@ export const updateUserStatus = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get All Restaurants
- * GET /api/admin/restaurants
+ * Get All Cafes
+ * GET /api/admin/cafes
  * Query params: page, limit, search, status, cuisine, zone
  */
-export const getRestaurants = asyncHandler(async (req, res) => {
+export const getCafes = asyncHandler(async (req, res) => {
   try {
     const { page = 1, limit = 50, search, status, cuisine, zone } = req.query;
 
     // Build query
     const query = {};
 
-    // Status filter - Default to active only (approved restaurants)
+    // Status filter - Default to active only (approved cafes)
     // Only show inactive if explicitly requested via status filter
-    // IMPORTANT: Restaurants should only appear in main list AFTER admin approval
-    // Inactive restaurants (pending approval) should only appear in "New Joining Request" section
+    // IMPORTANT: Cafes should only appear in main list AFTER admin approval
+    // Inactive cafes (pending approval) should only appear in "New Joining Request" section
     if (status === "inactive") {
       query.isActive = false;
     } else if (status === "active") {
       query.isActive = true;
     }
-    // Default: Show all restaurants (no filter on isActive) if status is not provided or 'all'
+    // Default: Show all cafes (no filter on isActive) if status is not provided or 'all'
 
     console.log("🔍 Admin Cafes List Query:", {
       status,
@@ -1261,8 +1261,8 @@ export const getRestaurants = asyncHandler(async (req, res) => {
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Fetch restaurants
-    const restaurants = await Restaurant.find(query)
+    // Fetch cafes
+    const cafes = await Cafe.find(query)
       .select("-password")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -1270,10 +1270,10 @@ export const getRestaurants = asyncHandler(async (req, res) => {
       .lean();
 
     // Get total count
-    const total = await Restaurant.countDocuments(query);
+    const total = await Cafe.countDocuments(query);
 
     return successResponse(res, 200, "Cafes retrieved successfully", {
-      restaurants: restaurants,
+      cafes: cafes,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -1282,7 +1282,7 @@ export const getRestaurants = asyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
-    logger.error(`Error fetching restaurants: ${error.message}`, {
+    logger.error(`Error fetching cafes: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to fetch cafes");
@@ -1290,24 +1290,24 @@ export const getRestaurants = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get Restaurant By ID
- * GET /api/admin/restaurants/:id
+ * Get Cafe By ID
+ * GET /api/admin/cafes/:id
  */
-export const getRestaurantById = asyncHandler(async (req, res) => {
+export const getCafeById = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
 
-    const restaurant = await Restaurant.findById(id).select("-password").lean();
+    const cafe = await Cafe.findById(id).select("-password").lean();
 
-    if (!restaurant) {
+    if (!cafe) {
       return errorResponse(res, 404, "Cafe not found");
     }
 
     return successResponse(res, 200, "Cafe retrieved successfully", {
-      restaurant,
+      cafe,
     });
   } catch (error) {
-    logger.error(`Error fetching restaurant by id: ${error.message}`, {
+    logger.error(`Error fetching cafe by id: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to fetch cafe");
@@ -1315,10 +1315,10 @@ export const getRestaurantById = asyncHandler(async (req, res) => {
 });
 
 /**
- * Update Restaurant Status (Active/Inactive/Ban)
- * PUT /api/admin/restaurants/:id/status
+ * Update Cafe Status (Active/Inactive/Ban)
+ * PUT /api/admin/cafes/:id/status
  */
-export const updateRestaurantStatus = asyncHandler(async (req, res) => {
+export const updateCafeStatus = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { isActive } = req.body;
@@ -1327,29 +1327,29 @@ export const updateRestaurantStatus = asyncHandler(async (req, res) => {
       return errorResponse(res, 400, "isActive must be a boolean value");
     }
 
-    const restaurant = await Restaurant.findById(id);
+    const cafe = await Cafe.findById(id);
 
-    if (!restaurant) {
+    if (!cafe) {
       return errorResponse(res, 404, "Cafe not found");
     }
 
-    restaurant.isActive = isActive;
-    await restaurant.save();
+    cafe.isActive = isActive;
+    await cafe.save();
 
-    logger.info(`Restaurant status updated: ${id}`, {
+    logger.info(`Cafe status updated: ${id}`, {
       isActive,
       updatedBy: req.user._id,
     });
 
     return successResponse(res, 200, "Cafe status updated successfully", {
-      restaurant: {
-        id: restaurant._id.toString(),
-        name: restaurant.name,
-        isActive: restaurant.isActive,
+      cafe: {
+        id: cafe._id.toString(),
+        name: cafe.name,
+        isActive: cafe.isActive,
       },
     });
   } catch (error) {
-    logger.error(`Error updating restaurant status: ${error.message}`, {
+    logger.error(`Error updating cafe status: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to update cafe status");
@@ -1357,11 +1357,11 @@ export const updateRestaurantStatus = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get Restaurant Join Requests
- * GET /api/admin/restaurants/requests
+ * Get Cafe Join Requests
+ * GET /api/admin/cafes/requests
  * Query params: status (pending, rejected), page, limit, search
  */
-export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
+export const getCafeJoinRequests = asyncHandler(async (req, res) => {
   try {
     const { status = "pending", page = 1, limit = 50, search } = req.query;
 
@@ -1369,8 +1369,8 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
     const query = {};
 
     // Status filter
-    // Pending = restaurants with ALL onboarding steps completed (step 4) but not yet active
-    // Rejected = restaurants that have rejectionReason
+    // Pending = cafes with ALL onboarding steps completed (step 4) but not yet active
+    // Rejected = cafes that have rejectionReason
     if (status === "pending") {
       // Build conditions array for $and - ensures all conditions are met
       // Check for rejectionReason: either doesn't exist OR is null
@@ -1384,17 +1384,17 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
         },
       ];
 
-      // Only show restaurants that have completed ALL onboarding steps (all 4 steps)
-      // Check if onboarding.completedSteps is 4, OR if restaurant has all required data filled
-      // This handles both cases: restaurants with proper tracking AND restaurants that completed onboarding before tracking was added
+      // Only show cafes that have completed ALL onboarding steps (all 4 steps)
+      // Check if onboarding.completedSteps is 4, OR if cafe has all required data filled
+      // This handles both cases: cafes with proper tracking AND cafes that completed onboarding before tracking was added
       const completionCheck = {
         $or: [
           { "onboarding.completedSteps": 4 },
-          // Fallback: If completedSteps is not 4 (or doesn't exist), check if restaurant has all main fields filled
-          // This matches restaurants that have completed onboarding even if completedSteps field wasn't set to 4
+          // Fallback: If completedSteps is not 4 (or doesn't exist), check if cafe has all main fields filled
+          // This matches cafes that have completed onboarding even if completedSteps field wasn't set to 4
           {
             $and: [
-              { name: { $exists: true, $ne: null, $ne: "" } }, // Has restaurant name
+              { name: { $exists: true, $ne: null, $ne: "" } }, // Has cafe name
               { cuisines: { $exists: true, $ne: null, $not: { $size: 0 } } }, // Has cuisines (array with items)
               { openDays: { $exists: true, $ne: null, $not: { $size: 0 } } }, // Has open days (array with items)
               { estimatedDeliveryTime: { $exists: true, $ne: null, $ne: "" } }, // Has delivery time (from step 4)
@@ -1452,20 +1452,20 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Fetch restaurants
-    const restaurants = await Restaurant.find(query)
+    // Fetch cafes
+    const cafes = await Cafe.find(query)
       .select("-password")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
 
-    // Debug: Log found restaurants with detailed info
-    console.log(`📊 Found ${restaurants.length} restaurants matching query:`, {
+    // Debug: Log found cafes with detailed info
+    console.log(`📊 Found ${cafes.length} cafes matching query:`, {
       status,
       queryStructure: Object.keys(query).length,
-      restaurantsFound: restaurants.length,
-      sampleRestaurants: restaurants.slice(0, 5).map((r) => ({
+      cafesFound: cafes.length,
+      sampleCafes: cafes.slice(0, 5).map((r) => ({
         _id: r._id.toString().substring(0, 10) + "...",
         name: r.name,
         isActive: r.isActive,
@@ -1480,13 +1480,13 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
     });
 
     // Get total count
-    const total = await Restaurant.countDocuments(query);
+    const total = await Cafe.countDocuments(query);
 
-    console.log(`📊 Total count: ${total} restaurants`);
+    console.log(`📊 Total count: ${total} cafes`);
 
-    // Also log a sample of ALL inactive restaurants (for debugging)
-    if (status === "pending" && restaurants.length === 0) {
-      const allInactive = await Restaurant.find({
+    // Also log a sample of ALL inactive cafes (for debugging)
+    if (status === "pending" && cafes.length === 0) {
+      const allInactive = await Cafe.find({
         isActive: false,
         $or: [
           { rejectionReason: { $exists: false } },
@@ -1499,7 +1499,7 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
         .limit(10)
         .lean();
 
-      const totalInactive = await Restaurant.countDocuments({
+      const totalInactive = await Cafe.countDocuments({
         isActive: false,
         $or: [
           { rejectionReason: { $exists: false } },
@@ -1558,40 +1558,40 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
     }
 
     // Format response to match frontend expectations
-    const formattedRequests = restaurants.map((restaurant, index) => {
+    const formattedRequests = cafes.map((cafe, index) => {
       // Get zone from location
       let zone = "All over the World";
-      if (restaurant.location?.area) {
-        zone = restaurant.location.area;
-      } else if (restaurant.location?.city) {
-        zone = restaurant.location.city;
+      if (cafe.location?.area) {
+        zone = cafe.location.area;
+      } else if (cafe.location?.city) {
+        zone = cafe.location.city;
       }
 
       // Get business model (could be from subscription or commission - defaulting for now)
-      const businessModel = restaurant.businessModel || "Commission Base";
+      const businessModel = cafe.businessModel || "Commission Base";
 
       // Get status
-      const requestStatus = restaurant.rejectionReason ? "Rejected" : "Pending";
+      const requestStatus = cafe.rejectionReason ? "Rejected" : "Pending";
 
       return {
-        _id: restaurant._id.toString(),
+        _id: cafe._id.toString(),
         sl: skip + index + 1,
-        restaurantName: restaurant.name || "N/A",
-        restaurantImage:
-          restaurant.profileImage?.url ||
-          restaurant.onboarding?.step2?.profileImageUrl?.url ||
+        cafeName: cafe.name || "N/A",
+        cafeImage:
+          cafe.profileImage?.url ||
+          cafe.onboarding?.step2?.profileImageUrl?.url ||
           "https://via.placeholder.com/40",
-        ownerName: restaurant.ownerName || "N/A",
-        ownerPhone: restaurant.ownerPhone || restaurant.phone || "N/A",
+        ownerName: cafe.ownerName || "N/A",
+        ownerPhone: cafe.ownerPhone || cafe.phone || "N/A",
         zone: zone,
         businessModel: businessModel,
         status: requestStatus,
-        rejectionReason: restaurant.rejectionReason || null,
-        createdAt: restaurant.createdAt,
+        rejectionReason: cafe.rejectionReason || null,
+        createdAt: cafe.createdAt,
         // Include full data for view/details
         fullData: {
-          ...restaurant,
-          _id: restaurant._id.toString(),
+          ...cafe,
+          _id: cafe._id.toString(),
         },
       };
     });
@@ -1611,7 +1611,7 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
       },
     );
   } catch (error) {
-    logger.error(`Error fetching restaurant join requests: ${error.message}`, {
+    logger.error(`Error fetching cafe join requests: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to fetch cafe join requests");
@@ -1619,25 +1619,25 @@ export const getRestaurantJoinRequests = asyncHandler(async (req, res) => {
 });
 
 /**
- * Approve Restaurant Join Request
- * POST /api/admin/restaurants/:id/approve
+ * Approve Cafe Join Request
+ * POST /api/admin/cafes/:id/approve
  */
-export const approveRestaurant = asyncHandler(async (req, res) => {
+export const approveCafe = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const adminId = req.user._id;
 
-    const restaurant = await Restaurant.findById(id);
+    const cafe = await Cafe.findById(id);
 
-    if (!restaurant) {
+    if (!cafe) {
       return errorResponse(res, 404, "Cafe not found");
     }
 
-    if (restaurant.isActive) {
+    if (cafe.isActive) {
       return errorResponse(res, 400, "Cafe is already approved");
     }
 
-    if (restaurant.rejectionReason) {
+    if (cafe.rejectionReason) {
       return errorResponse(
         res,
         400,
@@ -1645,29 +1645,29 @@ export const approveRestaurant = asyncHandler(async (req, res) => {
       );
     }
 
-    // Activate restaurant
-    restaurant.isActive = true;
-    restaurant.approvedAt = new Date();
-    restaurant.approvedBy = adminId;
-    restaurant.rejectionReason = undefined; // Clear any previous rejection
+    // Activate cafe
+    cafe.isActive = true;
+    cafe.approvedAt = new Date();
+    cafe.approvedBy = adminId;
+    cafe.rejectionReason = undefined; // Clear any previous rejection
 
-    await restaurant.save();
+    await cafe.save();
 
-    logger.info(`Restaurant approved: ${id}`, {
+    logger.info(`Cafe approved: ${id}`, {
       approvedBy: adminId,
-      restaurantName: restaurant.name,
+      cafeName: cafe.name,
     });
 
     return successResponse(res, 200, "Cafe approved successfully", {
-      restaurant: {
-        id: restaurant._id.toString(),
-        name: restaurant.name,
-        isActive: restaurant.isActive,
-        approvedAt: restaurant.approvedAt,
+      cafe: {
+        id: cafe._id.toString(),
+        name: cafe.name,
+        isActive: cafe.isActive,
+        approvedAt: cafe.approvedAt,
       },
     });
   } catch (error) {
-    logger.error(`Error approving restaurant: ${error.message}`, {
+    logger.error(`Error approving cafe: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to approve cafe");
@@ -1675,10 +1675,10 @@ export const approveRestaurant = asyncHandler(async (req, res) => {
 });
 
 /**
- * Update Restaurant Dining Settings
- * PUT /api/admin/restaurants/:id/dining-settings
+ * Update Cafe Dining Settings
+ * PUT /api/admin/cafes/:id/dining-settings
  */
-export const updateRestaurantDiningSettings = asyncHandler(async (req, res) => {
+export const updateCafeDiningSettings = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { diningSettings } = req.body;
@@ -1687,29 +1687,29 @@ export const updateRestaurantDiningSettings = asyncHandler(async (req, res) => {
       return errorResponse(res, 400, "Dining settings are required");
     }
 
-    const restaurant = await Restaurant.findById(id);
+    const cafe = await Cafe.findById(id);
 
-    if (!restaurant) {
+    if (!cafe) {
       return errorResponse(res, 404, "Cafe not found");
     }
 
     // Update dining settings
-    restaurant.diningSettings = {
-      ...restaurant.diningSettings,
+    cafe.diningSettings = {
+      ...cafe.diningSettings,
       ...diningSettings,
     };
 
-    await restaurant.save();
+    await cafe.save();
 
-    logger.info(`Restaurant dining settings updated: ${id}`, {
+    logger.info(`Cafe dining settings updated: ${id}`, {
       updatedBy: req.user._id,
-      diningSettings: restaurant.diningSettings,
+      diningSettings: cafe.diningSettings,
     });
 
     return successResponse(res, 200, "Dining settings updated successfully", {
-      restaurant: {
-        id: restaurant._id,
-        diningSettings: restaurant.diningSettings,
+      cafe: {
+        id: cafe._id,
+        diningSettings: cafe.diningSettings,
       },
     });
   } catch (error) {
@@ -1721,10 +1721,10 @@ export const updateRestaurantDiningSettings = asyncHandler(async (req, res) => {
 });
 
 /**
- * Reject Restaurant Join Request
- * POST /api/admin/restaurants/:id/reject
+ * Reject Cafe Join Request
+ * POST /api/admin/cafes/:id/reject
  */
-export const rejectRestaurant = asyncHandler(async (req, res) => {
+export const rejectCafe = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -1735,35 +1735,35 @@ export const rejectRestaurant = asyncHandler(async (req, res) => {
       return errorResponse(res, 400, "Rejection reason is required");
     }
 
-    const restaurant = await Restaurant.findById(id);
+    const cafe = await Cafe.findById(id);
 
-    if (!restaurant) {
+    if (!cafe) {
       return errorResponse(res, 404, "Cafe not found");
     }
 
     // Set rejection details (allow updating if already rejected)
-    restaurant.rejectionReason = reason.trim();
-    restaurant.rejectedAt = new Date();
-    restaurant.rejectedBy = adminId;
-    restaurant.isActive = false; // Ensure it's inactive
+    cafe.rejectionReason = reason.trim();
+    cafe.rejectedAt = new Date();
+    cafe.rejectedBy = adminId;
+    cafe.isActive = false; // Ensure it's inactive
 
-    await restaurant.save();
+    await cafe.save();
 
-    logger.info(`Restaurant rejected: ${id}`, {
+    logger.info(`Cafe rejected: ${id}`, {
       rejectedBy: adminId,
       reason: reason,
-      restaurantName: restaurant.name,
+      cafeName: cafe.name,
     });
 
     return successResponse(res, 200, "Cafe rejected successfully", {
-      restaurant: {
-        id: restaurant._id.toString(),
-        name: restaurant.name,
-        rejectionReason: restaurant.rejectionReason,
+      cafe: {
+        id: cafe._id.toString(),
+        name: cafe.name,
+        rejectionReason: cafe.rejectionReason,
       },
     });
   } catch (error) {
-    logger.error(`Error rejecting restaurant: ${error.message}`, {
+    logger.error(`Error rejecting cafe: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to reject cafe");
@@ -1771,22 +1771,22 @@ export const rejectRestaurant = asyncHandler(async (req, res) => {
 });
 
 /**
- * Reverify Restaurant (Resubmit for approval)
- * POST /api/admin/restaurants/:id/reverify
+ * Reverify Cafe (Resubmit for approval)
+ * POST /api/admin/cafes/:id/reverify
  */
-export const reverifyRestaurant = asyncHandler(async (req, res) => {
+export const reverifyCafe = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const adminId = req.user._id;
 
-    const restaurant = await Restaurant.findById(id);
+    const cafe = await Cafe.findById(id);
 
-    if (!restaurant) {
+    if (!cafe) {
       return errorResponse(res, 404, "Cafe not found");
     }
 
-    // Check if restaurant was rejected
-    if (!restaurant.rejectionReason) {
+    // Check if cafe was rejected
+    if (!cafe.rejectionReason) {
       return errorResponse(
         res,
         400,
@@ -1795,16 +1795,16 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
     }
 
     // Clear rejection details and mark as pending again
-    restaurant.rejectionReason = null;
-    restaurant.rejectedAt = undefined;
-    restaurant.rejectedBy = undefined;
-    restaurant.isActive = false; // Keep inactive until approved
+    cafe.rejectionReason = null;
+    cafe.rejectedAt = undefined;
+    cafe.rejectedBy = undefined;
+    cafe.isActive = false; // Keep inactive until approved
 
-    await restaurant.save();
+    await cafe.save();
 
-    logger.info(`Restaurant reverified: ${id}`, {
+    logger.info(`Cafe reverified: ${id}`, {
       reverifiedBy: adminId,
-      restaurantName: restaurant.name,
+      cafeName: cafe.name,
     });
 
     return successResponse(
@@ -1812,16 +1812,16 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
       200,
       "Cafe reverified successfully. Waiting for admin approval.",
       {
-        restaurant: {
-          id: restaurant._id.toString(),
-          name: restaurant.name,
-          isActive: restaurant.isActive,
+        cafe: {
+          id: cafe._id.toString(),
+          name: cafe.name,
+          isActive: cafe.isActive,
           rejectionReason: null,
         },
       },
     );
   } catch (error) {
-    logger.error(`Error reverifying restaurant: ${error.message}`, {
+    logger.error(`Error reverifying cafe: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to reverify cafe");
@@ -1829,15 +1829,15 @@ export const reverifyRestaurant = asyncHandler(async (req, res) => {
 });
 
 /**
- * Update Restaurant by Admin
- * PUT /api/admin/restaurants/:id
+ * Update Cafe by Admin
+ * PUT /api/admin/cafes/:id
  */
-export const updateRestaurant = asyncHandler(async (req, res) => {
+export const updateCafe = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const {
       // Step 1: Basic Info
-      restaurantName,
+      cafeName,
       ownerName,
       ownerEmail,
       ownerPhone,
@@ -1878,15 +1878,15 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
       password,
     } = req.body;
 
-    const restaurant = await Restaurant.findById(id);
+    const cafe = await Cafe.findById(id);
 
-    if (!restaurant) {
+    if (!cafe) {
       return errorResponse(res, 404, "Cafe not found");
     }
 
     // Validation (if modifying email/phone)
-    if (email && email.toLowerCase().trim() !== restaurant.email) {
-      const existingEmail = await Restaurant.findOne({
+    if (email && email.toLowerCase().trim() !== cafe.email) {
+      const existingEmail = await Cafe.findOne({
         email: email.toLowerCase().trim(),
         _id: { $ne: id },
       });
@@ -1896,8 +1896,8 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
     }
 
     const normalizedPhone = phone ? normalizePhoneNumber(phone) : null;
-    if (normalizedPhone && normalizedPhone !== restaurant.phone) {
-      const existingPhone = await Restaurant.findOne({
+    if (normalizedPhone && normalizedPhone !== cafe.phone) {
+      const existingPhone = await Cafe.findOne({
         phone: normalizedPhone,
         _id: { $ne: id },
       });
@@ -1925,17 +1925,17 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
         const base64Data = profileImage.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, "base64");
         const result = await uploadToCloudinary(buffer, {
-          folder: "appzeto/restaurant/profile",
+          folder: "appzeto/cafe/profile",
           resource_type: "image",
         });
-        restaurant.profileImage = {
+        cafe.profileImage = {
           url: result.secure_url,
           publicId: result.public_id,
         };
       } else if (typeof profileImage === "string" && profileImage.startsWith("http")) {
-        restaurant.profileImage = { url: profileImage };
+        cafe.profileImage = { url: profileImage };
       } else if (profileImage.url) {
-        restaurant.profileImage = profileImage;
+        cafe.profileImage = profileImage;
       }
     }
 
@@ -1947,7 +1947,7 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
           const base64Data = img.replace(/^data:image\/\w+;base64,/, "");
           const buffer = Buffer.from(base64Data, "base64");
           const result = await uploadToCloudinary(buffer, {
-            folder: "appzeto/restaurant/menu",
+            folder: "appzeto/cafe/menu",
             resource_type: "image",
           });
           newMenuImages.push({
@@ -1960,17 +1960,17 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
           newMenuImages.push(img);
         }
       }
-      restaurant.menuImages = newMenuImages;
+      cafe.menuImages = newMenuImages;
     }
 
     // Handle PAN Image Update
-    let panImageData = restaurant.onboarding?.step3?.pan?.image || null;
+    let panImageData = cafe.onboarding?.step3?.pan?.image || null;
     if (panImage) {
       if (typeof panImage === "string" && panImage.startsWith("data:")) {
         const base64Data = panImage.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, "base64");
         const result = await uploadToCloudinary(buffer, {
-          folder: "appzeto/restaurant/pan",
+          folder: "appzeto/cafe/pan",
           resource_type: "image",
         });
         panImageData = { url: result.secure_url, publicId: result.public_id };
@@ -1982,13 +1982,13 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
     }
 
     // Handle GST Image Update
-    let gstImageData = restaurant.onboarding?.step3?.gst?.image || null;
+    let gstImageData = cafe.onboarding?.step3?.gst?.image || null;
     if (gstRegistered && gstImage) {
       if (typeof gstImage === "string" && gstImage.startsWith("data:")) {
         const base64Data = gstImage.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, "base64");
         const result = await uploadToCloudinary(buffer, {
-          folder: "appzeto/restaurant/gst",
+          folder: "appzeto/cafe/gst",
           resource_type: "image",
         });
         gstImageData = { url: result.secure_url, publicId: result.public_id };
@@ -2000,13 +2000,13 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
     }
 
     // Handle FSSAI Image Update
-    let fssaiImageData = restaurant.onboarding?.step3?.fssai?.image || null;
+    let fssaiImageData = cafe.onboarding?.step3?.fssai?.image || null;
     if (fssaiImage) {
       if (typeof fssaiImage === "string" && fssaiImage.startsWith("data:")) {
         const base64Data = fssaiImage.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, "base64");
         const result = await uploadToCloudinary(buffer, {
-          folder: "appzeto/restaurant/fssai",
+          folder: "appzeto/cafe/fssai",
           resource_type: "image",
         });
         fssaiImageData = { url: result.secure_url, publicId: result.public_id };
@@ -2018,123 +2018,123 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
     }
 
     // Update Basic Fields
-    if (restaurantName) restaurant.name = restaurantName;
-    if (ownerName) restaurant.ownerName = ownerName;
-    if (ownerEmail) restaurant.ownerEmail = ownerEmail;
-    if (ownerPhone) restaurant.ownerPhone = normalizePhoneNumber(ownerPhone) || restaurant.ownerPhone;
-    if (primaryContactNumber) restaurant.primaryContactNumber = normalizePhoneNumber(primaryContactNumber) || restaurant.primaryContactNumber;
+    if (cafeName) cafe.name = cafeName;
+    if (ownerName) cafe.ownerName = ownerName;
+    if (ownerEmail) cafe.ownerEmail = ownerEmail;
+    if (ownerPhone) cafe.ownerPhone = normalizePhoneNumber(ownerPhone) || cafe.ownerPhone;
+    if (primaryContactNumber) cafe.primaryContactNumber = normalizePhoneNumber(primaryContactNumber) || cafe.primaryContactNumber;
     if (location) {
-      restaurant.location = normalizeRestaurantLocation(location, restaurant.location || {});
+      cafe.location = normalizeCafeLocation(location, cafe.location || {});
     }
-    if (cuisines) restaurant.cuisines = cuisines;
+    if (cuisines) cafe.cuisines = cuisines;
 
     // Update Delivery Timings
     if (openingTime || closingTime) {
-      restaurant.deliveryTimings = {
-        openingTime: openingTime || restaurant.deliveryTimings?.openingTime,
-        closingTime: closingTime || restaurant.deliveryTimings?.closingTime,
+      cafe.deliveryTimings = {
+        openingTime: openingTime || cafe.deliveryTimings?.openingTime,
+        closingTime: closingTime || cafe.deliveryTimings?.closingTime,
       };
     }
 
-    if (openDays) restaurant.openDays = openDays;
-    if (estimatedDeliveryTime) restaurant.estimatedDeliveryTime = estimatedDeliveryTime;
-    if (featuredDish) restaurant.featuredDish = featuredDish;
-    if (featuredPrice) restaurant.featuredPrice = featuredPrice;
-    if (offer) restaurant.offer = offer;
-    if (diningSettings) restaurant.diningSettings = diningSettings;
+    if (openDays) cafe.openDays = openDays;
+    if (estimatedDeliveryTime) cafe.estimatedDeliveryTime = estimatedDeliveryTime;
+    if (featuredDish) cafe.featuredDish = featuredDish;
+    if (featuredPrice) cafe.featuredPrice = featuredPrice;
+    if (offer) cafe.offer = offer;
+    if (diningSettings) cafe.diningSettings = diningSettings;
 
     // Update Authentication Fields
-    if (email) restaurant.email = email.toLowerCase().trim();
+    if (email) cafe.email = email.toLowerCase().trim();
     if (normalizedPhone) {
-      restaurant.phone = normalizedPhone;
-      restaurant.phoneVerified = true;
+      cafe.phone = normalizedPhone;
+      cafe.phoneVerified = true;
     }
     if (password) {
-      restaurant.password = password; // Will be hashed by pre-save hook
+      cafe.password = password; // Will be hashed by pre-save hook
     }
 
     // Update Onboarding Data (to keep sync)
-    if (!restaurant.onboarding) restaurant.onboarding = { step1: {}, step2: {}, step3: {}, step4: {} };
-    if (!restaurant.onboarding.step1) restaurant.onboarding.step1 = {};
-    if (!restaurant.onboarding.step2) restaurant.onboarding.step2 = {};
-    if (!restaurant.onboarding.step3) restaurant.onboarding.step3 = {};
-    if (!restaurant.onboarding.step4) restaurant.onboarding.step4 = {};
+    if (!cafe.onboarding) cafe.onboarding = { step1: {}, step2: {}, step3: {}, step4: {} };
+    if (!cafe.onboarding.step1) cafe.onboarding.step1 = {};
+    if (!cafe.onboarding.step2) cafe.onboarding.step2 = {};
+    if (!cafe.onboarding.step3) cafe.onboarding.step3 = {};
+    if (!cafe.onboarding.step4) cafe.onboarding.step4 = {};
 
-    restaurant.onboarding.step1.restaurantName = restaurant.name;
-    restaurant.onboarding.step1.ownerName = restaurant.ownerName;
-    restaurant.onboarding.step1.ownerEmail = restaurant.ownerEmail;
-    restaurant.onboarding.step1.ownerPhone = restaurant.ownerPhone;
-    restaurant.onboarding.step1.primaryContactNumber = restaurant.primaryContactNumber;
-    restaurant.onboarding.step1.location = restaurant.location || {};
+    cafe.onboarding.step1.cafeName = cafe.name;
+    cafe.onboarding.step1.ownerName = cafe.ownerName;
+    cafe.onboarding.step1.ownerEmail = cafe.ownerEmail;
+    cafe.onboarding.step1.ownerPhone = cafe.ownerPhone;
+    cafe.onboarding.step1.primaryContactNumber = cafe.primaryContactNumber;
+    cafe.onboarding.step1.location = cafe.location || {};
 
-    restaurant.onboarding.step2.menuImageUrls = restaurant.menuImages || [];
-    restaurant.onboarding.step2.profileImageUrl = restaurant.profileImage || null;
-    restaurant.onboarding.step2.cuisines = restaurant.cuisines || [];
-    restaurant.onboarding.step2.deliveryTimings = restaurant.deliveryTimings || {};
-    restaurant.onboarding.step2.openDays = restaurant.openDays || [];
+    cafe.onboarding.step2.menuImageUrls = cafe.menuImages || [];
+    cafe.onboarding.step2.profileImageUrl = cafe.profileImage || null;
+    cafe.onboarding.step2.cuisines = cafe.cuisines || [];
+    cafe.onboarding.step2.deliveryTimings = cafe.deliveryTimings || {};
+    cafe.onboarding.step2.openDays = cafe.openDays || [];
 
     const panImageSubdoc = normalizeImageSubdoc(
-      panImageData ?? restaurant.onboarding.step3.pan?.image,
+      panImageData ?? cafe.onboarding.step3.pan?.image,
     );
     const gstImageSubdoc = normalizeImageSubdoc(
-      gstImageData ?? restaurant.onboarding.step3.gst?.image,
+      gstImageData ?? cafe.onboarding.step3.gst?.image,
     );
     const fssaiImageSubdoc = normalizeImageSubdoc(
-      fssaiImageData ?? restaurant.onboarding.step3.fssai?.image,
+      fssaiImageData ?? cafe.onboarding.step3.fssai?.image,
     );
 
-    restaurant.onboarding.step3.pan = {
-      panNumber: panNumber || restaurant.onboarding.step3.pan?.panNumber || "",
-      nameOnPan: nameOnPan || restaurant.onboarding.step3.pan?.nameOnPan || "",
+    cafe.onboarding.step3.pan = {
+      panNumber: panNumber || cafe.onboarding.step3.pan?.panNumber || "",
+      nameOnPan: nameOnPan || cafe.onboarding.step3.pan?.nameOnPan || "",
       ...(panImageSubdoc ? { image: panImageSubdoc } : {}),
     };
 
-    restaurant.onboarding.step3.gst = {
-      isRegistered: gstRegistered ?? restaurant.onboarding.step3.gst?.isRegistered ?? false,
-      gstNumber: gstNumber || restaurant.onboarding.step3.gst?.gstNumber || "",
-      legalName: gstLegalName || restaurant.onboarding.step3.gst?.legalName || "",
-      address: gstAddress || restaurant.onboarding.step3.gst?.address || "",
+    cafe.onboarding.step3.gst = {
+      isRegistered: gstRegistered ?? cafe.onboarding.step3.gst?.isRegistered ?? false,
+      gstNumber: gstNumber || cafe.onboarding.step3.gst?.gstNumber || "",
+      legalName: gstLegalName || cafe.onboarding.step3.gst?.legalName || "",
+      address: gstAddress || cafe.onboarding.step3.gst?.address || "",
       ...(gstImageSubdoc ? { image: gstImageSubdoc } : {}),
     };
 
-    restaurant.onboarding.step3.fssai = {
+    cafe.onboarding.step3.fssai = {
       registrationNumber:
-        fssaiNumber || restaurant.onboarding.step3.fssai?.registrationNumber || "",
-      expiryDate: fssaiExpiry || restaurant.onboarding.step3.fssai?.expiryDate || null,
+        fssaiNumber || cafe.onboarding.step3.fssai?.registrationNumber || "",
+      expiryDate: fssaiExpiry || cafe.onboarding.step3.fssai?.expiryDate || null,
       ...(fssaiImageSubdoc ? { image: fssaiImageSubdoc } : {}),
     };
 
-    restaurant.onboarding.step3.bank = {
+    cafe.onboarding.step3.bank = {
       accountNumber:
-        accountNumber || restaurant.onboarding.step3.bank?.accountNumber || "",
-      ifscCode: ifscCode || restaurant.onboarding.step3.bank?.ifscCode || "",
+        accountNumber || cafe.onboarding.step3.bank?.accountNumber || "",
+      ifscCode: ifscCode || cafe.onboarding.step3.bank?.ifscCode || "",
       accountHolderName:
-        accountHolderName || restaurant.onboarding.step3.bank?.accountHolderName || "",
-      accountType: accountType || restaurant.onboarding.step3.bank?.accountType || "",
+        accountHolderName || cafe.onboarding.step3.bank?.accountHolderName || "",
+      accountType: accountType || cafe.onboarding.step3.bank?.accountType || "",
     };
 
-    restaurant.onboarding.step4.estimatedDeliveryTime = restaurant.estimatedDeliveryTime || "";
-    restaurant.onboarding.step4.featuredDish = restaurant.featuredDish || "";
-    restaurant.onboarding.step4.featuredPrice = restaurant.featuredPrice || 0;
-    restaurant.onboarding.step4.offer = restaurant.offer || "";
+    cafe.onboarding.step4.estimatedDeliveryTime = cafe.estimatedDeliveryTime || "";
+    cafe.onboarding.step4.featuredDish = cafe.featuredDish || "";
+    cafe.onboarding.step4.featuredPrice = cafe.featuredPrice || 0;
+    cafe.onboarding.step4.offer = cafe.offer || "";
 
     // Save only validating changed fields to avoid blocking updates on legacy records
     // that may have old missing/invalid non-edited fields.
-    await restaurant.save({ validateModifiedOnly: true });
+    await cafe.save({ validateModifiedOnly: true });
 
-    logger.info(`Restaurant updated by admin: ${id}`, { adminId: req.user._id });
+    logger.info(`Cafe updated by admin: ${id}`, { adminId: req.user._id });
 
     return successResponse(res, 200, "Cafe updated successfully", {
-      restaurant: {
-        id: restaurant._id,
-        name: restaurant.name,
-        email: restaurant.email,
-        phone: restaurant.phone,
-        isActive: restaurant.isActive,
+      cafe: {
+        id: cafe._id,
+        name: cafe.name,
+        email: cafe.email,
+        phone: cafe.phone,
+        isActive: cafe.isActive,
       },
     });
   } catch (error) {
-    logger.error(`Error updating restaurant: ${error.message}`, { error: error.stack });
+    logger.error(`Error updating cafe: ${error.message}`, { error: error.stack });
     if (error?.name === "ValidationError" || error?.name === "CastError") {
       const firstPath = error?.errors ? Object.keys(error.errors)[0] : null;
       const firstMessage =
@@ -2150,15 +2150,15 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
 });
 
 /**
- * Create Restaurant by Admin
- * POST /api/admin/restaurants
+ * Create Cafe by Admin
+ * POST /api/admin/cafes
  */
-export const createRestaurant = asyncHandler(async (req, res) => {
+export const createCafe = asyncHandler(async (req, res) => {
   try {
     const adminId = req.user._id;
     const {
       // Step 1: Basic Info
-      restaurantName,
+      cafeName,
       ownerName,
       ownerEmail,
       ownerPhone,
@@ -2201,7 +2201,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     } = req.body;
 
     // Validation
-    if (!restaurantName || !ownerName || !ownerEmail) {
+    if (!cafeName || !ownerName || !ownerEmail) {
       return errorResponse(
         res,
         400,
@@ -2231,23 +2231,23 @@ export const createRestaurant = asyncHandler(async (req, res) => {
       ).join("");
     }
 
-    // Check if restaurant already exists with same email or phone
-    const existingRestaurant = await Restaurant.findOne({
+    // Check if cafe already exists with same email or phone
+    const existingCafe = await Cafe.findOne({
       $or: [
         ...(email ? [{ email: email.toLowerCase().trim() }] : []),
         ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
       ],
     });
 
-    if (existingRestaurant) {
-      if (email && existingRestaurant.email === email.toLowerCase().trim()) {
+    if (existingCafe) {
+      if (email && existingCafe.email === email.toLowerCase().trim()) {
         return errorResponse(
           res,
           400,
           "Cafe with this email already exists",
         );
       }
-      if (normalizedPhone && existingRestaurant.phone === normalizedPhone) {
+      if (normalizedPhone && existingCafe.phone === normalizedPhone) {
         return errorResponse(
           res,
           400,
@@ -2280,7 +2280,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
         const base64Data = profileImage.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, "base64");
         const result = await uploadToCloudinary(buffer, {
-          folder: "appzeto/restaurant/profile",
+          folder: "appzeto/cafe/profile",
           resource_type: "image",
         });
         profileImageData = {
@@ -2306,7 +2306,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
           const base64Data = img.replace(/^data:image\/\w+;base64,/, "");
           const buffer = Buffer.from(base64Data, "base64");
           const result = await uploadToCloudinary(buffer, {
-            folder: "appzeto/restaurant/menu",
+            folder: "appzeto/cafe/menu",
             resource_type: "image",
           });
           menuImagesData.push({
@@ -2328,7 +2328,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
         const base64Data = panImage.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, "base64");
         const result = await uploadToCloudinary(buffer, {
-          folder: "appzeto/restaurant/pan",
+          folder: "appzeto/cafe/pan",
           resource_type: "image",
         });
         panImageData = { url: result.secure_url, publicId: result.public_id };
@@ -2345,7 +2345,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
         const base64Data = gstImage.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, "base64");
         const result = await uploadToCloudinary(buffer, {
-          folder: "appzeto/restaurant/gst",
+          folder: "appzeto/cafe/gst",
           resource_type: "image",
         });
         gstImageData = { url: result.secure_url, publicId: result.public_id };
@@ -2362,7 +2362,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
         const base64Data = fssaiImage.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, "base64");
         const result = await uploadToCloudinary(buffer, {
-          folder: "appzeto/restaurant/fssai",
+          folder: "appzeto/cafe/fssai",
           resource_type: "image",
         });
         fssaiImageData = { url: result.secure_url, publicId: result.public_id };
@@ -2376,9 +2376,9 @@ export const createRestaurant = asyncHandler(async (req, res) => {
       }
     }
 
-    // Create restaurant data
-    const restaurantData = {
-      name: restaurantName,
+    // Create cafe data
+    const cafeData = {
+      name: cafeName,
       ownerName,
       ownerEmail,
       ownerPhone: ownerPhone
@@ -2387,7 +2387,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
       primaryContactNumber: primaryContactNumber
         ? normalizePhoneNumber(primaryContactNumber) || normalizedPhone
         : normalizedPhone,
-      location: normalizeRestaurantLocation(location || {}, {}),
+      location: normalizeCafeLocation(location || {}, {}),
       profileImage: profileImageData,
       menuImages: menuImagesData,
       cuisines: cuisines || [],
@@ -2402,7 +2402,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
       offer: offer || "",
       diningSettings: diningSettings || { isEnabled: false },
       signupMethod,
-      // Admin created restaurants are active by default
+      // Admin created cafes are active by default
       isActive: true,
       isAcceptingOrders: true,
       approvedAt: new Date(),
@@ -2411,12 +2411,12 @@ export const createRestaurant = asyncHandler(async (req, res) => {
 
     // Add authentication fields
     if (email) {
-      restaurantData.email = email.toLowerCase().trim();
-      restaurantData.password = finalPassword; // Will be hashed by pre-save hook
+      cafeData.email = email.toLowerCase().trim();
+      cafeData.password = finalPassword; // Will be hashed by pre-save hook
     }
     if (normalizedPhone) {
-      restaurantData.phone = normalizedPhone;
-      restaurantData.phoneVerified = true; // Admin created, so verified
+      cafeData.phone = normalizedPhone;
+      cafeData.phoneVerified = true; // Admin created, so verified
     }
 
     const panImageSubdoc = normalizeImageSubdoc(panImageData);
@@ -2424,9 +2424,9 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     const fssaiImageSubdoc = normalizeImageSubdoc(fssaiImageData);
 
     // Add onboarding data
-    restaurantData.onboarding = {
+    cafeData.onboarding = {
       step1: {
-        restaurantName,
+        cafeName,
         ownerName,
         ownerEmail,
         ownerPhone: ownerPhone
@@ -2435,7 +2435,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
         primaryContactNumber: primaryContactNumber
           ? normalizePhoneNumber(primaryContactNumber) || normalizedPhone
           : normalizedPhone,
-        location: normalizeRestaurantLocation(location || {}, {}),
+        location: normalizeCafeLocation(location || {}, {}),
       },
       step2: {
         menuImageUrls: menuImagesData,
@@ -2481,31 +2481,31 @@ export const createRestaurant = asyncHandler(async (req, res) => {
       completedSteps: 4,
     };
 
-    // Create restaurant
-    const restaurant = await Restaurant.create(restaurantData);
+    // Create cafe
+    const cafe = await Cafe.create(cafeData);
 
-    logger.info(`Restaurant created by admin: ${restaurant._id}`, {
+    logger.info(`Cafe created by admin: ${cafe._id}`, {
       createdBy: adminId,
-      restaurantName: restaurant.name,
-      email: restaurant.email,
-      phone: restaurant.phone,
+      cafeName: cafe.name,
+      email: cafe.email,
+      phone: cafe.phone,
     });
 
     // Prepare response data
     const responseData = {
-      restaurant: {
-        id: restaurant._id,
-        restaurantId: restaurant.restaurantId,
-        name: restaurant.name,
-        email: restaurant.email,
-        phone: restaurant.phone,
-        isActive: restaurant.isActive,
-        slug: restaurant.slug,
+      cafe: {
+        id: cafe._id,
+        cafeId: cafe.cafeId,
+        name: cafe.name,
+        email: cafe.email,
+        phone: cafe.phone,
+        isActive: cafe.isActive,
+        slug: cafe.slug,
       },
     };
 
     // Include generated password in response if email was provided and password was auto-generated
-    // This allows admin to share the password with the restaurant
+    // This allows admin to share the password with the cafe
     if (email && !password && finalPassword) {
       responseData.generatedPassword = finalPassword;
       responseData.message =
@@ -2519,7 +2519,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
       responseData,
     );
   } catch (error) {
-    logger.error(`Error creating restaurant: ${error.message}`, {
+    logger.error(`Error creating cafe: ${error.message}`, {
       error: error.stack,
     });
 
@@ -2529,49 +2529,49 @@ export const createRestaurant = asyncHandler(async (req, res) => {
       return errorResponse(
         res,
         400,
-        `Restaurant with this ${field} already exists`,
+        `Cafe with this ${field} already exists`,
       );
     }
 
     return errorResponse(
       res,
       500,
-      `Failed to create restaurant: ${error.message}`,
+      `Failed to create cafe: ${error.message}`,
     );
   }
 });
 
 /**
- * Delete Restaurant
- * DELETE /api/admin/restaurants/:id
+ * Delete Cafe
+ * DELETE /api/admin/cafes/:id
  */
-export const deleteRestaurant = asyncHandler(async (req, res) => {
+export const deleteCafe = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const adminId = req.user._id;
 
-    const restaurant = await Restaurant.findById(id);
+    const cafe = await Cafe.findById(id);
 
-    if (!restaurant) {
+    if (!cafe) {
       return errorResponse(res, 404, "Cafe not found");
     }
 
-    // Delete restaurant
-    await Restaurant.findByIdAndDelete(id);
+    // Delete cafe
+    await Cafe.findByIdAndDelete(id);
 
-    logger.info(`Restaurant deleted: ${id}`, {
+    logger.info(`Cafe deleted: ${id}`, {
       deletedBy: adminId,
-      restaurantName: restaurant.name,
+      cafeName: cafe.name,
     });
 
     return successResponse(res, 200, "Cafe deleted successfully", {
-      restaurant: {
+      cafe: {
         id: id,
-        name: restaurant.name,
+        name: cafe.name,
       },
     });
   } catch (error) {
-    logger.error(`Error deleting restaurant: ${error.message}`, {
+    logger.error(`Error deleting cafe: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to delete cafe");
@@ -2579,13 +2579,13 @@ export const deleteRestaurant = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get All Offers with Restaurant and Dish Details
+ * Get All Offers with Cafe and Dish Details
  * GET /api/admin/offers
- * Query params: page, limit, search, status, restaurantId
+ * Query params: page, limit, search, status, cafeId
  */
 export const getAllOffers = asyncHandler(async (req, res) => {
   try {
-    const { page = 1, limit = 50, search, status, restaurantId } = req.query;
+    const { page = 1, limit = 50, search, status, cafeId } = req.query;
 
     // Build query
     const query = {};
@@ -2594,16 +2594,16 @@ export const getAllOffers = asyncHandler(async (req, res) => {
       query.status = status;
     }
 
-    if (restaurantId) {
-      query.restaurant = restaurantId;
+    if (cafeId) {
+      query.cafe = cafeId;
     }
 
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Fetch offers with restaurant details
+    // Fetch offers with cafe details
     const offers = await Offer.find(query)
-      .populate("restaurant", "name restaurantId")
+      .populate("cafe", "name cafeId")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -2621,7 +2621,7 @@ export const getAllOffers = asyncHandler(async (req, res) => {
           if (search) {
             const searchLower = search.toLowerCase();
             const matchesSearch =
-              offer.restaurant?.name?.toLowerCase().includes(searchLower) ||
+              offer.cafe?.name?.toLowerCase().includes(searchLower) ||
               item.itemName?.toLowerCase().includes(searchLower) ||
               item.couponCode?.toLowerCase().includes(searchLower);
 
@@ -2633,10 +2633,10 @@ export const getAllOffers = asyncHandler(async (req, res) => {
           offerItems.push({
             sl: skip + offerItems.length + 1,
             offerId: offer._id.toString(),
-            restaurantName: offer.restaurant?.name || "Unknown Cafe",
-            restaurantId:
-              offer.restaurant?.restaurantId ||
-              offer.restaurant?._id?.toString() ||
+            cafeName: offer.cafe?.name || "Unknown Cafe",
+            cafeId:
+              offer.cafe?.cafeId ||
+              offer.cafe?._id?.toString() ||
               "N/A",
             dishName: item.itemName || "Unknown Dish",
             dishId: item.itemId || "N/A",
@@ -2683,33 +2683,33 @@ export const getAllOffers = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get Restaurant Analytics for POS
- * GET /api/admin/restaurant-analytics/:restaurantId
+ * Get Cafe Analytics for POS
+ * GET /api/admin/cafe-analytics/:cafeId
  */
-export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
+export const getCafeAnalytics = asyncHandler(async (req, res) => {
   try {
-    const { restaurantId } = req.params;
+    const { cafeId } = req.params;
 
-    logger.info(`Fetching restaurant analytics for: ${restaurantId}`);
+    logger.info(`Fetching cafe analytics for: ${cafeId}`);
 
-    if (!restaurantId) {
+    if (!cafeId) {
       return errorResponse(res, 400, "Cafe ID is required");
     }
 
-    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
-      logger.warn(`Invalid restaurant ID format: ${restaurantId}`);
+    if (!mongoose.Types.ObjectId.isValid(cafeId)) {
+      logger.warn(`Invalid cafe ID format: ${cafeId}`);
       return errorResponse(res, 400, "Invalid cafe ID format");
     }
 
-    // Get restaurant details
-    const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant) {
-      logger.warn(`Restaurant not found: ${restaurantId}`);
+    // Get cafe details
+    const cafe = await Cafe.findById(cafeId);
+    if (!cafe) {
+      logger.warn(`Cafe not found: ${cafeId}`);
       return errorResponse(res, 404, "Cafe not found");
     }
 
     logger.info(
-      `Restaurant found: ${restaurant.name} (${restaurant.restaurantId})`,
+      `Cafe found: ${cafe.name} (${cafe.cafeId})`,
     );
 
     // Calculate date ranges
@@ -2727,26 +2727,26 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       999,
     );
 
-    // Get order statistics - restaurantId can be _id or restaurantId field (both as String in Order model)
-    // Match by both restaurant._id and restaurant.restaurantId
-    const restaurantIdString = restaurantId.toString();
-    const restaurantIdField = restaurant?.restaurantId || restaurantIdString;
-    const restaurantObjectIdString = restaurant._id.toString();
+    // Get order statistics - cafeId can be _id or cafeId field (both as String in Order model)
+    // Match by both cafe._id and cafe.cafeId
+    const cafeIdString = cafeId.toString();
+    const cafeIdField = cafe?.cafeId || cafeIdString;
+    const cafeObjectIdString = cafe._id.toString();
 
-    logger.info(`📊 Fetching order statistics for restaurant:`, {
-      restaurantId: restaurantId,
-      restaurantIdString: restaurantIdString,
-      restaurantIdField: restaurantIdField,
-      restaurantObjectIdString: restaurantObjectIdString,
-      restaurantName: restaurant.name,
+    logger.info(`📊 Fetching order statistics for cafe:`, {
+      cafeId: cafeId,
+      cafeIdString: cafeIdString,
+      cafeIdField: cafeIdField,
+      cafeObjectIdString: cafeObjectIdString,
+      cafeName: cafe.name,
     });
 
-    // Build query to match restaurantId in multiple formats
+    // Build query to match cafeId in multiple formats
     const orderMatchQuery = {
       $or: [
-        { restaurantId: restaurantIdString },
-        { restaurantId: restaurantIdField },
-        { restaurantId: restaurantObjectIdString },
+        { cafeId: cafeIdString },
+        { cafeId: cafeIdField },
+        { cafeId: cafeObjectIdString },
       ],
     };
 
@@ -2807,8 +2807,8 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       {
         $match: {
           $or: [
-            { restaurantId: restaurantIdString },
-            { restaurantId: restaurantIdField },
+            { cafeId: cafeIdString },
+            { cafeId: cafeIdField },
           ],
           status: "delivered",
           createdAt: { $gte: startOfMonth },
@@ -2831,8 +2831,8 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       {
         $match: {
           $or: [
-            { restaurantId: restaurantIdString },
-            { restaurantId: restaurantIdField },
+            { cafeId: cafeIdString },
+            { cafeId: cafeIdField },
           ],
           status: "delivered",
           createdAt: { $gte: startOfYear },
@@ -2851,65 +2851,65 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
     const yearlyRevenue = yearlyStats[0]?.revenue || 0;
 
     // Get commission and earnings data from OrderSettlement (more accurate)
-    // Match settlements by restaurantId (ObjectId in OrderSettlement)
-    const restaurantIdForSettlement =
-      restaurant._id instanceof mongoose.Types.ObjectId
-        ? restaurant._id
-        : new mongoose.Types.ObjectId(restaurant._id);
+    // Match settlements by cafeId (ObjectId in OrderSettlement)
+    const cafeIdForSettlement =
+      cafe._id instanceof mongoose.Types.ObjectId
+        ? cafe._id
+        : new mongoose.Types.ObjectId(cafe._id);
 
-    // Get all settlements for this restaurant
+    // Get all settlements for this cafe
     const allSettlements = await OrderSettlement.find({
-      restaurantId: restaurantIdForSettlement,
+      cafeId: cafeIdForSettlement,
     }).lean();
 
     // Calculate totals from settlements
     let totalCommission = 0;
-    let totalRestaurantEarning = 0;
+    let totalCafeEarning = 0;
     let totalFoodPrice = 0;
 
     allSettlements.forEach((s) => {
-      totalCommission += s.restaurantEarning?.commission || 0;
-      totalRestaurantEarning += s.restaurantEarning?.netEarning || 0;
-      totalFoodPrice += s.restaurantEarning?.foodPrice || 0;
+      totalCommission += s.cafeEarning?.commission || 0;
+      totalCafeEarning += s.cafeEarning?.netEarning || 0;
+      totalFoodPrice += s.cafeEarning?.foodPrice || 0;
     });
 
     totalCommission = Math.round(totalCommission * 100) / 100;
-    totalRestaurantEarning = Math.round(totalRestaurantEarning * 100) / 100;
+    totalCafeEarning = Math.round(totalCafeEarning * 100) / 100;
     totalFoodPrice = Math.round(totalFoodPrice * 100) / 100;
 
     // Get monthly settlements
     const monthlySettlements = await OrderSettlement.find({
-      restaurantId: restaurantIdForSettlement,
+      cafeId: cafeIdForSettlement,
       createdAt: { $gte: startOfMonth },
     }).lean();
 
     let monthlyCommission = 0;
-    let monthlyRestaurantEarning = 0;
+    let monthlyCafeEarning = 0;
     monthlySettlements.forEach((s) => {
-      monthlyCommission += s.restaurantEarning?.commission || 0;
-      monthlyRestaurantEarning += s.restaurantEarning?.netEarning || 0;
+      monthlyCommission += s.cafeEarning?.commission || 0;
+      monthlyCafeEarning += s.cafeEarning?.netEarning || 0;
     });
 
     monthlyCommission = Math.round(monthlyCommission * 100) / 100;
-    monthlyRestaurantEarning = Math.round(monthlyRestaurantEarning * 100) / 100;
-    const monthlyProfit = monthlyRestaurantEarning; // Restaurant profit = net earning
+    monthlyCafeEarning = Math.round(monthlyCafeEarning * 100) / 100;
+    const monthlyProfit = monthlyCafeEarning; // Cafe profit = net earning
 
     // Get yearly settlements
     const yearlySettlements = await OrderSettlement.find({
-      restaurantId: restaurantIdForSettlement,
+      cafeId: cafeIdForSettlement,
       createdAt: { $gte: startOfYear },
     }).lean();
 
     let yearlyCommission = 0;
-    let yearlyRestaurantEarning = 0;
+    let yearlyCafeEarning = 0;
     yearlySettlements.forEach((s) => {
-      yearlyCommission += s.restaurantEarning?.commission || 0;
-      yearlyRestaurantEarning += s.restaurantEarning?.netEarning || 0;
+      yearlyCommission += s.cafeEarning?.commission || 0;
+      yearlyCafeEarning += s.cafeEarning?.netEarning || 0;
     });
 
     yearlyCommission = Math.round(yearlyCommission * 100) / 100;
-    yearlyRestaurantEarning = Math.round(yearlyRestaurantEarning * 100) / 100;
-    const yearlyProfit = yearlyRestaurantEarning; // Restaurant profit = net earning
+    yearlyCafeEarning = Math.round(yearlyCafeEarning * 100) / 100;
+    const yearlyProfit = yearlyCafeEarning; // Cafe profit = net earning
 
     // Get average monthly profit (last 12 months)
     const last12MonthsStart = new Date(
@@ -2918,7 +2918,7 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       1,
     );
     const last12MonthsSettlements = await OrderSettlement.find({
-      restaurantId: restaurantIdForSettlement,
+      cafeId: cafeIdForSettlement,
       createdAt: { $gte: last12MonthsStart },
     }).lean();
 
@@ -2929,7 +2929,7 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       const current = monthlyEarningsMap.get(monthKey) || 0;
       monthlyEarningsMap.set(
         monthKey,
-        current + (s.restaurantEarning?.netEarning || 0),
+        current + (s.cafeEarning?.netEarning || 0),
       );
     });
 
@@ -2941,28 +2941,28 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
         ) / monthlyEarningsMap.size
         : 0;
 
-    // Get commission percentage from RestaurantCommission
-    const RestaurantCommission = (
-      await import("../models/RestaurantCommission.js")
+    // Get commission percentage from CafeCommission
+    const CafeCommission = (
+      await import("../models/CafeCommission.js")
     ).default;
 
-    // Use restaurant._id directly - ensure it's an ObjectId
-    const restaurantIdForQuery =
-      restaurant._id instanceof mongoose.Types.ObjectId
-        ? restaurant._id
-        : new mongoose.Types.ObjectId(restaurant._id);
+    // Use cafe._id directly - ensure it's an ObjectId
+    const cafeIdForQuery =
+      cafe._id instanceof mongoose.Types.ObjectId
+        ? cafe._id
+        : new mongoose.Types.ObjectId(cafe._id);
 
     logger.info(`🔍 Looking for commission config:`, {
-      restaurantId: restaurantId,
-      restaurantObjectId: restaurantIdForQuery.toString(),
-      restaurantName: restaurant.name,
-      restaurantIdString: restaurant.restaurantId,
+      cafeId: cafeId,
+      cafeObjectId: cafeIdForQuery.toString(),
+      cafeName: cafe.name,
+      cafeIdString: cafe.cafeId,
     });
 
     // Try using the static method first
     let commissionConfig =
-      await RestaurantCommission.getCommissionForRestaurant(
-        restaurantIdForQuery,
+      await CafeCommission.getCommissionForCafe(
+        cafeIdForQuery,
       );
 
     if (commissionConfig) {
@@ -2978,8 +2978,8 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       logger.info(
         `⚠️ Static method didn't find commission, trying direct query`,
       );
-      commissionConfig = await RestaurantCommission.findOne({
-        restaurant: restaurantIdForQuery,
+      commissionConfig = await CafeCommission.findOne({
+        cafe: cafeIdForQuery,
         status: true,
       });
 
@@ -2993,8 +2993,8 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
     // If still not found, try without status filter
     if (!commissionConfig) {
       logger.info(`⚠️ Trying without status filter`);
-      commissionConfig = await RestaurantCommission.findOne({
-        restaurant: restaurantIdForQuery,
+      commissionConfig = await CafeCommission.findOne({
+        cafe: cafeIdForQuery,
       });
 
       if (commissionConfig) {
@@ -3004,13 +3004,13 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       }
     }
 
-    // Also try by restaurantId string field
-    if (!commissionConfig && restaurant?.restaurantId) {
+    // Also try by cafeId string field
+    if (!commissionConfig && cafe?.cafeId) {
       logger.info(
-        `🔄 Trying by restaurantId string: ${restaurant.restaurantId}`,
+        `🔄 Trying by cafeId string: ${cafe.cafeId}`,
       );
-      commissionConfig = await RestaurantCommission.findOne({
-        restaurantId: restaurant.restaurantId,
+      commissionConfig = await CafeCommission.findOne({
+        cafeId: cafe.cafeId,
       });
 
       if (commissionConfig) {
@@ -3022,7 +3022,7 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
 
     // Final debug: List all commissions to see what's in DB
     if (!commissionConfig) {
-      const allCommissions = await RestaurantCommission.find({}).lean();
+      const allCommissions = await CafeCommission.find({}).lean();
       logger.warn(
         `❌ No commission found. Total commissions in DB: ${allCommissions.length}`,
       );
@@ -3030,36 +3030,36 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
         `📋 All commissions:`,
         allCommissions.map((c) => ({
           _id: c._id,
-          restaurant: c.restaurant?.toString
-            ? c.restaurant.toString()
-            : String(c.restaurant),
-          restaurantId: c.restaurantId,
-          restaurantName: c.restaurantName,
+          cafe: c.cafe?.toString
+            ? c.cafe.toString()
+            : String(c.cafe),
+          cafeId: c.cafeId,
+          cafeName: c.cafeName,
           status: c.status,
           defaultCommission: c.defaultCommission,
         })),
       );
 
-      // Check if restaurant ObjectId matches any commission
+      // Check if cafe ObjectId matches any commission
       const matching = allCommissions.filter((c) => {
-        const cRestaurantId = c.restaurant?.toString
-          ? c.restaurant.toString()
-          : String(c.restaurant);
-        return cRestaurantId === restaurantIdForQuery.toString();
+        const cCafeId = c.cafe?.toString
+          ? c.cafe.toString()
+          : String(c.cafe);
+        return cCafeId === cafeIdForQuery.toString();
       });
       logger.info(`🔍 Matching commissions: ${matching.length}`, matching);
     }
 
     let commissionPercentage = 0;
     if (commissionConfig) {
-      logger.info(`✅ Commission config found for restaurant ${restaurantId}`);
+      logger.info(`✅ Commission config found for cafe ${cafeId}`);
       logger.info(`Commission config details:`, {
         _id: commissionConfig._id,
-        restaurant: commissionConfig.restaurant?.toString
-          ? commissionConfig.restaurant.toString()
-          : String(commissionConfig.restaurant),
-        restaurantId: commissionConfig.restaurantId,
-        restaurantName: commissionConfig.restaurantName,
+        cafe: commissionConfig.cafe?.toString
+          ? commissionConfig.cafe.toString()
+          : String(commissionConfig.cafe),
+        cafeId: commissionConfig.cafeId,
+        cafeName: commissionConfig.cafeName,
         status: commissionConfig.status,
         hasDefaultCommission: !!commissionConfig.defaultCommission,
         defaultCommissionType: commissionConfig.defaultCommission?.type,
@@ -3079,29 +3079,29 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
           commissionPercentage =
             typeof rawValue === "number" ? rawValue : parseFloat(rawValue) || 0;
           logger.info(
-            `✅ Found commission percentage: ${commissionPercentage}% for restaurant ${restaurantId} (raw value: ${rawValue})`,
+            `✅ Found commission percentage: ${commissionPercentage}% for cafe ${cafeId} (raw value: ${rawValue})`,
           );
         } else if (commissionConfig.defaultCommission.type === "amount") {
           // For amount type, we can't show a percentage, so keep it as 0
           commissionPercentage = 0;
           logger.info(
-            `⚠️ Commission type is 'amount', not 'percentage' for restaurant ${restaurantId}`,
+            `⚠️ Commission type is 'amount', not 'percentage' for cafe ${cafeId}`,
           );
         }
       } else {
         logger.warn(
-          `⚠️ Commission config found but no defaultCommission for restaurant ${restaurantId}`,
+          `⚠️ Commission config found but no defaultCommission for cafe ${cafeId}`,
         );
       }
     } else {
       logger.warn(
-        `❌ No commission config found for restaurant ${restaurantId} (restaurant._id: ${restaurantIdForQuery.toString()})`,
+        `❌ No commission config found for cafe ${cafeId} (cafe._id: ${cafeIdForQuery.toString()})`,
       );
       logger.warn(
-        `⚠️ This restaurant may not have a commission configuration set up.`,
+        `⚠️ This cafe may not have a commission configuration set up.`,
       );
       logger.warn(
-        `💡 To set up commission, go to Restaurant Commission page and add commission for this restaurant.`,
+        `💡 To set up commission, go to Cafe Commission page and add commission for this cafe.`,
       );
     }
 
@@ -3113,24 +3113,24 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       `📤 Sending response with commissionPercentage: ${commissionPercentage}`,
     );
 
-    // Get ratings from FeedbackExperience (restaurantId is ObjectId in FeedbackExperience)
+    // Get ratings from FeedbackExperience (cafeId is ObjectId in FeedbackExperience)
     const FeedbackExperience = (await import("../models/FeedbackExperience.js"))
       .default;
 
-    const restaurantIdForRating =
-      restaurant._id instanceof mongoose.Types.ObjectId
-        ? restaurant._id
-        : new mongoose.Types.ObjectId(restaurant._id);
+    const cafeIdForRating =
+      cafe._id instanceof mongoose.Types.ObjectId
+        ? cafe._id
+        : new mongoose.Types.ObjectId(cafe._id);
 
-    logger.info(`⭐ Fetching ratings for restaurant:`, {
-      restaurantId: restaurantId,
-      restaurantObjectId: restaurantIdForRating.toString(),
+    logger.info(`⭐ Fetching ratings for cafe:`, {
+      cafeId: cafeId,
+      cafeObjectId: cafeIdForRating.toString(),
     });
 
     const ratingStats = await FeedbackExperience.aggregate([
       {
         $match: {
-          restaurantId: restaurantIdForRating,
+          cafeId: cafeIdForRating,
           rating: { $exists: true, $ne: null, $gt: 0 },
         },
       },
@@ -3158,8 +3158,8 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       {
         $match: {
           $or: [
-            { restaurantId: restaurantIdString },
-            { restaurantId: restaurantIdField },
+            { cafeId: cafeIdString },
+            { cafeId: cafeIdField },
           ],
           status: "delivered",
         },
@@ -3187,28 +3187,28 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
     const completionRate =
       totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
 
-    // Calculate average yearly profit (if restaurant has been active for multiple years)
-    const restaurantCreatedAt = restaurant.createdAt || new Date();
+    // Calculate average yearly profit (if cafe has been active for multiple years)
+    const cafeCreatedAt = cafe.createdAt || new Date();
     const yearsActive = Math.max(
       1,
-      (now - restaurantCreatedAt) / (365 * 24 * 60 * 60 * 1000),
+      (now - cafeCreatedAt) / (365 * 24 * 60 * 60 * 1000),
     );
     const averageYearlyProfit =
       yearsActive > 0
-        ? yearlyRestaurantEarning / yearsActive
-        : yearlyRestaurantEarning;
+        ? yearlyCafeEarning / yearsActive
+        : yearlyCafeEarning;
 
     return successResponse(
       res,
       200,
       "Cafe analytics retrieved successfully",
       {
-        restaurant: {
-          _id: restaurant._id,
-          name: restaurant.name,
-          restaurantId: restaurant.restaurantId,
-          isActive: restaurant.isActive,
-          createdAt: restaurant.createdAt,
+        cafe: {
+          _id: cafe._id,
+          name: cafe.name,
+          cafeId: cafe.cafeId,
+          isActive: cafe.isActive,
+          createdAt: cafe.createdAt,
         },
         analytics: {
           totalOrders: Number(totalOrders) || 0,
@@ -3219,18 +3219,18 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
             : 0,
           totalRatings: Number(totalRatings) || 0,
           commissionPercentage: Number(commissionPercentage) || 0,
-          monthlyProfit: parseFloat(monthlyRestaurantEarning.toFixed(2)),
-          yearlyProfit: parseFloat(yearlyRestaurantEarning.toFixed(2)),
+          monthlyProfit: parseFloat(monthlyCafeEarning.toFixed(2)),
+          yearlyProfit: parseFloat(yearlyCafeEarning.toFixed(2)),
           averageOrderValue: parseFloat(averageOrderValue.toFixed(2)),
           totalRevenue: parseFloat(totalRevenue.toFixed(2)),
           totalCommission: parseFloat(totalCommission.toFixed(2)),
-          restaurantEarning: parseFloat(totalRestaurantEarning.toFixed(2)),
+          cafeEarning: parseFloat(totalCafeEarning.toFixed(2)),
           monthlyOrders,
           yearlyOrders,
           averageMonthlyProfit: parseFloat(avgMonthlyProfit.toFixed(2)),
           averageYearlyProfit: parseFloat(averageYearlyProfit.toFixed(2)),
-          status: restaurant.isActive ? "active" : "inactive",
-          joinDate: restaurant.createdAt,
+          status: cafe.isActive ? "active" : "inactive",
+          joinDate: cafe.createdAt,
           totalCustomers,
           repeatCustomers,
           cancellationRate: parseFloat(cancellationRate.toFixed(2)),
@@ -3239,7 +3239,7 @@ export const getRestaurantAnalytics = asyncHandler(async (req, res) => {
       },
     );
   } catch (error) {
-    logger.error(`Error fetching restaurant analytics: ${error.message}`, {
+    logger.error(`Error fetching cafe analytics: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to fetch cafe analytics");
@@ -3500,43 +3500,43 @@ export const getCustomerWalletReport = asyncHandler(async (req, res) => {
 });
 
 /**
- * Update Restaurant Zone
- * PUT /api/admin/restaurants/:id/zone
+ * Update Cafe Zone
+ * PUT /api/admin/cafes/:id/zone
  */
-export const updateRestaurantZone = asyncHandler(async (req, res) => {
+export const updateCafeZone = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
     const { zoneId } = req.body;
 
-    // Restaurant is already imported at the top of file
+    // Cafe is already imported at the top of file
 
-    const restaurant = await Restaurant.findById(id);
+    const cafe = await Cafe.findById(id);
 
-    if (!restaurant) {
+    if (!cafe) {
       return errorResponse(res, 404, "Cafe not found");
     }
 
-    if (!restaurant.location) {
-      restaurant.location = {};
+    if (!cafe.location) {
+      cafe.location = {};
     }
 
     // Update location.zoneId
-    restaurant.location.zoneId = zoneId;
-    await restaurant.save();
+    cafe.location.zoneId = zoneId;
+    await cafe.save();
 
-    logger.info(`Restaurant zone updated: ${id} -> ${zoneId}`, {
+    logger.info(`Cafe zone updated: ${id} -> ${zoneId}`, {
       updatedBy: req.user._id,
     });
 
     return successResponse(res, 200, "Cafe zone updated successfully", {
-      restaurant: {
-        id: restaurant._id,
-        name: restaurant.name,
-        zoneId: restaurant.location.zoneId,
+      cafe: {
+        id: cafe._id,
+        name: cafe.name,
+        zoneId: cafe.location.zoneId,
       },
     });
   } catch (error) {
-    logger.error(`Error updating restaurant zone: ${error.message}`, {
+    logger.error(`Error updating cafe zone: ${error.message}`, {
       error: error.stack,
     });
     return errorResponse(res, 500, "Failed to update cafe zone");

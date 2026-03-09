@@ -58,7 +58,7 @@ export async function processAutoReadyOrders() {
             },
             { new: true }
           )
-            .populate('restaurantId', 'name location address phone')
+            .populate('cafeId', 'name location address phone')
             .populate('userId', 'name phone')
             .populate('deliveryPartnerId', 'name phone')
             .lean();

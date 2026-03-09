@@ -163,7 +163,7 @@ export default function AISetup() {
         {activeTab === "ai-settings" && (
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
             <form onSubmit={handleAISettingsSave}>
-              {/* Restaurant Limits Section */}
+              {/* Cafe Limits Section */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Store className="w-4 h-4 text-slate-600" />

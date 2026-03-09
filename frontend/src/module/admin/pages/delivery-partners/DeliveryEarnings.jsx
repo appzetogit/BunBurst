@@ -116,7 +116,7 @@ export default function DeliveryEarnings() {
       { key: "deliveryPartnerName", label: "Delivery Boy" },
       { key: "deliveryPartnerPhone", label: "Phone" },
       { key: "orderId", label: "Order ID" },
-      { key: "restaurantName", label: "Restaurant" },
+      { key: "cafeName", label: "Cafe" },
       { key: "amount", label: "Earning" },
       { key: "orderTotal", label: "Order Total" },
       { key: "deliveryFee", label: "Delivery Fee" },
@@ -129,7 +129,7 @@ export default function DeliveryEarnings() {
       deliveryPartnerName: earning.deliveryPartnerName || 'N/A',
       deliveryPartnerPhone: earning.deliveryPartnerPhone || 'N/A',
       orderId: earning.orderId || 'N/A',
-      restaurantName: earning.restaurantName || 'N/A',
+      cafeName: earning.cafeName || 'N/A',
       amount: formatCurrency(earning.amount),
       orderTotal: formatCurrency(earning.orderTotal),
       deliveryFee: formatCurrency(earning.deliveryFee),
@@ -346,7 +346,7 @@ export default function DeliveryEarnings() {
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Delivery Boy</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Phone</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Order ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Restaurant</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Cafe</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Earning</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Order Total</th>
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Status</th>
@@ -379,7 +379,7 @@ export default function DeliveryEarnings() {
                         {earning.orderId || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-700">
-                        {earning.restaurantName || 'N/A'}
+                        {earning.cafeName || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-green-600">
                         {formatCurrency(earning.amount)}

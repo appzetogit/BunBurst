@@ -112,7 +112,7 @@ export default function ContactMessages() {
           feedback.customer?.email?.toLowerCase().includes(query) ||
           feedback.comment?.toLowerCase().includes(query) ||
           feedback.orderId?.toLowerCase().includes(query) ||
-          feedback.restaurantName?.toLowerCase().includes(query) ||
+          feedback.cafeName?.toLowerCase().includes(query) ||
           feedback.deliveryPartner?.name?.toLowerCase().includes(query) ||
           feedback.deliveryPartner?.id?.toString().toLowerCase().includes(query) ||
           itemNames.includes(query)
@@ -232,7 +232,7 @@ export default function ContactMessages() {
                 </th>
                 <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
-                    <span>Restaurant</span>
+                    <span>Cafe</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
                   </div>
                 </th>
@@ -309,7 +309,7 @@ export default function ContactMessages() {
                       <span className="text-sm font-medium text-slate-900">{feedback.orderId || 'N/A'}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-slate-900">{feedback.restaurantName || 'N/A'}</span>
+                      <span className="text-sm font-medium text-slate-900">{feedback.cafeName || 'N/A'}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
@@ -443,10 +443,10 @@ export default function ContactMessages() {
                       <p className="text-base font-semibold text-slate-900 dark:text-white">{selectedFeedback.orderId}</p>
                     </div>
                   )}
-                   {selectedFeedback.restaurantName && (
+                   {selectedFeedback.cafeName && (
                      <div className="space-y-1">
-                       <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Restaurant</label>
-                       <p className="text-base font-semibold text-slate-900 dark:text-white">{selectedFeedback.restaurantName}</p>
+                       <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cafe</label>
+                       <p className="text-base font-semibold text-slate-900 dark:text-white">{selectedFeedback.cafeName}</p>
                      </div>
                    )}
                    {selectedFeedback.deliveryPartner?.name && (

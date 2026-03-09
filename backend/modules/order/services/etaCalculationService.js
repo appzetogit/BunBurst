@@ -1,6 +1,6 @@
 import googleMapsService from './googleMapsService.js';
 import Order from '../models/Order.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import Delivery from '../../delivery/models/Delivery.js';
 import OrderEvent from '../models/OrderEvent.js';
 import ETALog from '../models/ETALog.js';
@@ -31,29 +31,29 @@ class ETACalculationService {
 
   /**
    * Calculate initial ETA when order is created
-   * @param {Object} orderData - Order data with restaurant, user location, etc.
+   * @param {Object} orderData - Order data with cafe, user location, etc.
    * @returns {Promise<Object>} - { minETA, maxETA, breakdown }
    */
   async calculateInitialETA(orderData) {
     const {
-      restaurantId,
-      restaurantLocation,
+      cafeId,
+      cafeLocation,
       userLocation,
       riderLocation = null // Optional: if rider is already assigned
     } = orderData;
 
     try {
-      // 1. Get restaurant data
-      const restaurant = await Restaurant.findOne({ restaurantId });
-      if (!restaurant) {
+      // 1. Get cafe data
+      const cafe = await Cafe.findOne({ cafeId });
+      if (!cafe) {
         throw new Error('Cafe not found');
       }
 
-      // 2. Calculate restaurant preparation time
-      const restaurantPrepTime = await this.getRestaurantPrepTime(restaurantId);
+      // 2. Calculate cafe preparation time
+      const cafePrepTime = await this.getCafePrepTime(cafeId);
       
-      // 3. Calculate restaurant load delay (pending orders)
-      const restaurantLoadDelay = await this.getRestaurantLoadDelay(restaurantId);
+      // 3. Calculate cafe load delay (pending orders)
+      const cafeLoadDelay = await this.getCafeLoadDelay(cafeId);
 
       // 4. Calculate rider assignment time
       const riderAssignmentTime = riderLocation 
@@ -61,50 +61,50 @@ class ETACalculationService {
         : this.getRiderAssignmentTime();
 
       // 5. Calculate travel times
-      let travelTimeRiderToRestaurant = 0;
-      let travelTimeRestaurantToUser = 0;
+      let travelTimeRiderToCafe = 0;
+      let travelTimeCafeToUser = 0;
       let totalDistance = 0;
       let trafficLevel = 'low';
 
       if (riderLocation) {
         // Rider is assigned, calculate actual travel times
-        const riderToRestaurant = await googleMapsService.getTravelTime(
+        const riderToCafe = await googleMapsService.getTravelTime(
           riderLocation,
-          restaurantLocation
+          cafeLocation
         );
-        travelTimeRiderToRestaurant = riderToRestaurant.duration;
-        trafficLevel = riderToRestaurant.trafficLevel;
+        travelTimeRiderToCafe = riderToCafe.duration;
+        trafficLevel = riderToCafe.trafficLevel;
 
-        const restaurantToUser = await googleMapsService.getTravelTime(
-          restaurantLocation,
+        const cafeToUser = await googleMapsService.getTravelTime(
+          cafeLocation,
           userLocation
         );
-        travelTimeRestaurantToUser = restaurantToUser.duration;
-        totalDistance = riderToRestaurant.distance + restaurantToUser.distance;
+        travelTimeCafeToUser = cafeToUser.duration;
+        totalDistance = riderToCafe.distance + cafeToUser.distance;
         
-        // Update traffic level if restaurant-to-user has higher traffic
-        if (restaurantToUser.trafficLevel === 'high' || 
-            (restaurantToUser.trafficLevel === 'medium' && trafficLevel === 'low')) {
-          trafficLevel = restaurantToUser.trafficLevel;
+        // Update traffic level if cafe-to-user has higher traffic
+        if (cafeToUser.trafficLevel === 'high' || 
+            (cafeToUser.trafficLevel === 'medium' && trafficLevel === 'low')) {
+          trafficLevel = cafeToUser.trafficLevel;
         }
       } else {
         // No rider assigned yet, estimate travel time
         const estimatedTravel = await googleMapsService.getTravelTime(
-          restaurantLocation,
+          cafeLocation,
           userLocation
         );
-        travelTimeRestaurantToUser = estimatedTravel.duration;
+        travelTimeCafeToUser = estimatedTravel.duration;
         totalDistance = estimatedTravel.distance;
         trafficLevel = estimatedTravel.trafficLevel;
         
-        // Estimate rider to restaurant time (assume nearby rider)
-        travelTimeRiderToRestaurant = Math.ceil(estimatedTravel.duration * 0.3); // 30% of total
+        // Estimate rider to cafe time (assume nearby rider)
+        travelTimeRiderToCafe = Math.ceil(estimatedTravel.duration * 0.3); // 30% of total
       }
 
       // 6. Apply traffic multiplier
       const trafficMultiplier = ETACalculationService.TRAFFIC_MULTIPLIERS[trafficLevel] || 1.0;
       const adjustedTravelTime = Math.ceil(
-        (travelTimeRiderToRestaurant + travelTimeRestaurantToUser) * trafficMultiplier
+        (travelTimeRiderToCafe + travelTimeCafeToUser) * trafficMultiplier
       );
 
       // 7. Calculate buffer time based on distance
@@ -114,8 +114,8 @@ class ETACalculationService {
 
       // 8. Calculate total ETA
       const totalETA = 
-        restaurantPrepTime +
-        restaurantLoadDelay +
+        cafePrepTime +
+        cafeLoadDelay +
         riderAssignmentTime +
         adjustedTravelTime +
         bufferTime;
@@ -125,11 +125,11 @@ class ETACalculationService {
       const maxETA = totalETA + ETACalculationService.ETA_RANGE;
 
       const breakdown = {
-        restaurantPrepTime,
-        restaurantLoadDelay,
+        cafePrepTime,
+        cafeLoadDelay,
         riderAssignmentTime,
-        travelTimeRiderToRestaurant,
-        travelTimeRestaurantToUser,
+        travelTimeRiderToCafe,
+        travelTimeCafeToUser,
         trafficMultiplier,
         bufferTime,
         totalETA,
@@ -166,7 +166,7 @@ class ETACalculationService {
     try {
       const order = await Order.findById(orderId)
         .populate('deliveryPartnerId')
-        .populate('restaurantId');
+        .populate('cafeId');
 
       if (!order) {
         throw new Error('Order not found');
@@ -183,14 +183,14 @@ class ETACalculationService {
       let reason;
 
       switch (eventType) {
-        case 'RESTAURANT_ACCEPTED_LATE':
-          // Restaurant accepted late, add delay
+        case 'CAFE_ACCEPTED_LATE':
+          // Cafe accepted late, add delay
           const delayMinutes = eventData.delayMinutes || 0;
           newETA = {
             min: currentETA.min + delayMinutes,
             max: currentETA.max + delayMinutes
           };
-          reason = 'RESTAURANT_DELAYED';
+          reason = 'CAFE_DELAYED';
           break;
 
         case 'RIDER_ASSIGNED':
@@ -209,10 +209,10 @@ class ETACalculationService {
           reason = 'RIDER_ASSIGNMENT_DELAYED';
           break;
 
-        case 'RIDER_REACHED_RESTAURANT':
-          // Rider reached restaurant, update remaining time
+        case 'RIDER_REACHED_CAFE':
+          // Rider reached cafe, update remaining time
           newETA = await this.recalculateAfterPickup(order);
-          reason = 'RIDER_REACHED_RESTAURANT';
+          reason = 'RIDER_REACHED_CAFE';
           break;
 
         case 'FOOD_NOT_READY':
@@ -246,8 +246,8 @@ class ETACalculationService {
         default:
           // Default: recalculate from scratch
           newETA = await this.calculateInitialETA({
-            restaurantId: order.restaurantId,
-            restaurantLocation: await this.getRestaurantLocation(order.restaurantId),
+            cafeId: order.cafeId,
+            cafeLocation: await this.getCafeLocation(order.cafeId),
             userLocation: {
               latitude: order.address.location.coordinates[1],
               longitude: order.address.location.coordinates[0]
@@ -311,8 +311,8 @@ class ETACalculationService {
 
     if (!riderLocation) {
       return await this.calculateInitialETA({
-        restaurantId: order.restaurantId,
-        restaurantLocation: await this.getRestaurantLocation(order.restaurantId),
+        cafeId: order.cafeId,
+        cafeLocation: await this.getCafeLocation(order.cafeId),
         userLocation: {
           latitude: order.address.location.coordinates[1],
           longitude: order.address.location.coordinates[0]
@@ -320,15 +320,15 @@ class ETACalculationService {
       });
     }
 
-    const restaurantLocation = await this.getRestaurantLocation(order.restaurantId);
+    const cafeLocation = await this.getCafeLocation(order.cafeId);
     const userLocation = {
       latitude: order.address.location.coordinates[1],
       longitude: order.address.location.coordinates[0]
     };
 
     return await this.calculateInitialETA({
-      restaurantId: order.restaurantId,
-      restaurantLocation,
+      cafeId: order.cafeId,
+      cafeLocation,
       userLocation,
       riderLocation
     });
@@ -338,23 +338,23 @@ class ETACalculationService {
    * Recalculate ETA after rider picks up food
    */
   async recalculateAfterPickup(order) {
-    const restaurantLocation = await this.getRestaurantLocation(order.restaurantId);
+    const cafeLocation = await this.getCafeLocation(order.cafeId);
     const userLocation = {
       latitude: order.address.location.coordinates[1],
       longitude: order.address.location.coordinates[0]
     };
 
-    // Get rider's current location (should be at restaurant)
+    // Get rider's current location (should be at cafe)
     const riderLocation = order.deliveryPartnerId?.availability?.currentLocation 
       ? {
           latitude: order.deliveryPartnerId.availability.currentLocation.coordinates[1],
           longitude: order.deliveryPartnerId.availability.currentLocation.coordinates[0]
         }
-      : restaurantLocation; // Assume at restaurant
+      : cafeLocation; // Assume at cafe
 
-    // Calculate only restaurant to user time
+    // Calculate only cafe to user time
     const travelTime = await googleMapsService.getTravelTime(
-      restaurantLocation,
+      cafeLocation,
       userLocation
     );
 
@@ -373,7 +373,7 @@ class ETACalculationService {
       minETA,
       maxETA,
       breakdown: {
-        travelTimeRestaurantToUser: adjustedTravelTime,
+        travelTimeCafeToUser: adjustedTravelTime,
         bufferTime,
         trafficLevel: travelTime.trafficLevel,
         trafficMultiplier,
@@ -390,14 +390,14 @@ class ETACalculationService {
     const trafficMultiplier = ETACalculationService.TRAFFIC_MULTIPLIERS[trafficLevel];
 
     // Get current breakdown and apply traffic multiplier
-    const restaurantLocation = await this.getRestaurantLocation(order.restaurantId);
+    const cafeLocation = await this.getCafeLocation(order.cafeId);
     const userLocation = {
       latitude: order.address.location.coordinates[1],
       longitude: order.address.location.coordinates[0]
     };
 
     const travelTime = await googleMapsService.getTravelTime(
-      restaurantLocation,
+      cafeLocation,
       userLocation
     );
 
@@ -414,7 +414,7 @@ class ETACalculationService {
       minETA,
       maxETA,
       breakdown: {
-        travelTimeRestaurantToUser: adjustedTravelTime,
+        travelTimeCafeToUser: adjustedTravelTime,
         bufferTime,
         trafficLevel,
         trafficMultiplier,
@@ -448,25 +448,25 @@ class ETACalculationService {
   }
 
   /**
-   * Get restaurant preparation time
+   * Get cafe preparation time
    */
-  async getRestaurantPrepTime(restaurantId) {
-    const restaurant = await Restaurant.findOne({ restaurantId });
-    if (!restaurant) return 15; // Default 15 minutes
+  async getCafePrepTime(cafeId) {
+    const cafe = await Cafe.findOne({ cafeId });
+    if (!cafe) return 15; // Default 15 minutes
 
     // Parse estimatedDeliveryTime string like "25-30 mins" or use default
-    const prepTimeStr = restaurant.estimatedDeliveryTime || "25-30 mins";
+    const prepTimeStr = cafe.estimatedDeliveryTime || "25-30 mins";
     const match = prepTimeStr.match(/(\d+)/);
     return match ? parseInt(match[1]) : 25;
   }
 
   /**
-   * Get restaurant load delay based on pending orders
+   * Get cafe load delay based on pending orders
    */
-  async getRestaurantLoadDelay(restaurantId) {
+  async getCafeLoadDelay(cafeId) {
     // Count pending/preparing orders
     const pendingOrders = await Order.countDocuments({
-      restaurantId,
+      cafeId,
       status: { $in: ['confirmed', 'preparing'] }
     });
 
@@ -474,7 +474,7 @@ class ETACalculationService {
     const avgPrepPerOrder = 15;
     
     // Calculate delay: pending orders * avg prep time / number of parallel orders
-    // Assume restaurant can prepare 2-3 orders in parallel
+    // Assume cafe can prepare 2-3 orders in parallel
     const parallelCapacity = 2.5;
     const loadDelay = Math.ceil((pendingOrders / parallelCapacity) * avgPrepPerOrder);
 
@@ -490,17 +490,17 @@ class ETACalculationService {
   }
 
   /**
-   * Get restaurant location
+   * Get cafe location
    */
-  async getRestaurantLocation(restaurantId) {
-    const restaurant = await Restaurant.findOne({ restaurantId });
-    if (!restaurant || !restaurant.location) {
+  async getCafeLocation(cafeId) {
+    const cafe = await Cafe.findOne({ cafeId });
+    if (!cafe || !cafe.location) {
       throw new Error('Cafe location not found');
     }
 
     return {
-      latitude: restaurant.location.latitude,
-      longitude: restaurant.location.longitude
+      latitude: cafe.location.latitude,
+      longitude: cafe.location.longitude
     };
   }
 

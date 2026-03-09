@@ -354,7 +354,7 @@ export default function HomePage() {
 
   // Toggle wishlist item
   const toggleWishlist = (item, type = 'food') => {
-    const itemId = type === 'food' ? `food-${item.id}` : `restaurant-${item.id}`
+    const itemId = type === 'food' ? `food-${item.id}` : `cafe-${item.id}`
     const { id, ...restItem } = item
     const wishlistItem = {
       id: itemId,
@@ -372,7 +372,7 @@ export default function HomePage() {
         const itemName = type === 'food' ? item.name : item.name
         setToast({
           show: true,
-          message: `Your ${type === 'food' ? 'food item' : 'restaurant'} "${itemName}" is added to wishlist`
+          message: `Your ${type === 'food' ? 'food item' : 'cafe'} "${itemName}" is added to wishlist`
         })
         setTimeout(() => {
           setToast({ show: false, message: '' })
@@ -384,7 +384,7 @@ export default function HomePage() {
 
   // Check if item is in wishlist
   const isInWishlist = (item, type = 'food') => {
-    const itemId = type === 'food' ? `food-${item.id}` : `restaurant-${item.id}`
+    const itemId = type === 'food' ? `food-${item.id}` : `cafe-${item.id}`
     return wishlist.some((w) => w.id === itemId)
   }
 
@@ -407,13 +407,13 @@ export default function HomePage() {
     { id: 4, name: "Salad", description: "Baked Salmon", image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=400&fit=crop", price: "$9.50", rating: 4.5, reviews: 25 },
   ]
 
-  // Popular Restaurants data
-  const popularRestaurants = [
+  // Popular Cafes data
+  const popularCafes = [
     {
       id: 1,
       name: "Hungry Puppets",
       foodImage: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop",
-      restaurantIcon: UtensilsCrossed,
+      cafeIcon: UtensilsCrossed,
       cuisines: "Bengali, Indian, Pizza, Pasta",
       distance: "967.40 km",
       deliveryTime: "30-40 min",
@@ -423,7 +423,7 @@ export default function HomePage() {
       id: 2,
       name: "Pizza Paradise",
       foodImage: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop",
-      restaurantIcon: ChefHat,
+      cafeIcon: ChefHat,
       cuisines: "Italian, Pizza, Pasta",
       distance: "850.20 km",
       deliveryTime: "20-25 min",
@@ -433,7 +433,7 @@ export default function HomePage() {
       id: 3,
       name: "Burger King",
       foodImage: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop",
-      restaurantIcon: Store,
+      cafeIcon: Store,
       cuisines: "American, Fast Food, Burgers",
       distance: "720.50 km",
       deliveryTime: "30-35 min",
@@ -443,7 +443,7 @@ export default function HomePage() {
       id: 4,
       name: "Sushi Express",
       foodImage: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&h=300&fit=crop",
-      restaurantIcon: ChefHat,
+      cafeIcon: ChefHat,
       cuisines: "Japanese, Sushi, Asian",
       distance: "1100.30 km",
       deliveryTime: "35-40 min",
@@ -453,7 +453,7 @@ export default function HomePage() {
       id: 5,
       name: "Taco Bell",
       foodImage: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400&h=300&fit=crop",
-      restaurantIcon: Coffee,
+      cafeIcon: Coffee,
       cuisines: "Mexican, Fast Food, Tacos",
       distance: "650.80 km",
       deliveryTime: "25-30 min",
@@ -716,7 +716,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Popular Restaurants Section */}
+      {/* Popular Cafes Section */}
       <div className="px-4 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-foreground">Popular Cafes</h3>
@@ -726,24 +726,24 @@ export default function HomePage() {
         </div>
 
         <div className="flex gap-4 overflow-x-auto scrollbar-hide -mx-4 px-4">
-          {popularRestaurants.map((restaurant) => (
+          {popularCafes.map((cafe) => (
             <motion.div
-              key={restaurant.id}
+              key={cafe.id}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
               whileHover={{ y: -5 }}
               className="flex-shrink-0 w-[200px] bg-card border border-border rounded-xl overflow-visible shadow-sm hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => {
-                // Navigate to restaurant page
-                console.log(`Navigate to restaurant: ${restaurant.name}`)
+                // Navigate to cafe page
+                console.log(`Navigate to cafe: ${cafe.name}`)
               }}
             >
               {/* Food Image */}
               <div className="relative w-full h-40 rounded-t-xl overflow-hidden">
                 <img
-                  src={restaurant.foodImage}
-                  alt={restaurant.name}
+                  src={cafe.foodImage}
+                  alt={cafe.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     e.target.src = `https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop`
@@ -754,11 +754,11 @@ export default function HomePage() {
                   className="absolute top-2 right-2 p-1.5 bg-black/60 backdrop-blur-sm rounded-full hover:bg-black/80 transition-transform z-10"
                   onClick={(e) => {
                     e.stopPropagation()
-                    toggleWishlist(restaurant, 'restaurant')
+                    toggleWishlist(cafe, 'cafe')
                   }}
                 >
                   <Heart
-                    className={`w-4 h-4 transition-all ${isInWishlist(restaurant, 'restaurant')
+                    className={`w-4 h-4 transition-all ${isInWishlist(cafe, 'cafe')
                       ? 'text-primary fill-primary'
                       : 'text-white hover:text-primary'
                       }`}
@@ -766,34 +766,34 @@ export default function HomePage() {
                 </button>
                 {/* Distance Badge */}
                 <div className="absolute bottom-2 right-2 bg-black/80 border border-primary/50 rounded-lg px-2.5 py-1 shadow-md">
-                  <span className="text-[10px] font-bold text-primary">{restaurant.distance}</span>
+                  <span className="text-[10px] font-bold text-primary">{cafe.distance}</span>
                 </div>
               </div>
 
-              {/* Restaurant Details */}
+              {/* Cafe Details */}
               <div className="p-3 pt-2 relative">
-                {/* Restaurant Icon */}
+                {/* Cafe Icon */}
                 <div className="absolute -top-5 left-3 w-10 h-10 bg-card border border-border rounded-lg flex items-center justify-center flex-shrink-0 shadow-md z-10">
-                  {restaurant.restaurantIcon && (
-                    <restaurant.restaurantIcon className="w-5 h-5 text-primary" />
+                  {cafe.cafeIcon && (
+                    <cafe.cafeIcon className="w-5 h-5 text-primary" />
                   )}
                 </div>
 
-                {/* Restaurant Name and Cuisines */}
+                {/* Cafe Name and Cuisines */}
                 <div className="ml-14 mb-2">
-                  <h4 className="text-sm font-bold text-card-foreground mb-1 line-clamp-1">{restaurant.name}</h4>
-                  <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">{restaurant.cuisines}</p>
+                  <h4 className="text-sm font-bold text-card-foreground mb-1 line-clamp-1">{cafe.name}</h4>
+                  <p className="text-[10px] text-muted-foreground line-clamp-2 leading-tight">{cafe.cuisines}</p>
                 </div>
 
                 {/* Rating and Time */}
                 <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border">
                   <div className="flex items-center gap-1">
                     <Star className="w-3.5 h-3.5 text-primary fill-primary" />
-                    <span className="text-xs font-semibold text-card-foreground">{restaurant.rating}</span>
+                    <span className="text-xs font-semibold text-card-foreground">{cafe.rating}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs text-muted-foreground">{restaurant.deliveryTime}</span>
+                    <span className="text-xs text-muted-foreground">{cafe.deliveryTime}</span>
                   </div>
                 </div>
               </div>
@@ -802,7 +802,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Find Nearby Restaurant Banner */}
+      {/* Find Nearby Cafe Banner */}
       <div className="px-4 mb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

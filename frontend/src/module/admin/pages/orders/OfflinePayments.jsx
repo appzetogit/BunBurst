@@ -25,7 +25,7 @@ export default function OfflinePayments() {
     filteredOrders,
     count,
     activeFiltersCount,
-    restaurants,
+    cafes,
     handleApplyFilters,
     handleResetFilters,
     handleExport,
@@ -61,7 +61,7 @@ export default function OfflinePayments() {
         setFilters={setFilters}
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
-        restaurants={restaurants}
+        cafes={cafes}
       />
       <SettingsDialog
         isOpen={isSettingsOpen}

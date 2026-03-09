@@ -13,7 +13,7 @@ export const foodReviewsDummy = [
     review: "Cafe Monarch's mutton biryani...",
     date: "28 DEC 2024",
     time: "11:13 PM",
-    restaurantReply: "Not replied Yet",
+    cafeReply: "Not replied Yet",
     isActive: true,
   },
   {
@@ -28,7 +28,7 @@ export const foodReviewsDummy = [
     review: "vvxvXvXv",
     date: "01 JUN 2023",
     time: "11:55 AM",
-    restaurantReply: "Not replied Yet",
+    cafeReply: "Not replied Yet",
     isActive: true,
   },
   {
@@ -43,7 +43,7 @@ export const foodReviewsDummy = [
     review: "This elegant Chocolate Semifre...",
     date: "02 JAN 2023",
     time: "04:06 PM",
-    restaurantReply: "Not replied Yet",
+    cafeReply: "Not replied Yet",
     isActive: true,
   },
   {
@@ -58,7 +58,7 @@ export const foodReviewsDummy = [
     review: "Toll House Pie chocolate, suga...",
     date: "02 JAN 2023",
     time: "04:03 PM",
-    restaurantReply: "Not replied Yet",
+    cafeReply: "Not replied Yet",
     isActive: true,
   },
   {
@@ -73,7 +73,7 @@ export const foodReviewsDummy = [
     review: "Pizza packaging and test was s...",
     date: "02 JAN 2023",
     time: "03:35 PM",
-    restaurantReply: "Thanks.",
+    cafeReply: "Thanks.",
     isActive: true,
   },
   {
@@ -88,7 +88,7 @@ export const foodReviewsDummy = [
     review: "nice",
     date: "22 AUG 2021",
     time: "09:25 AM",
-    restaurantReply: "Not replied Yet",
+    cafeReply: "Not replied Yet",
     isActive: true,
   },
   {
@@ -103,7 +103,7 @@ export const foodReviewsDummy = [
     review: "Nice",
     date: "21 AUG 2021",
     time: "10:46 PM",
-    restaurantReply: "Thanks",
+    cafeReply: "Thanks",
     isActive: true,
   },
   {
@@ -118,7 +118,7 @@ export const foodReviewsDummy = [
     review: "Very delicious food. It was re...",
     date: "21 AUG 2021",
     time: "01:55 PM",
-    restaurantReply: "Not replied Yet",
+    cafeReply: "Not replied Yet",
     isActive: true,
   },
 ]

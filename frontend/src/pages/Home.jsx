@@ -22,13 +22,13 @@ export default function Home() {
                 <span className="font-semibold">User</span>
               </Button>
             </Link>
-            <Link to="/restaurant" className="block">
+            <Link to="/cafe" className="block">
               <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center">
                 <span className="text-2xl mb-2">🍽️</span>
-                <span className="font-semibold">Restaurant</span>
+                <span className="font-semibold">Cafe</span>
               </Button>
             </Link>
-            <Link to="/restaurant/auth/sign-in" className="block">
+            <Link to="/cafe/auth/sign-in" className="block">
               <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center border-2 border-primary hover:bg-primary/10">
                 <span className="text-2xl mb-2">🔐</span>
                 <span className="font-semibold text-foreground">Cafe Login</span>

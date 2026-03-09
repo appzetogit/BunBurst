@@ -11,7 +11,7 @@ export default function TableBooking() {
     const { slug } = useParams()
     const location = useLocation()
     const navigate = useNavigate()
-    const [restaurant, setRestaurant] = useState(null)
+    const [cafe, setCafe] = useState(null)
     const [loading, setLoading] = useState(true)
 
     const [selectedGuests, setSelectedGuests] = useState(location.state?.guestCount || 2)
@@ -20,13 +20,13 @@ export default function TableBooking() {
     const [selectedSlot, setSelectedSlot] = useState(null)
 
     useEffect(() => {
-        const fetchRestaurant = async () => {
+        const fetchCafe = async () => {
             try {
-                const response = await diningAPI.getRestaurantBySlug(slug)
+                const response = await diningAPI.getCafeBySlug(slug)
                 if (response.data && response.data.success) {
-                    const apiRestaurant = response.data.data
-                    const actualRestaurant = apiRestaurant?.restaurant || apiRestaurant
-                    setRestaurant(actualRestaurant)
+                    const apiCafe = response.data.data
+                    const actualCafe = apiCafe?.cafe || apiCafe
+                    setCafe(actualCafe)
                 }
             } catch (error) {
                 console.error("Error fetching cafe:", error)
@@ -34,7 +34,7 @@ export default function TableBooking() {
                 setLoading(false)
             }
         }
-        fetchRestaurant()
+        fetchCafe()
     }, [slug])
 
     // Generate next 7 days
@@ -91,13 +91,13 @@ export default function TableBooking() {
     }
 
     if (loading) return <Loader />
-    if (!restaurant) return <div>Cafe not found</div>
+    if (!cafe) return <div>Cafe not found</div>
 
     const handleProceed = () => {
         if (!selectedSlot) return
         navigate("/dining/book-confirmation", {
             state: {
-                restaurant,
+                cafe,
                 guests: selectedGuests,
                 date: selectedDate,
                 timeSlot: selectedSlot.time,
@@ -119,7 +119,7 @@ export default function TableBooking() {
                     </button>
                     <div className="text-center">
                         <h1 className="text-2xl font-bold text-foreground">Book a table</h1>
-                        <p className="text-muted-foreground font-medium">{restaurant.name}</p>
+                        <p className="text-muted-foreground font-medium">{cafe.name}</p>
                     </div>
                 </div>
             </div>
@@ -134,7 +134,7 @@ export default function TableBooking() {
                             onChange={(e) => setSelectedGuests(parseInt(e.target.value))}
                             className="appearance-none bg-muted/30 border border-border rounded-lg py-2 pl-4 pr-10 font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                         >
-                            {Array.from({ length: restaurant.diningSettings?.maxGuests || 10 }, (_, i) => i + 1).map(num => (
+                            {Array.from({ length: cafe.diningSettings?.maxGuests || 10 }, (_, i) => i + 1).map(num => (
                                 <option key={num} value={num}>{num}</option>
                             ))}
                         </select>

@@ -59,31 +59,31 @@ export default function LandingPageManagement() {
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [settingsSaving, setSettingsSaving] = useState(false)
 
-  // Top 10 Restaurants
-  const [top10Restaurants, setTop10Restaurants] = useState([])
+  // Top 10 Cafes
+  const [top10Cafes, setTop10Cafes] = useState([])
   const [top10Loading, setTop10Loading] = useState(true)
   const [top10Deleting, setTop10Deleting] = useState(null)
-  const [selectedRestaurantTop10, setSelectedRestaurantTop10] = useState("")
+  const [selectedCafeTop10, setSelectedCafeTop10] = useState("")
   const [selectedRank, setSelectedRank] = useState(1)
-  const [allRestaurants, setAllRestaurants] = useState([])
-  const [restaurantsLoading, setRestaurantsLoading] = useState(false)
+  const [allCafes, setAllCafes] = useState([])
+  const [cafesLoading, setCafesLoading] = useState(false)
 
-  // Gourmet Restaurants
-  const [gourmetRestaurants, setGourmetRestaurants] = useState([])
+  // Gourmet Cafes
+  const [gourmetCafes, setGourmetCafes] = useState([])
   const [gourmetLoading, setGourmetLoading] = useState(true)
   const [gourmetDeleting, setGourmetDeleting] = useState(null)
-  const [selectedRestaurantGourmet, setSelectedRestaurantGourmet] = useState("")
+  const [selectedCafeGourmet, setSelectedCafeGourmet] = useState("")
 
   // Common
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
 
-  // Restaurant Selection Modal for Banner Advertising
-  const [showRestaurantModal, setShowRestaurantModal] = useState(false)
+  // Cafe Selection Modal for Banner Advertising
+  const [showCafeModal, setShowCafeModal] = useState(false)
   const [selectedBannerId, setSelectedBannerId] = useState(null)
-  const [selectedRestaurantIds, setSelectedRestaurantIds] = useState([])
-  const [restaurantSearchQuery, setRestaurantSearchQuery] = useState("")
-  const [linkingRestaurants, setLinkingRestaurants] = useState(false)
+  const [selectedCafeIds, setSelectedCafeIds] = useState([])
+  const [cafeSearchQuery, setCafeSearchQuery] = useState("")
+  const [linkingCafes, setLinkingCafes] = useState(false)
 
   // Helper function to filter out token-related errors
   const setErrorSafely = (errorMessage) => {
@@ -135,16 +135,16 @@ export default function LandingPageManagement() {
     fetchBanners()
     fetchUnder250Banners()
     fetchDiningBanners()
-    fetchAllRestaurants()
+    fetchAllCafes()
   }, [])
 
   // Fetch Top 10 and Gourmet when Explore More tab is active
   useEffect(() => {
     if (activeTab === 'explore-more') {
       if (exploreMoreSubTab === 'top-10') {
-        fetchTop10Restaurants()
+        fetchTop10Cafes()
       } else if (exploreMoreSubTab === 'gourmet') {
-        fetchGourmetRestaurants()
+        fetchGourmetCafes()
       }
     }
   }, [activeTab, exploreMoreSubTab])
@@ -314,52 +314,52 @@ export default function LandingPageManagement() {
     }
   }
 
-  // Handle restaurant selection for banner advertising
-  const handleLinkRestaurants = async () => {
+  // Handle cafe selection for banner advertising
+  const handleLinkCafes = async () => {
     if (!selectedBannerId) return
 
     try {
-      setLinkingRestaurants(true)
+      setLinkingCafes(true)
       setError(null)
       setSuccess(null)
 
       const response = await api.patch(
-        `/hero-banners/${selectedBannerId}/link-restaurants`,
-        { restaurantIds: selectedRestaurantIds },
+        `/hero-banners/${selectedBannerId}/link-cafes`,
+        { cafeIds: selectedCafeIds },
         getAuthConfig()
       )
 
       if (response.data.success) {
         setSuccess('Cafes linked to banner successfully!')
-        setShowRestaurantModal(false)
+        setShowCafeModal(false)
         setSelectedBannerId(null)
-        setSelectedRestaurantIds([])
-        setRestaurantSearchQuery("")
+        setSelectedCafeIds([])
+        setCafeSearchQuery("")
         await fetchBanners()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
       setErrorSafely(err.response?.data?.message || 'Failed to link cafes to banner.')
     } finally {
-      setLinkingRestaurants(false)
+      setLinkingCafes(false)
     }
   }
 
-  const toggleRestaurantSelection = (restaurantId) => {
-    setSelectedRestaurantIds(prev => {
-      if (prev.includes(restaurantId)) {
-        return prev.filter(id => id !== restaurantId)
+  const toggleCafeSelection = (cafeId) => {
+    setSelectedCafeIds(prev => {
+      if (prev.includes(cafeId)) {
+        return prev.filter(id => id !== cafeId)
       } else {
-        return [...prev, restaurantId]
+        return [...prev, cafeId]
       }
     })
   }
 
-  const filteredRestaurantsForModal = allRestaurants.filter(restaurant => {
-    if (!restaurantSearchQuery.trim()) return true
-    const query = restaurantSearchQuery.toLowerCase()
-    return restaurant.name?.toLowerCase().includes(query) ||
-           restaurant.restaurantId?.toLowerCase().includes(query)
+  const filteredCafesForModal = allCafes.filter(cafe => {
+    if (!cafeSearchQuery.trim()) return true
+    const query = cafeSearchQuery.toLowerCase()
+    return cafe.name?.toLowerCase().includes(query) ||
+           cafe.cafeId?.toLowerCase().includes(query)
   })
 
   // ==================== CATEGORIES ====================
@@ -978,41 +978,41 @@ export default function LandingPageManagement() {
     }
   }
 
-  // ==================== ALL RESTAURANTS ====================
-  const fetchAllRestaurants = async () => {
+  // ==================== ALL CAFES ====================
+  const fetchAllCafes = async () => {
     try {
-      setRestaurantsLoading(true)
+      setCafesLoading(true)
       setError(null)
-      const response = await adminAPI.getRestaurants({ limit: 1000 })
+      const response = await adminAPI.getCafes({ limit: 1000 })
       if (response.data && response.data.success && response.data.data) {
-        const restaurants = response.data.data.restaurants || response.data.data || []
-        setAllRestaurants(restaurants)
+        const cafes = response.data.data.cafes || response.data.data || []
+        setAllCafes(cafes)
       }
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 404) {
-        setAllRestaurants([])
+        setAllCafes([])
         setError(null)
       } else {
         const errorMessage = err.response?.data?.message || 'Failed to load cafes'
         setErrorSafely(errorMessage)
       }
     } finally {
-      setRestaurantsLoading(false)
+      setCafesLoading(false)
     }
   }
 
-  // ==================== TOP 10 RESTAURANTS ====================
-  const fetchTop10Restaurants = async () => {
+  // ==================== TOP 10 CAFES ====================
+  const fetchTop10Cafes = async () => {
     try {
       setTop10Loading(true)
       setError(null)
       const response = await api.get('/hero-banners/top-10', getAuthConfig())
       if (response.data.success) {
-        setTop10Restaurants(response.data.data.restaurants || [])
+        setTop10Cafes(response.data.data.cafes || [])
       }
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 404) {
-        setTop10Restaurants([])
+        setTop10Cafes([])
         setError(null)
       } else {
         const errorMessage = err.response?.data?.message || 'Failed to load Top 10 cafes'
@@ -1023,8 +1023,8 @@ export default function LandingPageManagement() {
     }
   }
 
-  const handleAddTop10Restaurant = async () => {
-    if (!selectedRestaurantTop10 || !selectedRank) {
+  const handleAddTop10Cafe = async () => {
+    if (!selectedCafeTop10 || !selectedRank) {
       setError('Please select a cafe and rank')
       return
     }
@@ -1033,14 +1033,14 @@ export default function LandingPageManagement() {
       setError(null)
       setSuccess(null)
       const response = await api.post('/hero-banners/top-10', {
-        restaurantId: selectedRestaurantTop10,
+        cafeId: selectedCafeTop10,
         rank: parseInt(selectedRank)
       }, getAuthConfig())
       if (response.data.success) {
         setSuccess('Cafe added to Top 10 successfully!')
-        setSelectedRestaurantTop10("")
+        setSelectedCafeTop10("")
         setSelectedRank(1)
-        await fetchTop10Restaurants()
+        await fetchTop10Cafes()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
@@ -1048,7 +1048,7 @@ export default function LandingPageManagement() {
     }
   }
 
-  const handleDeleteTop10Restaurant = async (id) => {
+  const handleDeleteTop10Cafe = async (id) => {
     if (!window.confirm('Are you sure you want to remove this cafe from Top 10?')) return
     try {
       setTop10Deleting(id)
@@ -1057,7 +1057,7 @@ export default function LandingPageManagement() {
       const response = await api.delete(`/hero-banners/top-10/${id}`, getAuthConfig())
       if (response.data.success) {
         setSuccess('Cafe removed from Top 10 successfully!')
-        await fetchTop10Restaurants()
+        await fetchTop10Cafes()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
@@ -1068,18 +1068,18 @@ export default function LandingPageManagement() {
   }
 
   const handleTop10OrderChange = async (id, direction) => {
-    const restaurant = top10Restaurants.find(r => r._id === id)
-    if (!restaurant) return
-    const newOrder = direction === 'up' ? restaurant.order - 1 : restaurant.order + 1
-    const otherRestaurant = top10Restaurants.find(r => r.order === newOrder && r._id !== id)
-    if (!otherRestaurant && newOrder < 0) return
+    const cafe = top10Cafes.find(r => r._id === id)
+    if (!cafe) return
+    const newOrder = direction === 'up' ? cafe.order - 1 : cafe.order + 1
+    const otherCafe = top10Cafes.find(r => r.order === newOrder && r._id !== id)
+    if (!otherCafe && newOrder < 0) return
     try {
       setError(null)
       await api.patch(`/hero-banners/top-10/${id}/order`, { order: newOrder }, getAuthConfig())
-      if (otherRestaurant) {
-        await api.patch(`/hero-banners/top-10/${otherRestaurant._id}/order`, { order: restaurant.order }, getAuthConfig())
+      if (otherCafe) {
+        await api.patch(`/hero-banners/top-10/${otherCafe._id}/order`, { order: cafe.order }, getAuthConfig())
       }
-      await fetchTop10Restaurants()
+      await fetchTop10Cafes()
     } catch (err) {
       setErrorSafely('Failed to update Top 10 cafe order.')
     }
@@ -1089,7 +1089,7 @@ export default function LandingPageManagement() {
     try {
       setError(null)
       await api.patch(`/hero-banners/top-10/${id}/rank`, { rank: parseInt(newRank) }, getAuthConfig())
-      await fetchTop10Restaurants()
+      await fetchTop10Cafes()
     } catch (err) {
       setErrorSafely('Failed to update Top 10 cafe rank.')
     }
@@ -1101,8 +1101,8 @@ export default function LandingPageManagement() {
       setSuccess(null)
       const response = await api.patch(`/hero-banners/top-10/${id}/status`, {}, getAuthConfig())
       if (response.data.success) {
-        setSuccess(`Restaurant ${currentStatus ? 'deactivated' : 'activated'} successfully!`)
-        await fetchTop10Restaurants()
+        setSuccess(`Cafe ${currentStatus ? 'deactivated' : 'activated'} successfully!`)
+        await fetchTop10Cafes()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
@@ -1110,18 +1110,18 @@ export default function LandingPageManagement() {
     }
   }
 
-  // ==================== GOURMET RESTAURANTS ====================
-  const fetchGourmetRestaurants = async () => {
+  // ==================== GOURMET CAFES ====================
+  const fetchGourmetCafes = async () => {
     try {
       setGourmetLoading(true)
       setError(null)
       const response = await api.get('/hero-banners/gourmet', getAuthConfig())
       if (response.data.success) {
-        setGourmetRestaurants(response.data.data.restaurants || [])
+        setGourmetCafes(response.data.data.cafes || [])
       }
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 404) {
-        setGourmetRestaurants([])
+        setGourmetCafes([])
         setError(null)
       } else {
         const errorMessage = err.response?.data?.message || 'Failed to load Gourmet cafes'
@@ -1132,8 +1132,8 @@ export default function LandingPageManagement() {
     }
   }
 
-  const handleAddGourmetRestaurant = async () => {
-    if (!selectedRestaurantGourmet) {
+  const handleAddGourmetCafe = async () => {
+    if (!selectedCafeGourmet) {
       setError('Please select a cafe')
       return
     }
@@ -1142,12 +1142,12 @@ export default function LandingPageManagement() {
       setError(null)
       setSuccess(null)
       const response = await api.post('/hero-banners/gourmet', {
-        restaurantId: selectedRestaurantGourmet
+        cafeId: selectedCafeGourmet
       }, getAuthConfig())
       if (response.data.success) {
         setSuccess('Cafe added to Gourmet successfully!')
-        setSelectedRestaurantGourmet("")
-        await fetchGourmetRestaurants()
+        setSelectedCafeGourmet("")
+        await fetchGourmetCafes()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
@@ -1155,7 +1155,7 @@ export default function LandingPageManagement() {
     }
   }
 
-  const handleDeleteGourmetRestaurant = async (id) => {
+  const handleDeleteGourmetCafe = async (id) => {
     if (!window.confirm('Are you sure you want to remove this cafe from Gourmet?')) return
     try {
       setGourmetDeleting(id)
@@ -1164,7 +1164,7 @@ export default function LandingPageManagement() {
       const response = await api.delete(`/hero-banners/gourmet/${id}`, getAuthConfig())
       if (response.data.success) {
         setSuccess('Cafe removed from Gourmet successfully!')
-        await fetchGourmetRestaurants()
+        await fetchGourmetCafes()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
@@ -1175,18 +1175,18 @@ export default function LandingPageManagement() {
   }
 
   const handleGourmetOrderChange = async (id, direction) => {
-    const restaurant = gourmetRestaurants.find(r => r._id === id)
-    if (!restaurant) return
-    const newOrder = direction === 'up' ? restaurant.order - 1 : restaurant.order + 1
-    const otherRestaurant = gourmetRestaurants.find(r => r.order === newOrder && r._id !== id)
-    if (!otherRestaurant && newOrder < 0) return
+    const cafe = gourmetCafes.find(r => r._id === id)
+    if (!cafe) return
+    const newOrder = direction === 'up' ? cafe.order - 1 : cafe.order + 1
+    const otherCafe = gourmetCafes.find(r => r.order === newOrder && r._id !== id)
+    if (!otherCafe && newOrder < 0) return
     try {
       setError(null)
       await api.patch(`/hero-banners/gourmet/${id}/order`, { order: newOrder }, getAuthConfig())
-      if (otherRestaurant) {
-        await api.patch(`/hero-banners/gourmet/${otherRestaurant._id}/order`, { order: restaurant.order }, getAuthConfig())
+      if (otherCafe) {
+        await api.patch(`/hero-banners/gourmet/${otherCafe._id}/order`, { order: cafe.order }, getAuthConfig())
       }
-      await fetchGourmetRestaurants()
+      await fetchGourmetCafes()
     } catch (err) {
       setErrorSafely('Failed to update Gourmet cafe order.')
     }
@@ -1198,8 +1198,8 @@ export default function LandingPageManagement() {
       setSuccess(null)
       const response = await api.patch(`/hero-banners/gourmet/${id}/status`, {}, getAuthConfig())
       if (response.data.success) {
-        setSuccess(`Restaurant ${currentStatus ? 'deactivated' : 'activated'} successfully!`)
-        await fetchGourmetRestaurants()
+        setSuccess(`Cafe ${currentStatus ? 'deactivated' : 'activated'} successfully!`)
+        await fetchGourmetCafes()
         setTimeout(() => setSuccess(null), 3000)
       }
     } catch (err) {
@@ -1377,8 +1377,8 @@ export default function LandingPageManagement() {
                             <button 
                               onClick={() => {
                                 setSelectedBannerId(banner._id)
-                                setSelectedRestaurantIds(banner.linkedRestaurants?.map(r => r._id || r) || [])
-                                setShowRestaurantModal(true)
+                                setSelectedCafeIds(banner.linkedCafes?.map(r => r._id || r) || [])
+                                setShowCafeModal(true)
                               }}
                               className="px-3 py-1.5 rounded text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center gap-1"
                             >
@@ -1393,18 +1393,18 @@ export default function LandingPageManagement() {
                             </button>
                           </div>
                         </div>
-                        {banner.linkedRestaurants && banner.linkedRestaurants.length > 0 && (
+                        {banner.linkedCafes && banner.linkedCafes.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-slate-200">
-                            <p className="text-xs text-slate-600 mb-1">Linked Cafes ({banner.linkedRestaurants.length}):</p>
+                            <p className="text-xs text-slate-600 mb-1">Linked Cafes ({banner.linkedCafes.length}):</p>
                             <div className="flex flex-wrap gap-1">
-                              {banner.linkedRestaurants.slice(0, 3).map((restaurant) => (
-                                <span key={restaurant._id || restaurant} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
-                                  {restaurant.name || 'Restaurant'}
+                              {banner.linkedCafes.slice(0, 3).map((cafe) => (
+                                <span key={cafe._id || cafe} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+                                  {cafe.name || 'Cafe'}
                                 </span>
                               ))}
-                              {banner.linkedRestaurants.length > 3 && (
+                              {banner.linkedCafes.length > 3 && (
                                 <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs">
-                                  +{banner.linkedRestaurants.length - 3} more
+                                  +{banner.linkedCafes.length - 3} more
                                 </span>
                               )}
                             </div>
@@ -1659,7 +1659,7 @@ export default function LandingPageManagement() {
               <div className="flex gap-2 overflow-x-auto">
                 {exploreMoreTabs.map((tab) => {
                   const Icon = tab.icon
-                  const isActive = activeTab === 'explore-more' && (tab.id === 'top-10' ? top10Restaurants.length > 0 : tab.id === 'gourmet' ? gourmetRestaurants.length > 0 : false)
+                  const isActive = activeTab === 'explore-more' && (tab.id === 'top-10' ? top10Cafes.length > 0 : tab.id === 'gourmet' ? gourmetCafes.length > 0 : false)
                   return (
                     <button
                       key={tab.id}
@@ -1685,20 +1685,20 @@ export default function LandingPageManagement() {
                   <h2 className="text-lg font-bold text-slate-900 mb-4">Add Cafe to Top 10</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="restaurant-top10">Select Cafe</Label>
+                      <Label htmlFor="cafe-top10">Select Cafe</Label>
                       <select
-                        id="restaurant-top10"
-                        value={selectedRestaurantTop10}
-                        onChange={(e) => setSelectedRestaurantTop10(e.target.value)}
+                        id="cafe-top10"
+                        value={selectedCafeTop10}
+                        onChange={(e) => setSelectedCafeTop10(e.target.value)}
                         className="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={restaurantsLoading}
+                        disabled={cafesLoading}
                       >
                         <option value="">Select a cafe...</option>
-                        {allRestaurants
-                          .filter(r => !top10Restaurants.some(tr => tr.restaurant?._id === r._id))
-                          .map((restaurant) => (
-                            <option key={restaurant._id} value={restaurant._id}>
-                              {restaurant.name}
+                        {allCafes
+                          .filter(r => !top10Cafes.some(tr => tr.cafe?._id === r._id))
+                          .map((cafe) => (
+                            <option key={cafe._id} value={cafe._id}>
+                              {cafe.name}
                             </option>
                           ))}
                       </select>
@@ -1716,8 +1716,8 @@ export default function LandingPageManagement() {
                       />
                     </div>
                     <Button 
-                      onClick={handleAddTop10Restaurant} 
-                      disabled={!selectedRestaurantTop10 || !selectedRank}
+                      onClick={handleAddTop10Cafe} 
+                      disabled={!selectedCafeTop10 || !selectedRank}
                       className="bg-blue-500 hover:bg-blue-600 text-white"
                     >
                       Add to Top 10
@@ -1726,19 +1726,19 @@ export default function LandingPageManagement() {
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4">Top 10 Cafes ({top10Restaurants.length})</h2>
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">Top 10 Cafes ({top10Cafes.length})</h2>
                   {top10Loading ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
                     </div>
-                  ) : top10Restaurants.length === 0 ? (
+                  ) : top10Cafes.length === 0 ? (
                     <div className="text-center py-12 text-slate-500">
                       <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-400" />
                       <p>No cafes added to Top 10 yet.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {top10Restaurants
+                      {top10Cafes
                         .sort((a, b) => a.rank - b.rank)
                         .map((item, index) => (
                           <div key={item._id} className="border border-slate-200 rounded-lg p-4 flex items-center justify-between">
@@ -1747,8 +1747,8 @@ export default function LandingPageManagement() {
                                 {item.rank}
                               </div>
                               <div className="flex-1">
-                                <h3 className="font-semibold text-slate-900">{item.restaurant?.name || 'N/A'}</h3>
-                                <p className="text-xs text-slate-500">Rating: {item.restaurant?.rating || 0}★</p>
+                                <h3 className="font-semibold text-slate-900">{item.cafe?.name || 'N/A'}</h3>
+                                <p className="text-xs text-slate-500">Rating: {item.cafe?.rating || 0}★</p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Label className="text-xs">Rank:</Label>
@@ -1768,14 +1768,14 @@ export default function LandingPageManagement() {
                                 <button onClick={() => handleTop10OrderChange(item._id, 'up')} disabled={index === 0} className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-50">
                                   <ArrowUp className="w-4 h-4 text-slate-600" />
                                 </button>
-                                <button onClick={() => handleTop10OrderChange(item._id, 'down')} disabled={index === top10Restaurants.length - 1} className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-50">
+                                <button onClick={() => handleTop10OrderChange(item._id, 'down')} disabled={index === top10Cafes.length - 1} className="p-1.5 rounded hover:bg-slate-100 disabled:opacity-50">
                                   <ArrowDown className="w-4 h-4 text-slate-600" />
                                 </button>
                               </div>
                               <button onClick={() => handleToggleTop10Status(item._id, item.isActive)} className={`px-3 py-1.5 rounded text-sm font-medium ${item.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
                                 {item.isActive ? 'Deactivate' : 'Activate'}
                               </button>
-                              <button onClick={() => handleDeleteTop10Restaurant(item._id)} disabled={top10Deleting === item._id} className="p-1.5 rounded hover:bg-red-100 text-red-600 disabled:opacity-50">
+                              <button onClick={() => handleDeleteTop10Cafe(item._id)} disabled={top10Deleting === item._id} className="p-1.5 rounded hover:bg-red-100 text-red-600 disabled:opacity-50">
                                 {top10Deleting === item._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                               </button>
                             </div>
@@ -1794,27 +1794,27 @@ export default function LandingPageManagement() {
                   <h2 className="text-lg font-bold text-slate-900 mb-4">Add Cafe to Gourmet</h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="restaurant-gourmet">Select Cafe</Label>
+                      <Label htmlFor="cafe-gourmet">Select Cafe</Label>
                       <select
-                        id="restaurant-gourmet"
-                        value={selectedRestaurantGourmet}
-                        onChange={(e) => setSelectedRestaurantGourmet(e.target.value)}
+                        id="cafe-gourmet"
+                        value={selectedCafeGourmet}
+                        onChange={(e) => setSelectedCafeGourmet(e.target.value)}
                         className="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={restaurantsLoading}
+                        disabled={cafesLoading}
                       >
                         <option value="">Select a cafe...</option>
-                        {allRestaurants
-                          .filter(r => !gourmetRestaurants.some(gr => gr.restaurant?._id === r._id))
-                          .map((restaurant) => (
-                            <option key={restaurant._id} value={restaurant._id}>
-                              {restaurant.name}
+                        {allCafes
+                          .filter(r => !gourmetCafes.some(gr => gr.cafe?._id === r._id))
+                          .map((cafe) => (
+                            <option key={cafe._id} value={cafe._id}>
+                              {cafe.name}
                             </option>
                           ))}
                       </select>
                     </div>
                     <Button 
-                      onClick={handleAddGourmetRestaurant} 
-                      disabled={!selectedRestaurantGourmet}
+                      onClick={handleAddGourmetCafe} 
+                      disabled={!selectedCafeGourmet}
                       className="bg-blue-500 hover:bg-blue-600 text-white"
                     >
                       Add to Gourmet
@@ -1823,40 +1823,40 @@ export default function LandingPageManagement() {
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                  <h2 className="text-lg font-bold text-slate-900 mb-4">Gourmet Cafes ({gourmetRestaurants.length})</h2>
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">Gourmet Cafes ({gourmetCafes.length})</h2>
                   {gourmetLoading ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
                     </div>
-                  ) : gourmetRestaurants.length === 0 ? (
+                  ) : gourmetCafes.length === 0 ? (
                     <div className="text-center py-12 text-slate-500">
                       <ChefHat className="w-12 h-12 mx-auto mb-3 text-slate-400" />
                       <p>No cafes added to Gourmet yet.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                      {gourmetRestaurants
+                      {gourmetCafes
                         .sort((a, b) => a.order - b.order)
                         .map((item, index) => {
-                          // Get restaurant cover image with priority: coverImages > menuImages > profileImage
-                          const coverImages = item.restaurant?.coverImages && item.restaurant.coverImages.length > 0
-                            ? item.restaurant.coverImages.map(img => img.url || img).filter(Boolean)
+                          // Get cafe cover image with priority: coverImages > menuImages > profileImage
+                          const coverImages = item.cafe?.coverImages && item.cafe.coverImages.length > 0
+                            ? item.cafe.coverImages.map(img => img.url || img).filter(Boolean)
                             : []
                           
-                          const menuImages = item.restaurant?.menuImages && item.restaurant.menuImages.length > 0
-                            ? item.restaurant.menuImages.map(img => img.url || img).filter(Boolean)
+                          const menuImages = item.cafe?.menuImages && item.cafe.menuImages.length > 0
+                            ? item.cafe.menuImages.map(img => img.url || img).filter(Boolean)
                             : []
                           
-                          const restaurantImage = coverImages.length > 0
+                          const cafeImage = coverImages.length > 0
                             ? coverImages[0]
                             : (menuImages.length > 0
                                 ? menuImages[0]
-                                : (item.restaurant?.profileImage?.url || "https://via.placeholder.com/400"))
+                                : (item.cafe?.profileImage?.url || "https://via.placeholder.com/400"))
 
                           return (
                             <div key={item._id} className="border border-slate-200 rounded-lg overflow-hidden">
                               <div className="relative h-32 bg-slate-100">
-                                <img src={restaurantImage} alt={item.restaurant?.name} className="w-full h-full object-cover" />
+                                <img src={cafeImage} alt={item.cafe?.name} className="w-full h-full object-cover" />
                                 <div className="absolute top-1 right-1">
                                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${item.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                                     {item.isActive ? 'Active' : 'Inactive'}
@@ -1864,21 +1864,21 @@ export default function LandingPageManagement() {
                                 </div>
                               </div>
                               <div className="p-2">
-                                <h3 className="font-semibold text-slate-900 mb-0.5 text-sm line-clamp-1">{item.restaurant?.name || 'N/A'}</h3>
-                                <p className="text-[10px] text-slate-500 mb-2">Rating: {item.restaurant?.rating || 0}★</p>
+                                <h3 className="font-semibold text-slate-900 mb-0.5 text-sm line-clamp-1">{item.cafe?.name || 'N/A'}</h3>
+                                <p className="text-[10px] text-slate-500 mb-2">Rating: {item.cafe?.rating || 0}★</p>
                                 <div className="flex items-center justify-between gap-1">
                                   <div className="flex items-center gap-0.5">
                                     <button onClick={() => handleGourmetOrderChange(item._id, 'up')} disabled={index === 0} className="p-1 rounded hover:bg-slate-100 disabled:opacity-50">
                                       <ArrowUp className="w-3 h-3 text-slate-600" />
                                     </button>
-                                    <button onClick={() => handleGourmetOrderChange(item._id, 'down')} disabled={index === gourmetRestaurants.length - 1} className="p-1 rounded hover:bg-slate-100 disabled:opacity-50">
+                                    <button onClick={() => handleGourmetOrderChange(item._id, 'down')} disabled={index === gourmetCafes.length - 1} className="p-1 rounded hover:bg-slate-100 disabled:opacity-50">
                                       <ArrowDown className="w-3 h-3 text-slate-600" />
                                     </button>
                                   </div>
                                   <button onClick={() => handleToggleGourmetStatus(item._id, item.isActive)} className={`px-2 py-1 rounded text-[10px] font-medium ${item.isActive ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
                                     {item.isActive ? 'Deactivate' : 'Activate'}
                                   </button>
-                                  <button onClick={() => handleDeleteGourmetRestaurant(item._id)} disabled={gourmetDeleting === item._id} className="p-1 rounded hover:bg-red-100 text-red-600 disabled:opacity-50">
+                                  <button onClick={() => handleDeleteGourmetCafe(item._id)} disabled={gourmetDeleting === item._id} className="p-1 rounded hover:bg-red-100 text-red-600 disabled:opacity-50">
                                     {gourmetDeleting === item._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                                   </button>
                                 </div>
@@ -1894,8 +1894,8 @@ export default function LandingPageManagement() {
           </>
         )}
 
-        {/* Restaurant Selection Modal */}
-        <Dialog open={showRestaurantModal} onOpenChange={setShowRestaurantModal}>
+        {/* Cafe Selection Modal */}
+        <Dialog open={showCafeModal} onOpenChange={setShowCafeModal}>
           <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col p-0">
             <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200">
               <DialogTitle className="text-2xl font-bold text-slate-900">Select Cafes to Link with Banner</DialogTitle>
@@ -1912,20 +1912,20 @@ export default function LandingPageManagement() {
                   <Input
                     type="text"
                     placeholder="Search cafes by name or ID..."
-                    value={restaurantSearchQuery}
-                    onChange={(e) => setRestaurantSearchQuery(e.target.value)}
+                    value={cafeSearchQuery}
+                    onChange={(e) => setCafeSearchQuery(e.target.value)}
                     className="pl-10 h-11 bg-white border-slate-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                {selectedRestaurantIds.length > 0 && (
+                {selectedCafeIds.length > 0 && (
                   <div className="flex items-center gap-2">
                     <div className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
-                      {selectedRestaurantIds.length} cafe{selectedRestaurantIds.length > 1 ? 's' : ''} selected
+                      {selectedCafeIds.length} cafe{selectedCafeIds.length > 1 ? 's' : ''} selected
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setSelectedRestaurantIds([])}
+                      onClick={() => setSelectedCafeIds([])}
                       className="text-xs text-slate-600 hover:text-slate-900"
                     >
                       Clear selection
@@ -1934,53 +1934,53 @@ export default function LandingPageManagement() {
                 )}
               </div>
 
-              {/* Restaurant List */}
+              {/* Cafe List */}
               <div className="flex-1 overflow-y-auto bg-white">
-                {restaurantsLoading ? (
+                {cafesLoading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-3" />
                     <p className="text-slate-500">Loading cafes...</p>
                   </div>
-                ) : filteredRestaurantsForModal.length === 0 ? (
+                ) : filteredCafesForModal.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center px-6">
                     <ImageIcon className="w-16 h-16 text-slate-300 mb-4" />
                     <p className="text-slate-600 font-medium mb-1">No cafes found</p>
                     <p className="text-sm text-slate-500">
-                      {restaurantSearchQuery ? 'Try a different search term' : 'No cafes available'}
+                      {cafeSearchQuery ? 'Try a different search term' : 'No cafes available'}
                     </p>
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-100">
-                    {filteredRestaurantsForModal.map((restaurant) => {
-                      const isSelected = selectedRestaurantIds.includes(restaurant._id)
-                      const profileImageUrl = restaurant.profileImage?.url || restaurant.profileImage || null
+                    {filteredCafesForModal.map((cafe) => {
+                      const isSelected = selectedCafeIds.includes(cafe._id)
+                      const profileImageUrl = cafe.profileImage?.url || cafe.profileImage || null
                       
                       return (
                         <div
-                          key={restaurant._id}
+                          key={cafe._id}
                           className={`px-6 py-4 transition-all cursor-pointer ${
                             isSelected 
                               ? 'bg-blue-50 border-l-4 border-l-blue-500' 
                               : 'hover:bg-slate-50'
                           }`}
-                          onClick={() => toggleRestaurantSelection(restaurant._id)}
+                          onClick={() => toggleCafeSelection(cafe._id)}
                         >
                           <div className="flex items-center gap-4">
                             <div className="flex-shrink-0">
                               <Checkbox
                                 checked={isSelected}
-                                onCheckedChange={() => toggleRestaurantSelection(restaurant._id)}
+                                onCheckedChange={() => toggleCafeSelection(cafe._id)}
                                 onClick={(e) => e.stopPropagation()}
                                 className="w-5 h-5"
                               />
                             </div>
                             
-                            {/* Restaurant Image */}
+                            {/* Cafe Image */}
                             <div className="flex-shrink-0">
                               {profileImageUrl ? (
                                 <img
                                   src={profileImageUrl}
-                                  alt={restaurant.name}
+                                  alt={cafe.name}
                                   className="w-16 h-16 rounded-xl object-cover border-2 border-slate-200"
                                   onError={(e) => {
                                     e.target.style.display = 'none'
@@ -1993,24 +1993,24 @@ export default function LandingPageManagement() {
                                   profileImageUrl ? 'hidden' : 'flex'
                                 }`}
                               >
-                                {restaurant.name?.charAt(0)?.toUpperCase() || 'R'}
+                                {cafe.name?.charAt(0)?.toUpperCase() || 'R'}
                               </div>
                             </div>
                             
-                            {/* Restaurant Info */}
+                            {/* Cafe Info */}
                             <div className="flex-1 min-w-0">
                               <h3 className={`font-semibold text-base mb-1 ${
                                 isSelected ? 'text-blue-900' : 'text-slate-900'
                               }`}>
-                                {restaurant.name || 'Unnamed Cafe'}
+                                {cafe.name || 'Unnamed Cafe'}
                               </h3>
                               <p className="text-sm text-slate-500 truncate">
-                                ID: {restaurant.restaurantId || restaurant._id}
+                                ID: {cafe.cafeId || cafe._id}
                               </p>
-                              {restaurant.rating && (
+                              {cafe.rating && (
                                 <div className="flex items-center gap-1 mt-1">
                                   <span className="text-xs text-slate-400">★</span>
-                                  <span className="text-xs text-slate-600">{restaurant.rating}</span>
+                                  <span className="text-xs text-slate-600">{cafe.rating}</span>
                                 </div>
                               )}
                             </div>
@@ -2034,27 +2034,27 @@ export default function LandingPageManagement() {
               {/* Action Buttons */}
               <div className="flex items-center justify-between gap-3 px-6 py-4 bg-slate-50 border-t border-slate-200">
                 <div className="text-sm text-slate-600">
-                  {filteredRestaurantsForModal.length} cafe{filteredRestaurantsForModal.length !== 1 ? 's' : ''} available
+                  {filteredCafesForModal.length} cafe{filteredCafesForModal.length !== 1 ? 's' : ''} available
                 </div>
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setShowRestaurantModal(false)
+                      setShowCafeModal(false)
                       setSelectedBannerId(null)
-                      setSelectedRestaurantIds([])
-                      setRestaurantSearchQuery("")
+                      setSelectedCafeIds([])
+                      setCafeSearchQuery("")
                     }}
                     className="px-6"
                   >
                     Cancel
                   </Button>
                   <Button
-                    onClick={handleLinkRestaurants}
-                    disabled={linkingRestaurants || selectedRestaurantIds.length === 0}
+                    onClick={handleLinkCafes}
+                    disabled={linkingCafes || selectedCafeIds.length === 0}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 min-w-[140px]"
                   >
-                    {linkingRestaurants ? (
+                    {linkingCafes ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Linking...
@@ -2062,7 +2062,7 @@ export default function LandingPageManagement() {
                     ) : (
                       <>
                         <Megaphone className="w-4 h-4 mr-2" />
-                        Link {selectedRestaurantIds.length > 0 ? `(${selectedRestaurantIds.length})` : ''} Cafe{selectedRestaurantIds.length !== 1 ? 's' : ''}
+                        Link {selectedCafeIds.length > 0 ? `(${selectedCafeIds.length})` : ''} Cafe{selectedCafeIds.length !== 1 ? 's' : ''}
                       </>
                     )}
                   </Button>

@@ -1,21 +1,21 @@
 import OrderSettlement from '../models/OrderSettlement.js';
-import RestaurantWallet from '../../restaurant/models/RestaurantWallet.js';
+import CafeWallet from '../../cafe/models/CafeWallet.js';
 import DeliveryWallet from '../../delivery/models/DeliveryWallet.js';
 import mongoose from 'mongoose';
 
 /**
- * Get pending settlements for restaurants
+ * Get pending settlements for cafes
  */
-export const getPendingRestaurantSettlements = async (restaurantId = null, startDate = null, endDate = null) => {
+export const getPendingCafeSettlements = async (cafeId = null, startDate = null, endDate = null) => {
   try {
     const query = {
-      'restaurantEarning.status': 'credited',
-      restaurantSettled: false,
+      'cafeEarning.status': 'credited',
+      cafeSettled: false,
       settlementStatus: 'completed'
     };
 
-    if (restaurantId) {
-      query.restaurantId = restaurantId;
+    if (cafeId) {
+      query.cafeId = cafeId;
     }
 
     if (startDate && endDate) {
@@ -27,7 +27,7 @@ export const getPendingRestaurantSettlements = async (restaurantId = null, start
 
     const settlements = await OrderSettlement.find(query)
       .populate('orderId', 'orderId status deliveredAt')
-      .populate('restaurantId', 'name restaurantId')
+      .populate('cafeId', 'name cafeId')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -75,13 +75,13 @@ export const getPendingDeliverySettlements = async (deliveryId = null, startDate
 };
 
 /**
- * Generate settlement report for restaurants (daily/weekly)
+ * Generate settlement report for cafes (daily/weekly)
  */
-export const generateRestaurantSettlementReport = async (restaurantId, startDate, endDate) => {
+export const generateCafeSettlementReport = async (cafeId, startDate, endDate) => {
   try {
     const settlements = await OrderSettlement.find({
-      restaurantId: restaurantId,
-      'restaurantEarning.status': 'credited',
+      cafeId: cafeId,
+      'cafeEarning.status': 'credited',
       createdAt: {
         $gte: new Date(startDate),
         $lte: new Date(endDate)
@@ -91,12 +91,12 @@ export const generateRestaurantSettlementReport = async (restaurantId, startDate
       .sort({ createdAt: -1 })
       .lean();
 
-    const totalEarnings = settlements.reduce((sum, s) => sum + s.restaurantEarning.netEarning, 0);
+    const totalEarnings = settlements.reduce((sum, s) => sum + s.cafeEarning.netEarning, 0);
     const totalOrders = settlements.length;
-    const totalCommission = settlements.reduce((sum, s) => sum + s.restaurantEarning.commission, 0);
+    const totalCommission = settlements.reduce((sum, s) => sum + s.cafeEarning.commission, 0);
 
     return {
-      restaurantId,
+      cafeId,
       period: {
         startDate,
         endDate
@@ -110,10 +110,10 @@ export const generateRestaurantSettlementReport = async (restaurantId, startDate
       settlements: settlements.map(s => ({
         orderNumber: s.orderNumber,
         orderDate: s.createdAt,
-        foodPrice: s.restaurantEarning.foodPrice,
-        commission: s.restaurantEarning.commission,
-        netEarning: s.restaurantEarning.netEarning,
-        status: s.restaurantEarning.status
+        foodPrice: s.cafeEarning.foodPrice,
+        commission: s.cafeEarning.commission,
+        netEarning: s.cafeEarning.netEarning,
+        status: s.cafeEarning.status
       }))
     };
   } catch (error) {
@@ -188,8 +188,8 @@ export const markSettlementsAsProcessed = async (settlementIds, actorType, actor
     });
 
     for (const settlement of settlements) {
-      if (settlement.restaurantEarning.status === 'credited' && !settlement.restaurantSettled) {
-        settlement.restaurantSettled = true;
+      if (settlement.cafeEarning.status === 'credited' && !settlement.cafeSettled) {
+        settlement.cafeSettled = true;
       }
       if (settlement.deliveryPartnerEarning.status === 'credited' && !settlement.deliveryPartnerSettled) {
         settlement.deliveryPartnerSettled = true;

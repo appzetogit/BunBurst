@@ -57,7 +57,7 @@ export async function notifyUserOrderStatusUpdate(order, status) {
       case 'confirmed':
       case 'preparing':
         title = '🍕 Order Confirmed!';
-        body = `${order.restaurantName} is preparing your meal. It's on its way soon!`;
+        body = `${order.cafeName} is preparing your meal. It's on its way soon!`;
         break;
       case 'assigned':
         title = 'Delivery Partner Assigned';
@@ -71,15 +71,15 @@ export async function notifyUserOrderStatusUpdate(order, status) {
 
       case 'out_for_delivery':
         title = '🛵 On the Way!';
-        body = `Your order from ${order.restaurantName} has been picked up and is heading your way.`;
+        body = `Your order from ${order.cafeName} has been picked up and is heading your way.`;
         break;
       case 'delivered':
         title = '🍱 Enjoy your meal!';
-        body = `Your order from ${order.restaurantName} has been delivered successfully.`;
+        body = `Your order from ${order.cafeName} has been delivered successfully.`;
         break;
       case 'cancelled':
         title = '❌ Order Cancelled';
-        body = `We're sorry, your order #${order.orderId} from ${order.restaurantName} was cancelled.`;
+        body = `We're sorry, your order #${order.orderId} from ${order.cafeName} was cancelled.`;
         break;
     }
 

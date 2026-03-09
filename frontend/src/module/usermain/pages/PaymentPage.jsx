@@ -60,7 +60,7 @@ export default function PaymentPage() {
       items: orderData.items?.length || 0,
       total: totalAmount,
       status: "Preparing",
-      restaurant: "Hungry Puppets", // You can get this from orderData if available
+      cafe: "Hungry Puppets", // You can get this from orderData if available
       paymentMethod: paymentMethod,
       orderDetails: orderData
     }

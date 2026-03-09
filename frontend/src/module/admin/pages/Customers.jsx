@@ -593,7 +593,7 @@ export default function Customers() {
                       <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200 flex items-center justify-between">
                         <div>
                           <p className="text-sm font-semibold text-slate-900">{order.orderId}</p>
-                          <p className="text-xs text-slate-600">{order.restaurantName}</p>
+                          <p className="text-xs text-slate-600">{order.cafeName}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold text-slate-900">{formatCurrencyINR(order.total)}</p>

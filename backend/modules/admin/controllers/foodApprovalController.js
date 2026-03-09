@@ -1,7 +1,7 @@
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
-import Menu from '../../restaurant/models/Menu.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Menu from '../../cafe/models/Menu.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import winston from 'winston';
 
 const logger = winston.createLogger({
@@ -21,14 +21,14 @@ const logger = winston.createLogger({
 export const getPendingFoodApprovals = asyncHandler(async (req, res) => {
   try {
     const menus = await Menu.find({ isActive: true })
-      .populate('restaurant', 'name restaurantId')
+      .populate('cafe', 'name cafeId')
       .lean();
 
     const pendingRequests = [];
 
     // Iterate through all menus and extract pending items
     for (const menu of menus) {
-      if (!menu.restaurant) continue;
+      if (!menu.cafe) continue;
 
       // Check items in sections
       for (const section of menu.sections || []) {
@@ -39,9 +39,9 @@ export const getPendingFoodApprovals = asyncHandler(async (req, res) => {
               id: item.id,
               itemName: item.name,
               category: item.category || '',
-              restaurantId: menu.restaurant.restaurantId,
-              restaurantName: menu.restaurant.name,
-              restaurantMongoId: menu.restaurant._id,
+              cafeId: menu.cafe.cafeId,
+              cafeName: menu.cafe.name,
+              cafeMongoId: menu.cafe._id,
               sectionName: section.name,
               sectionId: section.id,
               price: item.price,
@@ -66,9 +66,9 @@ export const getPendingFoodApprovals = asyncHandler(async (req, res) => {
                 id: item.id,
                 itemName: item.name,
                 category: item.category || '',
-                restaurantId: menu.restaurant.restaurantId,
-                restaurantName: menu.restaurant.name,
-                restaurantMongoId: menu.restaurant._id,
+                cafeId: menu.cafe.cafeId,
+                cafeName: menu.cafe.name,
+                cafeMongoId: menu.cafe._id,
                 sectionName: section.name,
                 sectionId: section.id,
                 subsectionName: subsection.name,
@@ -97,9 +97,9 @@ export const getPendingFoodApprovals = asyncHandler(async (req, res) => {
             itemName: addon.name,
             category: 'Add-on',
             type: 'addon', // Mark as addon
-            restaurantId: menu.restaurant.restaurantId,
-            restaurantName: menu.restaurant.name,
-            restaurantMongoId: menu.restaurant._id,
+            cafeId: menu.cafe.cafeId,
+            cafeName: menu.cafe.name,
+            cafeMongoId: menu.cafe._id,
             price: addon.price,
             description: addon.description,
             image: addon.image || (addon.images && addon.images[0]) || '',
@@ -386,7 +386,7 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
     logger.info(`Food item approved: ${id}`, {
       approvedBy: adminId,
       itemName: foundItem.name,
-      restaurantId: foundMenu.restaurant
+      cafeId: foundMenu.cafe
     });
 
     return successResponse(res, 200, 'Food item approved successfully', {
@@ -395,7 +395,7 @@ export const approveFoodItem = asyncHandler(async (req, res) => {
       approvalStatus: savedItem.approvalStatus,
       approvedAt: savedItem.approvedAt,
       approvedBy: savedItem.approvedBy,
-      restaurantId: foundMenu.restaurant,
+      cafeId: foundMenu.cafe,
       message: 'Food item has been approved and is now visible to users (if toggle is ON)'
     });
   } catch (error) {
@@ -673,7 +673,7 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
       rejectedBy: adminId,
       itemName: foundItem.name,
       reason: reason.trim(),
-      restaurantId: foundMenu.restaurant
+      cafeId: foundMenu.cafe
     });
 
     return successResponse(res, 200, 'Food item rejected successfully', {
@@ -682,7 +682,7 @@ export const rejectFoodItem = asyncHandler(async (req, res) => {
       approvalStatus: savedItem.approvalStatus,
       rejectionReason: savedItem.rejectionReason,
       rejectedAt: savedItem.rejectedAt,
-      restaurantId: foundMenu.restaurant,
+      cafeId: foundMenu.cafe,
       message: 'Food item has been rejected and will not be visible to users'
     });
   } catch (error) {

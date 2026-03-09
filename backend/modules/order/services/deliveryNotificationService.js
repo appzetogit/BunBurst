@@ -1,6 +1,6 @@
 import Order from '../models/Order.js';
 import Delivery from '../../delivery/models/Delivery.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import mongoose from 'mongoose';
 import { resolveOrderPaymentMethod } from '../../../shared/utils/deliveryCashLimitGuard.js';
 import { sendPushNotificationToSingleToken } from '../../notification/services/pushNotificationService.js';
@@ -120,17 +120,17 @@ export async function notifyDeliveryBoyNewOrder(order, deliveryPartnerId) {
       }
 
       const deliveryPartner = await Delivery.findById(deliveryPartnerId).lean();
-      let restaurant = await Restaurant.findById(order.restaurantId).lean();
+      let cafe = await Cafe.findById(order.cafeId).lean();
 
       const orderNotification = {
         orderId: order.orderId,
         orderMongoId: order._id.toString(),
-        restaurantId: order.restaurantId,
-        restaurantName: order.restaurantName,
-        restaurantLocation: restaurant?.location ? {
-          latitude: restaurant.location.coordinates[1],
-          longitude: restaurant.location.coordinates[0],
-          address: restaurant.location.formattedAddress || restaurant.address || 'Cafe address'
+        cafeId: order.cafeId,
+        cafeName: order.cafeName,
+        cafeLocation: cafe?.location ? {
+          latitude: cafe.location.coordinates[1],
+          longitude: cafe.location.coordinates[0],
+          address: cafe.location.formattedAddress || cafe.address || 'Cafe address'
         } : null,
         customerLocation: {
           latitude: order.address.location.coordinates[1],
@@ -210,7 +210,7 @@ export async function notifyDeliveryBoyOrderReady(order, deliveryPartnerId) {
     // 1. Send FCM
     sendFCMToDeliveryPartner(deliveryPartnerId, {
       title: '🥘 Order Ready for Pickup!',
-      body: `Order #${order.orderId} is ready at ${order.restaurantName}. Please collect it.`,
+      body: `Order #${order.orderId} is ready at ${order.cafeName}. Please collect it.`,
       data: {
         type: 'order_ready',
         orderId: order.orderId,

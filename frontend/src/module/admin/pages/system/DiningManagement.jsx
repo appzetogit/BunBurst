@@ -26,8 +26,8 @@ export default function DiningManagement() {
     const [bannerFile, setBannerFile] = useState(null)
     const [bannerPercentageOff, setBannerPercentageOff] = useState("")
     const [bannerTagline, setBannerTagline] = useState("")
-    const [bannerRestaurant, setBannerRestaurant] = useState("")
-    const [restaurantsList, setRestaurantsList] = useState([])
+    const [bannerCafe, setBannerCafe] = useState("")
+    const [cafesList, setCafesList] = useState([])
     const [editingBannerId, setEditingBannerId] = useState(null)
     const bannerFileInputRef = useRef(null)
 
@@ -61,7 +61,7 @@ export default function DiningManagement() {
         fetchCategories()
         fetchBanners()
         fetchStories()
-        fetchRestaurantsList()
+        fetchCafesList()
     }, [])
 
     // ==================== CATEGORIES ====================
@@ -116,18 +116,18 @@ export default function DiningManagement() {
         } catch (err) { console.error(err) } finally { setBannersLoading(false) }
     }
 
-    const fetchRestaurantsList = async () => {
+    const fetchCafesList = async () => {
         try {
-            const response = await api.get('/admin/dining/restaurants-list', getAuthConfig())
-            if (response.data.success) setRestaurantsList(response.data.data.restaurants)
+            const response = await api.get('/admin/dining/cafes-list', getAuthConfig())
+            if (response.data.success) setCafesList(response.data.data.cafes)
         } catch (err) { console.error(err) }
     }
 
     const handleSubmitBanner = async () => {
-        if (!editingBannerId && (!bannerFile || !bannerPercentageOff || !bannerTagline || !bannerRestaurant)) {
+        if (!editingBannerId && (!bannerFile || !bannerPercentageOff || !bannerTagline || !bannerCafe)) {
             return setError("All fields and Image are required")
         }
-        if (editingBannerId && (!bannerPercentageOff || !bannerTagline || !bannerRestaurant)) {
+        if (editingBannerId && (!bannerPercentageOff || !bannerTagline || !bannerCafe)) {
             return setError("All text fields are required")
         }
 
@@ -137,7 +137,7 @@ export default function DiningManagement() {
             if (bannerFile) formData.append('image', bannerFile)
             formData.append('percentageOff', bannerPercentageOff)
             formData.append('tagline', bannerTagline)
-            formData.append('restaurant', bannerRestaurant)
+            formData.append('cafe', bannerCafe)
 
             let response;
             if (editingBannerId) {
@@ -163,7 +163,7 @@ export default function DiningManagement() {
         setBannerFile(null)
         setBannerPercentageOff("")
         setBannerTagline("")
-        setBannerRestaurant("")
+        setBannerCafe("")
         setEditingBannerId(null)
         if (bannerFileInputRef.current) bannerFileInputRef.current.value = ""
     }
@@ -172,7 +172,7 @@ export default function DiningManagement() {
         setEditingBannerId(banner._id)
         setBannerPercentageOff(banner.percentageOff)
         setBannerTagline(banner.tagline)
-        setBannerRestaurant(banner.restaurant._id || banner.restaurant)
+        setBannerCafe(banner.cafe._id || banner.cafe)
         setBannerFile(null)
         if (bannerFileInputRef.current) bannerFileInputRef.current.value = ""
     }
@@ -362,14 +362,14 @@ export default function DiningManagement() {
                                         <Input value={bannerTagline} onChange={e => setBannerTagline(e.target.value)} placeholder="e.g. On selected items" className="mt-1" />
                                     </div>
                                     <div>
-                                        <Label>Restaurant</Label>
+                                        <Label>Cafe</Label>
                                         <select
                                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
-                                            value={bannerRestaurant}
-                                            onChange={e => setBannerRestaurant(e.target.value)}
+                                            value={bannerCafe}
+                                            onChange={e => setBannerCafe(e.target.value)}
                                         >
                                             <option value="">Select Cafe</option>
-                                            {restaurantsList.map(r => (
+                                            {cafesList.map(r => (
                                                 <option key={r._id} value={r._id}>{r.name}</option>
                                             ))}
                                         </select>
@@ -396,7 +396,7 @@ export default function DiningManagement() {
                                                 <div className="p-3 bg-white">
                                                     <p className="font-bold text-slate-900">{banner.percentageOff}</p>
                                                     <p className="text-sm text-slate-600">{banner.tagline}</p>
-                                                    <p className="text-xs text-blue-600 mt-1">{banner.restaurant?.name}</p>
+                                                    <p className="text-xs text-blue-600 mt-1">{banner.cafe?.name}</p>
                                                 </div>
                                                 <button onClick={() => handleDeleteBanner(banner._id)} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {bannersDeleting === banner._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}

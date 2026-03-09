@@ -13,7 +13,7 @@ const seedChat = async () => {
         // IDs from actual DB
         const adminId = '698dbdbe04a0864f21e513e7';
         const userId = '698dc3311a49a1bf1782bc81';
-        const restaurantId = '699994720b26ec3bbec33893';
+        const cafeId = '699994720b26ec3bbec33893';
 
         // Clear existing chat data to avoid duplicates for this test
         await Conversation.deleteMany({ admin: adminId });
@@ -47,11 +47,11 @@ const seedChat = async () => {
             }
         ]);
 
-        // 2. Create Restaurant Conversation
-        const restaurantConv = await Conversation.create({
-            restaurant: restaurantId,
+        // 2. Create Cafe Conversation
+        const cafeConv = await Conversation.create({
+            cafe: cafeId,
             admin: adminId,
-            type: 'restaurant',
+            type: 'cafe',
             lastMessage: 'Thank you for the quick delivery!',
             lastMessageAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
             unreadCount: 0
@@ -59,13 +59,13 @@ const seedChat = async () => {
 
         await Message.create([
             {
-                conversationId: restaurantConv._id,
+                conversationId: cafeConv._id,
                 sender: { id: adminId, senderType: 'Admin' },
                 text: 'How is the new menu update performing?'
             },
             {
-                conversationId: restaurantConv._id,
-                sender: { id: restaurantId, senderType: 'Restaurant' },
+                conversationId: cafeConv._id,
+                sender: { id: cafeId, senderType: 'Cafe' },
                 text: 'It is going great! Thank you for the quick delivery!'
             }
         ]);

@@ -12,7 +12,7 @@ import {
   getDeliveryWalletState, 
   calculateDeliveryBalances 
 } from "../utils/deliveryWalletState"
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 
 export default function MyAccount() {
   const navigate = useNavigate()

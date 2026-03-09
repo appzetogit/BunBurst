@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import OrderSettlement from '../models/OrderSettlement.js';
 import UserWallet from '../../user/models/UserWallet.js';
-import RestaurantWallet from '../../restaurant/models/RestaurantWallet.js';
+import CafeWallet from '../../cafe/models/CafeWallet.js';
 import AdminWallet from '../../admin/models/AdminWallet.js';
 import AuditLog from '../../admin/models/AuditLog.js';
 import Payment from '../../payment/models/Payment.js';
@@ -47,40 +47,40 @@ export const calculateCancellationRefund = async (orderId, cancellationReason) =
     const userPayment = settlement.userPayment;
 
     let refundAmount = 0;
-    let restaurantCompensation = 0;
+    let cafeCompensation = 0;
 
     // Calculate refund based on cancellation stage
     switch (cancellationStage) {
       case 'pre_accept':
         // Full refund to user
         refundAmount = userPayment.total;
-        restaurantCompensation = 0;
+        cafeCompensation = 0;
         break;
 
       case 'post_accept_pre_cook':
         // Partial refund (refund everything except platform fee and GST on platform fee)
         // User gets: subtotal + delivery fee (if not used)
         refundAmount = userPayment.subtotal - userPayment.discount + userPayment.deliveryFee;
-        restaurantCompensation = 0;
+        cafeCompensation = 0;
         break;
 
       case 'post_cook':
-        // Restaurant compensated, partial refund to user
-        // Restaurant gets: food cost - commission
-        restaurantCompensation = settlement.restaurantEarning.netEarning;
+        // Cafe compensated, partial refund to user
+        // Cafe gets: food cost - commission
+        cafeCompensation = settlement.cafeEarning.netEarning;
         // User gets: delivery fee + platform fee back (or partial)
         refundAmount = userPayment.deliveryFee + (userPayment.platformFee * 0.5); // 50% platform fee refund
         break;
 
       case 'post_pickup':
-        // No refund to user, restaurant compensated
+        // No refund to user, cafe compensated
         refundAmount = 0;
-        restaurantCompensation = settlement.restaurantEarning.netEarning;
+        cafeCompensation = settlement.cafeEarning.netEarning;
         break;
 
       default:
         refundAmount = 0;
-        restaurantCompensation = 0;
+        cafeCompensation = 0;
     }
 
     // Update settlement with cancellation details (refund status: 'pending' - awaiting admin approval)
@@ -89,13 +89,13 @@ export const calculateCancellationRefund = async (orderId, cancellationReason) =
       cancelledAt: new Date(),
       cancellationStage: cancellationStage,
       refundAmount: refundAmount,
-      restaurantCompensation: restaurantCompensation,
+      cafeCompensation: cafeCompensation,
       refundStatus: 'pending' // Will be updated to 'initiated' when admin processes refund
     };
 
     settlement.escrowStatus = 'refunded';
     settlement.settlementStatus = 'cancelled';
-    settlement.restaurantEarning.status = 'cancelled';
+    settlement.cafeEarning.status = 'cancelled';
     settlement.deliveryPartnerEarning.status = 'cancelled';
     settlement.adminEarning.status = 'cancelled';
 
@@ -117,13 +117,13 @@ export const calculateCancellationRefund = async (orderId, cancellationReason) =
         status: 'pending',
         orderId: orderId
       },
-      description: `Cancellation refund calculated for order ${settlement.orderNumber}. Stage: ${cancellationStage}, Refund: ₹${refundAmount}, Restaurant Compensation: ₹${restaurantCompensation}. Awaiting admin approval.`
+      description: `Cancellation refund calculated for order ${settlement.orderNumber}. Stage: ${cancellationStage}, Refund: ₹${refundAmount}, Cafe Compensation: ₹${cafeCompensation}. Awaiting admin approval.`
     });
 
     return {
       cancellationStage,
       refundAmount,
-      restaurantCompensation,
+      cafeCompensation,
       settlement
     };
   } catch (error) {
@@ -155,40 +155,40 @@ export const processCancellationRefund = async (orderId, cancellationReason) => 
     const userPayment = settlement.userPayment;
 
     let refundAmount = 0;
-    let restaurantCompensation = 0;
+    let cafeCompensation = 0;
 
     // Calculate refund based on cancellation stage
     switch (cancellationStage) {
       case 'pre_accept':
         // Full refund to user
         refundAmount = userPayment.total;
-        restaurantCompensation = 0;
+        cafeCompensation = 0;
         break;
 
       case 'post_accept_pre_cook':
         // Partial refund (refund everything except platform fee and GST on platform fee)
         // User gets: subtotal + delivery fee (if not used)
         refundAmount = userPayment.subtotal - userPayment.discount + userPayment.deliveryFee;
-        restaurantCompensation = 0;
+        cafeCompensation = 0;
         break;
 
       case 'post_cook':
-        // Restaurant compensated, partial refund to user
-        // Restaurant gets: food cost - commission
-        restaurantCompensation = settlement.restaurantEarning.netEarning;
+        // Cafe compensated, partial refund to user
+        // Cafe gets: food cost - commission
+        cafeCompensation = settlement.cafeEarning.netEarning;
         // User gets: delivery fee + platform fee back (or partial)
         refundAmount = userPayment.deliveryFee + (userPayment.platformFee * 0.5); // 50% platform fee refund
         break;
 
       case 'post_pickup':
-        // No refund to user, restaurant compensated
+        // No refund to user, cafe compensated
         refundAmount = 0;
-        restaurantCompensation = settlement.restaurantEarning.netEarning;
+        cafeCompensation = settlement.cafeEarning.netEarning;
         break;
 
       default:
         refundAmount = 0;
-        restaurantCompensation = 0;
+        cafeCompensation = 0;
     }
 
     // Update settlement with cancellation details
@@ -197,13 +197,13 @@ export const processCancellationRefund = async (orderId, cancellationReason) => 
       cancelledAt: new Date(),
       cancellationStage: cancellationStage,
       refundAmount: refundAmount,
-      restaurantCompensation: restaurantCompensation,
+      cafeCompensation: cafeCompensation,
       refundStatus: 'pending'
     };
 
     settlement.escrowStatus = 'refunded';
     settlement.settlementStatus = 'cancelled';
-    settlement.restaurantEarning.status = 'cancelled';
+    settlement.cafeEarning.status = 'cancelled';
     settlement.deliveryPartnerEarning.status = 'cancelled';
     settlement.adminEarning.status = 'cancelled';
 
@@ -215,12 +215,12 @@ export const processCancellationRefund = async (orderId, cancellationReason) => 
       settlement.cancellationDetails.refundStatus = 'processed';
     }
 
-    // Compensate restaurant if applicable
-    if (restaurantCompensation > 0) {
-      await compensateRestaurant(
-        settlement.restaurantId,
+    // Compensate cafe if applicable
+    if (cafeCompensation > 0) {
+      await compensateCafe(
+        settlement.cafeId,
         orderId,
-        restaurantCompensation,
+        cafeCompensation,
         settlement.orderNumber
       );
     }
@@ -249,13 +249,13 @@ export const processCancellationRefund = async (orderId, cancellationReason) => 
         status: 'success',
         orderId: orderId
       },
-      description: `Cancellation refund processed for order ${settlement.orderNumber}. Stage: ${cancellationStage}, Refund: ₹${refundAmount}, Restaurant Compensation: ₹${restaurantCompensation}`
+      description: `Cancellation refund processed for order ${settlement.orderNumber}. Stage: ${cancellationStage}, Refund: ₹${refundAmount}, Cafe Compensation: ₹${cafeCompensation}`
     });
 
     return {
       cancellationStage,
       refundAmount,
-      restaurantCompensation,
+      cafeCompensation,
       settlement
     };
   } catch (error) {
@@ -307,11 +307,11 @@ const refundToUser = async (userId, orderId, amount, orderNumber, reason) => {
 };
 
 /**
- * Compensate restaurant for cancelled order
+ * Compensate cafe for cancelled order
  */
-const compensateRestaurant = async (restaurantId, orderId, amount, orderNumber) => {
+const compensateCafe = async (cafeId, orderId, amount, orderNumber) => {
   try {
-    const wallet = await RestaurantWallet.findOrCreateByRestaurantId(restaurantId);
+    const wallet = await CafeWallet.findOrCreateByCafeId(cafeId);
     
     wallet.addTransaction({
       amount: amount,
@@ -325,8 +325,8 @@ const compensateRestaurant = async (restaurantId, orderId, amount, orderNumber) 
 
     // Create audit log
     await AuditLog.createLog({
-      entityType: 'restaurant',
-      entityId: restaurantId,
+      entityType: 'cafe',
+      entityId: cafeId,
       action: 'cancellation_compensation',
       actionType: 'credit',
       performedBy: {
@@ -338,9 +338,9 @@ const compensateRestaurant = async (restaurantId, orderId, amount, orderNumber) 
         type: 'compensation',
         status: 'success',
         orderId: orderId,
-        walletType: 'restaurant'
+        walletType: 'cafe'
       },
-      description: `Restaurant compensated for cancelled order ${orderNumber}`
+      description: `Cafe compensated for cancelled order ${orderNumber}`
     });
   } catch (error) {
     console.error('Error compensating cafe:', error);
@@ -490,7 +490,7 @@ export const processRazorpayRefund = async (orderId, adminId = null) => {
         {
           orderId: order.orderId,
           reason: order.cancellationReason || 'Order cancelled by cafe',
-          cancelledBy: 'restaurant',
+          cancelledBy: 'cafe',
           adminId: adminId || 'system'
         }
       );
@@ -537,13 +537,13 @@ export const processRazorpayRefund = async (orderId, adminId = null) => {
     settlement.cancellationDetails.refundStatus = 'initiated'; // Will be updated to 'processed' via webhook
     await settlement.save();
 
-    // Compensate restaurant if applicable
-    const restaurantCompensation = settlement.cancellationDetails?.restaurantCompensation || 0;
-    if (restaurantCompensation > 0) {
-      await compensateRestaurant(
-        settlement.restaurantId,
+    // Compensate cafe if applicable
+    const cafeCompensation = settlement.cancellationDetails?.cafeCompensation || 0;
+    if (cafeCompensation > 0) {
+      await compensateCafe(
+        settlement.cafeId,
         orderId,
-        restaurantCompensation,
+        cafeCompensation,
         settlement.orderNumber
       );
     }
@@ -679,8 +679,8 @@ export const processWalletRefund = async (orderId, adminId = null, refundAmount 
         orderId: order._id,
         orderNumber: order.orderId,
         userId: order.userId?._id || order.userId,
-        restaurantId: order.restaurantId,
-        restaurantName: order.restaurantName || 'Unknown Cafe',
+        cafeId: order.cafeId,
+        cafeName: order.cafeName || 'Unknown Cafe',
         userPayment: {
           subtotal: subtotal,
           discount: pricing.discount || 0,
@@ -690,7 +690,7 @@ export const processWalletRefund = async (orderId, adminId = null, refundAmount 
           packagingFee: 0,
           total: total
         },
-        restaurantEarning: {
+        cafeEarning: {
           foodPrice: foodPrice,
           commission: commission,
           commissionPercentage: 0,

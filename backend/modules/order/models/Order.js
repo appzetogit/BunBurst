@@ -48,11 +48,11 @@ const orderSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  restaurantId: {
+  cafeId: {
     type: String,
     required: true
   },
-  restaurantName: {
+  cafeName: {
     type: String,
     required: true
   },
@@ -206,7 +206,7 @@ const orderSchema = new mongoose.Schema({
       default: Date.now
     },
     additionalTime: {
-      type: Number, // Additional time added by restaurant (in minutes)
+      type: Number, // Additional time added by cafe (in minutes)
       default: 0
     }
   },
@@ -238,7 +238,7 @@ const orderSchema = new mongoose.Schema({
   },
   cancelledBy: {
     type: String,
-    enum: ['user', 'restaurant', 'admin'],
+    enum: ['user', 'cafe', 'admin'],
     default: null
   },
   // Customer Review and Rating
@@ -264,7 +264,7 @@ const orderSchema = new mongoose.Schema({
     }
   },
   assignmentInfo: {
-    restaurantId: String,
+    cafeId: String,
     distance: Number, // Distance in km
     assignedBy: {
       type: String,
@@ -310,7 +310,7 @@ const orderSchema = new mongoose.Schema({
 
 // Indexes for better query performance
 orderSchema.index({ userId: 1, createdAt: -1 });
-orderSchema.index({ restaurantId: 1, status: 1 });
+orderSchema.index({ cafeId: 1, status: 1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ 'payment.razorpayOrderId': 1 });
 

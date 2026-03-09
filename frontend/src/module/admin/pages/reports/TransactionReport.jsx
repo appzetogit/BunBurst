@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import completedIcon from "../../assets/Transaction-report-icons/trx1.png"
 import refundedIcon from "../../assets/Transaction-report-icons/trx3.png"
 import adminEarningIcon from "../../assets/Transaction-report-icons/admin-earning.png"
-import restaurantEarningIcon from "../../assets/Transaction-report-icons/store-earning.png"
+import cafeEarningIcon from "../../assets/Transaction-report-icons/store-earning.png"
 import deliverymanEarningIcon from "../../assets/Transaction-report-icons/deliveryman-earning.png"
 
 // Import search and export icons from Dashboard-icons
@@ -25,19 +25,19 @@ export default function TransactionReport() {
     completedTransaction: 0,
     refundedTransaction: 0,
     adminEarning: 0,
-    restaurantEarning: 0,
+    cafeEarning: 0,
     deliverymanEarning: 0
   })
   const [filters, setFilters] = useState({
     zone: "All Zones",
-    restaurant: "All cafes",
+    cafe: "All cafes",
     time: "All Time",
   })
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [zones, setZones] = useState([])
-  const [restaurants, setRestaurants] = useState([])
+  const [cafes, setCafes] = useState([])
 
-  // Fetch zones and restaurants for filters
+  // Fetch zones and cafes for filters
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
@@ -47,10 +47,10 @@ export default function TransactionReport() {
           setZones(zonesResponse.data.data.zones)
         }
 
-        // Fetch restaurants
-        const restaurantsResponse = await adminAPI.getRestaurants({ limit: 1000 })
-        if (restaurantsResponse?.data?.success && restaurantsResponse.data.data?.restaurants) {
-          setRestaurants(restaurantsResponse.data.data.restaurants)
+        // Fetch cafes
+        const cafesResponse = await adminAPI.getCafes({ limit: 1000 })
+        if (cafesResponse?.data?.success && cafesResponse.data.data?.cafes) {
+          setCafes(cafesResponse.data.data.cafes)
         }
       } catch (error) {
         console.error("Error fetching filter data:", error)
@@ -86,7 +86,7 @@ export default function TransactionReport() {
         const params = {
           search: searchQuery || undefined,
           zone: filters.zone !== "All Zones" ? filters.zone : undefined,
-          restaurant: filters.restaurant !== "All cafes" ? filters.restaurant : undefined,
+          cafe: filters.cafe !== "All cafes" ? filters.cafe : undefined,
           fromDate: fromDate ? fromDate.toISOString() : undefined,
           toDate: toDate ? toDate.toISOString() : undefined,
           limit: 1000
@@ -100,7 +100,7 @@ export default function TransactionReport() {
             completedTransaction: 0,
             refundedTransaction: 0,
             adminEarning: 0,
-            restaurantEarning: 0,
+            cafeEarning: 0,
             deliverymanEarning: 0
           })
         } else {
@@ -145,12 +145,12 @@ export default function TransactionReport() {
   const handleResetFilters = () => {
     setFilters({
       zone: "All Zones",
-      restaurant: "All cafes",
+      cafe: "All cafes",
       time: "All Time",
     })
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All cafes" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.cafe !== "All cafes" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   const formatCurrency = (amount) => {
     if (amount >= 1000) {
@@ -206,13 +206,13 @@ export default function TransactionReport() {
 
             <div className="relative flex-1 min-w-0">
               <select
-                value={filters.restaurant}
-                onChange={(e) => setFilters(prev => ({ ...prev, restaurant: e.target.value }))}
+                value={filters.cafe}
+                onChange={(e) => setFilters(prev => ({ ...prev, cafe: e.target.value }))}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs appearance-none cursor-pointer"
               >
                 <option value="All cafes">All cafes</option>
-                {restaurants.map(restaurant => (
-                  <option key={restaurant._id} value={restaurant.name}>{restaurant.name}</option>
+                {cafes.map(cafe => (
+                  <option key={cafe._id} value={cafe.name}>{cafe.name}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
@@ -310,12 +310,12 @@ export default function TransactionReport() {
               </div>
             </div>
 
-            {/* Restaurant Earning */}
+            {/* Cafe Earning */}
             <div className="rounded-lg shadow-sm border border-slate-200 p-3" style={{ backgroundColor: '#f1f5f9' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <img src={restaurantEarningIcon} alt="Cafe Earning" className="w-6 h-6" />
+                    <img src={cafeEarningIcon} alt="Cafe Earning" className="w-6 h-6" />
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-slate-900">Cafe Earning</p>
@@ -324,7 +324,7 @@ export default function TransactionReport() {
                     </div>
                   </div>
                 </div>
-                <p className="text-base font-bold text-green-600">{formatCurrency(summary.restaurantEarning)}</p>
+                <p className="text-base font-bold text-green-600">{formatCurrency(summary.cafeEarning)}</p>
               </div>
             </div>
 
@@ -410,7 +410,7 @@ export default function TransactionReport() {
                 <tr>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '3%' }}>SI</th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '7%' }}>Order Id</th>
-                  <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '10%' }}>Restaurant</th>
+                  <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '10%' }}>Cafe</th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '10%' }}>Customer Name</th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '9%' }}>Total Item Amount</th>
                   <th className="px-1.5 py-1 text-left text-[8px] font-bold text-slate-700 uppercase tracking-wider" style={{ width: '8%' }}>Item Discount</th>
@@ -445,7 +445,7 @@ export default function TransactionReport() {
                         <span className="text-[10px] text-slate-700">{transaction.orderId}</span>
                       </td>
                       <td className="px-1.5 py-1">
-                        <span className="text-[10px] text-slate-700 truncate block">{transaction.restaurant}</span>
+                        <span className="text-[10px] text-slate-700 truncate block">{transaction.cafe}</span>
                       </td>
                       <td className="px-1.5 py-1">
                         <span className={`text-[10px] truncate block ${transaction.customerName === "Invalid Customer Data"

@@ -25,8 +25,8 @@ const defaultCartContext = {
   clearCart: () => {
     console.warn('CartProvider not available - clearCart called');
   },
-  cleanCartForRestaurant: () => {
-    console.warn('CartProvider not available - cleanCartForRestaurant called');
+  cleanCartForCafe: () => {
+    console.warn('CartProvider not available - cleanCartForCafe called');
   },
 }
 
@@ -96,42 +96,42 @@ export function CartProvider({ children }) {
 
   const addToCart = (item, sourcePosition = null) => {
     setCart((prev) => {
-      // CRITICAL: Validate restaurant consistency
-      // If cart already has items, ensure new item belongs to the same restaurant
+      // CRITICAL: Validate cafe consistency
+      // If cart already has items, ensure new item belongs to the same cafe
       if (prev.length > 0) {
-        const firstItemRestaurantId = prev[0]?.restaurantId;
-        const firstItemRestaurantName = prev[0]?.restaurant;
-        const newItemRestaurantId = item?.restaurantId;
-        const newItemRestaurantName = item?.restaurant;
+        const firstItemCafeId = prev[0]?.cafeId;
+        const firstItemCafeName = prev[0]?.cafe;
+        const newItemCafeId = item?.cafeId;
+        const newItemCafeName = item?.cafe;
 
-        // Normalize restaurant names for comparison (trim and case-insensitive)
+        // Normalize cafe names for comparison (trim and case-insensitive)
         const normalizeName = (name) => name ? name.trim().toLowerCase() : '';
-        const firstRestaurantNameNormalized = normalizeName(firstItemRestaurantName);
-        const newRestaurantNameNormalized = normalizeName(newItemRestaurantName);
+        const firstCafeNameNormalized = normalizeName(firstItemCafeName);
+        const newCafeNameNormalized = normalizeName(newItemCafeName);
 
-        // Check restaurant name first (more reliable than IDs which can have different formats)
-        // If names match, allow it even if IDs differ (same restaurant, different ID format)
-        if (firstRestaurantNameNormalized && newRestaurantNameNormalized) {
-          if (firstRestaurantNameNormalized !== newRestaurantNameNormalized) {
+        // Check cafe name first (more reliable than IDs which can have different formats)
+        // If names match, allow it even if IDs differ (same cafe, different ID format)
+        if (firstCafeNameNormalized && newCafeNameNormalized) {
+          if (firstCafeNameNormalized !== newCafeNameNormalized) {
             console.error('❌ Cannot add item: Cafe name mismatch!', {
-              cartRestaurantId: firstItemRestaurantId,
-              cartRestaurantName: firstItemRestaurantName,
-              newItemRestaurantId: newItemRestaurantId,
-              newItemRestaurantName: newItemRestaurantName
+              cartCafeId: firstItemCafeId,
+              cartCafeName: firstItemCafeName,
+              newItemCafeId: newItemCafeId,
+              newItemCafeName: newItemCafeName
             });
-            throw new Error(`Cart already contains items from "${firstItemRestaurantName}". Please clear cart or complete order first.`);
+            throw new Error(`Cart already contains items from "${firstItemCafeName}". Please clear cart or complete order first.`);
           }
-          // Names match - allow it (even if IDs differ, it's the same restaurant)
-        } else if (firstItemRestaurantId && newItemRestaurantId) {
+          // Names match - allow it (even if IDs differ, it's the same cafe)
+        } else if (firstItemCafeId && newItemCafeId) {
           // If names are not available, fallback to ID comparison
-          if (firstItemRestaurantId !== newItemRestaurantId) {
+          if (firstItemCafeId !== newItemCafeId) {
             console.error('❌ Cannot add item: Cart contains items from different cafe!', {
-              cartRestaurantId: firstItemRestaurantId,
-              cartRestaurantName: firstItemRestaurantName,
-              newItemRestaurantId: newItemRestaurantId,
-              newItemRestaurantName: newItemRestaurantName
+              cartCafeId: firstItemCafeId,
+              cartCafeName: firstItemCafeName,
+              newItemCafeId: newItemCafeId,
+              newItemCafeName: newItemCafeName
             });
-            throw new Error(`Cart already contains items from "${firstItemRestaurantName || 'another cafe'}". Please clear cart or complete order first.`);
+            throw new Error(`Cart already contains items from "${firstItemCafeName || 'another cafe'}". Please clear cart or complete order first.`);
           }
         }
       }
@@ -156,8 +156,8 @@ export function CartProvider({ children }) {
         )
       }
 
-      // Validate item has required restaurant info
-      if (!item.restaurantId && !item.restaurant) {
+      // Validate item has required cafe info
+      if (!item.cafeId && !item.cafe) {
         console.error('❌ Cannot add item: Missing cafe information!', item);
         throw new Error('Item is missing cafe information. Please refresh the page.');
       }
@@ -257,31 +257,31 @@ export function CartProvider({ children }) {
 
   const clearCart = () => setCart([])
 
-  // Clean cart to remove items from different restaurants
-  // Keeps only items from the specified restaurant
-  const cleanCartForRestaurant = (restaurantId, restaurantName) => {
+  // Clean cart to remove items from different cafes
+  // Keeps only items from the specified cafe
+  const cleanCartForCafe = (cafeId, cafeName) => {
     setCart((prev) => {
       if (prev.length === 0) return prev;
 
-      // Normalize restaurant name for comparison
+      // Normalize cafe name for comparison
       const normalizeName = (name) => name ? name.trim().toLowerCase() : '';
-      const targetRestaurantNameNormalized = normalizeName(restaurantName);
+      const targetCafeNameNormalized = normalizeName(cafeName);
 
-      // Filter cart to keep only items from the target restaurant
+      // Filter cart to keep only items from the target cafe
       const cleanedCart = prev.filter((item) => {
-        const itemRestaurantId = item?.restaurantId;
-        const itemRestaurantName = item?.restaurant;
-        const itemRestaurantNameNormalized = normalizeName(itemRestaurantName);
+        const itemCafeId = item?.cafeId;
+        const itemCafeName = item?.cafe;
+        const itemCafeNameNormalized = normalizeName(itemCafeName);
 
-        // Check by restaurant name first (more reliable)
-        if (targetRestaurantNameNormalized && itemRestaurantNameNormalized) {
-          return itemRestaurantNameNormalized === targetRestaurantNameNormalized;
+        // Check by cafe name first (more reliable)
+        if (targetCafeNameNormalized && itemCafeNameNormalized) {
+          return itemCafeNameNormalized === targetCafeNameNormalized;
         }
         // Fallback to ID comparison
-        if (restaurantId && itemRestaurantId) {
-          return itemRestaurantId === restaurantId ||
-            itemRestaurantId === restaurantId.toString() ||
-            itemRestaurantId.toString() === restaurantId;
+        if (cafeId && itemCafeId) {
+          return itemCafeId === cafeId ||
+            itemCafeId === cafeId.toString() ||
+            itemCafeId.toString() === cafeId;
         }
         // If no match, remove item
         return false;
@@ -299,51 +299,51 @@ export function CartProvider({ children }) {
     });
   }
 
-  // Validate and clean cart on mount/load to prevent multiple restaurant items
+  // Validate and clean cart on mount/load to prevent multiple cafe items
   // This runs only once on initial load to clean up any corrupted cart data from localStorage
   useEffect(() => {
     if (cart.length === 0) return;
 
-    // Get unique restaurant IDs and names
-    const restaurantIds = cart.map(item => item.restaurantId).filter(Boolean);
-    const restaurantNames = cart.map(item => item.restaurant).filter(Boolean);
-    const uniqueRestaurantIds = [...new Set(restaurantIds)];
-    const uniqueRestaurantNames = [...new Set(restaurantNames)];
+    // Get unique cafe IDs and names
+    const cafeIds = cart.map(item => item.cafeId).filter(Boolean);
+    const cafeNames = cart.map(item => item.cafe).filter(Boolean);
+    const uniqueCafeIds = [...new Set(cafeIds)];
+    const uniqueCafeNames = [...new Set(cafeNames)];
 
-    // Normalize restaurant names for comparison
+    // Normalize cafe names for comparison
     const normalizeName = (name) => name ? name.trim().toLowerCase() : '';
-    const uniqueRestaurantNamesNormalized = uniqueRestaurantNames.map(normalizeName);
-    const uniqueRestaurantNamesSet = new Set(uniqueRestaurantNamesNormalized);
+    const uniqueCafeNamesNormalized = uniqueCafeNames.map(normalizeName);
+    const uniqueCafeNamesSet = new Set(uniqueCafeNamesNormalized);
 
-    // Check if cart has items from multiple restaurants
-    if (uniqueRestaurantIds.length > 1 || uniqueRestaurantNamesSet.size > 1) {
+    // Check if cart has items from multiple cafes
+    if (uniqueCafeIds.length > 1 || uniqueCafeNamesSet.size > 1) {
       console.warn('⚠️ Cart contains items from multiple cafes. Cleaning cart...', {
-        restaurantIds: uniqueRestaurantIds,
-        restaurantNames: uniqueRestaurantNames
+        cafeIds: uniqueCafeIds,
+        cafeNames: uniqueCafeNames
       });
 
-      // Keep items from the first restaurant (most recent or first in cart)
-      const firstRestaurantId = uniqueRestaurantIds[0];
-      const firstRestaurantName = uniqueRestaurantNames[0];
+      // Keep items from the first cafe (most recent or first in cart)
+      const firstCafeId = uniqueCafeIds[0];
+      const firstCafeName = uniqueCafeNames[0];
 
       setCart((prev) => {
         const normalizeName = (name) => name ? name.trim().toLowerCase() : '';
-        const firstRestaurantNameNormalized = normalizeName(firstRestaurantName);
+        const firstCafeNameNormalized = normalizeName(firstCafeName);
 
         return prev.filter((item) => {
-          const itemRestaurantId = item?.restaurantId;
-          const itemRestaurantName = item?.restaurant;
-          const itemRestaurantNameNormalized = normalizeName(itemRestaurantName);
+          const itemCafeId = item?.cafeId;
+          const itemCafeName = item?.cafe;
+          const itemCafeNameNormalized = normalizeName(itemCafeName);
 
-          // Check by restaurant name first
-          if (firstRestaurantNameNormalized && itemRestaurantNameNormalized) {
-            return itemRestaurantNameNormalized === firstRestaurantNameNormalized;
+          // Check by cafe name first
+          if (firstCafeNameNormalized && itemCafeNameNormalized) {
+            return itemCafeNameNormalized === firstCafeNameNormalized;
           }
           // Fallback to ID comparison
-          if (firstRestaurantId && itemRestaurantId) {
-            return itemRestaurantId === firstRestaurantId ||
-              itemRestaurantId === firstRestaurantId.toString() ||
-              itemRestaurantId.toString() === firstRestaurantId;
+          if (firstCafeId && itemCafeId) {
+            return itemCafeId === firstCafeId ||
+              itemCafeId === firstCafeId.toString() ||
+              itemCafeId.toString() === firstCafeId;
           }
           return false;
         });
@@ -392,7 +392,7 @@ export function CartProvider({ children }) {
       isInCart,
       getCartItem,
       clearCart,
-      cleanCartForRestaurant,
+      cleanCartForCafe,
     }),
     [cart, cartForAnimation, lastAddEvent, lastRemoveEvent]
   )

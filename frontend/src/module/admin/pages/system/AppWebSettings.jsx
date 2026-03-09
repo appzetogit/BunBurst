@@ -20,8 +20,8 @@ function ToggleSwitch({ enabled, onToggle }) {
 export default function AppWebSettings() {
   const [generalSettings, setGeneralSettings] = useState({
     popularFoods: true,
-    newRestaurants: true,
-    popularRestaurants: true,
+    newCafes: true,
+    popularCafes: true,
     mostReviewedFoods: true
   })
 
@@ -35,12 +35,12 @@ export default function AppWebSettings() {
     downloadUrl: ""
   })
 
-  const [restaurantAppAndroid, setRestaurantAppAndroid] = useState({
+  const [cafeAppAndroid, setCafeAppAndroid] = useState({
     minVersion: "",
     downloadUrl: ""
   })
 
-  const [restaurantAppIOS, setRestaurantAppIOS] = useState({
+  const [cafeAppIOS, setCafeAppIOS] = useState({
     minVersion: "",
     downloadUrl: ""
   })
@@ -70,12 +70,12 @@ export default function AppWebSettings() {
     setUserAppIOS({ minVersion: "", downloadUrl: "" })
   }
 
-  const handleRestaurantAppAndroidReset = () => {
-    setRestaurantAppAndroid({ minVersion: "", downloadUrl: "" })
+  const handleCafeAppAndroidReset = () => {
+    setCafeAppAndroid({ minVersion: "", downloadUrl: "" })
   }
 
-  const handleRestaurantAppIOSReset = () => {
-    setRestaurantAppIOS({ minVersion: "", downloadUrl: "" })
+  const handleCafeAppIOSReset = () => {
+    setCafeAppIOS({ minVersion: "", downloadUrl: "" })
   }
 
   const handleDeliverymanAppAndroidReset = () => {
@@ -119,8 +119,8 @@ export default function AppWebSettings() {
                 <Info className="w-3.5 h-3.5 text-slate-400" />
               </div>
               <ToggleSwitch
-                enabled={generalSettings.newRestaurants}
-                onToggle={() => handleGeneralToggle("newRestaurants")}
+                enabled={generalSettings.newCafes}
+                onToggle={() => handleGeneralToggle("newCafes")}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -129,8 +129,8 @@ export default function AppWebSettings() {
                 <Info className="w-3.5 h-3.5 text-slate-400" />
               </div>
               <ToggleSwitch
-                enabled={generalSettings.popularRestaurants}
-                onToggle={() => handleGeneralToggle("popularRestaurants")}
+                enabled={generalSettings.popularCafes}
+                onToggle={() => handleGeneralToggle("popularCafes")}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -244,7 +244,7 @@ export default function AppWebSettings() {
           </div>
         </div>
 
-        {/* Restaurant App Version Control */}
+        {/* Cafe App Version Control */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-3">
           <div className="flex items-center gap-2 mb-4">
             <Settings className="w-4 h-4 text-slate-600" />
@@ -266,8 +266,8 @@ export default function AppWebSettings() {
                   </label>
                   <input
                     type="text"
-                    value={restaurantAppAndroid.minVersion}
-                    onChange={(e) => setRestaurantAppAndroid(prev => ({ ...prev, minVersion: e.target.value }))}
+                    value={cafeAppAndroid.minVersion}
+                    onChange={(e) => setCafeAppAndroid(prev => ({ ...prev, minVersion: e.target.value }))}
                     placeholder="App minimum version"
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -279,8 +279,8 @@ export default function AppWebSettings() {
                   </label>
                   <input
                     type="text"
-                    value={restaurantAppAndroid.downloadUrl}
-                    onChange={(e) => setRestaurantAppAndroid(prev => ({ ...prev, downloadUrl: e.target.value }))}
+                    value={cafeAppAndroid.downloadUrl}
+                    onChange={(e) => setCafeAppAndroid(prev => ({ ...prev, downloadUrl: e.target.value }))}
                     placeholder="Download Url"
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -302,8 +302,8 @@ export default function AppWebSettings() {
                   </label>
                   <input
                     type="text"
-                    value={restaurantAppIOS.minVersion}
-                    onChange={(e) => setRestaurantAppIOS(prev => ({ ...prev, minVersion: e.target.value }))}
+                    value={cafeAppIOS.minVersion}
+                    onChange={(e) => setCafeAppIOS(prev => ({ ...prev, minVersion: e.target.value }))}
                     placeholder="App minimum version"
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -315,8 +315,8 @@ export default function AppWebSettings() {
                   </label>
                   <input
                     type="text"
-                    value={restaurantAppIOS.downloadUrl}
-                    onChange={(e) => setRestaurantAppIOS(prev => ({ ...prev, downloadUrl: e.target.value }))}
+                    value={cafeAppIOS.downloadUrl}
+                    onChange={(e) => setCafeAppIOS(prev => ({ ...prev, downloadUrl: e.target.value }))}
                     placeholder="Download Url"
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -328,7 +328,7 @@ export default function AppWebSettings() {
           <div className="flex justify-end gap-2 mt-4">
             <button
               type="button"
-              onClick={handleRestaurantAppAndroidReset}
+              onClick={handleCafeAppAndroidReset}
               className="px-4 py-2 text-xs font-medium bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Reset

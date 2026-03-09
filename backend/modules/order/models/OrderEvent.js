@@ -15,13 +15,13 @@ const orderEventSchema = new mongoose.Schema({
     type: String,
     enum: [
       'ORDER_CREATED',
-      'RESTAURANT_ACCEPTED',
-      'RESTAURANT_ACCEPTED_LATE', // Restaurant accepted after delay
+      'CAFE_ACCEPTED',
+      'CAFE_ACCEPTED_LATE', // Cafe accepted after delay
       'RIDER_ASSIGNED',
       'RIDER_ASSIGNED_EARLY', // Rider assigned quickly
       'RIDER_ASSIGNED_LATE', // Rider assignment delayed
-      'RIDER_REACHED_RESTAURANT',
-      'FOOD_NOT_READY', // Rider waiting at restaurant
+      'RIDER_REACHED_CAFE',
+      'FOOD_NOT_READY', // Rider waiting at cafe
       'FOOD_READY',
       'RIDER_STARTED_DELIVERY',
       'RIDER_NEARING_DROP', // Within 500m of drop location
@@ -38,7 +38,7 @@ const orderEventSchema = new mongoose.Schema({
   },
   // Store relevant data for ETA recalculation
   data: {
-    // For RESTAURANT_ACCEPTED_LATE
+    // For CAFE_ACCEPTED_LATE
     delayMinutes: Number,
     
     // For RIDER_ASSIGNED
@@ -48,7 +48,7 @@ const orderEventSchema = new mongoose.Schema({
       longitude: Number
     },
     
-    // For RIDER_REACHED_RESTAURANT
+    // For RIDER_REACHED_CAFE
     reachedAt: Date,
     
     // For FOOD_NOT_READY

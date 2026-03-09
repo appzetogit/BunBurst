@@ -6,7 +6,7 @@ import {
   updateZone,
   deleteZone,
   toggleZoneStatus,
-  getZonesByRestaurant,
+  getZonesByCafe,
   checkLocationInZone
 } from '../controllers/zoneController.js';
 import { authenticateAdmin } from '../middleware/adminAuth.js';
@@ -18,7 +18,7 @@ router.use(authenticateAdmin);
 
 // Zone routes
 router.get('/', getZones);
-router.get('/restaurant/:restaurantId', getZonesByRestaurant);
+router.get('/cafe/:cafeId', getZonesByCafe);
 router.post('/check-location', checkLocationInZone);
 router.get('/:id', getZoneById);
 router.post('/', createZone);

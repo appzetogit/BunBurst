@@ -144,7 +144,7 @@ export default function OrderTrackingCard() {
   useEffect(() => {
     if (activeOrder) {
       console.log('🎯 OrderTrackingCard active:', {
-        restaurant: activeOrder.restaurant || activeOrder.restaurantName,
+        cafe: activeOrder.cafe || activeOrder.cafeName,
         timeRemaining
       });
     }
@@ -160,7 +160,7 @@ export default function OrderTrackingCard() {
     return null;
   }
 
-  const restaurantName = activeOrder.restaurant || activeOrder.restaurantName || activeOrder.restaurantName || 'Restaurant';
+  const cafeName = activeOrder.cafe || activeOrder.cafeName || activeOrder.cafeName || 'Cafe';
   const statusText = orderStatus === 'preparing' || orderStatus === 'confirmed' || orderStatus === 'pending'
     ? 'Preparing your order'
     : orderStatus === 'out_for_delivery' || orderStatus === 'outfordelivery' || orderStatus === 'on_way'
@@ -185,7 +185,7 @@ export default function OrderTrackingCard() {
                 <UtensilsCrossed className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold text-sm truncate">{restaurantName}</p>
+                <p className="text-white font-semibold text-sm truncate">{cafeName}</p>
                 <div className="flex items-center gap-1">
                   <p className="text-gray-300 text-xs truncate">{statusText}</p>
                   <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />

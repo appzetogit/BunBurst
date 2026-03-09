@@ -35,7 +35,7 @@ const adminSchema = new mongoose.Schema({
     enum: [
       'dashboard_view',
       'admin_manage',
-      'restaurant_manage',
+      'cafe_manage',
       'delivery_manage',
       'order_manage',
       'user_manage',

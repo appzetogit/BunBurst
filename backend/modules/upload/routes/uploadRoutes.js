@@ -5,14 +5,14 @@ import { uploadSingleMedia } from '../controllers/uploadController.js';
 import jwtService from '../../auth/services/jwtService.js';
 import User from '../../auth/models/User.js';
 import Admin from '../../admin/models/Admin.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import { errorResponse } from '../../../shared/utils/response.js';
 
 const router = express.Router();
 
 /**
  * Flexible authentication middleware
- * Accepts admin, user, restaurant, and delivery tokens
+ * Accepts admin, user, cafe, and delivery tokens
  */
 const authenticateFlexible = async (req, res, next) => {
   try {
@@ -44,23 +44,23 @@ const authenticateFlexible = async (req, res, next) => {
       return next();
     }
 
-    // Check if token is for restaurant
-    if (decoded.role === 'restaurant') {
-      const restaurant = await Restaurant.findById(decoded.userId).select('-password');
+    // Check if token is for cafe
+    if (decoded.role === 'cafe') {
+      const cafe = await Cafe.findById(decoded.userId).select('-password');
       
-      if (!restaurant) {
+      if (!cafe) {
         return errorResponse(res, 401, 'Cafe not found');
       }
 
-      // Allow inactive restaurants to access upload routes - they need to upload images during onboarding
-      // Similar to delivery partners, inactive restaurants can access upload during onboarding/verification
-      // The middleware in restaurant routes will handle blocking inactive restaurants from other restricted routes
-      // if (!restaurant.isActive) {
-      //   return errorResponse(res, 401, 'Restaurant account is inactive');
+      // Allow inactive cafes to access upload routes - they need to upload images during onboarding
+      // Similar to delivery partners, inactive cafes can access upload during onboarding/verification
+      // The middleware in cafe routes will handle blocking inactive cafes from other restricted routes
+      // if (!cafe.isActive) {
+      //   return errorResponse(res, 401, 'Cafe account is inactive');
       // }
 
-      req.user = restaurant; // Use req.user for consistency with other modules
-      req.restaurant = restaurant; // Also attach as req.restaurant for clarity
+      req.user = cafe; // Use req.user for consistency with other modules
+      req.cafe = cafe; // Also attach as req.cafe for clarity
       req.token = decoded;
       return next();
     }

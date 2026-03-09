@@ -35,7 +35,7 @@ export default function CategoryFoodsPage() {
 
   // Toggle wishlist item
   const toggleWishlist = (item, type = 'food') => {
-    const itemId = type === 'food' ? `food-${item.id}` : `restaurant-${item.id}`
+    const itemId = type === 'food' ? `food-${item.id}` : `cafe-${item.id}`
     const { id, ...restItem } = item
     const wishlistItem = {
       id: itemId,
@@ -72,7 +72,7 @@ export default function CategoryFoodsPage() {
 
   // Check if item is in wishlist
   const isInWishlist = (item, type = 'food') => {
-    const itemId = type === 'food' ? `food-${item.id}` : `restaurant-${item.id}`
+    const itemId = type === 'food' ? `food-${item.id}` : `cafe-${item.id}`
     return wishlist.some((w) => w.id === itemId)
   }
 

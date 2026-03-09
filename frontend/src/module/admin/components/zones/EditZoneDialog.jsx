@@ -120,8 +120,8 @@ export default function EditZoneDialog({ isOpen, onOpenChange, zone, onSave }) {
                     <span className="ml-2 text-slate-600">{zone.zoneId}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-slate-700">Restaurants:</span>
-                    <span className="ml-2 text-slate-600">{zone.restaurants}</span>
+                    <span className="font-semibold text-slate-700">Cafes:</span>
+                    <span className="ml-2 text-slate-600">{zone.cafes}</span>
                   </div>
                   <div>
                     <span className="font-semibold text-slate-700">Deliverymen:</span>

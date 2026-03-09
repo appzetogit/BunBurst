@@ -40,15 +40,15 @@ export const receiveLocationUpdate = asyncHandler(async (req, res) => {
     // Get order details for route information
     const order = await Order.findOne({ 
       orderId: orderId 
-    }).populate('restaurantId', 'location').lean();
+    }).populate('cafeId', 'location').lean();
     
     if (!order) {
       return errorResponse(res, 404, 'Order not found');
     }
     
-    // Get restaurant and customer coordinates
-    const restaurantCoords = order.restaurantId?.location?.coordinates 
-      ? { lat: order.restaurantId.location.coordinates[1], lng: order.restaurantId.location.coordinates[0] }
+    // Get cafe and customer coordinates
+    const cafeCoords = order.cafeId?.location?.coordinates 
+      ? { lat: order.cafeId.location.coordinates[1], lng: order.cafeId.location.coordinates[0] }
       : null;
     
     const customerCoords = order.address?.location?.coordinates
@@ -61,7 +61,7 @@ export const receiveLocationUpdate = asyncHandler(async (req, res) => {
       orderId,
       { lat, lng, speed: speed || 20, bearing: bearing || 0, accuracy: accuracy || 50 },
       {
-        restaurant: restaurantCoords,
+        cafe: cafeCoords,
         customer: customerCoords
       }
     );
@@ -147,34 +147,34 @@ export const initializeRoute = asyncHandler(async (req, res) => {
     
     // Get order details
     const order = await Order.findOne({ orderId: orderId })
-      .populate('restaurantId', 'location')
+      .populate('cafeId', 'location')
       .lean();
     
     if (!order) {
       return errorResponse(res, 404, 'Order not found');
     }
     
-    const restaurantCoords = order.restaurantId?.location?.coordinates 
-      ? { lat: order.restaurantId.location.coordinates[1], lng: order.restaurantId.location.coordinates[0] }
+    const cafeCoords = order.cafeId?.location?.coordinates 
+      ? { lat: order.cafeId.location.coordinates[1], lng: order.cafeId.location.coordinates[0] }
       : null;
     
     const customerCoords = order.address?.location?.coordinates
       ? { lat: order.address.location.coordinates[1], lng: order.address.location.coordinates[0] }
       : null;
     
-    if (!restaurantCoords || !customerCoords) {
+    if (!cafeCoords || !customerCoords) {
       return errorResponse(res, 400, 'Cafe or customer coordinates missing');
     }
     
     const riderCoords = riderLat && riderLng 
       ? { lat: riderLat, lng: riderLng }
-      : restaurantCoords; // Fallback to restaurant if rider location not provided
+      : cafeCoords; // Fallback to cafe if rider location not provided
     
     // Generate route polyline
     const { generateRoutePolyline } = await import('../services/locationProcessingService.js');
     const route = await generateRoutePolyline(
       riderCoords,
-      restaurantCoords,
+      cafeCoords,
       customerCoords
     );
     
@@ -190,8 +190,8 @@ export const initializeRoute = asyncHandler(async (req, res) => {
         orderId,
         deliveryPartnerId: order.deliveryPartnerId?.toString?.() || order.deliveryPartnerId || null,
         polyline: route.polyline,
-        restaurantLat: restaurantCoords.lat,
-        restaurantLng: restaurantCoords.lng,
+        cafeLat: cafeCoords.lat,
+        cafeLng: cafeCoords.lng,
         customerLat: customerCoords.lat,
         customerLng: customerCoords.lng,
         distance: typeof route.totalDistance === 'number' ? Math.round((route.totalDistance / 1000) * 1000) / 1000 : undefined,

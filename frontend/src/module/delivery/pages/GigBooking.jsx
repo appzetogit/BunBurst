@@ -226,7 +226,7 @@ export default function GigBooking() {
       const onlineSuccess = goOnline()
       if (onlineSuccess) {
         toast.success("Gig booked successfully! You are now online.")
-        // Navigate to home page to show map with restaurants
+        // Navigate to home page to show map with cafes
         clearSelectedSlots()
         setTimeout(() => {
           navigate("/delivery", { replace: false })

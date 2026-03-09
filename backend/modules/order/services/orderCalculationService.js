@@ -1,5 +1,5 @@
-import Restaurant from '../../restaurant/models/Restaurant.js';
-import Offer from '../../restaurant/models/Offer.js';
+import Cafe from '../../cafe/models/Cafe.js';
+import Offer from '../../cafe/models/Offer.js';
 import FeeSettings from '../../admin/models/FeeSettings.js';
 import mongoose from 'mongoose';
 
@@ -78,18 +78,18 @@ const isValueInRuleRange = (value, min, max, maxUpperBound) =>
   value >= min && (value < max || (max === maxUpperBound && value <= max));
 
 /**
- * Calculate delivery fee based on order value, distance, and restaurant settings
+ * Calculate delivery fee based on order value, distance, and cafe settings
  */
-export const calculateDeliveryFee = async (orderValue, restaurant, deliveryAddress = null) => {
+export const calculateDeliveryFee = async (orderValue, cafe, deliveryAddress = null) => {
   // Get fee settings from database
   const feeSettings = await getFeeSettings();
 
   let deliveryFee = 0;
 
   // 1. Calculate Distance & Base Fee
-  if (deliveryAddress?.location?.coordinates && restaurant?.location?.coordinates && feeSettings.distanceConfig) {
+  if (deliveryAddress?.location?.coordinates && cafe?.location?.coordinates && feeSettings.distanceConfig) {
     const distance = calculateDistance(
-      restaurant.location.coordinates,
+      cafe.location.coordinates,
       deliveryAddress.location.coordinates
     );
 
@@ -164,8 +164,8 @@ export const calculateDeliveryFee = async (orderValue, restaurant, deliveryAddre
     }
   }
 
-  // Check Restaurant Override (Legacy/Specific)
-  if (restaurant?.freeDeliveryAbove && orderValue >= restaurant.freeDeliveryAbove) {
+  // Check Cafe Override (Legacy/Specific)
+  if (cafe?.freeDeliveryAbove && orderValue >= cafe.freeDeliveryAbove) {
     return 0;
   }
 
@@ -250,7 +250,7 @@ export const calculateDistance = (coord1, coord2) => {
  */
 export const calculateOrderPricing = async ({
   items,
-  restaurantId,
+  cafeId,
   deliveryAddress = null,
   couponCode = null
 }) => {
@@ -264,17 +264,17 @@ export const calculateOrderPricing = async ({
       throw new Error('Order subtotal must be greater than 0');
     }
 
-    // Get restaurant details
-    let restaurant = null;
-    if (restaurantId) {
-      if (mongoose.Types.ObjectId.isValid(restaurantId) && restaurantId.length === 24) {
-        restaurant = await Restaurant.findById(restaurantId).lean();
+    // Get cafe details
+    let cafe = null;
+    if (cafeId) {
+      if (mongoose.Types.ObjectId.isValid(cafeId) && cafeId.length === 24) {
+        cafe = await Cafe.findById(cafeId).lean();
       }
-      if (!restaurant) {
-        restaurant = await Restaurant.findOne({
+      if (!cafe) {
+        cafe = await Cafe.findOne({
           $or: [
-            { restaurantId: restaurantId },
-            { slug: restaurantId }
+            { cafeId: cafeId },
+            { slug: cafeId }
           ]
         }).lean();
       }
@@ -284,20 +284,20 @@ export const calculateOrderPricing = async ({
     let discount = 0;
     let appliedCoupon = null;
 
-    if (couponCode && restaurant) {
+    if (couponCode && cafe) {
       try {
-        // Get restaurant ObjectId
-        let restaurantObjectId = restaurant._id;
-        if (!restaurantObjectId && mongoose.Types.ObjectId.isValid(restaurantId) && restaurantId.length === 24) {
-          restaurantObjectId = new mongoose.Types.ObjectId(restaurantId);
+        // Get cafe ObjectId
+        let cafeObjectId = cafe._id;
+        if (!cafeObjectId && mongoose.Types.ObjectId.isValid(cafeId) && cafeId.length === 24) {
+          cafeObjectId = new mongoose.Types.ObjectId(cafeId);
         }
 
-        if (restaurantObjectId) {
+        if (cafeObjectId) {
           const now = new Date();
 
-          // Find active offer with this coupon code for this restaurant
+          // Find active offer with this coupon code for this cafe
           const offer = await Offer.findOne({
-            restaurant: restaurantObjectId,
+            cafe: cafeObjectId,
             status: 'active',
             'items.couponCode': couponCode,
             startDate: { $lte: now },
@@ -360,7 +360,7 @@ export const calculateOrderPricing = async ({
     // Calculate delivery fee
     const deliveryFee = await calculateDeliveryFee(
       subtotal,
-      restaurant,
+      cafe,
       deliveryAddress
     );
 

@@ -23,7 +23,7 @@ class GoogleAuthService {
     
     // Build redirect URI - backend callback endpoint
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
-    this.redirectUri = process.env.GOOGLE_REDIRECT_URI || `${backendUrl}/api/auth/google/restaurant/callback`;
+    this.redirectUri = process.env.GOOGLE_REDIRECT_URI || `${backendUrl}/api/auth/google/cafe/callback`;
     
     // Initialize OAuth2 client
     this.oauth2Client = new OAuth2Client(
@@ -35,11 +35,11 @@ class GoogleAuthService {
 
   /**
    * Generate Google OAuth URL
-   * @param {string} role - User role (user, restaurant, delivery)
+   * @param {string} role - User role (user, cafe, delivery)
    * @param {string} state - Optional state parameter for CSRF protection
    * @returns {string} Authorization URL
    */
-  getAuthUrl(role = 'restaurant', state = null) {
+  getAuthUrl(role = 'cafe', state = null) {
     const scopes = [
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile'

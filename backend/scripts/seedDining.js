@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Models
-import DiningRestaurant from '../modules/dining/models/DiningRestaurant.js';
+import DiningCafe from '../modules/dining/models/DiningCafe.js';
 import DiningCategory from '../modules/dining/models/DiningCategory.js';
 import DiningLimelight from '../modules/dining/models/DiningLimelight.js';
 import DiningBankOffer from '../modules/dining/models/DiningBankOffer.js';
@@ -41,7 +41,7 @@ const diningCategories = [
     { name: "Bakery", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop" },
 ];
 
-const limelightRestaurants = [
+const limelightCafes = [
     {
         name: "The Grand Bistro",
         subheading: "Fine Dining Experience",
@@ -115,7 +115,7 @@ const bankOffers = [
     },
 ];
 
-const popularRestaurants = [
+const popularCafes = [
     {
         name: "IRIS",
         rating: 4.3,
@@ -211,16 +211,16 @@ const seedData = async () => {
         await DiningLimelight.deleteMany({});
         await DiningBankOffer.deleteMany({});
         await DiningMustTry.deleteMany({});
-        await DiningRestaurant.deleteMany({});
+        await DiningCafe.deleteMany({});
 
         console.log('Cleared existing dining data.');
 
         // Insert new data
         await DiningCategory.insertMany(diningCategories.map((c, i) => ({ ...c, order: i })));
-        await DiningLimelight.insertMany(limelightRestaurants.map((l, i) => ({ ...l, order: i })));
+        await DiningLimelight.insertMany(limelightCafes.map((l, i) => ({ ...l, order: i })));
         await DiningMustTry.insertMany(mustTries.map((m, i) => ({ ...m, order: i })));
         await DiningBankOffer.insertMany(bankOffers);
-        await DiningRestaurant.insertMany(popularRestaurants.map(r => ({
+        await DiningCafe.insertMany(popularCafes.map(r => ({
             ...r,
             slug: r.name.toLowerCase().replace(/\s+/g, '-')
         })));

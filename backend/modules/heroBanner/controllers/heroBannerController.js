@@ -4,9 +4,9 @@ import LandingPageExploreMore from '../models/LandingPageExploreMore.js';
 import LandingPageSettings from '../models/LandingPageSettings.js';
 import Under250Banner from '../models/Under250Banner.js';
 import DiningBanner from '../models/DiningBanner.js';
-import Top10Restaurant from '../models/Top10Restaurant.js';
-import GourmetRestaurant from '../models/GourmetRestaurant.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Top10Cafe from '../models/Top10Cafe.js';
+import GourmetCafe from '../models/GourmetCafe.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { uploadToCloudinary } from '../../../shared/utils/cloudinaryService.js';
 import { cloudinary } from '../../../config/cloudinary.js';
@@ -18,15 +18,15 @@ import mongoose from 'mongoose';
 export const getHeroBanners = async (req, res) => {
   try {
     const banners = await HeroBanner.find({ isActive: true })
-      .populate('linkedRestaurants', 'name slug restaurantId profileImage')
+      .populate('linkedCafes', 'name slug cafeId profileImage')
       .sort({ order: 1, createdAt: -1 })
-      .select('imageUrl order linkedRestaurants')
+      .select('imageUrl order linkedCafes')
       .lean();
 
     return successResponse(res, 200, 'Hero banners retrieved successfully', {
       banners: banners.map(b => ({
         imageUrl: b.imageUrl,
-        linkedRestaurants: b.linkedRestaurants || []
+        linkedCafes: b.linkedCafes || []
       }))
     });
   } catch (error) {
@@ -41,7 +41,7 @@ export const getHeroBanners = async (req, res) => {
 export const getAllHeroBanners = async (req, res) => {
   try {
     const banners = await HeroBanner.find()
-      .populate('linkedRestaurants', 'name slug restaurantId profileImage')
+      .populate('linkedCafes', 'name slug cafeId profileImage')
       .sort({ order: 1, createdAt: -1 })
       .lean();
 
@@ -271,15 +271,15 @@ export const toggleBannerStatus = async (req, res) => {
 };
 
 /**
- * Link restaurants to a hero banner
+ * Link cafes to a hero banner
  */
-export const linkRestaurantsToBanner = async (req, res) => {
+export const linkCafesToBanner = async (req, res) => {
   try {
     const { id } = req.params;
-    const { restaurantIds } = req.body;
+    const { cafeIds } = req.body;
 
-    if (!Array.isArray(restaurantIds)) {
-      return errorResponse(res, 400, 'restaurantIds must be an array');
+    if (!Array.isArray(cafeIds)) {
+      return errorResponse(res, 400, 'cafeIds must be an array');
     }
 
     const banner = await HeroBanner.findById(id);
@@ -287,23 +287,23 @@ export const linkRestaurantsToBanner = async (req, res) => {
       return errorResponse(res, 404, 'Hero banner not found');
     }
 
-    // Validate all restaurant IDs exist
-    const validRestaurantIds = [];
-    for (const restaurantId of restaurantIds) {
-      if (mongoose.Types.ObjectId.isValid(restaurantId)) {
-        const restaurant = await Restaurant.findById(restaurantId);
-        if (restaurant) {
-          validRestaurantIds.push(new mongoose.Types.ObjectId(restaurantId));
+    // Validate all cafe IDs exist
+    const validCafeIds = [];
+    for (const cafeId of cafeIds) {
+      if (mongoose.Types.ObjectId.isValid(cafeId)) {
+        const cafe = await Cafe.findById(cafeId);
+        if (cafe) {
+          validCafeIds.push(new mongoose.Types.ObjectId(cafeId));
         }
       }
     }
 
-    banner.linkedRestaurants = validRestaurantIds;
+    banner.linkedCafes = validCafeIds;
     banner.updatedAt = new Date();
     await banner.save();
 
-    // Populate linked restaurants for response
-    await banner.populate('linkedRestaurants', 'name slug restaurantId profileImage');
+    // Populate linked cafes for response
+    await banner.populate('linkedCafes', 'name slug cafeId profileImage');
 
     return successResponse(res, 200, 'Cafes linked to banner successfully', {
       banner
@@ -1229,20 +1229,20 @@ export const toggleDiningBannerStatus = async (req, res) => {
   }
 };
 
-// ==================== TOP 10 RESTAURANTS ====================
+// ==================== TOP 10 CAFES ====================
 
 /**
- * Get all Top 10 restaurants (admin endpoint)
+ * Get all Top 10 cafes (admin endpoint)
  */
-export const getAllTop10Restaurants = async (req, res) => {
+export const getAllTop10Cafes = async (req, res) => {
   try {
-    const restaurants = await Top10Restaurant.find()
-      .populate('restaurant', 'name restaurantId slug profileImage coverImages menuImages rating estimatedDeliveryTime distance offer featuredDish featuredPrice')
+    const cafes = await Top10Cafe.find()
+      .populate('cafe', 'name cafeId slug profileImage coverImages menuImages rating estimatedDeliveryTime distance offer featuredDish featuredPrice')
       .sort({ rank: 1, order: 1 })
       .lean();
 
     return successResponse(res, 200, 'Top 10 cafes retrieved successfully', {
-      restaurants
+      cafes
     });
   } catch (error) {
     console.error('Error fetching Top 10 cafes:', error);
@@ -1251,18 +1251,18 @@ export const getAllTop10Restaurants = async (req, res) => {
 };
 
 /**
- * Get all active Top 10 restaurants (public endpoint)
+ * Get all active Top 10 cafes (public endpoint)
  */
-export const getTop10Restaurants = async (req, res) => {
+export const getTop10Cafes = async (req, res) => {
   try {
-    const restaurants = await Top10Restaurant.find({ isActive: true })
-      .populate('restaurant', 'name restaurantId slug profileImage coverImages menuImages rating estimatedDeliveryTime distance offer featuredDish featuredPrice')
+    const cafes = await Top10Cafe.find({ isActive: true })
+      .populate('cafe', 'name cafeId slug profileImage coverImages menuImages rating estimatedDeliveryTime distance offer featuredDish featuredPrice')
       .sort({ rank: 1, order: 1 })
       .lean();
 
     return successResponse(res, 200, 'Top 10 cafes retrieved successfully', {
-      restaurants: restaurants.map(r => ({
-        ...r.restaurant,
+      cafes: cafes.map(r => ({
+        ...r.cafe,
         rank: r.rank,
         _id: r._id
       }))
@@ -1274,13 +1274,13 @@ export const getTop10Restaurants = async (req, res) => {
 };
 
 /**
- * Add a restaurant to Top 10
+ * Add a cafe to Top 10
  */
-export const createTop10Restaurant = async (req, res) => {
+export const createTop10Cafe = async (req, res) => {
   try {
-    const { restaurantId, rank } = req.body;
+    const { cafeId, rank } = req.body;
 
-    if (!restaurantId) {
+    if (!cafeId) {
       return errorResponse(res, 400, 'Cafe ID is required');
     }
 
@@ -1288,47 +1288,47 @@ export const createTop10Restaurant = async (req, res) => {
       return errorResponse(res, 400, 'Rank must be between 1 and 10');
     }
 
-    // Check if restaurant exists
-    const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant) {
+    // Check if cafe exists
+    const cafe = await Cafe.findById(cafeId);
+    if (!cafe) {
       return errorResponse(res, 404, 'Cafe not found');
     }
 
     // Check if rank is already taken
-    const existingRank = await Top10Restaurant.findOne({ rank, isActive: true });
+    const existingRank = await Top10Cafe.findOne({ rank, isActive: true });
     if (existingRank) {
       return errorResponse(res, 400, `Rank ${rank} is already taken`);
     }
 
-    // Check if restaurant is already in Top 10
-    const existingRestaurant = await Top10Restaurant.findOne({ restaurant: restaurantId });
-    if (existingRestaurant) {
+    // Check if cafe is already in Top 10
+    const existingCafe = await Top10Cafe.findOne({ cafe: cafeId });
+    if (existingCafe) {
       return errorResponse(res, 400, 'Cafe is already in Top 10');
     }
 
     // Get the highest order number
-    const lastRestaurant = await Top10Restaurant.findOne()
+    const lastCafe = await Top10Cafe.findOne()
       .sort({ order: -1 })
       .select('order')
       .lean();
 
-    const newOrder = lastRestaurant ? lastRestaurant.order + 1 : 0;
+    const newOrder = lastCafe ? lastCafe.order + 1 : 0;
 
-    // Create Top 10 restaurant record
-    const top10Restaurant = new Top10Restaurant({
-      restaurant: restaurantId,
+    // Create Top 10 cafe record
+    const top10Cafe = new Top10Cafe({
+      cafe: cafeId,
       rank,
       order: newOrder,
       isActive: true
     });
 
-    await top10Restaurant.save();
+    await top10Cafe.save();
 
-    // Populate restaurant data
-    await top10Restaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
+    // Populate cafe data
+    await top10Cafe.populate('cafe', 'name cafeId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
     return successResponse(res, 201, 'Cafe added to Top 10 successfully', {
-      restaurant: top10Restaurant
+      cafe: top10Cafe
     });
   } catch (error) {
     console.error('Error creating Top 10 cafe:', error);
@@ -1340,18 +1340,18 @@ export const createTop10Restaurant = async (req, res) => {
 };
 
 /**
- * Delete a restaurant from Top 10
+ * Delete a cafe from Top 10
  */
-export const deleteTop10Restaurant = async (req, res) => {
+export const deleteTop10Cafe = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const top10Restaurant = await Top10Restaurant.findById(id);
-    if (!top10Restaurant) {
+    const top10Cafe = await Top10Cafe.findById(id);
+    if (!top10Cafe) {
       return errorResponse(res, 404, 'Top 10 cafe not found');
     }
 
-    await Top10Restaurant.findByIdAndDelete(id);
+    await Top10Cafe.findByIdAndDelete(id);
 
     return successResponse(res, 200, 'Cafe removed from Top 10 successfully');
   } catch (error) {
@@ -1361,9 +1361,9 @@ export const deleteTop10Restaurant = async (req, res) => {
 };
 
 /**
- * Update Top 10 restaurant rank
+ * Update Top 10 cafe rank
  */
-export const updateTop10RestaurantRank = async (req, res) => {
+export const updateTop10CafeRank = async (req, res) => {
   try {
     const { id } = req.params;
     const { rank } = req.body;
@@ -1372,25 +1372,25 @@ export const updateTop10RestaurantRank = async (req, res) => {
       return errorResponse(res, 400, 'Rank must be between 1 and 10');
     }
 
-    const top10Restaurant = await Top10Restaurant.findById(id);
-    if (!top10Restaurant) {
+    const top10Cafe = await Top10Cafe.findById(id);
+    if (!top10Cafe) {
       return errorResponse(res, 404, 'Top 10 cafe not found');
     }
 
-    // Check if rank is already taken by another restaurant
-    const existingRank = await Top10Restaurant.findOne({ rank, isActive: true, _id: { $ne: id } });
+    // Check if rank is already taken by another cafe
+    const existingRank = await Top10Cafe.findOne({ rank, isActive: true, _id: { $ne: id } });
     if (existingRank) {
       return errorResponse(res, 400, `Rank ${rank} is already taken`);
     }
 
-    top10Restaurant.rank = rank;
-    top10Restaurant.updatedAt = new Date();
-    await top10Restaurant.save();
+    top10Cafe.rank = rank;
+    top10Cafe.updatedAt = new Date();
+    await top10Cafe.save();
 
-    await top10Restaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
+    await top10Cafe.populate('cafe', 'name cafeId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
     return successResponse(res, 200, 'Top 10 cafe rank updated successfully', {
-      restaurant: top10Restaurant
+      cafe: top10Cafe
     });
   } catch (error) {
     console.error('Error updating Top 10 cafe rank:', error);
@@ -1399,9 +1399,9 @@ export const updateTop10RestaurantRank = async (req, res) => {
 };
 
 /**
- * Update Top 10 restaurant order
+ * Update Top 10 cafe order
  */
-export const updateTop10RestaurantOrder = async (req, res) => {
+export const updateTop10CafeOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const { order } = req.body;
@@ -1410,18 +1410,18 @@ export const updateTop10RestaurantOrder = async (req, res) => {
       return errorResponse(res, 400, 'Order must be a number');
     }
 
-    const top10Restaurant = await Top10Restaurant.findByIdAndUpdate(
+    const top10Cafe = await Top10Cafe.findByIdAndUpdate(
       id,
       { order, updatedAt: new Date() },
       { new: true }
     );
 
-    if (!top10Restaurant) {
+    if (!top10Cafe) {
       return errorResponse(res, 404, 'Top 10 cafe not found');
     }
 
     return successResponse(res, 200, 'Top 10 cafe order updated successfully', {
-      restaurant: top10Restaurant
+      cafe: top10Cafe
     });
   } catch (error) {
     console.error('Error updating Top 10 cafe order:', error);
@@ -1430,33 +1430,33 @@ export const updateTop10RestaurantOrder = async (req, res) => {
 };
 
 /**
- * Toggle Top 10 restaurant active status
+ * Toggle Top 10 cafe active status
  */
-export const toggleTop10RestaurantStatus = async (req, res) => {
+export const toggleTop10CafeStatus = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const top10Restaurant = await Top10Restaurant.findById(id);
-    if (!top10Restaurant) {
+    const top10Cafe = await Top10Cafe.findById(id);
+    if (!top10Cafe) {
       return errorResponse(res, 404, 'Top 10 cafe not found');
     }
 
-    // Check if activating would exceed 10 active restaurants
-    if (!top10Restaurant.isActive) {
-      const activeCount = await Top10Restaurant.countDocuments({ isActive: true });
+    // Check if activating would exceed 10 active cafes
+    if (!top10Cafe.isActive) {
+      const activeCount = await Top10Cafe.countDocuments({ isActive: true });
       if (activeCount >= 10) {
         return errorResponse(res, 400, 'Maximum 10 cafes can be active in Top 10');
       }
     }
 
-    top10Restaurant.isActive = !top10Restaurant.isActive;
-    top10Restaurant.updatedAt = new Date();
-    await top10Restaurant.save();
+    top10Cafe.isActive = !top10Cafe.isActive;
+    top10Cafe.updatedAt = new Date();
+    await top10Cafe.save();
 
-    await top10Restaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
+    await top10Cafe.populate('cafe', 'name cafeId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
     return successResponse(res, 200, 'Top 10 cafe status updated successfully', {
-      restaurant: top10Restaurant
+      cafe: top10Cafe
     });
   } catch (error) {
     console.error('Error toggling Top 10 cafe status:', error);
@@ -1464,20 +1464,20 @@ export const toggleTop10RestaurantStatus = async (req, res) => {
   }
 };
 
-// ==================== GOURMET RESTAURANTS ====================
+// ==================== GOURMET CAFES ====================
 
 /**
- * Get all Gourmet restaurants (admin endpoint)
+ * Get all Gourmet cafes (admin endpoint)
  */
-export const getAllGourmetRestaurants = async (req, res) => {
+export const getAllGourmetCafes = async (req, res) => {
   try {
-    const restaurants = await GourmetRestaurant.find()
-      .populate('restaurant', 'name restaurantId slug profileImage coverImages menuImages rating estimatedDeliveryTime distance offer featuredDish featuredPrice')
+    const cafes = await GourmetCafe.find()
+      .populate('cafe', 'name cafeId slug profileImage coverImages menuImages rating estimatedDeliveryTime distance offer featuredDish featuredPrice')
       .sort({ order: 1, createdAt: -1 })
       .lean();
 
     return successResponse(res, 200, 'Gourmet cafes retrieved successfully', {
-      restaurants
+      cafes
     });
   } catch (error) {
     console.error('Error fetching Gourmet cafes:', error);
@@ -1486,18 +1486,18 @@ export const getAllGourmetRestaurants = async (req, res) => {
 };
 
 /**
- * Get all active Gourmet restaurants (public endpoint)
+ * Get all active Gourmet cafes (public endpoint)
  */
-export const getGourmetRestaurants = async (req, res) => {
+export const getGourmetCafes = async (req, res) => {
   try {
-    const restaurants = await GourmetRestaurant.find({ isActive: true })
-      .populate('restaurant', 'name restaurantId slug profileImage coverImages menuImages rating estimatedDeliveryTime distance offer featuredDish featuredPrice')
+    const cafes = await GourmetCafe.find({ isActive: true })
+      .populate('cafe', 'name cafeId slug profileImage coverImages menuImages rating estimatedDeliveryTime distance offer featuredDish featuredPrice')
       .sort({ order: 1, createdAt: -1 })
       .lean();
 
     return successResponse(res, 200, 'Gourmet cafes retrieved successfully', {
-      restaurants: restaurants.map(r => ({
-        ...r.restaurant,
+      cafes: cafes.map(r => ({
+        ...r.cafe,
         _id: r._id
       }))
     });
@@ -1508,50 +1508,50 @@ export const getGourmetRestaurants = async (req, res) => {
 };
 
 /**
- * Add a restaurant to Gourmet
+ * Add a cafe to Gourmet
  */
-export const createGourmetRestaurant = async (req, res) => {
+export const createGourmetCafe = async (req, res) => {
   try {
-    const { restaurantId } = req.body;
+    const { cafeId } = req.body;
 
-    if (!restaurantId) {
+    if (!cafeId) {
       return errorResponse(res, 400, 'Cafe ID is required');
     }
 
-    // Check if restaurant exists
-    const restaurant = await Restaurant.findById(restaurantId);
-    if (!restaurant) {
+    // Check if cafe exists
+    const cafe = await Cafe.findById(cafeId);
+    if (!cafe) {
       return errorResponse(res, 404, 'Cafe not found');
     }
 
-    // Check if restaurant is already in Gourmet
-    const existingRestaurant = await GourmetRestaurant.findOne({ restaurant: restaurantId });
-    if (existingRestaurant) {
+    // Check if cafe is already in Gourmet
+    const existingCafe = await GourmetCafe.findOne({ cafe: cafeId });
+    if (existingCafe) {
       return errorResponse(res, 400, 'Cafe is already in Gourmet');
     }
 
     // Get the highest order number
-    const lastRestaurant = await GourmetRestaurant.findOne()
+    const lastCafe = await GourmetCafe.findOne()
       .sort({ order: -1 })
       .select('order')
       .lean();
 
-    const newOrder = lastRestaurant ? lastRestaurant.order + 1 : 0;
+    const newOrder = lastCafe ? lastCafe.order + 1 : 0;
 
-    // Create Gourmet restaurant record
-    const gourmetRestaurant = new GourmetRestaurant({
-      restaurant: restaurantId,
+    // Create Gourmet cafe record
+    const gourmetCafe = new GourmetCafe({
+      cafe: cafeId,
       order: newOrder,
       isActive: true
     });
 
-    await gourmetRestaurant.save();
+    await gourmetCafe.save();
 
-    // Populate restaurant data
-    await gourmetRestaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
+    // Populate cafe data
+    await gourmetCafe.populate('cafe', 'name cafeId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
     return successResponse(res, 201, 'Cafe added to Gourmet successfully', {
-      restaurant: gourmetRestaurant
+      cafe: gourmetCafe
     });
   } catch (error) {
     console.error('Error creating Gourmet cafe:', error);
@@ -1560,18 +1560,18 @@ export const createGourmetRestaurant = async (req, res) => {
 };
 
 /**
- * Delete a restaurant from Gourmet
+ * Delete a cafe from Gourmet
  */
-export const deleteGourmetRestaurant = async (req, res) => {
+export const deleteGourmetCafe = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const gourmetRestaurant = await GourmetRestaurant.findById(id);
-    if (!gourmetRestaurant) {
+    const gourmetCafe = await GourmetCafe.findById(id);
+    if (!gourmetCafe) {
       return errorResponse(res, 404, 'Gourmet cafe not found');
     }
 
-    await GourmetRestaurant.findByIdAndDelete(id);
+    await GourmetCafe.findByIdAndDelete(id);
 
     return successResponse(res, 200, 'Cafe removed from Gourmet successfully');
   } catch (error) {
@@ -1581,9 +1581,9 @@ export const deleteGourmetRestaurant = async (req, res) => {
 };
 
 /**
- * Update Gourmet restaurant order
+ * Update Gourmet cafe order
  */
-export const updateGourmetRestaurantOrder = async (req, res) => {
+export const updateGourmetCafeOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const { order } = req.body;
@@ -1592,18 +1592,18 @@ export const updateGourmetRestaurantOrder = async (req, res) => {
       return errorResponse(res, 400, 'Order must be a number');
     }
 
-    const gourmetRestaurant = await GourmetRestaurant.findByIdAndUpdate(
+    const gourmetCafe = await GourmetCafe.findByIdAndUpdate(
       id,
       { order, updatedAt: new Date() },
       { new: true }
     );
 
-    if (!gourmetRestaurant) {
+    if (!gourmetCafe) {
       return errorResponse(res, 404, 'Gourmet cafe not found');
     }
 
     return successResponse(res, 200, 'Gourmet cafe order updated successfully', {
-      restaurant: gourmetRestaurant
+      cafe: gourmetCafe
     });
   } catch (error) {
     console.error('Error updating Gourmet cafe order:', error);
@@ -1612,25 +1612,25 @@ export const updateGourmetRestaurantOrder = async (req, res) => {
 };
 
 /**
- * Toggle Gourmet restaurant active status
+ * Toggle Gourmet cafe active status
  */
-export const toggleGourmetRestaurantStatus = async (req, res) => {
+export const toggleGourmetCafeStatus = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const gourmetRestaurant = await GourmetRestaurant.findById(id);
-    if (!gourmetRestaurant) {
+    const gourmetCafe = await GourmetCafe.findById(id);
+    if (!gourmetCafe) {
       return errorResponse(res, 404, 'Gourmet cafe not found');
     }
 
-    gourmetRestaurant.isActive = !gourmetRestaurant.isActive;
-    gourmetRestaurant.updatedAt = new Date();
-    await gourmetRestaurant.save();
+    gourmetCafe.isActive = !gourmetCafe.isActive;
+    gourmetCafe.updatedAt = new Date();
+    await gourmetCafe.save();
 
-    await gourmetRestaurant.populate('restaurant', 'name restaurantId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
+    await gourmetCafe.populate('cafe', 'name cafeId slug profileImage rating estimatedDeliveryTime distance offer featuredDish featuredPrice');
 
     return successResponse(res, 200, 'Gourmet cafe status updated successfully', {
-      restaurant: gourmetRestaurant
+      cafe: gourmetCafe
     });
   } catch (error) {
     console.error('Error toggling Gourmet cafe status:', error);

@@ -14,7 +14,7 @@ const statsCards = [
   { id: 4, label: "Expiring Soon", value: 0, bg: "bg-amber-50" },
 ];
 
-const restaurantRows = [
+const cafeRows = [
   {
     id: 1,
     name: "Tasty Lunch",
@@ -59,7 +59,7 @@ export default function SubscriberList() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState({
     si: true,
-    restaurantInfo: true,
+    cafeInfo: true,
     packageName: true,
     price: true,
     expDate: true,
@@ -71,7 +71,7 @@ export default function SubscriberList() {
   });
 
   const filteredRows = useMemo(() => {
-    return restaurantRows.filter((row) =>
+    return cafeRows.filter((row) =>
       row.name.toLowerCase().includes(searchQuery.toLowerCase().trim())
     );
   }, [searchQuery]);
@@ -91,7 +91,7 @@ export default function SubscriberList() {
   const resetColumns = () => {
     setVisibleColumns({
       si: true,
-      restaurantInfo: true,
+      cafeInfo: true,
       packageName: true,
       price: true,
       expDate: true,
@@ -105,7 +105,7 @@ export default function SubscriberList() {
 
   const columnsConfig = {
     si: "Serial Number",
-    restaurantInfo: "Cafe Info",
+    cafeInfo: "Cafe Info",
     packageName: "Current Package Name",
     price: "Package Price",
     expDate: "Exp Date",
@@ -200,7 +200,7 @@ export default function SubscriberList() {
         </div>
       </div>
 
-      {/* Restaurant list card */}
+      {/* Cafe list card */}
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
         <div className="px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -284,7 +284,7 @@ export default function SubscriberList() {
                     </div>
                   </th>
                 )}
-                {visibleColumns.restaurantInfo && (
+                {visibleColumns.cafeInfo && (
                   <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <span>Cafe Info</span>
@@ -368,7 +368,7 @@ export default function SubscriberList() {
                         <span className="text-sm font-medium text-slate-700">{index + 1}</span>
                       </td>
                     )}
-                    {visibleColumns.restaurantInfo && (
+                    {visibleColumns.cafeInfo && (
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">

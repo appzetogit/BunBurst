@@ -2,7 +2,7 @@ import etaCalculationService from './etaCalculationService.js';
 import etaWebSocketService from './etaWebSocketService.js';
 import OrderEvent from '../models/OrderEvent.js';
 import Order from '../models/Order.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import Delivery from '../../delivery/models/Delivery.js';
 
 /**
@@ -11,27 +11,27 @@ import Delivery from '../../delivery/models/Delivery.js';
  */
 class ETAEventService {
   /**
-   * Handle restaurant accepted order event
+   * Handle cafe accepted order event
    * @param {String} orderId - Order ID
-   * @param {Date} acceptedAt - When restaurant accepted
+   * @param {Date} acceptedAt - When cafe accepted
    */
-  async handleRestaurantAccepted(orderId, acceptedAt) {
+  async handleCafeAccepted(orderId, acceptedAt) {
     try {
       const order = await Order.findById(orderId);
       if (!order) {
         throw new Error('Order not found');
       }
 
-      // Check if restaurant accepted late
+      // Check if cafe accepted late
       const orderCreatedAt = order.createdAt;
       const delayMinutes = Math.floor((acceptedAt - orderCreatedAt) / 1000 / 60);
       const expectedAcceptTime = 2; // Expected 2 minutes to accept
 
-      let eventType = 'RESTAURANT_ACCEPTED';
+      let eventType = 'CAFE_ACCEPTED';
       let eventData = {};
 
       if (delayMinutes > expectedAcceptTime) {
-        eventType = 'RESTAURANT_ACCEPTED_LATE';
+        eventType = 'CAFE_ACCEPTED_LATE';
         eventData = {
           delayMinutes: delayMinutes - expectedAcceptTime
         };
@@ -139,10 +139,10 @@ class ETAEventService {
   }
 
   /**
-   * Handle rider reached restaurant event
+   * Handle rider reached cafe event
    * @param {String} orderId - Order ID
    */
-  async handleRiderReachedRestaurant(orderId) {
+  async handleRiderReachedCafe(orderId) {
     try {
       const order = await Order.findById(orderId);
       if (!order) {
@@ -154,7 +154,7 @@ class ETAEventService {
       // Create event
       const event = await OrderEvent.create({
         orderId: order._id,
-        eventType: 'RIDER_REACHED_RESTAURANT',
+        eventType: 'RIDER_REACHED_CAFE',
         data: {
           reachedAt
         },
@@ -164,7 +164,7 @@ class ETAEventService {
       // Recalculate ETA
       const newETA = await etaCalculationService.recalculateETA(
         orderId,
-        'RIDER_REACHED_RESTAURANT',
+        'RIDER_REACHED_CAFE',
         {}
       );
 

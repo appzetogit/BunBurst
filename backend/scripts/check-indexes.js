@@ -15,8 +15,8 @@ dotenv.config({ path: join(__dirname, '../.env') });
 
 // Import models to trigger schema registration
 import '../modules/auth/models/User.js';
-import '../modules/restaurant/models/Restaurant.js';
-import '../modules/restaurant/models/RestaurantCategory.js';
+import '../modules/cafe/models/Cafe.js';
+import '../modules/cafe/models/CafeCategory.js';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -26,17 +26,17 @@ async function checkIndexes() {
     console.log('✅ Connected to MongoDB\n');
 
     const User = mongoose.model('User');
-    const Restaurant = mongoose.model('Restaurant');
-    const RestaurantCategory = mongoose.model('RestaurantCategory');
+    const Cafe = mongoose.model('Cafe');
+    const CafeCategory = mongoose.model('CafeCategory');
 
     console.log('📋 User Schema Indexes:');
     console.log(JSON.stringify(User.schema.indexes(), null, 2));
     
-    console.log('\n📋 Restaurant Schema Indexes:');
-    console.log(JSON.stringify(Restaurant.schema.indexes(), null, 2));
+    console.log('\n📋 Cafe Schema Indexes:');
+    console.log(JSON.stringify(Cafe.schema.indexes(), null, 2));
     
-    console.log('\n📋 RestaurantCategory Schema Indexes:');
-    console.log(JSON.stringify(RestaurantCategory.schema.indexes(), null, 2));
+    console.log('\n📋 CafeCategory Schema Indexes:');
+    console.log(JSON.stringify(CafeCategory.schema.indexes(), null, 2));
 
     await mongoose.connection.close();
   } catch (error) {

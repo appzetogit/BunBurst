@@ -199,7 +199,7 @@ export const getDeliveryEarnings = asyncHandler(async (req, res) => {
           orders = await Order.find({
             _id: { $in: orderIds }
           })
-            .select('orderId status createdAt deliveredAt pricing.total pricing.deliveryFee restaurantName address')
+            .select('orderId status createdAt deliveredAt pricing.total pricing.deliveryFee cafeName address')
             .lean();
           
           console.log(`📦 Found ${orders.length} orders for ${orderIds.length} order IDs`);
@@ -234,7 +234,7 @@ export const getDeliveryEarnings = asyncHandler(async (req, res) => {
           createdAt: transactionDate,
           deliveredAt: order?.deliveredAt || null,
           orderStatus: order?.status || 'unknown',
-          restaurantName: order?.restaurantName || 'N/A',
+          cafeName: order?.cafeName || 'N/A',
           orderTotal: order?.pricing?.total || 0,
           deliveryFee: order?.pricing?.deliveryFee || 0,
           customerAddress: order?.address?.formattedAddress || 'N/A'

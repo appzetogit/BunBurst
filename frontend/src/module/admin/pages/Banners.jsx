@@ -27,7 +27,7 @@ export default function Banners() {
     title: "",
     zone: "",
     bannerType: "Cafe wise",
-    restaurant: "",
+    cafe: "",
   })
 
   const languageTabs = [
@@ -73,7 +73,7 @@ export default function Banners() {
       title: "",
       zone: "",
       bannerType: "Cafe wise",
-      restaurant: "",
+      cafe: "",
     })
   }
 
@@ -164,8 +164,8 @@ export default function Banners() {
                   Cafe <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.restaurant}
-                  onChange={(e) => handleInputChange("restaurant", e.target.value)}
+                  value={formData.cafe}
+                  onChange={(e) => handleInputChange("cafe", e.target.value)}
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 >
                   <option value="">Select</option>

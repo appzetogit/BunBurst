@@ -1,4 +1,4 @@
-import { formatCurrency } from "../../restaurant/utils/currency"
+import { formatCurrency } from "../../cafe/utils/currency"
 
 export default function AvailableCashLimit({ onClose, walletData = {} }) {
   const rawLimit = Number(walletData.totalCashLimit)

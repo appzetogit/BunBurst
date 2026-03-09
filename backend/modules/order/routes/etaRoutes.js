@@ -5,9 +5,9 @@ import {
   getETAHistory,
   getOrderEvents,
   recalculateETA,
-  handleRestaurantAccepted,
+  handleCafeAccepted,
   handleRiderAssigned,
-  handleRiderReachedRestaurant,
+  handleRiderReachedCafe,
   handleFoodNotReady,
   handleRiderStartedDelivery,
   handleTrafficDetected,
@@ -26,10 +26,10 @@ router.get('/orders/:orderId/events', getOrderEvents);
 router.post('/orders/calculate-eta', authenticate, calculateInitialETA);
 router.post('/orders/:orderId/eta/recalculate', authenticate, recalculateETA);
 
-// Event handlers (can be called by restaurant/delivery modules)
-router.post('/orders/:orderId/events/restaurant-accepted', handleRestaurantAccepted);
+// Event handlers (can be called by cafe/delivery modules)
+router.post('/orders/:orderId/events/cafe-accepted', handleCafeAccepted);
 router.post('/orders/:orderId/events/rider-assigned', handleRiderAssigned);
-router.post('/orders/:orderId/events/rider-reached-restaurant', handleRiderReachedRestaurant);
+router.post('/orders/:orderId/events/rider-reached-cafe', handleRiderReachedCafe);
 router.post('/orders/:orderId/events/food-not-ready', handleFoodNotReady);
 router.post('/orders/:orderId/events/rider-started-delivery', handleRiderStartedDelivery);
 router.post('/orders/:orderId/events/traffic-detected', handleTrafficDetected);

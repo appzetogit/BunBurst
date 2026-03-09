@@ -49,7 +49,7 @@ export default function PickupDirectionsPage() {
   const location = useLocation()
   const { goOffline } = useGigStore()
   const [riderLocation, setRiderLocation] = useState([28.2849, 76.1209]) // Set default immediately
-  const [expandedRestaurant, setExpandedRestaurant] = useState(null)
+  const [expandedCafe, setExpandedCafe] = useState(null)
   const [routePolylines, setRoutePolylines] = useState([])
   const [reachedButtonProgress, setReachedButtonProgress] = useState(0)
   const [isAnimatingToComplete, setIsAnimatingToComplete] = useState(false)
@@ -64,16 +64,16 @@ export default function PickupDirectionsPage() {
   const swipeStartY = useRef(0)
   const isSwiping = useRef(false)
   
-  // Get accepted restaurants from location state
-  const acceptedRestaurants = location.state?.restaurants || []
+  // Get accepted cafes from location state
+  const acceptedCafes = location.state?.cafes || []
 
-  // Set first restaurant as expanded by default
+  // Set first cafe as expanded by default
   useEffect(() => {
-    if (acceptedRestaurants.length > 0 && expandedRestaurant === null) {
-      setExpandedRestaurant(acceptedRestaurants[0].id)
+    if (acceptedCafes.length > 0 && expandedCafe === null) {
+      setExpandedCafe(acceptedCafes[0].id)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [acceptedRestaurants])
+  }, [acceptedCafes])
 
   // Get rider location - update with actual location if available
   useEffect(() => {
@@ -103,29 +103,29 @@ export default function PickupDirectionsPage() {
 
   // Fetch routes
   useEffect(() => {
-    if (acceptedRestaurants.length > 0 && riderLocation) {
+    if (acceptedCafes.length > 0 && riderLocation) {
       const fetchAllRoutes = async () => {
         const routes = []
         let currentLocation = riderLocation
         
-        for (const restaurant of acceptedRestaurants) {
+        for (const cafe of acceptedCafes) {
           try {
-            const url = `https://router.project-osrm.org/route/v1/driving/${currentLocation[1]},${currentLocation[0]};${restaurant.lng},${restaurant.lat}?overview=full&geometries=geojson`
+            const url = `https://router.project-osrm.org/route/v1/driving/${currentLocation[1]},${currentLocation[0]};${cafe.lng},${cafe.lat}?overview=full&geometries=geojson`
             const response = await fetch(url)
             const data = await response.json()
             
             if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
               const coordinates = data.routes[0].geometry.coordinates.map((coord) => [coord[1], coord[0]])
               routes.push(coordinates)
-              currentLocation = [restaurant.lat, restaurant.lng]
+              currentLocation = [cafe.lat, cafe.lng]
             } else {
-              routes.push([currentLocation, [restaurant.lat, restaurant.lng]])
-              currentLocation = [restaurant.lat, restaurant.lng]
+              routes.push([currentLocation, [cafe.lat, cafe.lng]])
+              currentLocation = [cafe.lat, cafe.lng]
             }
           } catch (error) {
             console.error('Error fetching route:', error)
-            routes.push([currentLocation, [restaurant.lat, restaurant.lng]])
-            currentLocation = [restaurant.lat, restaurant.lng]
+            routes.push([currentLocation, [cafe.lat, cafe.lng]])
+            currentLocation = [cafe.lat, cafe.lng]
           }
         }
         setRoutePolylines(routes)
@@ -133,7 +133,7 @@ export default function PickupDirectionsPage() {
       
       fetchAllRoutes()
     }
-  }, [acceptedRestaurants, riderLocation])
+  }, [acceptedCafes, riderLocation])
 
   const handleCall = (phoneNumber) => {
     window.location.href = `tel:${phoneNumber}`
@@ -144,8 +144,8 @@ export default function PickupDirectionsPage() {
     window.open(url, '_blank')
   }
 
-  const toggleRestaurantExpansion = (restaurantId) => {
-    setExpandedRestaurant(expandedRestaurant === restaurantId ? null : restaurantId)
+  const toggleCafeExpansion = (cafeId) => {
+    setExpandedCafe(expandedCafe === cafeId ? null : cafeId)
   }
 
   // Handle bottom sheet swipe
@@ -310,7 +310,7 @@ export default function PickupDirectionsPage() {
     reachedButtonIsSwiping.current = false
   }
 
-  if (acceptedRestaurants.length === 0) {
+  if (acceptedCafes.length === 0) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -394,14 +394,14 @@ export default function PickupDirectionsPage() {
               <Popup>Your Location</Popup>
             </Marker>
 
-            {/* Restaurant markers */}
-            {acceptedRestaurants.map((restaurant, index) => (
+            {/* Cafe markers */}
+            {acceptedCafes.map((cafe, index) => (
               <Marker
-                key={restaurant.id}
-                position={[restaurant.lat, restaurant.lng]}
+                key={cafe.id}
+                position={[cafe.lat, cafe.lng]}
                 icon={createCustomIcon('#ff8100', '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>')}
               >
-                <Popup>{restaurant.name}</Popup>
+                <Popup>{cafe.name}</Popup>
               </Marker>
             ))}
 
@@ -479,11 +479,11 @@ export default function PickupDirectionsPage() {
         {/* Scrollable content */}
         <div className="overflow-y-auto px-4 pb-8 mb-8 scrollable-content" style={{ maxHeight: bottomSheetExpanded ? 'calc(70vh - 60px)' : 'calc(40vh - 60px)' }}>
           <div className="space-y-4">
-            {acceptedRestaurants.map((restaurant, index) => {
-              const isExpanded = expandedRestaurant === restaurant.id
+            {acceptedCafes.map((cafe, index) => {
+              const isExpanded = expandedCafe === cafe.id
               return (
                 <motion.div
-                  key={restaurant.id}
+                  key={cafe.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -491,7 +491,7 @@ export default function PickupDirectionsPage() {
                 >
                   {/* Vertical line */}
                   <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-white/30">
-                    {index < acceptedRestaurants.length - 1 && (
+                    {index < acceptedCafes.length - 1 && (
                       <div className="absolute top-12 left-0 w-full h-full bg-white/30" />
                     )}
                   </div>
@@ -501,19 +501,19 @@ export default function PickupDirectionsPage() {
                     <span className="text-gray-900 font-bold text-sm">{index + 1}</span>
                   </div>
 
-                  {/* Restaurant card */}
+                  {/* Cafe card */}
                   <div className="ml-12">
                     <div
                       className="bg-gray-800 rounded-lg p-4 cursor-pointer"
-                      onClick={() => toggleRestaurantExpansion(restaurant.id)}
+                      onClick={() => toggleCafeExpansion(cafe.id)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <div className="bg-gray-700 rounded px-2 py-1 inline-block mb-2">
                             <span className="text-white text-xs font-medium">Pick up {index + 1}</span>
                           </div>
-                          <h3 className="text-white font-bold text-lg mb-1">{restaurant.name}</h3>
-                          <p className="text-white/70 text-sm">{restaurant.address}</p>
+                          <h3 className="text-white font-bold text-lg mb-1">{cafe.name}</h3>
+                          <p className="text-white/70 text-sm">{cafe.address}</p>
                         </div>
                       </div>
 
@@ -534,7 +534,7 @@ export default function PickupDirectionsPage() {
                                 whileTap={{ scale: 0.95 }}
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleCall(restaurant.phone || "+911234567890")
+                                  handleCall(cafe.phone || "+911234567890")
                                 }}
                                 className="flex-1 bg-gray-900 text-white py-3 rounded-lg flex items-center justify-center gap-2"
                               >
@@ -547,7 +547,7 @@ export default function PickupDirectionsPage() {
                                 whileTap={{ scale: 0.95 }}
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  handleOpenMap(restaurant.lat, restaurant.lng, restaurant.address)
+                                  handleOpenMap(cafe.lat, cafe.lng, cafe.address)
                                 }}
                                 className="flex-1 bg-white text-gray-900 py-3 rounded-lg flex items-center justify-center gap-2"
                               >

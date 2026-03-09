@@ -21,7 +21,7 @@ function calculateHaversineDistance(lat1, lng1, lat2, lng2) {
 
 const DeliveryTrackingMap = ({
   orderId,
-  restaurantCoords,
+  cafeCoords,
   customerCoords,
   userLiveCoords = null,
   userLocationAccuracy = null,
@@ -288,25 +288,25 @@ const DeliveryTrackingMap = ({
   // Determine which route to show based on order phase
   const getRouteToShow = useCallback(() => {
     if (!order || !deliveryBoyLocation) {
-      // No delivery boy location yet, show restaurant to customer
-      return { start: restaurantCoords, end: customerCoords };
+      // No delivery boy location yet, show cafe to customer
+      return { start: cafeCoords, end: customerCoords };
     }
 
     const currentPhase = order.deliveryState?.currentPhase || 'assigned';
     const status = order.deliveryState?.status || 'pending';
 
-    // Phase 1: Delivery boy going to restaurant (en_route_to_pickup)
+    // Phase 1: Delivery boy going to cafe (en_route_to_pickup)
     if (currentPhase === 'en_route_to_pickup' || status === 'accepted') {
       return {
         start: { lat: deliveryBoyLocation.lat, lng: deliveryBoyLocation.lng },
-        end: restaurantCoords
+        end: cafeCoords
       };
     }
 
-    // Phase 2: Delivery boy at restaurant (at_pickup) - show route to customer
+    // Phase 2: Delivery boy at cafe (at_pickup) - show route to customer
     if (currentPhase === 'at_pickup' || status === 'reached_pickup' || status === 'order_confirmed') {
       return {
-        start: restaurantCoords,
+        start: cafeCoords,
         end: customerCoords
       };
     }
@@ -319,9 +319,9 @@ const DeliveryTrackingMap = ({
       };
     }
 
-    // Default: Show restaurant to customer
-    return { start: restaurantCoords, end: customerCoords };
-  }, [order, deliveryBoyLocation, restaurantCoords, customerCoords]);
+    // Default: Show cafe to customer
+    return { start: cafeCoords, end: customerCoords };
+  }, [order, deliveryBoyLocation, cafeCoords, customerCoords]);
 
   // Move bike smoothly with rotation
   const moveBikeSmoothly = useCallback((lat, lng, heading) => {
@@ -731,7 +731,7 @@ const DeliveryTrackingMap = ({
 
   // Initialize Google Map (only once - prevent re-initialization)
   useEffect(() => {
-    if (!mapRef.current || !restaurantCoords || !customerCoords || mapInitializedRef.current) return;
+    if (!mapRef.current || !cafeCoords || !customerCoords || mapInitializedRef.current) return;
 
     const loadGoogleMapsIfNeeded = async () => {
       // Wait for Google Maps to load from main.jsx first
@@ -804,13 +804,13 @@ const DeliveryTrackingMap = ({
         }
 
         // Calculate center point
-        const centerLng = (restaurantCoords.lng + customerCoords.lng) / 2;
-        const centerLat = (restaurantCoords.lat + customerCoords.lat) / 2;
+        const centerLng = (cafeCoords.lng + customerCoords.lng) / 2;
+        const centerLat = (cafeCoords.lat + customerCoords.lat) / 2;
 
         // Get MapTypeId safely
         const mapTypeId = window.google.maps.MapTypeId?.ROADMAP || 'roadmap';
 
-        // Initialize map - center between user and restaurant, stable view
+        // Initialize map - center between user and cafe, stable view
         mapInstance.current = new window.google.maps.Map(mapRef.current, {
           center: { lat: centerLat, lng: centerLng },
           zoom: 15,
@@ -928,9 +928,9 @@ const DeliveryTrackingMap = ({
         // Ensure viewport never changes automatically - map stays stable
         directionsRendererRef.current.setOptions({ preserveViewport: true });
 
-        // Add restaurant marker with home icon (only once)
-        if (!mapInstance.current._restaurantMarker) {
-          const restaurantHomeIconUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+        // Add cafe marker with home icon (only once)
+        if (!mapInstance.current._cafeMarker) {
+          const cafeHomeIconUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="50" viewBox="0 0 40 50">
               <!-- Pin shape -->
               <path d="M20 0 C9 0 0 9 0 20 C0 35 20 50 20 50 C20 50 40 35 40 20 C40 9 31 0 20 0 Z" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
@@ -940,11 +940,11 @@ const DeliveryTrackingMap = ({
             </svg>
           `);
 
-          mapInstance.current._restaurantMarker = new window.google.maps.Marker({
-            position: { lat: restaurantCoords.lat, lng: restaurantCoords.lng },
+          mapInstance.current._cafeMarker = new window.google.maps.Marker({
+            position: { lat: cafeCoords.lat, lng: cafeCoords.lng },
             map: mapInstance.current,
             icon: {
-              url: restaurantHomeIconUrl,
+              url: cafeHomeIconUrl,
               scaledSize: new window.google.maps.Size(40, 50),
               anchor: new window.google.maps.Point(20, 50),
               origin: new window.google.maps.Point(0, 0)
@@ -1056,7 +1056,7 @@ const DeliveryTrackingMap = ({
             hasBikeMarker: !!bikeMarkerRef.current
           });
 
-          // DO NOT create bike at restaurant on map load
+          // DO NOT create bike at cafe on map load
           // Wait for real location from socket - bike will be created when real location is received
           if (hasDeliveryPartnerOnLoad && !bikeMarkerRef.current) {
             console.log('🚴 Map loaded - Delivery partner detected, waiting for REAL location from socket...');
@@ -1065,7 +1065,7 @@ const DeliveryTrackingMap = ({
               socketRef.current.emit('request-current-location', orderId);
               console.log('📡 Requested current location immediately on map load');
             }
-            // Don't create bike at restaurant - wait for real location
+            // Don't create bike at cafe - wait for real location
           }
 
           // DO NOT draw default route - only draw when delivery partner is assigned
@@ -1078,11 +1078,11 @@ const DeliveryTrackingMap = ({
         console.error('❌ Map initialization error:', error);
       }
     }
-  }, [restaurantCoords, customerCoords]); // Removed dependencies that cause re-initialization
+  }, [cafeCoords, customerCoords]); // Removed dependencies that cause re-initialization
 
-  // Memoize restaurant and customer coordinates to avoid dependency issues
-  const restaurantLat = restaurantCoords?.lat;
-  const restaurantLng = restaurantCoords?.lng;
+  // Memoize cafe and customer coordinates to avoid dependency issues
+  const cafeLat = cafeCoords?.lat;
+  const cafeLng = cafeCoords?.lng;
   const deliveryBoyLat = deliveryBoyLocation?.lat;
   const deliveryBoyLng = deliveryBoyLocation?.lng;
   const deliveryBoyHeading = deliveryBoyLocation?.heading;
@@ -1100,7 +1100,7 @@ const DeliveryTrackingMap = ({
     // If delivery partner is assigned but bike marker doesn't exist, create it
     if (hasDeliveryPartnerByPhase && !bikeMarkerRef.current && mapInstance.current) {
       console.log('🚴 Delivery partner detected by phase, creating bike marker:', currentPhase);
-      // DO NOT show bike at restaurant - wait for real location from socket
+      // DO NOT show bike at cafe - wait for real location from socket
       // Bike will be created when real location is received via socket
       console.log('⏳ Waiting for real location from socket - NOT showing at cafe');
       if (socketRef.current && socketRef.current.connected) {
@@ -1154,16 +1154,16 @@ const DeliveryTrackingMap = ({
           phase: currentPhase,
           routeStart: route.start,
           routeEnd: route.end,
-          restaurantCoords
+          cafeCoords
         });
 
-        // ONLY use real delivery boy location - NEVER use restaurant
+        // ONLY use real delivery boy location - NEVER use cafe
         // Priority 1: Use delivery boy's REAL location from socket/state
         if (deliveryBoyLat && deliveryBoyLng) {
           console.log('✅✅✅ Creating bike at REAL delivery boy location:', { lat: deliveryBoyLat, lng: deliveryBoyLng });
           moveBikeSmoothly(deliveryBoyLat, deliveryBoyLng, deliveryBoyHeading || 0);
         }
-        // Priority 2: Use route start ONLY if it's the delivery boy's location (not restaurant)
+        // Priority 2: Use route start ONLY if it's the delivery boy's location (not cafe)
         else if (route.start && route.start.lat && route.start.lng) {
           // Only use route.start if we don't have delivery boy location
           // But request real location from socket first
@@ -1174,7 +1174,7 @@ const DeliveryTrackingMap = ({
           console.log('🚴 Creating bike at route start (temporary):', route.start);
           moveBikeSmoothly(route.start.lat, route.start.lng, 0);
         }
-        // DO NOT use restaurant or customer location - wait for real location
+        // DO NOT use cafe or customer location - wait for real location
         else {
           console.log('⏳⏳⏳ No real location yet - requesting from socket and waiting...');
           if (socketRef.current && socketRef.current.connected) {
@@ -1184,13 +1184,13 @@ const DeliveryTrackingMap = ({
         }
       }
     }
-  }, [isMapLoaded, deliveryBoyLat, deliveryBoyLng, order?.deliveryState?.currentPhase, order?.deliveryState?.status, restaurantLat, restaurantLng, customerCoords?.lat, customerCoords?.lng, moveBikeSmoothly, getRouteToShow, drawRoute, hasDeliveryPartner]);
+  }, [isMapLoaded, deliveryBoyLat, deliveryBoyLng, order?.deliveryState?.currentPhase, order?.deliveryState?.status, cafeLat, cafeLng, customerCoords?.lat, customerCoords?.lng, moveBikeSmoothly, getRouteToShow, drawRoute, hasDeliveryPartner]);
 
   // Update bike when REAL location changes (from socket)
   useEffect(() => {
     if (isMapLoaded && currentLocation && currentLocation.lat && currentLocation.lng) {
       console.log('🔄🔄🔄 Updating bike to REAL location:', currentLocation);
-      // Always update to real location - this takes priority over restaurant location
+      // Always update to real location - this takes priority over cafe location
       moveBikeSmoothly(currentLocation.lat, currentLocation.lng, currentLocation.heading || 0);
     }
   }, [isMapLoaded, currentLocation?.lat, currentLocation?.lng, currentLocation?.heading, moveBikeSmoothly]);
@@ -1248,7 +1248,7 @@ const DeliveryTrackingMap = ({
       deliveryState: order?.deliveryState,
       hasBikeMarker: !!bikeMarkerRef.current,
       deliveryBoyLocation: { lat: deliveryBoyLat, lng: deliveryBoyLng, heading: deliveryBoyHeading },
-      restaurantCoords: { lat: restaurantLat, lng: restaurantLng },
+      cafeCoords: { lat: cafeLat, lng: cafeLng },
       mapInstance: !!mapInstance.current,
       isMapLoaded
     });
@@ -1262,16 +1262,16 @@ const DeliveryTrackingMap = ({
         console.log('✅✅✅ Creating bike at REAL delivery boy location:', { lat: deliveryBoyLat, lng: deliveryBoyLng, heading: deliveryBoyHeading });
         moveBikeSmoothly(deliveryBoyLat, deliveryBoyLng, deliveryBoyHeading || 0);
       }
-      // Priority 2: DO NOT show at restaurant - ONLY wait for real location from socket
-      // Bike should ONLY show at real delivery boy location, NEVER at restaurant
-      else if (restaurantLat && restaurantLng) {
+      // Priority 2: DO NOT show at cafe - ONLY wait for real location from socket
+      // Bike should ONLY show at real delivery boy location, NEVER at cafe
+      else if (cafeLat && cafeLng) {
         console.log('⏳⏳⏳ WAITING for REAL location from socket - NOT showing at cafe');
         console.log('📡 Requesting current location from backend immediately...');
         // Request location immediately
         if (socketRef.current && socketRef.current.connected) {
           socketRef.current.emit('request-current-location', orderId);
         }
-        // DO NOT show at restaurant - only wait for real location
+        // DO NOT show at cafe - only wait for real location
         // Real location will come via socket and bike will be created then
         console.log('✅ Bike will be created when real location is received from socket');
       }
@@ -1281,7 +1281,7 @@ const DeliveryTrackingMap = ({
         moveBikeSmoothly(customerCoords.lat, customerCoords.lng, 0);
       } else {
         console.error('❌ Cannot create bike marker - no coordinates available!', {
-          restaurantCoords,
+          cafeCoords,
           customerCoords,
           deliveryBoyLocation
         });
@@ -1317,7 +1317,7 @@ const DeliveryTrackingMap = ({
           }
         } else {
           console.warn('⚠️ Bike marker not created yet - waiting for real delivery boy location from socket');
-          // Don't create fallback at restaurant - wait for real location
+          // Don't create fallback at cafe - wait for real location
           // Real location will come via socket and bike will be created in moveBikeSmoothly
           if (socketRef.current && socketRef.current.connected) {
             socketRef.current.emit('request-current-location', orderId);
@@ -1338,7 +1338,7 @@ const DeliveryTrackingMap = ({
         bikeMarkerRef.current = null;
       }
     }
-  }, [isMapLoaded, hasDeliveryPartner, deliveryBoyLat, deliveryBoyLng, deliveryBoyHeading, restaurantLat, restaurantLng, moveBikeSmoothly, order]);
+  }, [isMapLoaded, hasDeliveryPartner, deliveryBoyLat, deliveryBoyLng, deliveryBoyHeading, cafeLat, cafeLng, moveBikeSmoothly, order]);
 
   // Update user's live location marker and circle when location changes
   useEffect(() => {
@@ -1401,10 +1401,10 @@ const DeliveryTrackingMap = ({
   //                            currentPhase === 'en_route_to_delivery' ||
   //                            (deliveryStateStatus && deliveryStateStatus !== 'pending');
   //     
-  //     if (shouldHaveBike && !bikeMarkerRef.current && restaurantCoords && restaurantCoords.lat && restaurantCoords.lng) {
+  //     if (shouldHaveBike && !bikeMarkerRef.current && cafeCoords && cafeCoords.lat && cafeCoords.lng) {
   //       console.log('🔄 Periodic check: Bike should be visible but missing, creating now...');
   //       try {
-  //         const position = new window.google.maps.LatLng(restaurantCoords.lat, restaurantCoords.lng);
+  //         const position = new window.google.maps.LatLng(cafeCoords.lat, cafeCoords.lng);
   //         bikeMarkerRef.current = new window.google.maps.Marker({
   //           position: position,
   //           map: mapInstance.current,
@@ -1427,7 +1427,7 @@ const DeliveryTrackingMap = ({
   //   }, 2000); // Check every 2 seconds
   //   
   //   return () => clearInterval(checkInterval);
-  // }, [isMapLoaded, order?.deliveryState?.currentPhase, order?.deliveryState?.status, restaurantCoords, bikeLogo]);
+  // }, [isMapLoaded, order?.deliveryState?.currentPhase, order?.deliveryState?.status, cafeCoords, bikeLogo]);
 
   // Cleanup animation controller on unmount
   useEffect(() => {

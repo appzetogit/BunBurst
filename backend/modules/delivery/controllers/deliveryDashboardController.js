@@ -114,7 +114,7 @@ export const getDashboard = asyncHandler(async (req, res) => {
       recentOrders: recentOrders.map(order => ({
         orderId: order.orderId,
         status: order.status,
-        restaurantName: order.restaurantName,
+        cafeName: order.cafeName,
         deliveryFee: 0,
         createdAt: order.createdAt,
         deliveredAt: order.deliveredAt,

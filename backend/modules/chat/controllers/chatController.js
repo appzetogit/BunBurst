@@ -1,7 +1,7 @@
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../../auth/models/User.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 
@@ -10,7 +10,7 @@ import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
  * GET /api/chat/conversations
  */
 export const getConversations = asyncHandler(async (req, res) => {
-    const { type } = req.query; // 'customer' or 'restaurant'
+    const { type } = req.query; // 'customer' or 'cafe'
 
     const query = { admin: req.user._id };
     if (type) {
@@ -19,7 +19,7 @@ export const getConversations = asyncHandler(async (req, res) => {
 
     const conversations = await Conversation.find(query)
         .populate('user', 'name phone email profileImage')
-        .populate('restaurant', 'name phone email profileImage')
+        .populate('cafe', 'name phone email profileImage')
         .sort({ lastMessageAt: -1 });
 
     return successResponse(res, 200, 'Conversations retrieved successfully', {
@@ -91,11 +91,11 @@ export const sendMessage = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get or create conversation with a user/restaurant
+ * Get or create conversation with a user/cafe
  * POST /api/chat/conversations
  */
 export const getOrCreateConversation = asyncHandler(async (req, res) => {
-    const { participantId, type } = req.body; // participantId is either userId or restaurantId
+    const { participantId, type } = req.body; // participantId is either userId or cafeId
 
     if (!participantId || !type) {
         return errorResponse(res, 400, 'Participant ID and type are required');
@@ -105,12 +105,12 @@ export const getOrCreateConversation = asyncHandler(async (req, res) => {
     if (type === 'customer') {
         query.user = participantId;
     } else {
-        query.restaurant = participantId;
+        query.cafe = participantId;
     }
 
     let conversation = await Conversation.findOne(query)
         .populate('user', 'name phone email profileImage')
-        .populate('restaurant', 'name phone email profileImage');
+        .populate('cafe', 'name phone email profileImage');
 
     if (!conversation) {
         conversation = await Conversation.create({
@@ -121,7 +121,7 @@ export const getOrCreateConversation = asyncHandler(async (req, res) => {
 
         conversation = await Conversation.findById(conversation._id)
             .populate('user', 'name phone email profileImage')
-            .populate('restaurant', 'name phone email profileImage');
+            .populate('cafe', 'name phone email profileImage');
     }
 
     return successResponse(res, 200, 'Conversation retrieved successfully', {

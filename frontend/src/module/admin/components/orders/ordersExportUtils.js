@@ -8,13 +8,13 @@ export const exportToCSV = (orders, filename = "orders") => {
   let headers, rows
   
   if (isSubscription) {
-    headers = ["SI", "Subscription ID", "Order Type", "Duration", "Restaurant", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]
+    headers = ["SI", "Subscription ID", "Order Type", "Duration", "Cafe", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]
     rows = orders.map((order, index) => [
       index + 1,
       order.subscriptionId,
       order.orderType,
       order.duration,
-      order.restaurant,
+      order.cafe,
       order.customerName,
       order.customerPhone,
       order.status,
@@ -22,14 +22,14 @@ export const exportToCSV = (orders, filename = "orders") => {
       order.delivered
     ])
   } else {
-    headers = ["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Restaurant", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]
+    headers = ["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Cafe", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]
     rows = orders.map((order, index) => [
       index + 1,
       order.orderId || order.id,
       `${order.date}${order.time ? `, ${order.time}` : ""}`,
       order.customerName,
       order.customerPhone,
-      order.restaurant,
+      order.cafe,
       order.total || `₹${(order.totalAmount || 0).toFixed(2)}`,
       order.paymentStatus || "",
       order.orderStatus || "",
@@ -67,13 +67,13 @@ export const exportToExcel = (orders, filename = "orders") => {
   let headers, rows
   
   if (isSubscription) {
-    headers = ["SI", "Subscription ID", "Order Type", "Duration", "Restaurant", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]
+    headers = ["SI", "Subscription ID", "Order Type", "Duration", "Cafe", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]
     rows = orders.map((order, index) => [
       index + 1,
       order.subscriptionId,
       order.orderType,
       order.duration,
-      order.restaurant,
+      order.cafe,
       order.customerName,
       order.customerPhone,
       order.status,
@@ -95,7 +95,7 @@ export const exportToExcel = (orders, filename = "orders") => {
         order.orderTime || 'N/A',
         order.userName || 'N/A',
         order.userNumber || 'N/A',
-        order.restaurantName || 'N/A',
+        order.cafeName || 'N/A',
         order.deliveryBoyName || 'N/A',
         order.deliveryBoyNumber || 'N/A',
         order.status || 'N/A',
@@ -104,14 +104,14 @@ export const exportToExcel = (orders, filename = "orders") => {
       ]
     })
   } else {
-    headers = ["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Restaurant", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]
+    headers = ["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Cafe", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]
     rows = orders.map((order, index) => [
       index + 1,
       order.orderId || order.id,
       `${order.date || ''}${order.time ? `, ${order.time}` : ""}`,
       order.customerName || 'N/A',
       order.customerPhone || 'N/A',
-      order.restaurant || 'N/A',
+      order.cafe || 'N/A',
       order.total || `₹${(order.totalAmount || 0).toFixed(2)}`,
       order.paymentStatus || 'N/A',
       order.orderStatus || 'N/A',
@@ -234,13 +234,13 @@ export const exportToPDF = async (orders, filename = "orders") => {
     let headers, tableData
     
     if (isSubscription) {
-      headers = [["SI", "Subscription ID", "Order Type", "Duration", "Restaurant", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]]
+      headers = [["SI", "Subscription ID", "Order Type", "Duration", "Cafe", "Customer Name", "Customer Phone", "Status", "Total Orders", "Delivered"]]
       tableData = orders.map((order, index) => [
         index + 1,
         order.subscriptionId || 'N/A',
         order.orderType || 'N/A',
         order.duration || 'N/A',
-        order.restaurant || 'N/A',
+        order.cafe || 'N/A',
         order.customerName || 'N/A',
         order.customerPhone || 'N/A',
         order.status || 'N/A',
@@ -262,7 +262,7 @@ export const exportToPDF = async (orders, filename = "orders") => {
           order.orderTime || 'N/A',
           order.userName || 'N/A',
           order.userNumber || 'N/A',
-          order.restaurantName || 'N/A',
+          order.cafeName || 'N/A',
           order.deliveryBoyName || 'N/A',
           order.deliveryBoyNumber || 'N/A',
           order.status || 'N/A',
@@ -271,14 +271,14 @@ export const exportToPDF = async (orders, filename = "orders") => {
         ]
       })
     } else {
-      headers = [["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Restaurant", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]]
+      headers = [["SI", "Order ID", "Order Date", "Customer Name", "Customer Phone", "Cafe", "Total Amount", "Payment Status", "Order Status", "Delivery Type"]]
       tableData = orders.map((order, index) => [
         index + 1,
         order.orderId || order.id || 'N/A',
         `${order.date || ''}${order.time ? `, ${order.time}` : ""}` || 'N/A',
         order.customerName || 'N/A',
         order.customerPhone || 'N/A',
-        order.restaurant || 'N/A',
+        order.cafe || 'N/A',
         order.total || `₹${(order.totalAmount || 0).toFixed(2)}` || 'N/A',
         order.paymentStatus || 'N/A',
         order.orderStatus || 'N/A',

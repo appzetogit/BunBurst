@@ -26,7 +26,7 @@ export const conversationsDummy = [
     lastMessage: "We have a new menu item.",
     timestamp: "6 months ago",
     avatar: null,
-    type: "restaurant",
+    type: "cafe",
   },
 ]
 

@@ -62,7 +62,7 @@ export default function Footer() {
       { name: "Favorites", href: "/user/profile/favorites" },
       { name: "Offers", href: "/user/offers" },
     ],
-    // restaurants category removed as public access is disabled
+    // cafes category removed as public access is disabled
   }
 
   return (

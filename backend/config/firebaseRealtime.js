@@ -154,8 +154,8 @@ export async function syncActiveOrderRoute({
   orderId,
   deliveryPartnerId,
   polyline,
-  restaurantLat,
-  restaurantLng,
+  cafeLat,
+  cafeLng,
   customerLat,
   customerLng,
   distance,
@@ -177,8 +177,8 @@ export async function syncActiveOrderRoute({
 
   if (deliveryPartnerId) payload.boy_id = deliveryPartnerId;
   if (polyline) payload.polyline = polyline;
-  if (typeof restaurantLat === 'number') payload.restaurant_lat = restaurantLat;
-  if (typeof restaurantLng === 'number') payload.restaurant_lng = restaurantLng;
+  if (typeof cafeLat === 'number') payload.cafe_lat = cafeLat;
+  if (typeof cafeLng === 'number') payload.cafe_lng = cafeLng;
   if (typeof customerLat === 'number') payload.customer_lat = customerLat;
   if (typeof customerLng === 'number') payload.customer_lng = customerLng;
   if (typeof distance === 'number' && Number.isFinite(distance)) payload.distance = distance;
@@ -189,8 +189,8 @@ export async function syncActiveOrderRoute({
   // Maintain route_cache format expected by export snapshots.
   if (
     polyline &&
-    typeof restaurantLat === 'number' &&
-    typeof restaurantLng === 'number' &&
+    typeof cafeLat === 'number' &&
+    typeof cafeLng === 'number' &&
     typeof customerLat === 'number' &&
     typeof customerLng === 'number'
   ) {
@@ -198,7 +198,7 @@ export async function syncActiveOrderRoute({
       const rounded = Math.round(value * 10000) / 10000;
       return String(rounded).replace(/\./g, '_').replace(/-/g, 'm');
     };
-    const cacheKey = `${normalizePart(restaurantLat)}_${normalizePart(restaurantLng)}_${normalizePart(customerLat)}_${normalizePart(customerLng)}`;
+    const cacheKey = `${normalizePart(cafeLat)}_${normalizePart(cafeLng)}_${normalizePart(customerLat)}_${normalizePart(customerLng)}`;
     const routeCachePayload = {
       cached_at: now,
       expires_at: now + (7 * 24 * 60 * 60 * 1000),
@@ -291,7 +291,7 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-export async function findNearestOnlineDeliveryPartner(restaurantLat, restaurantLng, maxAgeMs = 120000) {
+export async function findNearestOnlineDeliveryPartner(cafeLat, cafeLng, maxAgeMs = 120000) {
   const db = getFirebaseRealtimeDb();
   if (!db) return null;
 
@@ -306,7 +306,7 @@ export async function findNearestOnlineDeliveryPartner(restaurantLat, restaurant
     const staleness = Date.now() - (boy.last_updated || 0);
     if (staleness > maxAgeMs) continue;
 
-    const distanceKm = haversineKm(restaurantLat, restaurantLng, boy.lat, boy.lng);
+    const distanceKm = haversineKm(cafeLat, cafeLng, boy.lat, boy.lng);
     if (!nearest || distanceKm < nearest.distanceKm) {
       nearest = { deliveryPartnerId: id, distanceKm, lat: boy.lat, lng: boy.lng };
     }

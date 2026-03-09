@@ -44,10 +44,10 @@ export const sidebarMenuData = [
         label: "Cafes",
         icon: "UtensilsCrossed",
         subItems: [
-          { label: "Cafes List", path: "/admin/restaurants" },
+          { label: "Cafes List", path: "/admin/cafes" },
           {
             label: "Cafe Complaints",
-            path: "/admin/restaurants/complaints",
+            path: "/admin/cafes/complaints",
           },
         ],
       },
@@ -73,7 +73,7 @@ export const sidebarMenuData = [
           { label: "Canceled", path: "/admin/orders/canceled" },
           {
             label: "Cafe cancelled",
-            path: "/admin/orders/restaurant-cancelled",
+            path: "/admin/orders/cafe-cancelled",
           },
           { label: "Payment Failed", path: "/admin/orders/payment-failed" },
           { label: "Refunded", path: "/admin/orders/refunded" },
@@ -206,7 +206,7 @@ export const sidebarMenuData = [
         label: "Cafe Report",
         icon: "FileText",
         subItems: [
-          { label: "Cafe Report", path: "/admin/restaurant-report" },
+          { label: "Cafe Report", path: "/admin/cafe-report" },
         ],
       },
       {
@@ -229,7 +229,7 @@ export const sidebarMenuData = [
       {
         type: "link",
         label: "Cafe Withdraws",
-        path: "/admin/restaurant-withdraws",
+        path: "/admin/cafe-withdraws",
         icon: "CreditCard",
       },
     ],

@@ -17,13 +17,13 @@ const modulePermissions = [
   { id: "coupon", label: "Coupon" },
   { id: "deliverymenEarning", label: "Deliverymen earning provide" },
   { id: "order", label: "Order" },
-  { id: "restaurantWithdraws", label: "Cafe withdraws" },
+  { id: "cafeWithdraws", label: "Cafe withdraws" },
   { id: "disbursement", label: "Disbursement" },
   // Column 3
   { id: "banner", label: "Banner" },
   { id: "customersSection", label: "Customers section" },
   { id: "employee", label: "Employee" },
-  { id: "restaurants", label: "Restaurants" },
+  { id: "cafes", label: "Cafes" },
   { id: "advertisement", label: "Advertisement" },
   // Column 4
   { id: "campaign", label: "Campaign" },
@@ -44,7 +44,7 @@ const employeeRolesDummy = [
   {
     id: 2,
     roleName: "Customer Care Executive",
-    modules: ["CustomerList", "Deliveryman", "Order", "Restaurant"],
+    modules: ["CustomerList", "Deliveryman", "Order", "Cafe"],
     createdAt: "22 Aug 2021",
   },
 ]

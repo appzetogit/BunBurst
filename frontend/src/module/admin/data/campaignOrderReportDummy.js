@@ -4,7 +4,7 @@ export const campaignOrderReportDummy = [
   {
     sl: 1,
     orderId: "100156",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "John Doe",
     totalItemAmount: "$710.00",
     totalItemAmountStatus: "Paid",
@@ -22,7 +22,7 @@ export const campaignOrderReportDummy = [
   {
     sl: 2,
     orderId: "100155",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "John Doe",
     totalItemAmount: "$720.00",
     totalItemAmountStatus: "Paid",
@@ -40,7 +40,7 @@ export const campaignOrderReportDummy = [
   {
     sl: 3,
     orderId: "100154",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "John Doe",
     totalItemAmount: "$720.00",
     totalItemAmountStatus: "Paid",
@@ -58,7 +58,7 @@ export const campaignOrderReportDummy = [
   {
     sl: 4,
     orderId: "100063",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "V H",
     totalItemAmount: "$400.00",
     totalItemAmountStatus: "Unpaid",
@@ -76,7 +76,7 @@ export const campaignOrderReportDummy = [
   {
     sl: 5,
     orderId: "100062",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "Vijay Vijay",
     totalItemAmount: "$400.00",
     totalItemAmountStatus: "Unpaid",
@@ -94,7 +94,7 @@ export const campaignOrderReportDummy = [
   {
     sl: 6,
     orderId: "100060",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "Chinna Chinna",
     totalItemAmount: "$400.00",
     totalItemAmountStatus: "Unpaid",
@@ -112,7 +112,7 @@ export const campaignOrderReportDummy = [
   {
     sl: 7,
     orderId: "100049",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "Qwa Qwa",
     totalItemAmount: "$400.00",
     totalItemAmountStatus: "Unpaid",
@@ -130,7 +130,7 @@ export const campaignOrderReportDummy = [
   {
     sl: 8,
     orderId: "100046",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "Dejan Đusić",
     totalItemAmount: "$400.00",
     totalItemAmountStatus: "Paid",
@@ -141,14 +141,14 @@ export const campaignOrderReportDummy = [
     deliveryCharge: "$0.00",
     orderAmount: "$357.00",
     orderAmountStatus: "Paid",
-    amountReceivedBy: "Restaurant",
+    amountReceivedBy: "Cafe",
     paymentMethod: "Cash On Delivery",
     orderStatus: "Delivered",
   },
   {
     sl: 9,
     orderId: "100040",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "Pili 123",
     totalItemAmount: "$400.00",
     totalItemAmountStatus: "Unpaid",
@@ -166,7 +166,7 @@ export const campaignOrderReportDummy = [
   {
     sl: 10,
     orderId: "100005",
-    restaurant: "Hungry Puppets",
+    cafe: "Hungry Puppets",
     customerName: "Invalid Customer Data",
     customerNameError: true,
     totalItemAmount: "$400.00",

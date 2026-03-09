@@ -78,7 +78,7 @@ const api = axios.create({
 // Test data
 let testOrderId = null;
 let deliveryBoyLocation = { lat: 22.7196, lng: 75.8577 }; // Indore coordinates
-let restaurantLocation = null;
+let cafeLocation = null;
 let customerLocation = null;
 
 /**
@@ -109,7 +109,7 @@ async function setup() {
       status: { $in: ['preparing', 'ready'] },
       deliveryPartnerId: { $exists: true }
     })
-      .populate('restaurantId', 'location')
+      .populate('cafeId', 'location')
       .populate('address', 'location')
       .lean();
     
@@ -121,11 +121,11 @@ async function setup() {
     testOrderId = order._id.toString();
     logInfo(`Found test order: ${testOrderId} (${order.orderId})`);
     
-    // Get restaurant and customer locations
-    if (order.restaurantId?.location?.coordinates) {
-      restaurantLocation = {
-        lat: order.restaurantId.location.coordinates[1],
-        lng: order.restaurantId.location.coordinates[0]
+    // Get cafe and customer locations
+    if (order.cafeId?.location?.coordinates) {
+      cafeLocation = {
+        lat: order.cafeId.location.coordinates[1],
+        lng: order.cafeId.location.coordinates[0]
       };
     }
     
@@ -193,8 +193,8 @@ async function testReachedPickup() {
     logInfo(`Confirming reached pickup for order: ${testOrderId}`);
     
     const response = await api.patch(`/api/delivery/orders/${testOrderId}/reached-pickup`, {
-      currentLat: restaurantLocation?.lat || deliveryBoyLocation.lat,
-      currentLng: restaurantLocation?.lng || deliveryBoyLocation.lng
+      currentLat: cafeLocation?.lat || deliveryBoyLocation.lat,
+      currentLng: cafeLocation?.lng || deliveryBoyLocation.lng
     });
     
     if (response.data?.success) {
@@ -232,8 +232,8 @@ async function testConfirmOrderId() {
     
     const response = await api.patch(`/api/delivery/orders/${testOrderId}/confirm-order-id`, {
       orderId: orderId,
-      currentLat: restaurantLocation?.lat || deliveryBoyLocation.lat,
-      currentLng: restaurantLocation?.lng || deliveryBoyLocation.lng
+      currentLat: cafeLocation?.lat || deliveryBoyLocation.lat,
+      currentLng: cafeLocation?.lng || deliveryBoyLocation.lng
     });
     
     if (response.data?.success) {

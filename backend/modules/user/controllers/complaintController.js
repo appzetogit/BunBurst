@@ -1,6 +1,6 @@
-import RestaurantComplaint from '../../admin/models/RestaurantComplaint.js';
+import CafeComplaint from '../../admin/models/CafeComplaint.js';
 import Order from '../../order/models/Order.js';
-import Restaurant from '../../restaurant/models/Restaurant.js';
+import Cafe from '../../cafe/models/Cafe.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 
@@ -34,7 +34,7 @@ export const submitComplaint = asyncHandler(async (req, res) => {
     }
 
     // Get order details
-    const order = await Order.findById(orderId).populate('restaurantId', 'name').lean();
+    const order = await Order.findById(orderId).populate('cafeId', 'name').lean();
     if (!order) {
       return errorResponse(res, 404, 'Order not found');
     }
@@ -46,14 +46,14 @@ export const submitComplaint = asyncHandler(async (req, res) => {
     }
 
     // Check if complaint already exists for this order
-    const existingComplaint = await RestaurantComplaint.findOne({ orderId, customerId: userId });
+    const existingComplaint = await CafeComplaint.findOne({ orderId, customerId: userId });
     if (existingComplaint) {
       return errorResponse(res, 400, 'You have already submitted a complaint for this order');
     }
 
-    // Get restaurant details
-    const restaurant = await Restaurant.findById(order.restaurantId).lean();
-    if (!restaurant) {
+    // Get cafe details
+    const cafe = await Cafe.findById(order.cafeId).lean();
+    if (!cafe) {
       return errorResponse(res, 404, 'Cafe not found');
     }
 
@@ -65,8 +65,8 @@ export const submitComplaint = asyncHandler(async (req, res) => {
       customerName: req.user.name || 'Customer',
       customerPhone: req.user.phone || '',
       customerEmail: req.user.email || '',
-      restaurantId: restaurant._id,
-      restaurantName: restaurant.name || 'Restaurant',
+      cafeId: cafe._id,
+      cafeName: cafe.name || 'Cafe',
       complaintType,
       subject: subject.trim(),
       description: description.trim(),
@@ -75,7 +75,7 @@ export const submitComplaint = asyncHandler(async (req, res) => {
       attachments: attachments || []
     };
 
-    const complaint = await RestaurantComplaint.create(complaintData);
+    const complaint = await CafeComplaint.create(complaintData);
 
     return successResponse(res, 201, 'Complaint submitted successfully', {
       complaint: {
@@ -110,15 +110,15 @@ export const getUserComplaints = asyncHandler(async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const complaints = await RestaurantComplaint.find(query)
+    const complaints = await CafeComplaint.find(query)
       .populate('orderId', 'orderId orderNumber status')
-      .populate('restaurantId', 'name profileImage')
+      .populate('cafeId', 'name profileImage')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
 
-    const total = await RestaurantComplaint.countDocuments(query);
+    const total = await CafeComplaint.countDocuments(query);
 
     return successResponse(res, 200, 'Complaints retrieved successfully', {
       complaints,
@@ -144,9 +144,9 @@ export const getComplaintDetails = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id;
 
-    const complaint = await RestaurantComplaint.findById(id)
+    const complaint = await CafeComplaint.findById(id)
       .populate('orderId')
-      .populate('restaurantId', 'name profileImage phone')
+      .populate('cafeId', 'name profileImage phone')
       .lean();
 
     if (!complaint) {

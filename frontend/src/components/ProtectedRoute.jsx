@@ -25,7 +25,7 @@ export default function ProtectedRoute({ children, requiredRole, loginPath }) {
     // Fallback: redirect to appropriate login page
     const roleLoginPaths = {
       'admin': '/admin/login',
-      // 'restaurant': '/restaurant/login', // Disabled
+      // 'cafe': '/cafe/login', // Disabled
       'delivery': '/delivery/sign-in',
       'user': '/user/auth/sign-in'
     };

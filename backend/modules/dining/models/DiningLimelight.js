@@ -17,9 +17,9 @@ const diningLimelightSchema = new mongoose.Schema({
         type: String, // "25% OFF"
         required: true
     },
-    restaurantId: {
+    cafeId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'DiningRestaurant' // Optional link to actual restaurant
+        ref: 'DiningCafe' // Optional link to actual cafe
     },
     isActive: {
         type: Boolean,
