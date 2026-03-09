@@ -68,6 +68,24 @@ export default function Under250() {
     return () => clearInterval(interval)
   }, [])
 
+  // Prevent background scrolling when any modal/sheet is open
+  useEffect(() => {
+    const isAnyModalOpen =
+      showItemDetail ||
+      showSortPopup ||
+      showAllCategoriesPopup;
+
+    if (isAnyModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showItemDetail, showSortPopup, showAllCategoriesPopup]);
+
   const sortOptions = [
     { id: null, label: 'Relevance' },
     { id: 'rating-high', label: 'Rating: High to Low' },

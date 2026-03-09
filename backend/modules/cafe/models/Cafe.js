@@ -298,6 +298,11 @@ const cafeSchema = new mongoose.Schema(
       enum: ["Commission Base", "Subscription Base"],
       default: "Commission Base",
     },
+    restaurantType: {
+      type: String,
+      enum: ["pureVeg", "veg", "nonVeg"],
+      default: "veg",
+    },
   },
   {
     timestamps: true,
