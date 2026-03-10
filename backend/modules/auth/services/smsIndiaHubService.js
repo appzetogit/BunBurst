@@ -21,8 +21,8 @@ class SMSIndiaHubService {
   async initializeCredentials() {
     const { getSMSHubIndiaCredentials } = await import('../../../shared/utils/envService.js');
     const creds = await getSMSHubIndiaCredentials();
-    this.apiKey = creds.apiKey?.trim() || process.env.SMSINDIAHUB_API_KEY?.trim();
-    this.senderId = creds.senderId?.trim() || process.env.SMSINDIAHUB_SENDER_ID?.trim();
+    this.apiKey = creds.apiKey?.trim() || null;
+    this.senderId = creds.senderId?.trim() || null;
 
     // Log configuration status (only in development)
     if (process.env.NODE_ENV === "development") {
@@ -31,7 +31,7 @@ class SMSIndiaHubService {
           "⚠️ SMSIndia Hub credentials not configured. SMS functionality will be disabled."
         );
         console.warn(
-          "   Please check SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in .env file"
+          "   Please configure SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in Admin ENV"
         );
       } else {
         console.log("✅ SMSIndia Hub credentials loaded successfully");
@@ -60,8 +60,8 @@ class SMSIndiaHubService {
     // Load credentials dynamically from database
     const { getSMSHubIndiaCredentials } = await import('../../../shared/utils/envService.js');
     const creds = await getSMSHubIndiaCredentials();
-    const apiKey = (this.apiKey || creds.apiKey || process.env.SMSINDIAHUB_API_KEY)?.trim();
-    const senderId = (this.senderId || creds.senderId || process.env.SMSINDIAHUB_SENDER_ID)?.trim();
+    const apiKey = (creds.apiKey || this.apiKey)?.trim();
+    const senderId = (creds.senderId || this.senderId)?.trim();
 
     return !!(apiKey && senderId);
   }
@@ -106,8 +106,13 @@ class SMSIndiaHubService {
       // Load credentials dynamically from database
       const { getSMSHubIndiaCredentials } = await import('../../../shared/utils/envService.js');
       const creds = await getSMSHubIndiaCredentials();
-      const apiKey = (this.apiKey || creds.apiKey || process.env.SMSINDIAHUB_API_KEY)?.trim();
-      const senderId = (this.senderId || creds.senderId || process.env.SMSINDIAHUB_SENDER_ID)?.trim();
+      const apiKey = (creds.apiKey || this.apiKey)?.trim();
+      const senderId = (creds.senderId || this.senderId)?.trim();
+      const templateId = (creds.templateId)?.trim();
+      const messageTemplate = (creds.messageTemplate)?.trim();
+      const usePromotional = String(
+        creds.usePromotional ?? ''
+      ).toLowerCase() === 'true';
 
       if (!apiKey || !senderId) {
         console.error("❌ SMSIndia Hub Configuration Error:");
@@ -120,7 +125,13 @@ class SMSIndiaHubService {
           senderId ? "✓ Set" : "✗ Missing"
         );
         throw new Error(
-          "SMSIndia Hub not configured. Please check your environment variables SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in .env file."
+          "SMSIndia Hub not configured. Please set SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in Admin ENV."
+        );
+      }
+
+      if (senderId.includes("@")) {
+        throw new Error(
+          "Invalid SMSINDIAHUB_SENDER_ID: Sender ID must be a 6-character alphanumeric ID (e.g., SMSHUB), not an email."
         );
       }
 
@@ -136,14 +147,9 @@ class SMSIndiaHubService {
       // SMSIndia Hub requires DLT registered templates for transactional SMS
       // The message text MUST match the registered DLT template EXACTLY
       // Check if custom message template is provided (must match registered DLT template exactly)
-      const customTemplate = process.env.SMSINDIAHUB_MESSAGE_TEMPLATE?.trim();
+      const customTemplate = messageTemplate;
       
-      // Check if template ID is provided (for DLT registered templates)
-      const templateId = process.env.SMSINDIAHUB_TEMPLATE_ID?.trim();
       
-      // Check if promotional SMS is enabled (temporary workaround for template issues)
-      // ⚠️ WARNING: Promotional SMS is not recommended for OTP - use only for testing
-      const usePromotional = process.env.SMSINDIAHUB_USE_PROMOTIONAL === 'true';
       // Always use transactional SMS (gwid=2) like RentYatra, unless promotional is explicitly enabled
       const gatewayId = usePromotional ? "1" : "2"; // 1 = promotional, 2 = transactional
       
@@ -157,7 +163,11 @@ class SMSIndiaHubService {
       let message;
       if (customTemplate) {
         // Use custom template with OTP replacement only (don't change purpose text for DLT)
-        message = customTemplate.replace('{otp}', otp);
+        const placeholderRegex = /(\{\{\s*otp\s*\}\}|\{\s*otp\s*\}|#OTP#|##OTP##)/gi;
+        const hasOtpPlaceholder = placeholderRegex.test(customTemplate);
+        message = hasOtpPlaceholder
+          ? customTemplate.replace(placeholderRegex, otp)
+          : `${customTemplate} ${otp}`;
       } else if (usePromotional) {
         // For promotional SMS, we can use dynamic purpose text
         let purposeText = 'registration';
@@ -189,6 +199,10 @@ class SMSIndiaHubService {
       // Add template ID if provided (required for some DLT templates)
       if (templateId) {
         params.append('templateid', templateId);
+      } else if (!usePromotional && customTemplate) {
+        console.warn(
+          "âš ï¸ SMSINDIAHUB_TEMPLATE_ID is not set. Some DLT routes require templateid to deliver OTPs."
+        );
       }
 
       const apiUrl = `${this.baseUrl}?${params.toString()}`;
@@ -327,8 +341,8 @@ class SMSIndiaHubService {
       // Load credentials dynamically from database
       const { getSMSHubIndiaCredentials } = await import('../../../shared/utils/envService.js');
       const creds = await getSMSHubIndiaCredentials();
-      const apiKey = (this.apiKey || creds.apiKey || process.env.SMSINDIAHUB_API_KEY)?.trim();
-      const senderId = (this.senderId || creds.senderId || process.env.SMSINDIAHUB_SENDER_ID)?.trim();
+      const apiKey = (creds.apiKey || this.apiKey)?.trim();
+      const senderId = (creds.senderId || this.senderId)?.trim();
 
       if (!apiKey || !senderId) {
         console.error("❌ SMSIndia Hub Configuration Error:");
@@ -341,7 +355,7 @@ class SMSIndiaHubService {
           senderId ? "✓ Set" : "✗ Missing"
         );
         throw new Error(
-          "SMSIndia Hub not configured. Please check your environment variables SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in .env file."
+          "SMSIndia Hub not configured. Please set SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in Admin ENV."
         );
       }
 
@@ -425,8 +439,8 @@ class SMSIndiaHubService {
       // Load credentials dynamically from database
       const { getSMSHubIndiaCredentials } = await import('../../../shared/utils/envService.js');
       const creds = await getSMSHubIndiaCredentials();
-      const apiKey = (this.apiKey || creds.apiKey || process.env.SMSINDIAHUB_API_KEY)?.trim();
-      const senderId = (this.senderId || creds.senderId || process.env.SMSINDIAHUB_SENDER_ID)?.trim();
+      const apiKey = (creds.apiKey || this.apiKey)?.trim();
+      const senderId = (creds.senderId || this.senderId)?.trim();
 
       if (!apiKey || !senderId) {
         console.error("❌ SMSIndia Hub Configuration Error:");
@@ -439,7 +453,7 @@ class SMSIndiaHubService {
           senderId ? "✓ Set" : "✗ Missing"
         );
         throw new Error(
-          "SMSIndia Hub not configured. Please check your environment variables SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in .env file."
+          "SMSIndia Hub not configured. Please set SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in Admin ENV."
         );
       }
 
@@ -492,7 +506,7 @@ class SMSIndiaHubService {
       // Load credentials dynamically from database
       const { getSMSHubIndiaCredentials } = await import('../../../shared/utils/envService.js');
       const creds = await getSMSHubIndiaCredentials();
-      const apiKey = (this.apiKey || creds.apiKey || process.env.SMSINDIAHUB_API_KEY)?.trim();
+      const apiKey = (creds.apiKey || this.apiKey)?.trim();
 
       if (!apiKey) {
         console.error("❌ SMSIndia Hub Configuration Error:");
@@ -501,7 +515,7 @@ class SMSIndiaHubService {
           apiKey ? "✓ Set" : "✗ Missing"
         );
         throw new Error(
-          "SMSIndia Hub not configured. Please check your environment variable SMSINDIAHUB_API_KEY in .env file."
+          "SMSIndia Hub not configured. Please set SMSINDIAHUB_API_KEY in Admin ENV."
         );
       }
 
@@ -539,3 +553,8 @@ class SMSIndiaHubService {
 const smsIndiaHubService = new SMSIndiaHubService();
 
 export default smsIndiaHubService;
+
+
+
+
+

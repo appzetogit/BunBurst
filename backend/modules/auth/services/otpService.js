@@ -184,6 +184,7 @@ class OTPService {
 
       // Check if this is a test phone number and OTP matches default test OTP
       if (phone && isTestPhoneNumber(phone) && otp === DEFAULT_TEST_OTP) {
+        // Test phone number bypass (real OTP mode only)
         logger.info(`Test OTP verified for ${phone}`, {
           phone,
           purpose

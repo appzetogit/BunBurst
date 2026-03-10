@@ -154,10 +154,27 @@ export async function getSMTPCredentials() {
  * @returns {Promise<Object>} { apiKey, senderId }
  */
 export async function getSMSHubIndiaCredentials() {
-  return {
-    apiKey: await getEnvVar("SMSINDIAHUB_API_KEY"),
-    senderId: await getEnvVar("SMSINDIAHUB_SENDER_ID"),
-  };
+  try {
+    const envVars = await getAllEnvVars();
+    return {
+      apiKey: envVars.SMSINDIAHUB_API_KEY || "",
+      senderId: envVars.SMSINDIAHUB_SENDER_ID || "",
+      templateId: envVars.SMSINDIAHUB_TEMPLATE_ID || "",
+      messageTemplate: envVars.SMSINDIAHUB_MESSAGE_TEMPLATE || "",
+      usePromotional: envVars.SMSINDIAHUB_USE_PROMOTIONAL || "",
+    };
+  } catch (error) {
+    logger.warn(
+      `Error fetching SMSHubIndia credentials from database: ${error.message}`,
+    );
+    return {
+      apiKey: "",
+      senderId: "",
+      templateId: "",
+      messageTemplate: "",
+      usePromotional: "",
+    };
+  }
 }
 
 /**
