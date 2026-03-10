@@ -489,8 +489,6 @@ export default function TransactionReport() {
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
       </div>
 
       {/* Settings Dialog */}
@@ -517,6 +515,9 @@ export default function TransactionReport() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+      </div>
+
     </div>
   )
 }

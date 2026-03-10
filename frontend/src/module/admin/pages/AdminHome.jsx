@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
@@ -238,14 +238,6 @@ export default function AdminHome() {
               icon={<Store className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
               onClick={() => navigate("/admin/cafes")}
-            />
-            <MetricCard
-              title="Cafe request pending"
-              value={pendingCafeRequests.toLocaleString("en-IN")}
-              helper="Awaiting approval"
-              icon={<UserCheck className="h-5 w-5 text-orange-600" />}
-              accent="bg-orange-200/40"
-              onClick={() => navigate("/admin/cafes/joining-request")}
             />
             <MetricCard
               title="Total delivery boy"

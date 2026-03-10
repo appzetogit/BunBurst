@@ -12,14 +12,12 @@ import {
   HelpCircle,
   Wallet,
   CheckCircle,
-  Receipt,
   FileText as FileTextIcon,
   Wallet as WalletIcon,
   Sparkles,
   IndianRupee
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import {
   fetchDeliveryWallet,
   calculateDeliveryBalances,
@@ -32,9 +30,6 @@ import { getAllDeliveryOrders } from "../utils/deliveryOrderStatus"
 import { deliveryAPI } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
 import FeedNavbar from "../components/FeedNavbar"
-import AvailableCashLimit from "../components/AvailableCashLimit"
-import BottomPopup from "../components/BottomPopup"
-import DepositPopup from "../components/DepositPopup"
 
 export default function PocketPage() {
   const navigate = useNavigate()
@@ -56,8 +51,6 @@ export default function PocketPage() {
   const carouselIsSwiping = useRef(false)
   const carouselAutoRotateRef = useRef(null)
 
-  const [showCashLimitPopup, setShowCashLimitPopup] = useState(false)
-  const [showDepositPopup, setShowDepositPopup] = useState(false)
   const [bankDetailsFilled, setBankDetailsFilled] = useState(false)
   const [dashboardData, setDashboardData] = useState(null)
   const [dashboardLoading, setDashboardLoading] = useState(true)
@@ -350,16 +343,6 @@ export default function PocketPage() {
 
     // Only depend on walletState and balances - totalBonus and weeklyEarnings are derived from these
   }, [pocketBalance, walletState, balances])
-  // Available cash limit = remaining limit (global limit - cash in hand)
-  const totalCashLimit = Number.isFinite(Number(walletState?.totalCashLimit))
-    ? Number(walletState.totalCashLimit)
-    : 0
-  const availableCashLimit =
-    Number.isFinite(Number(walletState?.availableCashLimit)) &&
-      Number(walletState?.availableCashLimit) >= 0
-      ? Number(walletState.availableCashLimit)
-      : Math.max(0, totalCashLimit - (Number(balances.cashInHand) || 0))
-  const depositAmount = pocketBalance < 0 ? Math.abs(pocketBalance) : 0
 
   // Customer tips balance - calculate from transactions
   const customerTipsBalance = walletState.transactions
@@ -799,42 +782,7 @@ export default function PocketPage() {
 
               <hr />
 
-              {/* Available Cash Limit */}
-              <div onClick={() => setShowCashLimitPopup(true)} className="flex items-center justify-between">
-                <span className="text-black text-sm">Available cash limit</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-black text-sm font-medium">₹{availableCashLimit.toFixed(2)}</span>
-                  <ArrowRight className="w-4 h-4 text-gray-600" />
-                </div>
-              </div>
-
-              {/* Warning Message */}
-              {availableCashLimit <= 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-white text-xs font-bold leading-none">!</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-red-700 text-sm font-bold">
-                      Cash Limit Reached!
-                    </p>
-                    <p className="text-red-600 text-xs mt-0.5">
-                      You won't receive any COD orders until you deposit the cash in hand.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  onClick={() => setShowDepositPopup(true)}
-                  className="flex-1 bg-white hover:bg-gray-300 text-black border border-black font-semibold py-3 rounded-lg"
-                >
-                  Deposit
-                </Button>
-              </div>
+              <div className="flex gap-3 pt-2" />
             </CardContent>
           </Card>
         </div>
@@ -862,60 +810,14 @@ export default function PocketPage() {
               </CardContent>
             </Card>
 
-            {/* Available Limit Settlement */}
-            <Card
-              className=" py-0  bg-white border-0 shadow-none cursor-pointer hover:bg-gray-200 transition-colors"
-              onClick={() => navigate("/delivery/limit-settlement")}
-            >
-              <CardContent className="p-4 flex flex-col items-start text-start">
-                <div className="w-12 h-12 flex items-start mb-3">
-                  <Receipt className="w-8 h-8 text-black" />
-                </div>
-                <div className="text-black text-sm font-medium text-start">Available limit settlement</div>
-              </CardContent>
-            </Card>
-
-
-
           </div>
 
         </div>
       </div>
 
-      <BottomPopup
-        isOpen={showCashLimitPopup}
-        onClose={() => setShowCashLimitPopup(false)}
-        title="Available Cash Limit?"
-        showCloseButton={true}
-        closeOnBackdropClick={true}
-        maxHeight="60vh"
-      >
-        <AvailableCashLimit
-          onClose={() => setShowCashLimitPopup(false)}
-          walletData={{
-            totalCashLimit: totalCashLimit,
-            cashInHand: balances.cashInHand ?? 0,
-            deductions: 0,
-            pocketWithdrawals: balances.totalWithdrawn ?? 0,
-            settlementAdjustment: 0
-          }}
-        />
-      </BottomPopup>
-
-      <BottomPopup
-        isOpen={showDepositPopup}
-        onClose={() => setShowDepositPopup(false)}
-        title="Deposit"
-        showCloseButton={true}
-        closeOnBackdropClick={true}
-        maxHeight="50vh"
-      >
-        <DepositPopup
-          cashInHand={balances.cashInHand ?? walletState?.cashInHand ?? 0}
-          onSuccess={() => setShowDepositPopup(false)}
-        />
-      </BottomPopup>
     </div>
   )
 }
+
+
 

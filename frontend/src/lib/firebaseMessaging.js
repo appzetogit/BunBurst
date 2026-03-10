@@ -5,7 +5,9 @@ import {
   isFirebaseConfigAvailable,
   ensureFirebaseInitialized,
 } from "./firebase";
-import { userAPI, deliveryAPI, cafeAPI } from "./api";
+import { userAPI, deliveryAPI, cafeAPI, API_ENDPOINTS } from "./api";
+import apiClient from "./api/axios";
+import { clearModuleAuth, getRoleFromToken, isTokenExpired } from "./utils/auth";
 
 const LOG_PREFIX = "[FCM]";
 let bootstrapStarted = false;
@@ -42,19 +44,39 @@ function logError(message, data) {
 
 function getCurrentAuthContext() {
   const path = window.location.pathname || "/";
-  const hasUserToken = Boolean(localStorage.getItem("user_accessToken"));
-  const hasDeliveryToken = Boolean(localStorage.getItem("delivery_accessToken"));
-  const hasCafeToken = Boolean(localStorage.getItem("cafe_accessToken"));
+  if (path.startsWith("/admin")) {
+    return null;
+  }
+  const userToken = localStorage.getItem("user_accessToken") || localStorage.getItem("accessToken");
+  const deliveryToken = localStorage.getItem("delivery_accessToken");
+  const cafeToken = localStorage.getItem("cafe_accessToken");
 
-  if (path.startsWith("/delivery") && hasDeliveryToken) {
+  const isValidTokenForRole = (token, role) => {
+    if (!token) return false;
+    if (isTokenExpired(token)) return false;
+    const tokenRole = getRoleFromToken(token);
+    return tokenRole ? tokenRole === role : true;
+  };
+
+  if (deliveryToken && isTokenExpired(deliveryToken)) {
+    clearModuleAuth("delivery");
+  }
+  if (cafeToken && isTokenExpired(cafeToken)) {
+    clearModuleAuth("cafe");
+  }
+  if (userToken && isTokenExpired(userToken)) {
+    clearModuleAuth("user");
+  }
+
+  if (path.startsWith("/delivery") && isValidTokenForRole(deliveryToken, "delivery")) {
     return { audience: "delivery", platform: "web" };
   }
 
-  if (path.startsWith("/cafe") && hasCafeToken) {
+  if (path.startsWith("/cafe") && isValidTokenForRole(cafeToken, "cafe")) {
     return { audience: "cafe", platform: "web" };
   }
 
-  if (hasUserToken) {
+  if (isValidTokenForRole(userToken, "user")) {
     return { audience: "user", platform: "web" };
   }
 
@@ -210,6 +232,31 @@ async function generateFcmToken(messaging, serviceWorkerRegistration) {
   }
 }
 
+function getAuthHeaderForAudience(audience) {
+  let token = null;
+  if (audience === "delivery") {
+    token = localStorage.getItem("delivery_accessToken");
+  } else if (audience === "cafe") {
+    token = localStorage.getItem("cafe_accessToken");
+  } else {
+    token = localStorage.getItem("user_accessToken") || localStorage.getItem("accessToken");
+  }
+
+  if (!token || isTokenExpired(token)) {
+    if (audience === "delivery") clearModuleAuth("delivery");
+    if (audience === "cafe") clearModuleAuth("cafe");
+    if (audience === "user") clearModuleAuth("user");
+    return null;
+  }
+
+  const tokenRole = getRoleFromToken(token);
+  if (tokenRole && tokenRole !== audience) {
+    return null;
+  }
+
+  return `Bearer ${token}`;
+}
+
 async function syncTokenToBackend() {
   if (!currentFcmToken) {
     logWarn("No FCM token available yet, skipping backend sync.");
@@ -229,12 +276,28 @@ async function syncTokenToBackend() {
 
   try {
     logInfo(`Syncing token to backend for ${context.audience}...`);
+    const authHeader = getAuthHeaderForAudience(context.audience);
+    if (!authHeader) {
+      logWarn(`No valid ${context.audience} token found. Skipping FCM sync.`);
+      return;
+    }
+
+    const config = { headers: { Authorization: authHeader } };
     if (context.audience === "delivery") {
-      await deliveryAPI.saveFcmToken(currentFcmToken, context.platform);
+      await apiClient.post(API_ENDPOINTS.NOTIFICATION.DELIVERY_FCM_TOKEN, {
+        token: currentFcmToken,
+        platform: context.platform,
+      }, config);
     } else if (context.audience === "cafe") {
-      await cafeAPI.saveFcmToken(currentFcmToken, context.platform);
+      await apiClient.post(API_ENDPOINTS.NOTIFICATION.CAFE_FCM_TOKEN, {
+        token: currentFcmToken,
+        platform: context.platform,
+      }, config);
     } else {
-      await userAPI.saveFcmToken(currentFcmToken, context.platform);
+      await apiClient.post(API_ENDPOINTS.NOTIFICATION.USER_FCM_TOKEN, {
+        token: currentFcmToken,
+        platform: context.platform,
+      }, config);
     }
     markTokenSynced(context.audience, currentFcmToken);
     logInfo(`Token synced to backend for ${context.audience} successfully.`);
