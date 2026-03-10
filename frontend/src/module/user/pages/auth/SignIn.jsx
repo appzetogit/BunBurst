@@ -1025,7 +1025,7 @@ export default function SignIn() {
                 type="submit"
                 className="w-full h-12 font-bold text-base rounded-xl transition-all duration-100 active:scale-95 active:brightness-90 hover:brightness-105 select-none"
                 style={{
-                  background: "#f24e04",
+                  background: "#000000",
                   color: "#ffffff",
                   boxShadow: "none",
                   border: "none",
