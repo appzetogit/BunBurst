@@ -65,6 +65,7 @@ export default function CafeDetails() {
   const [selectedItem, setSelectedItem] = useState(null)
   const [showFilterSheet, setShowFilterSheet] = useState(false)
   const [showLocationSheet, setShowLocationSheet] = useState(false)
+  const [showCafeInfoSheet, setShowCafeInfoSheet] = useState(false)
   const [showScheduleSheet, setShowScheduleSheet] = useState(false)
   const [showOffersSheet, setShowOffersSheet] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
@@ -1393,7 +1394,14 @@ export default function CafeDetails() {
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{cafe?.name || "Unknown Cafe"}</h1>
-              <Info className="h-5 w-5 text-gray-400" />
+              <button
+                type="button"
+                onClick={() => setShowCafeInfoSheet(true)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                aria-label="Show cafe information"
+              >
+                <Info className="h-5 w-5" />
+              </button>
             </div>
             <div className="flex flex-col items-end">
               <Badge className="bg-green-500 text-white mb-1 flex items-center gap-1 px-2 py-1">
@@ -1411,7 +1419,6 @@ export default function CafeDetails() {
           >
             <MapPin className="h-4 w-4" />
             <span>{cafe?.distance || "1.2 km"} · {cafe?.location || "Location"}</span>
-            <ChevronDown className="h-4 w-4 text-gray-500" />
           </div>
 
           {/* Delivery Time */}
@@ -2317,17 +2324,6 @@ export default function CafeDetails() {
                   transition={{ duration: 0.2, type: "spring", damping: 30, stiffness: 400 }}
                   style={{ willChange: "transform" }}
                 >
-                  {/* Header */}
-                  <div className="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">All delivery outlets for</p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-base">{(cafe.name || "R").charAt(0).toUpperCase()}</span>
-                      </div>
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">{cafe?.name || "Unknown Cafe"}</h2>
-                    </div>
-                  </div>
-
                   {/* Outlets List */}
                   <div className="flex-1 overflow-y-auto px-4 py-3">
                     {cafe?.outlets && Array.isArray(cafe.outlets) && cafe.outlets.length > 0 ? (
@@ -2391,6 +2387,74 @@ export default function CafeDetails() {
                     </div>
                   )}
                 </motion.div>
+              </>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+
+      {/* Cafe Info Bottom Sheet - Rendered via Portal */}
+      {typeof window !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {showCafeInfoSheet && (
+              <>
+                <motion.div
+                  className="fixed inset-0 bg-black/40 z-[9999]"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setShowCafeInfoSheet(false)}
+                />
+
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+                  <motion.div
+                    className="w-full max-w-md bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden"
+                    initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: 12 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-red-50 to-white dark:from-[#232323] dark:to-[#1a1a1a]">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Cafe Info</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Basic details for this cafe</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowCafeInfoSheet(false)}
+                          className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center justify-center transition-colors"
+                          aria-label="Close cafe information"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      <div className="space-y-2.5">
+                        {[
+                          { label: "Name", value: cafe?.name || "Unknown Cafe" },
+                          { label: "Cuisine", value: cafe?.cuisine || "N/A" },
+                          { label: "Rating", value: cafe?.rating ?? "N/A" },
+                          { label: "Delivery Time", value: cafe?.deliveryTime || "N/A" },
+                          { label: "Location", value: cafe?.location || "N/A" },
+                        ].map((item) => (
+                          <div
+                            key={item.label}
+                            className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-[#222] px-3.5 py-2.5"
+                          >
+                            <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold">{item.label}</p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">{item.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
               </>
             )}
           </AnimatePresence>,

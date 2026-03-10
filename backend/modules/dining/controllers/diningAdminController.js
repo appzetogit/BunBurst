@@ -4,6 +4,7 @@ import DiningStory from '../models/DiningStory.js';
 import DiningSlot from '../models/DiningSlot.js';
 import DiningTable from '../models/DiningTable.js';
 import Cafe from '../../cafe/models/Cafe.js';
+import TableBooking from '../models/TableBooking.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { uploadToCloudinary } from '../../../shared/utils/cloudinaryService.js';
 import { cloudinary } from '../../../config/cloudinary.js';
@@ -400,15 +401,86 @@ export const getDiningConfigByCafe = async (req, res) => {
         const slots = await DiningSlot.find({ cafeId }).sort({ date: 1 }).lean();
         const tables = await DiningTable.find({ cafeId }).sort({ tableNumber: 1 }).lean();
 
-        const availableDates = slots.map((slot) => slot.date);
+        const today = normalizeDate(new Date());
+        if (!today) {
+            return errorResponse(res, 400, "Invalid date");
+        }
+
+        const availableDates = slots.map((slot) => ({
+            date: slot.date,
+            status: new Date(slot.date) < today ? "expired" : "active",
+        }));
+
+        const timeSlots = slots.map((slot) => ({
+            ...slot,
+            status: new Date(slot.date) < today ? "expired" : "active",
+        }));
 
         return successResponse(res, 200, "Dining config fetched successfully", {
             availableDates,
-            timeSlots: slots,
+            timeSlots,
             tables,
         });
     } catch (error) {
         console.error("Error fetching dining config:", error);
         return errorResponse(res, 500, "Failed to fetch dining config");
+    }
+};
+
+// ==================== DINING BOOKING REQUESTS ====================
+
+export const getDiningBookingRequests = async (req, res) => {
+    try {
+        const bookings = await TableBooking.find({
+            bookingStatus: { $in: ["pending", "confirmed", "cancelled"] }
+        })
+            .populate("user", "name phone email")
+            .populate("tableId", "tableNumber capacity")
+            .populate("cafe", "name")
+            .sort({ createdAt: -1 })
+            .lean();
+
+        return successResponse(res, 200, "Booking requests fetched successfully", { bookings });
+    } catch (error) {
+        console.error("Error fetching booking requests:", error);
+        return errorResponse(res, 500, "Failed to fetch booking requests");
+    }
+};
+
+export const approveDiningBookingRequest = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const booking = await TableBooking.findById(bookingId);
+        if (!booking) {
+            return errorResponse(res, 404, "Booking not found");
+        }
+
+        booking.status = "confirmed";
+        booking.bookingStatus = "confirmed";
+        await booking.save();
+
+        return successResponse(res, 200, "Booking approved successfully", { booking });
+    } catch (error) {
+        console.error("Error approving booking:", error);
+        return errorResponse(res, 500, "Failed to approve booking");
+    }
+};
+
+export const rejectDiningBookingRequest = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const booking = await TableBooking.findById(bookingId);
+        if (!booking) {
+            return errorResponse(res, 404, "Booking not found");
+        }
+
+        booking.status = "cancelled";
+        booking.bookingStatus = "cancelled";
+        await booking.save();
+
+        return successResponse(res, 200, "Booking rejected successfully", { booking });
+    } catch (error) {
+        console.error("Error rejecting booking:", error);
+        return errorResponse(res, 500, "Failed to reject booking");
     }
 };

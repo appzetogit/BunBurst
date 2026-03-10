@@ -1,6 +1,7 @@
 import TableBooking from "../models/TableBooking.js";
 
 const ACTIVE_BOOKING_STATUSES = ["pending", "confirmed"];
+const GRACE_PERIOD_MINUTES = 15;
 
 const normalizeDate = (inputDate) => {
   const parsed = new Date(inputDate);
@@ -75,7 +76,9 @@ export const processAutoCancelDiningBookings = async () => {
     const slotStart = new Date(baseDate);
     slotStart.setUTCMinutes(startMinutes);
 
-    const cancelTime = new Date(slotStart.getTime() + 30 * 60 * 1000);
+    const cancelTime = new Date(
+      slotStart.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000,
+    );
     if (cancelTime <= now) {
       dueIds.push(booking._id);
     }

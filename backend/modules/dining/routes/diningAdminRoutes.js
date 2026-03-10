@@ -17,7 +17,10 @@ import {
     createDiningDateSlot,
     addDiningTimeSlots,
     addDiningTable,
-    getDiningConfigByCafe
+    getDiningConfigByCafe,
+    getDiningBookingRequests,
+    approveDiningBookingRequest,
+    rejectDiningBookingRequest
 } from '../controllers/diningAdminController.js';
 
 const router = express.Router();
@@ -47,5 +50,10 @@ router.post('/date', authenticateAdmin, createDiningDateSlot);
 router.post('/timeslots', authenticateAdmin, addDiningTimeSlots);
 router.post('/tables', authenticateAdmin, addDiningTable);
 router.get('/config/:cafeId', authenticateAdmin, getDiningConfigByCafe);
+
+// Booking requests
+router.get('/booking-requests', authenticateAdmin, getDiningBookingRequests);
+router.patch('/approve/:bookingId', authenticateAdmin, approveDiningBookingRequest);
+router.patch('/reject/:bookingId', authenticateAdmin, rejectDiningBookingRequest);
 
 export default router;

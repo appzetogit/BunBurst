@@ -1646,6 +1646,19 @@ export const adminAPI = {
       API_ENDPOINTS.ADMIN.DINING_CONFIG.replace(":cafeId", cafeId),
     );
   },
+  getDiningBookingRequests: () => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.DINING_BOOKING_REQUESTS);
+  },
+  approveDiningBooking: (bookingId) => {
+    return apiClient.patch(
+      API_ENDPOINTS.ADMIN.DINING_BOOKING_APPROVE.replace(":bookingId", bookingId),
+    );
+  },
+  rejectDiningBooking: (bookingId) => {
+    return apiClient.patch(
+      API_ENDPOINTS.ADMIN.DINING_BOOKING_REJECT.replace(":bookingId", bookingId),
+    );
+  },
 
   getZoneById: (id) => {
     return apiClient.get(API_ENDPOINTS.ADMIN.ZONE_BY_ID.replace(":id", id));

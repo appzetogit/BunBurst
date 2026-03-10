@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { ArrowLeft, Calendar, Users, MapPin, Ticket, ChevronRight, Edit2, ShieldCheck, Info } from "lucide-react"
+import { ArrowLeft, Calendar, Users, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import AnimatedPage from "../../components/AnimatedPage"
 import { diningAPI, authAPI } from "@/lib/api"
@@ -13,7 +13,6 @@ export default function TableBookingConfirmation() {
     const navigate = useNavigate()
     const { cafe, guests, date, timeSlot, table } = location.state || {}
 
-    const [specialRequest, setSpecialRequest] = useState("")
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
     const [bookingInProgress, setBookingInProgress] = useState(false)
@@ -28,7 +27,12 @@ export default function TableBookingConfirmation() {
             try {
                 const response = await authAPI.getCurrentUser()
                 if (response.data.success) {
-                    setUser(response.data.data)
+                    const userData =
+                        response?.data?.data?.user ||
+                        response?.data?.data ||
+                        response?.data?.user ||
+                        null
+                    setUser(userData)
                 }
             } catch (error) {
                 console.error("Error fetching user:", error)
@@ -67,6 +71,8 @@ export default function TableBookingConfirmation() {
     if (loading) return <Loader />
 
     const formattedDate = new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+    const customerName = user?.name || user?.fullName || user?.customerName || "Customer"
+    const customerPhone = user?.phone || user?.phoneNumber || user?.mobile || user?.contact?.phone || "Phone not available"
 
     return (
         <AnimatedPage className="bg-background min-h-screen pb-24">
@@ -114,58 +120,6 @@ export default function TableBookingConfirmation() {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 pt-4 border-t border-dashed border-border text-primary">
-                            <Ticket className="w-5 h-5" />
-                            <span className="font-bold text-sm">10% cashback</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Special Request */}
-                <button className="w-full bg-card rounded-2xl p-4 shadow-sm border border-border flex items-center justify-between group">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-muted p-2 rounded-xl group-hover:bg-muted/80 transition-colors">
-                            <Info className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                        <span className="font-bold text-foreground">Add special request</span>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </button>
-
-                {/* Preferences Section */}
-                <div className="pt-4">
-                    <div className="flex items-center gap-4 mb-3">
-                        <div className="h-px bg-border flex-1"></div>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Guest Preferences</span>
-                        <div className="h-px bg-border flex-1"></div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <div className="bg-card rounded-2xl p-4 shadow-sm border border-border flex items-center justify-between">
-                            <div className="flex items-start gap-3">
-                                <div className="text-primary mt-1">
-                                    <Edit2 className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-foreground text-sm">Modification available</p>
-                                    <p className="text-xs text-muted-foreground">Valid till {timeSlot}</p>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                        </div>
-
-                        <div className="bg-card rounded-2xl p-4 shadow-sm border border-border flex items-center justify-between">
-                            <div className="flex items-start gap-3">
-                                <div className="text-destructive mt-1">
-                                    <ShieldCheck className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-foreground text-sm">Cancellation available</p>
-                                    <p className="text-xs text-muted-foreground">Valid till {timeSlot}</p>
-                                </div>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                        </div>
                     </div>
                 </div>
 
@@ -177,12 +131,11 @@ export default function TableBookingConfirmation() {
                         <div className="h-px bg-border flex-1"></div>
                     </div>
 
-                    <div className="bg-card rounded-2xl p-5 shadow-sm border border-border flex items-center justify-between">
+                    <div className="bg-card rounded-2xl p-5 shadow-sm border border-border">
                         <div>
-                            <p className="font-bold text-foreground">{user?.name || "Shailu"}</p>
-                            <p className="text-sm text-muted-foreground mt-1">{user?.phone || user?.email || "8090512291"}</p>
+                            <p className="font-bold text-foreground">{customerName}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{customerPhone}</p>
                         </div>
-                        <button className="text-primary text-sm font-bold hover:underline">Edit</button>
                     </div>
                 </div>
 

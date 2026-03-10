@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { MapPin, ChevronDown, SlidersHorizontal, Star, X, ArrowDownUp, Timer, IndianRupee, UtensilsCrossed, BadgePercent, Clock, Bookmark, ArrowLeft } from "lucide-react"
+import { MapPin, SlidersHorizontal, Star, ArrowDownUp, Timer, IndianRupee, UtensilsCrossed, BadgePercent, Clock, Bookmark, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import AnimatedPage from "../components/AnimatedPage"
@@ -8,7 +8,13 @@ import { useLocationSelector } from "../components/UserLayout"
 import { useLocation as useLocationHook } from "../hooks/useLocation"
 import { useProfile } from "../context/ProfileContext"
 import { FaLocationDot } from "react-icons/fa6"
-import { cafeAPI } from "@/lib/api"
+import { diningAPI } from "@/lib/api"
+
+const toSlug = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
 
 export default function DiningCategory() {
   const { category } = useParams()
@@ -35,30 +41,27 @@ export default function DiningCategory() {
       try {
         setIsLoading(true)
         const params = {}
-        if (vegMode) {
-          params.dietaryPreference = 'veg'
-        } else {
-          params.dietaryPreference = 'non-veg'
+        // Only apply dietary filter when veg mode is explicitly ON.
+        // OFF should show all cafes, not only non-veg cafes.
+        if (vegMode === true) {
+          params.dietaryPreference = "veg"
         }
-        const response = await cafeAPI.getCafes(params)
+        const response = await diningAPI.getCafes(params)
         if (response.data && response.data.success) {
           // Map backend data to UI format
           const mappedData = (response.data.data.cafes || response.data.data || [])
-            .filter(r => r.diningSettings?.isEnabled !== false)
             .map(r => ({
               id: r._id || r.id,
               name: r.name,
               rating: r.rating || r.avgRating || 0,
-              location: r.location?.addressLine1 || r.address || "Indore",
-              distance: "2.5 km", // Placeholder as we don't have user geo-coords to calc
-              cuisine: Array.isArray(r.cuisines) ? r.cuisines[0] : (r.cuisine || "Multi-cuisine"),
-              price: r.costForTwo ? `₹${r.costForTwo} for two` : "Price not available",
-              image: r.coverImage || r.profileImage?.url || r.logo || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop",
-              offer: r.discount ? `Flat ${r.discount}% OFF` : "Great Offers",
-              deliveryTime: r.deliveryTime ? `${r.deliveryTime} mins` : "30-40 mins",
-              featuredDish: "Special", // Placeholder
-              featuredPrice: 250, // Placeholder
-              diningType: r.diningSettings?.diningType,
+              location: r.location || "Indore",
+              distance: r.distance || null,
+              cuisine: r.cuisine || "Multi-cuisine",
+              price: r.price || "Price not available",
+              image: r.image || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop",
+              offer: r.offer || null,
+              deliveryTime: r.deliveryTime || null,
+              diningType: r.category || r.cuisine,
             }))
           setCafes(mappedData)
         }
@@ -71,22 +74,6 @@ export default function DiningCategory() {
     }
     fetchCafes()
   }, [vegMode])
-
-  // Category headings mapping
-  const categoryHeadings = {
-    'pure-veg': 'ALL PURE VEG PLACES AROUND YOU',
-    'drink-&-dine': 'ALL DRINK AND DINE PLACES AROUND YOU',
-    'drink-and-dine': 'ALL DRINK AND DINE PLACES AROUND YOU',
-    'family-dining': 'ALL FAMILY DINING PLACES AROUND YOU',
-    'rooftops': 'ALL ROOFTOP PLACES AROUND YOU',
-    'cozy-cafes': 'ALL COZY CAFES AROUND YOU',
-    'premium-dining': 'ALL PREMIUM DINING PLACES AROUND YOU',
-  }
-
-  // Get heading based on category or default
-  const categoryHeading = category
-    ? (categoryHeadings[category] || `ALL ${category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} PLACES AROUND YOU`)
-    : 'ALL CAFES AROUND YOU'
 
   const toggleFilter = (filterId) => {
     setActiveFilters(prev => {
@@ -105,25 +92,28 @@ export default function DiningCategory() {
 
     if (activeFilters.has('delivery-under-30')) {
       filtered = filtered.filter(r => {
+        if (!r.deliveryTime) return false
         const timeMatch = r.deliveryTime.match(/(\d+)/)
         return timeMatch && parseInt(timeMatch[1]) <= 30
       })
     }
     if (activeFilters.has('delivery-under-45')) {
       filtered = filtered.filter(r => {
+        if (!r.deliveryTime) return false
         const timeMatch = r.deliveryTime.match(/(\d+)/)
         return timeMatch && parseInt(timeMatch[1]) <= 45
       })
     }
-    // Note: Distance filtering is using static "2.5 km" placeholder currently
     if (activeFilters.has('distance-under-1km')) {
       filtered = filtered.filter(r => {
+        if (!r.distance) return false
         const distMatch = r.distance.match(/(\d+\.?\d*)/)
         return distMatch && parseFloat(distMatch[1]) <= 1.0
       })
     }
     if (activeFilters.has('distance-under-2km')) {
       filtered = filtered.filter(r => {
+        if (!r.distance) return false
         const distMatch = r.distance.match(/(\d+\.?\d*)/)
         return distMatch && parseFloat(distMatch[1]) <= 2.0
       })
@@ -141,8 +131,8 @@ export default function DiningCategory() {
     // Apply Category Filter from URL
     if (category) {
       filtered = filtered.filter(r => {
-        const typeSlug = (r.diningType || "").toLowerCase().replace(/\s+/g, '-');
-        return typeSlug === category.toLowerCase();
+        const typeSlug = toSlug(r.diningType)
+        return typeSlug === toSlug(category)
       });
     }
 
@@ -204,14 +194,6 @@ export default function DiningCategory() {
           {/* Category Heading */}
           <div className="mb-2">
 
-            <div className="mb-2">
-              <div className="flex items-center justify-center mb-2">
-                <h3 className="px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide text-center">
-                  {categoryHeading}
-                </h3>
-              </div>
-            </div>
-
             {/* Filters */}
             <section className="py-1 mb-4">
               <div
@@ -261,11 +243,6 @@ export default function DiningCategory() {
               </div>
             </section>
 
-            <div className="flex items-center justify-center mb-2">
-              <h3 className="px-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide text-center">
-                FEATURED
-              </h3>
-            </div>
             {/* Cafe Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
               {filteredCafes.map((cafe, index) => {
@@ -304,13 +281,6 @@ export default function DiningCategory() {
                           }}
                         />
 
-                        {/* Featured Dish Badge - Top Left */}
-                        <div className="absolute top-3 left-3">
-                          <div className="bg-background/80 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium">
-                            {cafe.featuredDish} · ₹{cafe.featuredPrice}
-                          </div>
-                        </div>
-
                         {/* Bookmark Icon - Top Right */}
                         <Button
                           variant="ghost"
@@ -321,20 +291,17 @@ export default function DiningCategory() {
                           <Bookmark className={`h-5 w-5 ${favorite ? "fill-primary text-primary" : "text-muted-foreground"}`} strokeWidth={2} />
                         </Button>
 
-                        {/* Gradient Section - Bottom 40% */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-primary to-transparent" style={{ height: '40%' }}>
-                          <div className="h-full flex flex-col justify-end">
-                            <div className="pl-4 sm:pl-5 pb-4 sm:pb-5">
-                              <p className="text-primary-foreground text-xs sm:text-sm font-medium uppercase tracking-wide mb-1">
-                                PRE-BOOK TABLE
-                              </p>
-                              <div className="h-px bg-primary-foreground/30 mb-2 w-24"></div>
-                              <p className="text-primary-foreground text-base sm:text-lg font-bold">
-                                {cafe.offer}
-                              </p>
+                        {cafe.offer ? (
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-primary to-transparent" style={{ height: '28%' }}>
+                            <div className="h-full flex flex-col justify-end">
+                              <div className="pl-4 sm:pl-5 pb-4 sm:pb-5">
+                                <p className="text-primary-foreground text-base sm:text-lg font-bold">
+                                  {cafe.offer}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        ) : null}
                       </div>
 
                       {/* Content Section */}
@@ -353,12 +320,18 @@ export default function DiningCategory() {
                         </div>
 
                         {/* Delivery Time & Distance */}
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                          <Clock className="h-4 w-4" strokeWidth={1.5} />
-                          <span className="font-medium">{cafe.deliveryTime}</span>
-                          <span className="mx-1">|</span>
-                          <span className="font-medium">{cafe.distance}</span>
-                        </div>
+                        {(cafe.deliveryTime || cafe.distance) ? (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                            {cafe.deliveryTime ? (
+                              <>
+                                <Clock className="h-4 w-4" strokeWidth={1.5} />
+                                <span className="font-medium">{cafe.deliveryTime}</span>
+                              </>
+                            ) : null}
+                            {cafe.deliveryTime && cafe.distance ? <span className="mx-1">|</span> : null}
+                            {cafe.distance ? <span className="font-medium">{cafe.distance}</span> : null}
+                          </div>
+                        ) : null}
 
                         {/* Offer Badge */}
                         {cafe.offer && (
@@ -638,4 +611,6 @@ export default function DiningCategory() {
     </AnimatedPage>
   )
 }
+
+
 

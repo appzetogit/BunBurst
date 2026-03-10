@@ -156,6 +156,21 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
       return null
     }
 
+    // Self-contained: build readable address from location object
+    const buildAddressText = (loc) => {
+      if (!loc || typeof loc !== "object") return null
+      const parts = [
+        loc.addressLine1,
+        loc.addressLine2,
+        loc.street,
+        loc.area,
+        loc.city,
+        loc.state,
+        loc.zipCode || loc.pincode || loc.postalCode,
+      ].filter(Boolean)
+      return parts.length ? parts.join(", ") : null
+    }
+
     // Self-contained: reverse geocode via Google Maps REST API
     const reverseGeocode = async (lat, lng) => {
       try {
@@ -180,12 +195,19 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
 
     const run = async () => {
       setFetchedCafeAddress('')
+      let detailedOrder = null
 
       // Step 1 — try text address fields directly from the order prop
       const directText = [
         order?.cafeAddress,
+        order?.restaurantAddress,
+        order?.restaurant?.address,
+        order?.restaurant?.location?.formattedAddress,
+        order?.restaurant?.location?.address,
+        buildAddressText(order?.restaurant?.location),
         order?.cafeLocation?.formattedAddress,
         order?.cafeLocation?.address,
+        buildAddressText(order?.cafeLocation),
         order?.deliveryState?.cafeAddress,
       ].find(isValidText)
 
@@ -212,6 +234,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
         const resp = await adminAPI.getOrderById(orderId)
         if (isCancelled) return
         const detailed = resp?.data?.data?.order || resp?.data?.order
+        detailedOrder = detailed || null
         if (detailed) {
           // Try text fields from detailed order
           const rest = (detailed.cafeId && typeof detailed.cafeId === 'object') ? detailed.cafeId
@@ -219,9 +242,17 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
 
           const detailText = [
             detailed?.cafeAddress,
+            detailed?.restaurantAddress,
+            detailed?.restaurant?.address,
+            detailed?.restaurant?.location?.formattedAddress,
+            detailed?.restaurant?.location?.address,
+            buildAddressText(detailed?.restaurant?.location),
             rest?.address,
+            rest?.fullAddress,
             rest?.location?.formattedAddress,
             rest?.location?.address,
+            buildAddressText(rest?.location),
+            [rest?.addressLine1, rest?.addressLine2, rest?.area, rest?.city, rest?.state, rest?.pincode].filter(Boolean).join(", "),
           ].find(isValidText)
 
           if (detailText) {
@@ -235,11 +266,61 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
             const geocoded = await reverseGeocode(detailCoords.lat, detailCoords.lng)
             if (!isCancelled && geocoded) {
               setFetchedCafeAddress(geocoded)
+              return
             }
           }
         }
       } catch (err) {
         console.error('Invoice: failed to fetch detailed order for address:', err)
+      }
+
+      // Step 4 — fetch cafe directly from DB using cafe id and extract address
+      try {
+        const resolveCafeId = (value) => {
+          if (!value) return null
+          if (typeof value === "string") return value
+          if (typeof value === "object") return value._id || value.id || value.cafeId || null
+          return null
+        }
+
+        const cafeIdFromData =
+          resolveCafeId(detailedOrder?.cafeId) ||
+          resolveCafeId(detailedOrder?.cafe) ||
+          resolveCafeId(detailedOrder?.restaurant) ||
+          resolveCafeId(order?.cafeId) ||
+          resolveCafeId(order?.cafe) ||
+          resolveCafeId(order?.restaurant)
+
+        if (!cafeIdFromData) return
+
+        const cafeResp = await adminAPI.getCafeById(cafeIdFromData)
+        if (isCancelled) return
+        const cafeData = cafeResp?.data?.data?.cafe || cafeResp?.data?.data || cafeResp?.data || null
+        if (!cafeData) return
+
+        const dbAddress = [
+          cafeData?.address,
+          cafeData?.fullAddress,
+          cafeData?.location?.formattedAddress,
+          cafeData?.location?.address,
+          buildAddressText(cafeData?.location),
+          cafeData?.addressLine1 ? [cafeData.addressLine1, cafeData.addressLine2, cafeData.area, cafeData.city, cafeData.state, cafeData.pincode].filter(Boolean).join(", ") : null,
+        ].find(isValidText)
+
+        if (dbAddress && !isCancelled) {
+          setFetchedCafeAddress(dbAddress)
+          return
+        }
+
+        const dbCoords = extractCoords(cafeData?.location)
+        if (dbCoords) {
+          const geocoded = await reverseGeocode(dbCoords.lat, dbCoords.lng)
+          if (!isCancelled && geocoded) {
+            setFetchedCafeAddress(geocoded)
+          }
+        }
+      } catch (err) {
+        console.error('Invoice: failed to fetch cafe address from DB:', err)
       }
     }
 
@@ -311,9 +392,16 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
     const cafe = (orderData?.cafeId && typeof orderData.cafeId === "object")
       ? orderData.cafeId
       : (orderData?.cafe && typeof orderData.cafe === "object" ? orderData.cafe : {})
+    const restaurant = (orderData?.restaurant && typeof orderData.restaurant === "object")
+      ? orderData.restaurant
+      : {}
+    const deliveryStateCafe = (orderData?.deliveryState?.cafe && typeof orderData.deliveryState.cafe === "object")
+      ? orderData.deliveryState.cafe
+      : {}
 
     const candidates = [
       orderData?.cafeAddress,
+      orderData?.restaurantAddress,
       orderData?.cafeIdAddress,
       orderData?.cafeLocation?.formattedAddress,
       orderData?.cafeLocation?.address,
@@ -324,12 +412,23 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
         : null,
       orderData?.deliveryState?.cafeAddress,
       cafe?.address,
+      cafe?.fullAddress,
       cafe?.location?.formattedAddress,
       cafe?.location?.address,
       buildAddressFromLocation(cafe?.location),
       // Additional paths for populated cafe objects
       cafe?.addressLine1 ? [cafe.addressLine1, cafe.addressLine2, cafe.city, cafe.state, cafe.pincode].filter(Boolean).join(', ') : null,
       cafe?.street ? [cafe.street, cafe.area, cafe.city, cafe.state].filter(Boolean).join(', ') : null,
+      restaurant?.address,
+      restaurant?.fullAddress,
+      restaurant?.location?.formattedAddress,
+      restaurant?.location?.address,
+      buildAddressFromLocation(restaurant?.location),
+      restaurant?.addressLine1 ? [restaurant.addressLine1, restaurant.addressLine2, restaurant.city, restaurant.state, restaurant.pincode].filter(Boolean).join(', ') : null,
+      deliveryStateCafe?.address,
+      deliveryStateCafe?.location?.formattedAddress,
+      deliveryStateCafe?.location?.address,
+      buildAddressFromLocation(deliveryStateCafe?.location),
       orderData?.pickupAddress?.formattedAddress,
       orderData?.pickupAddress?.address,
       buildAddressFromLocation(orderData?.pickupAddress),
@@ -624,7 +723,9 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                     setIsLoadingBill(true);
                     try {
                       const cafeName = order.cafe || order.cafeName || order.cafeId?.name || 'Cafe';
-                      const cafeAddress = getCafeInvoiceAddress(order);
+                      const cafeAddress = (fetchedCafeAddress && isValidDisplayAddress(fetchedCafeAddress))
+                        ? fetchedCafeAddress
+                        : getCafeInvoiceAddress(order);
                       const customerName = order.customerName || order.userId?.name || order.userName || 'Customer';
                       const customerAddress = formatAddress(order.address);
 

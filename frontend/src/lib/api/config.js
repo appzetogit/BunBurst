@@ -384,6 +384,9 @@ export const API_ENDPOINTS = {
     DINING_TIMESLOTS: "/admin/dining/timeslots",
     DINING_CONFIG: "/admin/dining/config/:cafeId",
     DINING_TABLES: "/admin/tables",
+    DINING_BOOKING_REQUESTS: "/admin/dining/booking-requests",
+    DINING_BOOKING_APPROVE: "/admin/dining/approve/:bookingId",
+    DINING_BOOKING_REJECT: "/admin/dining/reject/:bookingId",
   },
   // Order endpoints
   ORDER: {

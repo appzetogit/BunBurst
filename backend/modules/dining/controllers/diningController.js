@@ -11,7 +11,7 @@ import DiningSlot from "../models/DiningSlot.js";
 import DiningTable from "../models/DiningTable.js";
 import Cafe from "../../cafe/models/Cafe.js";
 
-const ACTIVE_BOOKING_STATUSES = ["pending", "confirmed"];
+const ACTIVE_BOOKING_STATUSES = ["confirmed"];
 
 const normalizeDate = (inputDate) => {
   const parsed = new Date(inputDate);
@@ -105,6 +105,14 @@ const findCafeBySlug = async (slug) => {
 
   const directMatch = await DiningCafe.findOne({ slug: decodedSlug });
   if (directMatch) {
+    const linkedCafe =
+      (directMatch.cafeId && (await Cafe.findById(directMatch.cafeId).lean())) ||
+      (await Cafe.findOne({ slug: decodedSlug }).lean());
+
+    if (linkedCafe) {
+      return { cafe: linkedCafe, diningCafe: directMatch };
+    }
+
     return directMatch;
   }
 
@@ -290,7 +298,15 @@ export const getDiningDates = async (req, res) => {
       });
     }
 
-    const slots = await DiningSlot.find({ cafeId })
+    const today = normalizeDate(new Date());
+    if (!today) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date",
+      });
+    }
+
+    const slots = await DiningSlot.find({ cafeId, date: { $gte: today } })
       .sort({ date: 1 })
       .select("date timeSlots")
       .lean();
@@ -318,7 +334,7 @@ export const getDiningDates = async (req, res) => {
 // Get availability by date and guest count
 export const getDiningAvailability = async (req, res) => {
   try {
-    const { cafeId, date, guests } = req.query;
+    const { cafeId, date, guests, slotId, timeSlot } = req.query;
 
     if (!cafeId || !date || !guests) {
       return res.status(400).json({
@@ -343,6 +359,42 @@ export const getDiningAvailability = async (req, res) => {
       });
     }
 
+    const today = normalizeDate(new Date());
+    if (!today) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date",
+      });
+    }
+
+    if (dayRange.start < today) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          availableTimeSlots: [],
+          availableTables: [],
+          tablesByTimeSlot: {},
+        },
+      });
+    }
+
+    const requestedSlot = typeof timeSlot === "string" && timeSlot.trim()
+      ? timeSlot.trim()
+      : typeof slotId === "string" && slotId.trim()
+        ? slotId.trim()
+        : null;
+
+    const bookingQuery = {
+      cafeId,
+      date: { $gte: dayRange.start, $lt: dayRange.end },
+      bookingStatus: { $in: ACTIVE_BOOKING_STATUSES },
+      tableId: { $exists: true, $ne: null },
+    };
+
+    if (requestedSlot) {
+      bookingQuery.timeSlot = requestedSlot;
+    }
+
     const [slotDoc, eligibleTables, activeBookings] = await Promise.all([
       DiningSlot.findOne({ cafeId, date: dayRange.start }).lean(),
       DiningTable.find({
@@ -352,12 +404,7 @@ export const getDiningAvailability = async (req, res) => {
       })
         .sort({ capacity: 1, tableNumber: 1 })
         .lean(),
-      TableBooking.find({
-        cafeId,
-        date: { $gte: dayRange.start, $lt: dayRange.end },
-        bookingStatus: { $in: ACTIVE_BOOKING_STATUSES },
-        tableId: { $exists: true, $ne: null },
-      })
+      TableBooking.find(bookingQuery)
         .select("timeSlot tableId")
         .lean(),
     ]);
@@ -382,7 +429,7 @@ export const getDiningAvailability = async (req, res) => {
       bookedTableMap.get(key).add(String(booking.tableId));
     }
 
-    const activeTimeSlots = slotDoc.timeSlots
+    let activeTimeSlots = slotDoc.timeSlots
       .filter((slot) => slot.isActive)
       .map((slot) => {
         const timeSlotLabel = buildTimeSlotLabel(slot);
@@ -401,6 +448,12 @@ export const getDiningAvailability = async (req, res) => {
           tables: tablesForSlot,
         };
       });
+
+    if (requestedSlot) {
+      activeTimeSlots = activeTimeSlots.filter(
+        (slot) => slot.timeSlot === requestedSlot,
+      );
+    }
 
     const tablesByTimeSlot = activeTimeSlots.reduce((acc, slot) => {
       acc[slot.timeSlot] = slot.tables;
@@ -453,6 +506,15 @@ const createBookingDoc = async ({
     throw new Error("Invalid booking date");
   }
 
+  const today = normalizeDate(new Date());
+  if (!today) {
+    throw new Error("Invalid booking date");
+  }
+
+  if (normalizedDate < today) {
+    throw new Error("This dining date has expired");
+  }
+
   if (!tableId) {
     throw new Error("tableId is required");
   }
@@ -486,7 +548,7 @@ const createBookingDoc = async ({
     date: normalizedDate,
     timeSlot,
     tableId,
-    bookingStatus: { $in: ACTIVE_BOOKING_STATUSES },
+    bookingStatus: "confirmed",
   }).lean();
 
   if (conflictBooking) {
@@ -503,8 +565,8 @@ const createBookingDoc = async ({
     date: normalizedDate,
     timeSlot,
     specialRequest,
-    status: "confirmed",
-    bookingStatus: "confirmed",
+    status: "pending",
+    bookingStatus: "pending",
     checkInStatus: false,
   });
 
@@ -696,6 +758,13 @@ export const checkInDiningBooking = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Cancelled booking cannot be checked in",
+      });
+    }
+
+    if ((booking.bookingStatus || booking.status) !== "confirmed") {
+      return res.status(400).json({
+        success: false,
+        message: "Booking is not confirmed yet",
       });
     }
 

@@ -16,11 +16,19 @@ const diningCafeSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    cafeId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Cafe",
+        index: true,
+    },
     distance: {
         type: String, // Storing as string to match frontend "2.9 km" for now
     },
     cuisine: {
         type: String, // "Continental", "Multi-cuisine"
+    },
+    category: {
+        type: String, // Dining category slug (from diningcategories)
     },
     price: {
         type: String, // "₹1500 for two"
@@ -65,5 +73,5 @@ diningCafeSchema.pre('save', function (next) {
     next();
 });
 
-const DiningCafe = mongoose.model('DiningCafe', diningCafeSchema);
+const DiningCafe = mongoose.model('DiningCafe', diningCafeSchema, 'diningcaves');
 export default DiningCafe;

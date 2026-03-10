@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, Layout, Link as LinkIcon, Tag, UtensilsCrossed, FileText, Edit, X, CalendarDays, Clock3, Table2 } from "lucide-react"
+import { Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, Layout, Link as LinkIcon, Tag, UtensilsCrossed, FileText, Edit, X, CalendarDays, Clock3, Table2, Users, Info } from "lucide-react"
 import api from "@/lib/api"
 import { getModuleToken } from "@/lib/utils/auth"
 import { Input } from "@/components/ui/input"
@@ -56,6 +56,20 @@ export default function DiningManagement() {
     const [tableCapacity, setTableCapacity] = useState("")
     const [tableSubmitting, setTableSubmitting] = useState(false)
 
+    // Booking requests
+    const [bookingRequests, setBookingRequests] = useState([])
+    const [bookingRequestsLoading, setBookingRequestsLoading] = useState(false)
+    const [bookingActionLoading, setBookingActionLoading] = useState(null)
+    const [selectedBookingInfo, setSelectedBookingInfo] = useState(null)
+
+    const getTodayInputValue = () => {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, "0")
+        const day = String(now.getDate()).padStart(2, "0")
+        return `${year}-${month}-${day}`
+    }
+
     // Common
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(null)
@@ -86,6 +100,10 @@ export default function DiningManagement() {
             setConfigData({ availableDates: [], timeSlots: [], tables: [] })
         }
     }, [configCafeId])
+
+    useEffect(() => {
+        fetchBookingRequests()
+    }, [])
 
     // ==================== CATEGORIES ====================
     const fetchCategories = async () => {
@@ -396,31 +414,88 @@ export default function DiningManagement() {
         }
     }
 
+    const fetchBookingRequests = async () => {
+        try {
+            setBookingRequestsLoading(true)
+            const response = await api.get("/admin/dining/booking-requests", getAuthConfig())
+            if (response.data?.success) {
+                setBookingRequests(response.data.data?.bookings || [])
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to load booking requests")
+        } finally {
+            setBookingRequestsLoading(false)
+        }
+    }
+
+    const handleApproveBooking = async (bookingId) => {
+        try {
+            setBookingActionLoading(bookingId)
+            const response = await api.patch(`/admin/dining/approve/${bookingId}`, {}, getAuthConfig())
+            if (response.data?.success) {
+                setSuccess("Booking approved")
+                setBookingRequests((prev) =>
+                    prev.map((booking) =>
+                        booking._id === bookingId
+                            ? { ...booking, bookingStatus: "confirmed", status: "confirmed" }
+                            : booking
+                    )
+                )
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to approve booking")
+        } finally {
+            setBookingActionLoading(null)
+        }
+    }
+
+    const handleRejectBooking = async (bookingId) => {
+        try {
+            setBookingActionLoading(bookingId)
+            const response = await api.patch(`/admin/dining/reject/${bookingId}`, {}, getAuthConfig())
+            if (response.data?.success) {
+                setSuccess("Booking rejected")
+                setBookingRequests((prev) =>
+                    prev.map((booking) =>
+                        booking._id === bookingId
+                            ? { ...booking, bookingStatus: "cancelled", status: "cancelled" }
+                            : booking
+                    )
+                )
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to reject booking")
+        } finally {
+            setBookingActionLoading(null)
+        }
+    }
+
     const tabs = [
         { id: 'categories', label: 'Dining Categories', icon: Layout },
         { id: 'banners', label: 'Dining Banners', icon: ImageIcon },
         { id: 'stories', label: 'Dining Stories', icon: FileText },
         { id: 'reservations', label: 'Dining Reservations', icon: CalendarDays },
+        { id: 'booking-requests', label: 'Booking Requests', icon: Users },
     ]
 
     return (
-        <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
+        <div className="p-4 lg:p-6 bg-[#F5F5F5] min-h-screen">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+                <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6 mb-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-[#e53935] flex items-center justify-center">
                             <UtensilsCrossed className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900">Dining Banners</h1>
-                            <p className="text-sm text-slate-600 mt-1">Manage dining categories, banners, and stories</p>
+                            <h1 className="text-2xl font-bold text-[#1E1E1E]">Dining Banners</h1>
+                            <p className="text-sm text-[#1E1E1E]/70 mt-1">Manage dining categories, banners, and stories</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 mb-6">
+                <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-2 mb-6">
                     <div className="flex gap-2">
                         {tabs.map((tab) => {
                             const Icon = tab.icon
@@ -428,7 +503,7 @@ export default function DiningManagement() {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === tab.id ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === tab.id ? 'bg-[#e53935] text-white' : 'text-[#1E1E1E]/70 hover:bg-slate-100'
                                         }`}
                                 >
                                     <Icon className="w-4 h-4" />
@@ -447,8 +522,8 @@ export default function DiningManagement() {
                 {activeTab === 'categories' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-1">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4">Add Category</h2>
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">Add Category</h2>
                                 <div className="space-y-4">
                                     <div>
                                         <Label>Name</Label>
@@ -458,29 +533,29 @@ export default function DiningManagement() {
                                         <Label>Image</Label>
                                         <Input type="file" ref={categoryFileInputRef} onChange={e => setCategoryFile(e.target.files[0])} accept="image/*" className="mt-1" />
                                     </div>
-                                    <Button onClick={handleCreateCategory} disabled={categoriesUploading} className="w-full bg-blue-600 hover:bg-blue-700">
+                                    <Button onClick={handleCreateCategory} disabled={categoriesUploading} className="w-full bg-[#e53935] hover:bg-[#d32f2f]">
                                         {categoriesUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Category"}
                                     </Button>
                                 </div>
                             </div>
                         </div>
                         <div className="lg:col-span-2">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4">Categories List</h2>
-                                {categoriesLoading ? <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div> : (
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">Categories List</h2>
+                                {categoriesLoading ? <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-[#e53935]" /></div> : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {categories.map(cat => (
                                             <div key={cat._id} className="border rounded-lg overflow-hidden group relative">
                                                 <img src={cat.imageUrl} alt={cat.name} className="w-full h-32 object-cover" />
                                                 <div className="p-3 bg-white">
-                                                    <p className="font-medium text-slate-900">{cat.name}</p>
+                                                    <p className="font-medium text-[#1E1E1E]">{cat.name}</p>
                                                 </div>
                                                 <button onClick={() => handleDeleteCategory(cat._id)} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {categoriesDeleting === cat._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                                 </button>
                                             </div>
                                         ))}
-                                        {categories.length === 0 && <p className="text-slate-500 text-center col-span-full py-8">No categories found.</p>}
+                                        {categories.length === 0 && <p className="text-[#1E1E1E]/55 text-center col-span-full py-8">No categories found.</p>}
                                     </div>
                                 )}
                             </div>
@@ -491,8 +566,8 @@ export default function DiningManagement() {
                 {activeTab === 'banners' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-1">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4">{editingBannerId ? "Edit Offer Banner" : "Add Offer Banner"}</h2>
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">{editingBannerId ? "Edit Offer Banner" : "Add Offer Banner"}</h2>
                                 <div className="space-y-4">
                                     <div>
                                         <Label>Image</Label>
@@ -519,7 +594,7 @@ export default function DiningManagement() {
                                             ))}
                                         </select>
                                     </div>
-                                    <Button onClick={handleSubmitBanner} disabled={bannersUploading} className="w-full bg-blue-600 hover:bg-blue-700">
+                                    <Button onClick={handleSubmitBanner} disabled={bannersUploading} className="w-full bg-[#e53935] hover:bg-[#d32f2f]">
                                         {bannersUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingBannerId ? "Update Banner" : "Create Banner")}
                                     </Button>
                                     {editingBannerId && (
@@ -531,27 +606,27 @@ export default function DiningManagement() {
                             </div>
                         </div>
                         <div className="lg:col-span-2">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4">Offer Banners List</h2>
-                                {bannersLoading ? <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div> : (
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">Offer Banners List</h2>
+                                {bannersLoading ? <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-[#e53935]" /></div> : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {banners.map(banner => (
                                             <div key={banner._id} className="border rounded-lg overflow-hidden group relative">
                                                 <img src={banner.imageUrl} alt={banner.tagline} className="w-full h-32 object-cover" />
                                                 <div className="p-3 bg-white">
-                                                    <p className="font-bold text-slate-900">{banner.percentageOff}</p>
-                                                    <p className="text-sm text-slate-600">{banner.tagline}</p>
-                                                    <p className="text-xs text-blue-600 mt-1">{banner.cafe?.name}</p>
+                                                    <p className="font-bold text-[#1E1E1E]">{banner.percentageOff}</p>
+                                                    <p className="text-sm text-[#1E1E1E]/70">{banner.tagline}</p>
+                                                    <p className="text-xs text-[#e53935] mt-1">{banner.cafe?.name}</p>
                                                 </div>
                                                 <button onClick={() => handleDeleteBanner(banner._id)} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {bannersDeleting === banner._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                                 </button>
-                                                <button onClick={() => handleEditBanner(banner)} className="absolute top-2 right-10 p-1.5 bg-blue-100 text-blue-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleEditBanner(banner)} className="absolute top-2 right-10 p-1.5 bg-blue-100 text-[#e53935] rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         ))}
-                                        {banners.length === 0 && <p className="text-slate-500 text-center col-span-full py-8">No banners found.</p>}
+                                        {banners.length === 0 && <p className="text-[#1E1E1E]/55 text-center col-span-full py-8">No banners found.</p>}
                                     </div>
                                 )}
                             </div>
@@ -562,8 +637,8 @@ export default function DiningManagement() {
                 {activeTab === 'stories' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-1">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4">{editingStoryId ? "Edit Story" : "Add Story"}</h2>
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">{editingStoryId ? "Edit Story" : "Add Story"}</h2>
                                 <div className="space-y-4">
                                     <div>
                                         <Label>Name</Label>
@@ -573,7 +648,7 @@ export default function DiningManagement() {
                                         <Label>Image</Label>
                                         <Input type="file" ref={storyFileInputRef} onChange={e => setStoryFile(e.target.files[0])} accept="image/*" className="mt-1" />
                                     </div>
-                                    <Button onClick={handleSubmitStory} disabled={storiesUploading} className="w-full bg-blue-600 hover:bg-blue-700">
+                                    <Button onClick={handleSubmitStory} disabled={storiesUploading} className="w-full bg-[#e53935] hover:bg-[#d32f2f]">
                                         {storiesUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingStoryId ? "Update Story" : "Create Story")}
                                     </Button>
                                     {editingStoryId && (
@@ -585,25 +660,25 @@ export default function DiningManagement() {
                             </div>
                         </div>
                         <div className="lg:col-span-2">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4">Stories List</h2>
-                                {storiesLoading ? <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div> : (
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">Stories List</h2>
+                                {storiesLoading ? <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-[#e53935]" /></div> : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {stories.map(story => (
                                             <div key={story._id} className="border rounded-lg overflow-hidden group relative">
                                                 <img src={story.imageUrl} alt={story.name} className="w-full h-32 object-cover" />
                                                 <div className="p-3 bg-white">
-                                                    <p className="font-medium text-slate-900">{story.name}</p>
+                                                    <p className="font-medium text-[#1E1E1E]">{story.name}</p>
                                                 </div>
                                                 <button onClick={() => handleDeleteStory(story._id)} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {storiesDeleting === story._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                                 </button>
-                                                <button onClick={() => handleEditStory(story)} className="absolute top-2 right-10 p-1.5 bg-blue-100 text-blue-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleEditStory(story)} className="absolute top-2 right-10 p-1.5 bg-blue-100 text-[#e53935] rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         ))}
-                                        {stories.length === 0 && <p className="text-slate-500 text-center col-span-full py-8">No stories found.</p>}
+                                        {stories.length === 0 && <p className="text-[#1E1E1E]/55 text-center col-span-full py-8">No stories found.</p>}
                                     </div>
                                 )}
                             </div>
@@ -614,8 +689,8 @@ export default function DiningManagement() {
                 {activeTab === 'reservations' && (
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                         <div className="space-y-6 xl:col-span-1">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4">Select Cafe</h2>
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">Select Cafe</h2>
                                 <select
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
                                     value={configCafeId}
@@ -628,26 +703,26 @@ export default function DiningManagement() {
                                 </select>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                    <CalendarDays className="w-4 h-4 text-blue-600" />
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                                    <CalendarDays className="w-4 h-4 text-[#e53935]" />
                                     Add Dining Date
                                 </h2>
                                 <div className="space-y-3">
-                                    <Input type="date" value={dateInput} onChange={e => setDateInput(e.target.value)} />
-                                    <Button onClick={handleCreateDate} disabled={dateSubmitting} className="w-full bg-blue-600 hover:bg-blue-700">
+                                    <Input type="date" min={getTodayInputValue()} value={dateInput} onChange={e => setDateInput(e.target.value)} />
+                                    <Button onClick={handleCreateDate} disabled={dateSubmitting} className="w-full bg-[#e53935] hover:bg-[#d32f2f]">
                                         {dateSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Date"}
                                     </Button>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                    <Clock3 className="w-4 h-4 text-blue-600" />
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                                    <Clock3 className="w-4 h-4 text-[#e53935]" />
                                     Add Time Slots
                                 </h2>
                                 <div className="space-y-3">
-                                    <Input type="date" value={slotDateInput} onChange={e => setSlotDateInput(e.target.value)} />
+                                    <Input type="date" min={getTodayInputValue()} value={slotDateInput} onChange={e => setSlotDateInput(e.target.value)} />
                                     <div className="grid grid-cols-2 gap-2">
                                         <Input type="time" value={slotStartTime} onChange={e => setSlotStartTime(e.target.value)} />
                                         <Input type="time" value={slotEndTime} onChange={e => setSlotEndTime(e.target.value)} />
@@ -656,7 +731,7 @@ export default function DiningManagement() {
                                     {pendingSlots.length > 0 && (
                                         <div className="space-y-2 max-h-32 overflow-y-auto">
                                             {pendingSlots.map((slot, idx) => (
-                                                <div key={`${slot.startTime}-${slot.endTime}-${idx}`} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                                                <div key={`${slot.startTime}-${slot.endTime}-${idx}`} className="flex items-center justify-between bg-[#F5F5F5] border border-[#F5F5F5] rounded-lg px-3 py-2 text-sm">
                                                     <span>{slot.startTime} - {slot.endTime}</span>
                                                     <button onClick={() => removePendingSlot(idx)} className="text-red-600 hover:text-red-700">
                                                         <X className="w-4 h-4" />
@@ -665,21 +740,21 @@ export default function DiningManagement() {
                                             ))}
                                         </div>
                                     )}
-                                    <Button onClick={handleSubmitTimeSlots} disabled={slotSubmitting} className="w-full bg-blue-600 hover:bg-blue-700">
+                                    <Button onClick={handleSubmitTimeSlots} disabled={slotSubmitting} className="w-full bg-[#e53935] hover:bg-[#d32f2f]">
                                         {slotSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Time Slots"}
                                     </Button>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                    <Table2 className="w-4 h-4 text-blue-600" />
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                                    <Table2 className="w-4 h-4 text-[#e53935]" />
                                     Add Table
                                 </h2>
                                 <div className="space-y-3">
                                     <Input value={tableNumber} onChange={e => setTableNumber(e.target.value)} placeholder="Table number (e.g. T1)" />
                                     <Input type="number" min="1" value={tableCapacity} onChange={e => setTableCapacity(e.target.value)} placeholder="Capacity" />
-                                    <Button onClick={handleAddTable} disabled={tableSubmitting} className="w-full bg-blue-600 hover:bg-blue-700">
+                                    <Button onClick={handleAddTable} disabled={tableSubmitting} className="w-full bg-[#e53935] hover:bg-[#d32f2f]">
                                         {tableSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Table"}
                                     </Button>
                                 </div>
@@ -687,33 +762,53 @@ export default function DiningManagement() {
                         </div>
 
                         <div className="xl:col-span-2">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                                <h2 className="text-lg font-bold text-slate-900 mb-4">Current Dining Configuration</h2>
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">Current Dining Configuration</h2>
                                 {!configCafeId ? (
-                                    <p className="text-slate-500">Select a cafe to load dining configuration.</p>
+                                    <p className="text-[#1E1E1E]/55">Select a cafe to load dining configuration.</p>
                                 ) : configLoading ? (
-                                    <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>
+                                    <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-[#e53935]" /></div>
                                 ) : (
                                     <div className="space-y-6">
                                         <div>
                                             <h3 className="font-semibold text-slate-800 mb-2">Available Dates</h3>
-                                            <div className="flex flex-wrap gap-2">
-                                                {(configData.availableDates || []).map((dateValue, idx) => (
-                                                    <span key={`${dateValue}-${idx}`} className="px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-                                                        {new Date(dateValue).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                    </span>
-                                                ))}
-                                                {(!configData.availableDates || configData.availableDates.length === 0) && (
-                                                    <p className="text-slate-500 text-sm">No dates configured.</p>
-                                                )}
-                                            </div>
+                                            {(configData.availableDates || []).length > 0 ? (
+                                                <div className="border border-[#F5F5F5] rounded-lg overflow-hidden">
+                                                    <div className="grid grid-cols-2 bg-[#F5F5F5] text-xs font-semibold text-[#1E1E1E]/70 uppercase tracking-wide px-4 py-2">
+                                                        <span>Date</span>
+                                                        <span>Status</span>
+                                                    </div>
+                                                    <div className="divide-y divide-slate-200">
+                                                        {(configData.availableDates || []).map((dateValue, idx) => {
+                                                            const dateOnly = typeof dateValue === "string" ? dateValue : dateValue?.date
+                                                            const statusRaw = typeof dateValue === "string" ? null : dateValue?.status
+                                                            const status = (statusRaw || "").toLowerCase() === "expired" ? "expired" : "active"
+
+                                                            return (
+                                                                <div key={`${dateOnly}-${idx}`} className="grid grid-cols-2 items-center px-4 py-2 text-sm">
+                                                                    <span className="text-slate-800 font-medium">
+                                                                        {dateOnly ? new Date(dateOnly).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
+                                                                    </span>
+                                                                    <span>
+                                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${status === "expired" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                                                                            {status === "expired" ? "Expired" : "Active"}
+                                                                        </span>
+                                                                    </span>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-[#1E1E1E]/55 text-sm">No dates configured.</p>
+                                            )}
                                         </div>
 
                                         <div>
                                             <h3 className="font-semibold text-slate-800 mb-2">Time Slots</h3>
                                             <div className="space-y-3">
                                                 {(configData.timeSlots || []).map((slotDoc) => (
-                                                    <div key={slotDoc._id} className="border border-slate-200 rounded-lg p-3">
+                                                    <div key={slotDoc._id} className="border border-[#F5F5F5] rounded-lg p-3">
                                                         <p className="text-sm font-semibold text-slate-800 mb-2">
                                                             {new Date(slotDoc.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                         </p>
@@ -724,13 +819,13 @@ export default function DiningManagement() {
                                                                 </span>
                                                             ))}
                                                             {(!slotDoc.timeSlots || slotDoc.timeSlots.filter(slot => slot.isActive !== false).length === 0) && (
-                                                                <p className="text-slate-500 text-xs">No active slots.</p>
+                                                                <p className="text-[#1E1E1E]/55 text-xs">No active slots.</p>
                                                             )}
                                                         </div>
                                                     </div>
                                                 ))}
                                                 {(!configData.timeSlots || configData.timeSlots.length === 0) && (
-                                                    <p className="text-slate-500 text-sm">No time slots configured.</p>
+                                                    <p className="text-[#1E1E1E]/55 text-sm">No time slots configured.</p>
                                                 )}
                                             </div>
                                         </div>
@@ -739,18 +834,155 @@ export default function DiningManagement() {
                                             <h3 className="font-semibold text-slate-800 mb-2">Tables</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 {(configData.tables || []).map((table) => (
-                                                    <div key={table._id} className="border border-slate-200 rounded-lg p-3">
-                                                        <p className="font-semibold text-slate-900">Table {table.tableNumber}</p>
-                                                        <p className="text-xs text-slate-600 mt-1">{table.capacity} seats</p>
+                                                    <div key={table._id} className="border border-[#F5F5F5] rounded-lg p-3">
+                                                        <p className="font-semibold text-[#1E1E1E]">Table {table.tableNumber}</p>
+                                                        <p className="text-xs text-[#1E1E1E]/70 mt-1">{table.capacity} seats</p>
                                                     </div>
                                                 ))}
                                                 {(!configData.tables || configData.tables.length === 0) && (
-                                                    <p className="text-slate-500 text-sm">No tables configured.</p>
+                                                    <p className="text-[#1E1E1E]/55 text-sm">No tables configured.</p>
                                                 )}
                                             </div>
                                         </div>
+
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'booking-requests' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                        <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-[#e53935]" />
+                            Dining Booking Requests
+                        </h2>
+                        {bookingRequestsLoading ? (
+                            <div className="flex justify-center p-6"><Loader2 className="w-6 h-6 animate-spin text-[#e53935]" /></div>
+                        ) : bookingRequests.length === 0 ? (
+                            <p className="text-[#1E1E1E]/55 text-sm">No pending booking requests.</p>
+                        ) : (
+                            <div className="border border-[#F5F5F5] rounded-lg overflow-hidden">
+                                <div className="grid grid-cols-7 bg-[#F5F5F5] text-xs font-semibold text-[#1E1E1E]/70 uppercase tracking-wide px-4 py-2">
+                                    <span>Customer</span>
+                                    <span>Date</span>
+                                    <span>Slot</span>
+                                    <span>Table</span>
+                                    <span>Guests</span>
+                                    <span>Status</span>
+                                    <span>Action</span>
+                                </div>
+                                <div className="divide-y divide-slate-200">
+                                    {bookingRequests.map((booking) => (
+                                        <div key={booking._id} className="grid grid-cols-7 items-center px-4 py-3 text-sm">
+                                            {(() => {
+                                                const statusValue = booking.bookingStatus || booking.status || "pending"
+                                                const statusLabel = statusValue === "confirmed"
+                                                    ? "Approved"
+                                                    : statusValue === "cancelled"
+                                                        ? "Rejected"
+                                                        : "Pending"
+                                                return null
+                                            })()}
+                                            <span className="text-slate-800 font-medium">{booking.user?.name || "Customer"}</span>
+                                            <span className="text-[#1E1E1E]/70">{new Date(booking.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                            <span className="text-[#1E1E1E]/70">{booking.timeSlot}</span>
+                                            <span className="text-[#1E1E1E]/70">{booking.tableId?.tableNumber ? `T${booking.tableId.tableNumber}` : "-"}</span>
+                                            <span className="text-[#1E1E1E]/70">{booking.guests}</span>
+                                            <span className="text-xs font-semibold">
+                                                {(() => {
+                                                    const statusValue = booking.bookingStatus || booking.status || "pending"
+                                                    const statusLabel = statusValue === "confirmed"
+                                                        ? "Approved"
+                                                        : statusValue === "cancelled"
+                                                            ? "Rejected"
+                                                            : "Pending"
+                                                    const statusClass = statusValue === "confirmed"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : statusValue === "cancelled"
+                                                            ? "bg-red-100 text-red-700"
+                                                            : "bg-yellow-100 text-yellow-700"
+                                                    return (
+                                                        <span className={`px-2.5 py-1 rounded-full ${statusClass}`}>
+                                                            {statusLabel}
+                                                        </span>
+                                                    )
+                                                })()}
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => setSelectedBookingInfo(booking)}
+                                                    className="h-8 w-8 p-0 border-[#F5F5F5] text-[#1E1E1E]/70 hover:bg-slate-100"
+                                                    title="View customer info"
+                                                >
+                                                    <Info className="w-4 h-4" />
+                                                </Button>
+                                                {(booking.bookingStatus || booking.status) === "confirmed" || (booking.bookingStatus || booking.status) === "cancelled" ? null : (
+                                                    <>
+                                                        <Button
+                                                            onClick={() => handleApproveBooking(booking._id)}
+                                                            disabled={bookingActionLoading === booking._id}
+                                                            className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700"
+                                                        >
+                                                            {bookingActionLoading === booking._id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Approve"}
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={() => handleRejectBooking(booking._id)}
+                                                            disabled={bookingActionLoading === booking._id}
+                                                            className="h-8 px-3 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        >
+                                                            Reject
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {selectedBookingInfo && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                            <div className="px-5 py-4 border-b border-[#F5F5F5] flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-[#1E1E1E]">Customer Info</h3>
+                                <button
+                                    onClick={() => setSelectedBookingInfo(null)}
+                                    className="p-2 rounded-full hover:bg-slate-100"
+                                >
+                                    <X className="w-4 h-4 text-[#1E1E1E]/70" />
+                                </button>
+                            </div>
+                            <div className="p-5 space-y-3 text-sm">
+                                <div>
+                                    <p className="text-[#1E1E1E]/55">Name</p>
+                                    <p className="text-[#1E1E1E] font-medium">{selectedBookingInfo.user?.name || "Customer"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[#1E1E1E]/55">Phone</p>
+                                    <p className="text-[#1E1E1E] font-medium">{selectedBookingInfo.user?.phone || "N/A"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[#1E1E1E]/55">Email</p>
+                                    <p className="text-[#1E1E1E] font-medium">{selectedBookingInfo.user?.email || "N/A"}</p>
+                                </div>
+                                <div className="pt-2 border-t border-[#F5F5F5]">
+                                    <p className="text-[#1E1E1E]/55">Booking</p>
+                                    <p className="text-[#1E1E1E] font-medium">
+                                        {new Date(selectedBookingInfo.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} • {selectedBookingInfo.timeSlot}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="px-5 py-4 border-t border-[#F5F5F5] bg-[#F5F5F5]">
+                                <Button onClick={() => setSelectedBookingInfo(null)} className="w-full">
+                                    Close
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -759,3 +991,4 @@ export default function DiningManagement() {
         </div>
     )
 }
+

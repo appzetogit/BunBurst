@@ -160,16 +160,20 @@ export default function MyBookings() {
                                 />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-start">
-                                    <h3 className="font-bold text-foreground truncate">{booking.cafe?.name}</h3>
-                                    <Badge className={`${(booking.bookingStatus || booking.status) === 'confirmed' ? 'bg-primary/10 text-primary' :
-                                        booking.status === 'checked-in' ? 'bg-primary/10 text-primary' :
-                                            (booking.bookingStatus || booking.status) === 'completed' ? 'bg-primary/10 text-primary' :
-                                                'bg-muted text-muted-foreground'
-                                        }`}>
-                                        {booking.status === "checked-in" ? "checked-in" : (booking.bookingStatus || booking.status)}
-                                    </Badge>
-                                </div>
+                <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-foreground truncate">{booking.cafe?.name}</h3>
+                    <Badge className={`${(booking.bookingStatus || booking.status) === 'confirmed' ? 'bg-primary/10 text-primary' :
+                        booking.status === 'checked-in' ? 'bg-primary/10 text-primary' :
+                            (booking.bookingStatus || booking.status) === 'completed' ? 'bg-primary/10 text-primary' :
+                                'bg-muted text-muted-foreground'
+                        }`}>
+                        {booking.status === "checked-in"
+                            ? "checked-in"
+                            : (booking.bookingStatus || booking.status) === "pending"
+                                ? "Pending Approval"
+                                : (booking.bookingStatus || booking.status)}
+                    </Badge>
+                </div>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                     <MapPin className="w-3 h-3" />
                                     <span className="truncate">

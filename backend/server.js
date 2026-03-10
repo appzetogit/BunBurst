@@ -734,8 +734,8 @@ function initializeScheduledTasks() {
   });
   // Import dining auto-cancel service
   import('./modules/dining/services/autoCancelDiningBookingsService.js').then(({ processAutoCancelDiningBookings }) => {
-    // Run every minute to auto-cancel no-show bookings
-    cron.schedule('* * * * *', async () => {
+    // Run every 5 minutes to auto-cancel no-show bookings
+    cron.schedule('*/5 * * * *', async () => {
       try {
         const result = await processAutoCancelDiningBookings();
         if (result.processed > 0) {

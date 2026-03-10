@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom"
-import { CheckCircle2, Calendar, Clock, Users, MapPin, Share2, Home, List } from "lucide-react"
+import { CheckCircle2, Calendar, Clock, Users, MapPin, Home, List } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import AnimatedPage from "../../components/AnimatedPage"
 import { motion } from "framer-motion"
@@ -129,13 +129,6 @@ export default function TableBookingSuccess() {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-primary">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                            <span className="font-bold text-sm">10% Cashback with Bun Burst Pay</span>
-                        </div>
-                        <Share2 className="w-5 h-5 cursor-pointer hover:scale-110 transition-transform" />
-                    </div>
                 </div>
             </motion.div>
 

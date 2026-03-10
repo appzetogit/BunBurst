@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ChevronDown, Calendar, Clock, Ticket, Table } from "lucide-react";
+import { ArrowLeft, ChevronDown, Calendar, Clock, Table } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AnimatedPage from "../../components/AnimatedPage";
 import { diningAPI } from "@/lib/api";
@@ -172,21 +172,6 @@ export default function TableBooking() {
               ))}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-muted/50 to-card rounded-2xl p-4 flex items-center gap-4 border border-border shadow-sm overflow-hidden relative">
-          <div className="absolute right-0 top-0 opacity-10">
-            <Ticket className="w-16 h-16 rotate-45 text-foreground" />
-          </div>
-          <div className="bg-primary p-2 rounded-xl text-primary-foreground shadow-lg shadow-primary/20">
-            <Ticket className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="font-bold text-foreground flex items-center gap-1">
-              Get an extra 10% cashback <span className="text-primary">on your final bill</span>
-            </p>
-            <p className="text-xs text-muted-foreground font-medium">payment at the cafe</p>
           </div>
         </div>
 

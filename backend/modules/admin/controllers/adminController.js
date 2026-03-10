@@ -13,6 +13,7 @@ import { normalizePhoneNumber } from "../../../shared/utils/phoneUtils.js";
 import winston from "winston";
 import mongoose from "mongoose";
 import { uploadToCloudinary } from "../../../shared/utils/cloudinaryService.js";
+import DiningCafe from "../../dining/models/DiningCafe.js";
 import { initializeCloudinary } from "../../../config/cloudinary.js";
 
 const logger = winston.createLogger({
@@ -1693,18 +1694,73 @@ export const updateCafeDiningSettings = asyncHandler(async (req, res) => {
       return errorResponse(res, 404, "Cafe not found");
     }
 
-    // Update dining settings
-    cafe.diningSettings = {
-      ...cafe.diningSettings,
-      ...diningSettings,
+  // Update dining settings
+  cafe.diningSettings = {
+    ...cafe.diningSettings,
+    ...diningSettings,
+  };
+
+  await cafe.save();
+
+  if (cafe.diningSettings?.isEnabled) {
+    const fallbackDiningImage =
+      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop";
+    const locationText =
+      (typeof cafe.location === "string" ? cafe.location : null) ||
+      cafe.location?.formattedAddress ||
+      cafe.location?.address ||
+      cafe.location?.addressLine1 ||
+      cafe.location?.street ||
+      [cafe.location?.area, cafe.location?.city].filter(Boolean).join(", ") ||
+      cafe.address ||
+      "Location not available";
+
+    const imageUrl =
+      cafe.profileImage?.url ||
+      cafe.menuImages?.[0]?.url ||
+      cafe.onboarding?.step2?.profileImageUrl?.url ||
+      fallbackDiningImage;
+
+      const diningCafePayload = {
+        name: cafe.name,
+        rating: cafe.rating || 0,
+        location: locationText,
+        cafeId: cafe._id,
+        distance: cafe.distance || "1.2 km",
+        cuisine: Array.isArray(cafe.cuisines) && cafe.cuisines.length > 0
+          ? cafe.cuisines[0]
+          : "Multi-cuisine",
+      category: cafe.diningSettings?.diningType,
+      price: cafe.onboarding?.step4?.priceRange || undefined,
+      image: imageUrl,
+      offer: cafe.offer || undefined,
+      deliveryTime: cafe.estimatedDeliveryTime || undefined,
+      featuredDish: cafe.featuredDish || undefined,
+      featuredPrice: cafe.featuredPrice || undefined,
+      slug: cafe.slug,
+      coordinates: {
+        latitude: cafe.location?.latitude,
+        longitude: cafe.location?.longitude,
+      },
     };
 
-    await cafe.save();
+    try {
+      await DiningCafe.findOneAndUpdate(
+        { slug: cafe.slug },
+        diningCafePayload,
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
+    } catch (diningError) {
+      logger.error(`Error syncing dining cafe: ${diningError.message}`, {
+        cafeId: cafe._id,
+      });
+    }
+  }
 
-    logger.info(`Cafe dining settings updated: ${id}`, {
-      updatedBy: req.user._id,
-      diningSettings: cafe.diningSettings,
-    });
+  logger.info(`Cafe dining settings updated: ${id}`, {
+    updatedBy: req.user._id,
+    diningSettings: cafe.diningSettings,
+  });
 
     return successResponse(res, 200, "Dining settings updated successfully", {
       cafe: {
@@ -2490,6 +2546,62 @@ export const createCafe = asyncHandler(async (req, res) => {
       email: cafe.email,
       phone: cafe.phone,
     });
+
+    // Create or update DiningCafe entry if dining is enabled
+    if (cafe.diningSettings?.isEnabled) {
+      const fallbackDiningImage =
+        "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop";
+      const locationText =
+        (typeof cafe.location === "string" ? cafe.location : null) ||
+        cafe.location?.formattedAddress ||
+        cafe.location?.address ||
+        cafe.location?.addressLine1 ||
+        cafe.location?.street ||
+        [cafe.location?.area, cafe.location?.city].filter(Boolean).join(", ") ||
+        cafe.address ||
+        "Location not available";
+
+      const imageUrl =
+        cafe.profileImage?.url ||
+        cafe.menuImages?.[0]?.url ||
+        cafe.onboarding?.step2?.profileImageUrl?.url ||
+        fallbackDiningImage;
+
+      const diningCafePayload = {
+        name: cafe.name,
+        rating: cafe.rating || 0,
+        location: locationText,
+        cafeId: cafe._id,
+        distance: cafe.distance || "1.2 km",
+        cuisine: Array.isArray(cafe.cuisines) && cafe.cuisines.length > 0
+          ? cafe.cuisines[0]
+          : "Multi-cuisine",
+      category: cafe.diningSettings?.diningType,
+      price: cafe.onboarding?.step4?.priceRange || undefined,
+        image: imageUrl,
+        offer: cafe.offer || undefined,
+        deliveryTime: cafe.estimatedDeliveryTime || undefined,
+        featuredDish: cafe.featuredDish || undefined,
+        featuredPrice: cafe.featuredPrice || undefined,
+        slug: cafe.slug,
+        coordinates: {
+          latitude: cafe.location?.latitude,
+          longitude: cafe.location?.longitude,
+        },
+      };
+
+      try {
+        await DiningCafe.findOneAndUpdate(
+          { slug: cafe.slug },
+          diningCafePayload,
+          { upsert: true, new: true, setDefaultsOnInsert: true },
+        );
+      } catch (diningError) {
+        logger.error(`Error syncing dining cafe: ${diningError.message}`, {
+          cafeId: cafe._id,
+        });
+      }
+    }
 
     // Prepare response data
     const responseData = {
