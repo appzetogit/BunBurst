@@ -3,6 +3,7 @@ import { successResponse, errorResponse } from '../../../shared/utils/response.j
 import Delivery from '../../delivery/models/Delivery.js';
 import DeliveryWallet from '../../delivery/models/DeliveryWallet.js';
 import DeliveryTransaction from '../../delivery/models/DeliveryTransaction.js';
+import DeliveryBoyWallet from '../../delivery/models/DeliveryBoyWallet.js';
 import BusinessSettings from '../models/BusinessSettings.js';
 
 /**
@@ -36,7 +37,10 @@ export const getDeliveryBoyWallets = asyncHandler(async (req, res) => {
   const rows = [];
 
   for (const d of deliveries) {
-    const wallet = await DeliveryWallet.findOrCreateByDeliveryId(d._id);
+    const [wallet, codWallet] = await Promise.all([
+      DeliveryWallet.findOrCreateByDeliveryId(d._id),
+      DeliveryBoyWallet.findOne({ deliveryBoy: d._id })
+    ]);
 
     // Get bonus total from transactions
     const bonusResult = await DeliveryTransaction.aggregate([
@@ -67,7 +71,10 @@ export const getDeliveryBoyWallets = asyncHandler(async (req, res) => {
       cashCollected,
       totalEarning: Number(wallet.totalEarned) || 0,
       bonus: bonusTotal,
-      totalWithdrawn: totalWithdrawn
+      totalWithdrawn: totalWithdrawn,
+      totalCollectedCash: codWallet?.totalCollectedCash || 0,
+      totalSubmittedCash: codWallet?.totalSubmittedCash || 0,
+      pendingCash: codWallet?.pendingCash || 0
     });
   }
 

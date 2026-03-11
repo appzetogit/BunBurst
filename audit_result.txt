@@ -1,0 +1,670 @@
+1. Frontend Unused Files
+
+/dummy
+/pnpm-lock.yaml
+/README.md
+/src/assets/explore more icons/gift catrd.png
+/src/assets/hub/icons/createads.png
+/src/assets/hub/icons/deliteyourcustomer.png
+/src/assets/hub/icons/getmoremeantimeorders.png
+/src/assets/hub/icons/increaseyourordervalue.png
+/src/assets/profile-image.png
+/src/assets/tiptransfericon.png
+/src/components/ui/card-stack.tsx
+/src/components/ui/sheet.tsx
+/src/components/ui/skeleton.tsx
+/src/components/ui/tabs.tsx
+/src/components/ui/text-animate.tsx
+/src/components/ui/week-calendar.tsx
+/src/constants/cafeIcons.js
+/src/lib/utils/otpUtils.js
+/src/module/admin/assets/Dashboard-icons/image10.png
+/src/module/admin/assets/Dashboard-icons/image11.png
+/src/module/admin/assets/Dashboard-icons/image23.png
+/src/module/admin/assets/Dashboard-icons/image4.png
+/src/module/admin/assets/Dashboard-icons/image5.png
+/src/module/admin/assets/Dashboard-icons/image7.png
+/src/module/admin/assets/Dashboard-icons/most-popular.png
+/src/module/admin/components/campaigns/AddEditFoodCampaignDialog.jsx
+/src/module/admin/components/employees/employeesExportUtils.js
+/src/module/admin/components/zones/EditZoneDialog.jsx
+/src/module/admin/components/zones/ViewZoneDialog.jsx
+/src/module/admin/components/zones/ZoneFilterPanel.jsx
+/src/module/admin/components/zones/zonesExportUtils.js
+/src/module/admin/components/zones/ZonesTable.jsx
+/src/module/admin/components/zones/ZonesTopbar.jsx
+/src/module/admin/data/addonCategoriesDummy.js
+/src/module/admin/data/cafeJoinRequestsDummy.js
+/src/module/admin/data/cafeReportDummy.js
+/src/module/admin/data/cafeWithdrawsDummy.js
+/src/module/admin/data/categoriesDummy.js
+/src/module/admin/data/commissionDummy.js
+/src/module/admin/data/contactMessagesDummy.js
+/src/module/admin/data/conversationsDummy.js
+/src/module/admin/data/couponsDummy.js
+/src/module/admin/data/customersDummy.js
+/src/module/admin/data/customerWalletReportDummy.js
+/src/module/admin/data/deliverymanBonusDummy.js
+/src/module/admin/data/deliverymanListDummy.js
+/src/module/admin/data/deliverymanReviewsDummy.js
+/src/module/admin/data/foodReviewsDummy.js
+/src/module/admin/data/foodsDummy.js
+/src/module/admin/data/joinRequestsDummy.js
+/src/module/admin/data/orderDetectDeliveryDummy.js
+/src/module/admin/utils/cafeStorage.js
+/src/module/delivery/components/AvailableCashLimit.jsx
+/src/module/delivery/components/BottomPopup.example.jsx
+/src/module/delivery/components/DepositPopup.jsx
+/src/module/delivery/components/GoogleMapsTracking.jsx
+/src/module/delivery/hooks/useLocationSharing.js
+/src/module/delivery/utils/LIVE_TRACKING_README.md
+/src/module/user/components/AnimatedBorder.jsx
+/src/module/user/components/AnimatedGradient.jsx
+/src/module/user/components/FloatingElement.jsx
+/src/module/user/components/MobileHeader.jsx
+/src/module/user/components/ShimmerCard.jsx
+/src/module/user/components/StaggerContainer.jsx
+
+2. Backend Unused Files
+
+/create_dummy_order.js
+/debug_log.txt
+/debug_output.txt
+/modules/auth/services/smsService.js
+/modules/order/ETA_INTEGRATION_CHECKLIST.md
+/modules/order/ETA_SYSTEM_DOCUMENTATION.md
+/modules/order/services/cafeAssignmentService.js
+/README.md
+/scripts/backfill_diningcaves_category.js
+/scripts/check-indexes.js
+/scripts/checkCafeData.js
+/scripts/checkMenuDetails.js
+/scripts/createAdmin.js
+/scripts/debug-accept-order.js
+/scripts/debugCloudinary.js
+/scripts/debug_zones.js
+/scripts/fix-cafe-email-index.js
+/scripts/fix-duplicate-indexes.js
+/scripts/fix-user-indexes.js
+/scripts/fix_soham_location_v2.js
+/scripts/fix_zone_coordinates.js
+/scripts/injectDiningCategories.js
+/scripts/migrate_dining_cafes_collections.js
+/scripts/update-cafe-locations.js
+/scripts/updateCloudinaryDB.js
+/START_SERVER.md
+
+3. Suspicious / Possibly Used Files
+
+[FRONTEND] /.env
+[FRONTEND] /.gitignore
+[FRONTEND] /components.json
+[FRONTEND] /eslint.config.js
+[FRONTEND] /jsconfig.app.json
+[FRONTEND] /jsconfig.json
+[FRONTEND] /package-lock.json
+[FRONTEND] /package.json
+[FRONTEND] /public/bunburst-icon.png
+[FRONTEND] /public/firebase-messaging-sw.js
+[FRONTEND] /public/robots.txt
+[FRONTEND] /public/vite.svg
+[FRONTEND] /public/_redirects
+[FRONTEND] /src/lib/api/config.js
+[FRONTEND] /src/lib/api/connectionTest.js
+[FRONTEND] /src/module/admin/pages/addons/AddonsList.jsx
+[FRONTEND] /src/module/admin/pages/AdminHome.jsx
+[FRONTEND] /src/module/admin/pages/AdminProfile.jsx
+[FRONTEND] /src/module/admin/pages/AdminSettings.jsx
+[FRONTEND] /src/module/admin/pages/advertisement/AdRequests.jsx
+[FRONTEND] /src/module/admin/pages/advertisement/AdsList.jsx
+[FRONTEND] /src/module/admin/pages/advertisement/NewAdvertisement.jsx
+[FRONTEND] /src/module/admin/pages/auth/AdminForgotPassword.jsx
+[FRONTEND] /src/module/admin/pages/auth/AdminLogin.jsx
+[FRONTEND] /src/module/admin/pages/auth/AdminSignup.jsx
+[FRONTEND] /src/module/admin/pages/Banners.jsx
+[FRONTEND] /src/module/admin/pages/cafe/AddCafe.jsx
+[FRONTEND] /src/module/admin/pages/cafe/AddZone.jsx
+[FRONTEND] /src/module/admin/pages/cafe/AllZonesMap.jsx
+[FRONTEND] /src/module/admin/pages/cafe/CafeCommission.jsx
+[FRONTEND] /src/module/admin/pages/cafe/CafeComplaints.jsx
+[FRONTEND] /src/module/admin/pages/cafe/CafesBulkExport.jsx
+[FRONTEND] /src/module/admin/pages/cafe/CafesBulkImport.jsx
+[FRONTEND] /src/module/admin/pages/cafe/CafesList.jsx
+[FRONTEND] /src/module/admin/pages/cafe/DeliveryBoyViewMap.jsx
+[FRONTEND] /src/module/admin/pages/cafe/FoodApproval.jsx
+[FRONTEND] /src/module/admin/pages/cafe/JoiningRequest.jsx
+[FRONTEND] /src/module/admin/pages/cafe/MenuAdd.jsx
+[FRONTEND] /src/module/admin/pages/cafe/ViewZone.jsx
+[FRONTEND] /src/module/admin/pages/cafe/ZoneSetup.jsx
+[FRONTEND] /src/module/admin/pages/CafeDisbursement.jsx
+[FRONTEND] /src/module/admin/pages/campaigns/BasicCampaign.jsx
+[FRONTEND] /src/module/admin/pages/campaigns/FoodCampaign.jsx
+[FRONTEND] /src/module/admin/pages/Cashback.jsx
+[FRONTEND] /src/module/admin/pages/categories/Category.jsx
+[FRONTEND] /src/module/admin/pages/categories/CategoryAddons.jsx
+[FRONTEND] /src/module/admin/pages/Chattings.jsx
+[FRONTEND] /src/module/admin/pages/ContactMessages.jsx
+[FRONTEND] /src/module/admin/pages/Coupons.jsx
+[FRONTEND] /src/module/admin/pages/Customers.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/AddDeliveryman.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/DeliveryEarnings.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/DeliverymanBonus.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/DeliverymanList.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/DeliverymanReviews.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/DeliverySalarySetup.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/EarningAddon.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/EarningAddonHistory.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/IncentiveRequests.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/IncentivesHistory.jsx
+[FRONTEND] /src/module/admin/pages/delivery-partners/JoinRequest.jsx
+[FRONTEND] /src/module/admin/pages/DeliveryBoyWallet.jsx
+[FRONTEND] /src/module/admin/pages/DeliveryEmergencyHelp.jsx
+[FRONTEND] /src/module/admin/pages/DeliverymanDisbursement.jsx
+[FRONTEND] /src/module/admin/pages/DeliverySupportTickets.jsx
+[FRONTEND] /src/module/admin/pages/dispatch/OngoingOrders.jsx
+[FRONTEND] /src/module/admin/pages/dispatch/SearchingDeliveryMan.jsx
+[FRONTEND] /src/module/admin/pages/employees/AddEmployee.jsx
+[FRONTEND] /src/module/admin/pages/employees/EmployeeList.jsx
+[FRONTEND] /src/module/admin/pages/employees/EmployeeRole.jsx
+[FRONTEND] /src/module/admin/pages/fee-settings/FeeSettings.jsx
+[FRONTEND] /src/module/admin/pages/foods/FoodsList.jsx
+[FRONTEND] /src/module/admin/pages/loyalty-point/Report.jsx
+[FRONTEND] /src/module/admin/pages/OrderDetectDelivery.jsx
+[FRONTEND] /src/module/admin/pages/orders/AcceptedOrders.jsx
+[FRONTEND] /src/module/admin/pages/orders/AddOrder.jsx
+[FRONTEND] /src/module/admin/pages/orders/DineInOrders.jsx
+[FRONTEND] /src/module/admin/pages/orders/FoodOnTheWayOrders.jsx
+[FRONTEND] /src/module/admin/pages/orders/OfflinePayments.jsx
+[FRONTEND] /src/module/admin/pages/orders/OrdersAll.jsx
+[FRONTEND] /src/module/admin/pages/orders/OrdersPage.jsx
+[FRONTEND] /src/module/admin/pages/orders/PendingOrders.jsx
+[FRONTEND] /src/module/admin/pages/orders/ProcessingOrders.jsx
+[FRONTEND] /src/module/admin/pages/orders/ScheduledOrders.jsx
+[FRONTEND] /src/module/admin/pages/PlaceholderPage.jsx
+[FRONTEND] /src/module/admin/pages/PromotionalBanner.jsx
+[FRONTEND] /src/module/admin/pages/PushNotification.jsx
+[FRONTEND] /src/module/admin/pages/refunds/NewRefundRequests.jsx
+[FRONTEND] /src/module/admin/pages/reports/CafeReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/CafeVATReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/CampaignOrderReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/CustomerWalletReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/DisbursementReportCafes.jsx
+[FRONTEND] /src/module/admin/pages/reports/DisbursementReportDeliverymen.jsx
+[FRONTEND] /src/module/admin/pages/reports/ExpenseReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/FeedbackExperienceReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/FoodReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/RegularOrderReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/SubscriptionReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/TaxReport.jsx
+[FRONTEND] /src/module/admin/pages/reports/TransactionReport.jsx
+[FRONTEND] /src/module/admin/pages/SafetyEmergencyReports.jsx
+[FRONTEND] /src/module/admin/pages/settings/AboutUs.jsx
+[FRONTEND] /src/module/admin/pages/settings/BusinessSetup.jsx
+[FRONTEND] /src/module/admin/pages/settings/CancellationPolicy.jsx
+[FRONTEND] /src/module/admin/pages/settings/CreateTaxes.jsx
+[FRONTEND] /src/module/admin/pages/settings/EmailTemplate.jsx
+[FRONTEND] /src/module/admin/pages/settings/Gallery.jsx
+[FRONTEND] /src/module/admin/pages/settings/LoginSetup.jsx
+[FRONTEND] /src/module/admin/pages/settings/PrivacyPolicy.jsx
+[FRONTEND] /src/module/admin/pages/settings/ReactRegistration.jsx
+[FRONTEND] /src/module/admin/pages/settings/RefundPolicy.jsx
+[FRONTEND] /src/module/admin/pages/settings/SetupTaxes.jsx
+[FRONTEND] /src/module/admin/pages/settings/ShippingPolicy.jsx
+[FRONTEND] /src/module/admin/pages/settings/SubscriberList.jsx
+[FRONTEND] /src/module/admin/pages/settings/SubscriptionPackages.jsx
+[FRONTEND] /src/module/admin/pages/settings/SubscriptionSettings.jsx
+[FRONTEND] /src/module/admin/pages/settings/TermsAndCondition.jsx
+[FRONTEND] /src/module/admin/pages/settings/ThemeSettings.jsx
+[FRONTEND] /src/module/admin/pages/SubscribedMailList.jsx
+[FRONTEND] /src/module/admin/pages/SubscriptionOrders.jsx
+[FRONTEND] /src/module/admin/pages/system/AddonActivation.jsx
+[FRONTEND] /src/module/admin/pages/system/AISetup.jsx
+[FRONTEND] /src/module/admin/pages/system/AnalyticsScript.jsx
+[FRONTEND] /src/module/admin/pages/system/AppWebSettings.jsx
+[FRONTEND] /src/module/admin/pages/system/CleanDatabase.jsx
+[FRONTEND] /src/module/admin/pages/system/DiningList.jsx
+[FRONTEND] /src/module/admin/pages/system/DiningManagement.jsx
+[FRONTEND] /src/module/admin/pages/system/FirebaseNotification.jsx
+[FRONTEND] /src/module/admin/pages/system/JoinUsPageSetup.jsx
+[FRONTEND] /src/module/admin/pages/system/LandingPageManagement.jsx
+[FRONTEND] /src/module/admin/pages/system/LandingPageSettings.jsx
+[FRONTEND] /src/module/admin/pages/system/NotificationChannels.jsx
+[FRONTEND] /src/module/admin/pages/system/OfflinePaymentSetup.jsx
+[FRONTEND] /src/module/admin/pages/system/PageMetaData.jsx
+[FRONTEND] /src/module/admin/pages/system/ReactSite.jsx
+[FRONTEND] /src/module/admin/pages/system/SystemAddons.jsx
+[FRONTEND] /src/module/admin/pages/system/ThirdParty.jsx
+[FRONTEND] /src/module/admin/pages/transactions/CafeWithdraws.jsx
+[FRONTEND] /src/module/admin/pages/transactions/CollectCash.jsx
+[FRONTEND] /src/module/admin/pages/transactions/DeliveryManPayments.jsx
+[FRONTEND] /src/module/admin/pages/transactions/WithdrawMethod.jsx
+[FRONTEND] /src/module/admin/pages/wallet/AddFund.jsx
+[FRONTEND] /src/module/admin/pages/wallet/Bonus.jsx
+[FRONTEND] /src/module/cafe/pages/AddCouponPage.jsx
+[FRONTEND] /src/module/cafe/pages/AdDetailsPage.jsx
+[FRONTEND] /src/module/cafe/pages/AddZone.jsx
+[FRONTEND] /src/module/cafe/pages/AdvertisementsPage.jsx
+[FRONTEND] /src/module/cafe/pages/AllFoodPage.jsx
+[FRONTEND] /src/module/cafe/pages/AllOrdersPage.jsx
+[FRONTEND] /src/module/cafe/pages/auth/ForgotPassword.jsx
+[FRONTEND] /src/module/cafe/pages/auth/GoogleCallback.jsx
+[FRONTEND] /src/module/cafe/pages/auth/Login.jsx
+[FRONTEND] /src/module/cafe/pages/auth/OTP.jsx
+[FRONTEND] /src/module/cafe/pages/auth/SignIn.jsx
+[FRONTEND] /src/module/cafe/pages/auth/Signup.jsx
+[FRONTEND] /src/module/cafe/pages/auth/SignupEmail.jsx
+[FRONTEND] /src/module/cafe/pages/auth/Welcome.jsx
+[FRONTEND] /src/module/cafe/pages/BusinessPlanPage.jsx
+[FRONTEND] /src/module/cafe/pages/CafeCategoriesPage.jsx
+[FRONTEND] /src/module/cafe/pages/CafeConfigPage.jsx
+[FRONTEND] /src/module/cafe/pages/CafeDetailsPage.jsx
+[FRONTEND] /src/module/cafe/pages/CafeStatus.jsx
+[FRONTEND] /src/module/cafe/pages/ChatDetailPage.jsx
+[FRONTEND] /src/module/cafe/pages/ChooseDiscountType.jsx
+[FRONTEND] /src/module/cafe/pages/ChooseMenuDiscountType.jsx
+[FRONTEND] /src/module/cafe/pages/ContactDetails.jsx
+[FRONTEND] /src/module/cafe/pages/ConversationListPage.jsx
+[FRONTEND] /src/module/cafe/pages/CouponListPage.jsx
+[FRONTEND] /src/module/cafe/pages/CreateBOGOMenuDiscount.jsx
+[FRONTEND] /src/module/cafe/pages/CreateFlatPriceMenuDiscount.jsx
+[FRONTEND] /src/module/cafe/pages/CreateFreebies.jsx
+[FRONTEND] /src/module/cafe/pages/CreateOffers.jsx
+[FRONTEND] /src/module/cafe/pages/CreatePercentageDiscount.jsx
+[FRONTEND] /src/module/cafe/pages/CreatePercentageMenuDiscount.jsx
+[FRONTEND] /src/module/cafe/pages/DaySlots.jsx
+[FRONTEND] /src/module/cafe/pages/DeliverySettings.jsx
+[FRONTEND] /src/module/cafe/pages/DiningReservations.jsx
+[FRONTEND] /src/module/cafe/pages/DishRatings.jsx
+[FRONTEND] /src/module/cafe/pages/DownloadReport.jsx
+[FRONTEND] /src/module/cafe/pages/EditAdvertisementPage.jsx
+[FRONTEND] /src/module/cafe/pages/EditCafeAddress.jsx
+[FRONTEND] /src/module/cafe/pages/EditCafePage.jsx
+[FRONTEND] /src/module/cafe/pages/EditCouponPage.jsx
+[FRONTEND] /src/module/cafe/pages/EditCuisines.jsx
+[FRONTEND] /src/module/cafe/pages/EditFoodPage.jsx
+[FRONTEND] /src/module/cafe/pages/EditOwner.jsx
+[FRONTEND] /src/module/cafe/pages/ExploreMore.jsx
+[FRONTEND] /src/module/cafe/pages/Feedback.jsx
+[FRONTEND] /src/module/cafe/pages/FinanceDetailsPage.jsx
+[FRONTEND] /src/module/cafe/pages/FoodDetailsPage.jsx
+[FRONTEND] /src/module/cafe/pages/FreebiesTiming.jsx
+[FRONTEND] /src/module/cafe/pages/FssaiDetails.jsx
+[FRONTEND] /src/module/cafe/pages/FssaiUpdate.jsx
+[FRONTEND] /src/module/cafe/pages/HelpCentre.jsx
+[FRONTEND] /src/module/cafe/pages/HubFinance.jsx
+[FRONTEND] /src/module/cafe/pages/HubGrowth.jsx
+[FRONTEND] /src/module/cafe/pages/HubMenu.jsx
+[FRONTEND] /src/module/cafe/pages/Hyperpure.jsx
+[FRONTEND] /src/module/cafe/pages/Inventory.jsx
+[FRONTEND] /src/module/cafe/pages/InviteUser.jsx
+[FRONTEND] /src/module/cafe/pages/ItemDetailsPage.jsx
+[FRONTEND] /src/module/cafe/pages/ManageOutlets.jsx
+[FRONTEND] /src/module/cafe/pages/MenuCategoriesPage.jsx
+[FRONTEND] /src/module/cafe/pages/MenuDiscountTiming.jsx
+[FRONTEND] /src/module/cafe/pages/NewAdvertisementPage.jsx
+[FRONTEND] /src/module/cafe/pages/Notifications.jsx
+[FRONTEND] /src/module/cafe/pages/Onboarding.jsx
+[FRONTEND] /src/module/cafe/pages/OrderDetails.jsx
+[FRONTEND] /src/module/cafe/pages/OrdersMain.jsx
+[FRONTEND] /src/module/cafe/pages/OrdersPage.jsx
+[FRONTEND] /src/module/cafe/pages/OutletInfo.jsx
+[FRONTEND] /src/module/cafe/pages/OutletTimings.jsx
+[FRONTEND] /src/module/cafe/pages/PhoneNumbersPage.jsx
+[FRONTEND] /src/module/cafe/pages/PrivacyPolicyPage.jsx
+[FRONTEND] /src/module/cafe/pages/RatingsReviews.jsx
+[FRONTEND] /src/module/cafe/pages/ReviewsPage.jsx
+[FRONTEND] /src/module/cafe/pages/RushHour.jsx
+[FRONTEND] /src/module/cafe/pages/SettingsPage.jsx
+[FRONTEND] /src/module/cafe/pages/ShareFeedback.jsx
+[FRONTEND] /src/module/cafe/pages/SwitchOutlet.jsx
+[FRONTEND] /src/module/cafe/pages/TermsAndConditionsPage.jsx
+[FRONTEND] /src/module/cafe/pages/ToHub.jsx
+[FRONTEND] /src/module/cafe/pages/UpdateBankDetails.jsx
+[FRONTEND] /src/module/cafe/pages/UpdateReplyPage.jsx
+[FRONTEND] /src/module/cafe/pages/WalletPage.jsx
+[FRONTEND] /src/module/cafe/pages/WithdrawalHistoryPage.jsx
+[FRONTEND] /src/module/cafe/pages/ZoneSetup.jsx
+[FRONTEND] /src/module/delivery/pages/AcceptedOrderDetails.jsx
+[FRONTEND] /src/module/delivery/pages/auth/OTP.jsx
+[FRONTEND] /src/module/delivery/pages/auth/SignIn.jsx
+[FRONTEND] /src/module/delivery/pages/auth/Signup.jsx
+[FRONTEND] /src/module/delivery/pages/auth/SignupStep1.jsx
+[FRONTEND] /src/module/delivery/pages/auth/SignupStep2.jsx
+[FRONTEND] /src/module/delivery/pages/auth/Welcome.jsx
+[FRONTEND] /src/module/delivery/pages/ChangeLanguage.jsx
+[FRONTEND] /src/module/delivery/pages/Conversation.jsx
+[FRONTEND] /src/module/delivery/pages/CreateSupportTicket.jsx
+[FRONTEND] /src/module/delivery/pages/CustomerTips.jsx
+[FRONTEND] /src/module/delivery/pages/DeductionStatement.jsx
+[FRONTEND] /src/module/delivery/pages/DeliveryHome.jsx
+[FRONTEND] /src/module/delivery/pages/Earnings.jsx
+[FRONTEND] /src/module/delivery/pages/EditProfile.jsx
+[FRONTEND] /src/module/delivery/pages/FuelPayment.jsx
+[FRONTEND] /src/module/delivery/pages/GigBooking.jsx
+[FRONTEND] /src/module/delivery/pages/LimitSettlement.jsx
+[FRONTEND] /src/module/delivery/pages/MyAccount.jsx
+[FRONTEND] /src/module/delivery/pages/MyOrders.jsx
+[FRONTEND] /src/module/delivery/pages/Notifications.jsx
+[FRONTEND] /src/module/delivery/pages/OffersPage.jsx
+[FRONTEND] /src/module/delivery/pages/Payout.jsx
+[FRONTEND] /src/module/delivery/pages/PickupDirectionsPage.jsx
+[FRONTEND] /src/module/delivery/pages/PocketBalance.jsx
+[FRONTEND] /src/module/delivery/pages/PocketDetails.jsx
+[FRONTEND] /src/module/delivery/pages/PocketPage.jsx
+[FRONTEND] /src/module/delivery/pages/PocketStatement.jsx
+[FRONTEND] /src/module/delivery/pages/PrivacyPolicy.jsx
+[FRONTEND] /src/module/delivery/pages/ProfileDetails.jsx
+[FRONTEND] /src/module/delivery/pages/ProfilePage.jsx
+[FRONTEND] /src/module/delivery/pages/ReferAndEarn.jsx
+[FRONTEND] /src/module/delivery/pages/SelectDropLocation.jsx
+[FRONTEND] /src/module/delivery/pages/Settings.jsx
+[FRONTEND] /src/module/delivery/pages/ShowIdCard.jsx
+[FRONTEND] /src/module/delivery/pages/SupportTickets.jsx
+[FRONTEND] /src/module/delivery/pages/TermsAndConditions.jsx
+[FRONTEND] /src/module/delivery/pages/TimeOnOrders.jsx
+[FRONTEND] /src/module/delivery/pages/TipsStatement.jsx
+[FRONTEND] /src/module/delivery/pages/TransactionHistory.jsx
+[FRONTEND] /src/module/delivery/pages/TripHistory.jsx
+[FRONTEND] /src/module/delivery/pages/UpdatesPage.jsx
+[FRONTEND] /src/module/delivery/pages/ViewSupportTicket.jsx
+[FRONTEND] /src/module/delivery/pages/YourReferrals.jsx
+[FRONTEND] /src/module/user/pages/auth/AuthCallback.jsx
+[FRONTEND] /src/module/user/pages/auth/OTP.jsx
+[FRONTEND] /src/module/user/pages/auth/SignIn.jsx
+[FRONTEND] /src/module/user/pages/cafes/CafeDetails.jsx
+[FRONTEND] /src/module/user/pages/cafes/Cafes.jsx
+[FRONTEND] /src/module/user/pages/cafes/trim_data.cjs
+[FRONTEND] /src/module/user/pages/cafes/trim_data.js
+[FRONTEND] /src/module/user/pages/cart/Cart.jsx
+[FRONTEND] /src/module/user/pages/cart/Checkout.jsx
+[FRONTEND] /src/module/user/pages/CategoryPage.jsx
+[FRONTEND] /src/module/user/pages/Coffee.jsx
+[FRONTEND] /src/module/user/pages/CollectionDetail.jsx
+[FRONTEND] /src/module/user/pages/Collections.jsx
+[FRONTEND] /src/module/user/pages/complaints/SubmitComplaint.jsx
+[FRONTEND] /src/module/user/pages/dining/DiningCafeDetails.jsx
+[FRONTEND] /src/module/user/pages/dining/MyBookings.jsx
+[FRONTEND] /src/module/user/pages/dining/TableBooking.jsx
+[FRONTEND] /src/module/user/pages/dining/TableBookingConfirmation.jsx
+[FRONTEND] /src/module/user/pages/dining/TableBookingSuccess.jsx
+[FRONTEND] /src/module/user/pages/Dining.jsx
+[FRONTEND] /src/module/user/pages/DiningCafes.jsx
+[FRONTEND] /src/module/user/pages/DiningCategory.jsx
+[FRONTEND] /src/module/user/pages/DiningExplore50.jsx
+[FRONTEND] /src/module/user/pages/DiningExploreNear.jsx
+[FRONTEND] /src/module/user/pages/GiftCardCheckout.jsx
+[FRONTEND] /src/module/user/pages/GiftCards.jsx
+[FRONTEND] /src/module/user/pages/Gourmet.jsx
+[FRONTEND] /src/module/user/pages/help/Help.jsx
+[FRONTEND] /src/module/user/pages/help/OrderHelp.jsx
+[FRONTEND] /src/module/user/pages/Home.jsx
+[FRONTEND] /src/module/user/pages/Notifications.jsx
+[FRONTEND] /src/module/user/pages/Offers.jsx
+[FRONTEND] /src/module/user/pages/orders/OrderInvoice.jsx
+[FRONTEND] /src/module/user/pages/orders/Orders.jsx
+[FRONTEND] /src/module/user/pages/orders/OrderTracking.jsx
+[FRONTEND] /src/module/user/pages/orders/TrackingPage.jsx
+[FRONTEND] /src/module/user/pages/orders/UserOrderDetails.jsx
+[FRONTEND] /src/module/user/pages/ProductDetail.jsx
+[FRONTEND] /src/module/user/pages/profile/About.jsx
+[FRONTEND] /src/module/user/pages/profile/Accessibility.jsx
+[FRONTEND] /src/module/user/pages/profile/AddPayment.jsx
+[FRONTEND] /src/module/user/pages/profile/Cancellation.jsx
+[FRONTEND] /src/module/user/pages/profile/Coupons.jsx
+[FRONTEND] /src/module/user/pages/profile/EditPayment.jsx
+[FRONTEND] /src/module/user/pages/profile/EditProfile.jsx
+[FRONTEND] /src/module/user/pages/profile/Favorites.jsx
+[FRONTEND] /src/module/user/pages/profile/Logout.jsx
+[FRONTEND] /src/module/user/pages/profile/Payments.jsx
+[FRONTEND] /src/module/user/pages/profile/Privacy.jsx
+[FRONTEND] /src/module/user/pages/profile/Profile.jsx
+[FRONTEND] /src/module/user/pages/profile/RedeemGoldCoupon.jsx
+[FRONTEND] /src/module/user/pages/profile/Refund.jsx
+[FRONTEND] /src/module/user/pages/profile/ReportSafetyEmergency.jsx
+[FRONTEND] /src/module/user/pages/profile/SendFeedback.jsx
+[FRONTEND] /src/module/user/pages/profile/Settings.jsx
+[FRONTEND] /src/module/user/pages/profile/Shipping.jsx
+[FRONTEND] /src/module/user/pages/profile/Terms.jsx
+[FRONTEND] /src/module/user/pages/SearchResults.jsx
+[FRONTEND] /src/module/user/pages/Top10.jsx
+[FRONTEND] /src/module/user/pages/Under250.jsx
+[FRONTEND] /src/module/user/pages/UserHome.jsx
+[FRONTEND] /src/module/user/pages/Wallet.jsx
+[FRONTEND] /src/module/usermain/pages/CartPage.jsx
+[FRONTEND] /src/module/usermain/pages/CategoriesPage.jsx
+[FRONTEND] /src/module/usermain/pages/CategoryFoodsPage.jsx
+[FRONTEND] /src/module/usermain/pages/CheckoutPage.jsx
+[FRONTEND] /src/module/usermain/pages/FoodDetailPage.jsx
+[FRONTEND] /src/module/usermain/pages/HomePage.jsx
+[FRONTEND] /src/module/usermain/pages/OrderDetailsPage.jsx
+[FRONTEND] /src/module/usermain/pages/OrdersPage.jsx
+[FRONTEND] /src/module/usermain/pages/PaymentPage.jsx
+[FRONTEND] /src/module/usermain/pages/WishlistPage.jsx
+[FRONTEND] /src/pages/Home.jsx
+[FRONTEND] /src/utils/backendConnectionTest.js
+[FRONTEND] /vercel.json
+[FRONTEND] /vite.config.js
+[BACKEND] /.env
+[BACKEND] /.gitignore
+[BACKEND] /config/cloudinary.js
+[BACKEND] /config/database.js
+[BACKEND] /config/firebaseRealtime.js
+[BACKEND] /config/redis.js
+[BACKEND] /debug_result.json
+[BACKEND] /LOCATION_SETUP.md
+[BACKEND] /modules/admin/controllers/aboutController.js
+[BACKEND] /modules/admin/controllers/addonController.js
+[BACKEND] /modules/admin/controllers/adminAuthController.js
+[BACKEND] /modules/admin/controllers/adminController.js
+[BACKEND] /modules/admin/controllers/auditLogController.js
+[BACKEND] /modules/admin/controllers/businessSettingsController.js
+[BACKEND] /modules/admin/controllers/cafeCommissionController.js
+[BACKEND] /modules/admin/controllers/cafeComplaintController.js
+[BACKEND] /modules/admin/controllers/cancellationPolicyController.js
+[BACKEND] /modules/admin/controllers/categoryController.js
+[BACKEND] /modules/admin/controllers/deliveryBonusController.js
+[BACKEND] /modules/admin/controllers/deliveryBoyWalletController.js
+[BACKEND] /modules/admin/controllers/deliveryEarningsController.js
+[BACKEND] /modules/admin/controllers/deliveryEmergencyHelpController.js
+[BACKEND] /modules/admin/controllers/deliveryPartnerController.js
+[BACKEND] /modules/admin/controllers/deliverySupportTicketController.js
+[BACKEND] /modules/admin/controllers/deliveryWithdrawalController.js
+[BACKEND] /modules/admin/controllers/earningAddonController.js
+[BACKEND] /modules/admin/controllers/earningAddonHistoryController.js
+[BACKEND] /modules/admin/controllers/envVariablesController.js
+[BACKEND] /modules/admin/controllers/feedbackController.js
+[BACKEND] /modules/admin/controllers/feedbackExperienceController.js
+[BACKEND] /modules/admin/controllers/feeSettingsController.js
+[BACKEND] /modules/admin/controllers/foodApprovalController.js
+[BACKEND] /modules/admin/controllers/orderController.js
+[BACKEND] /modules/admin/controllers/privacyPolicyController.js
+[BACKEND] /modules/admin/controllers/refundPolicyController.js
+[BACKEND] /modules/admin/controllers/reviewController.js
+[BACKEND] /modules/admin/controllers/safetyEmergencyController.js
+[BACKEND] /modules/admin/controllers/settlementController.js
+[BACKEND] /modules/admin/controllers/shippingPolicyController.js
+[BACKEND] /modules/admin/controllers/termsAndConditionController.js
+[BACKEND] /modules/admin/controllers/zoneController.js
+[BACKEND] /modules/admin/middleware/adminAuth.js
+[BACKEND] /modules/admin/models/About.js
+[BACKEND] /modules/admin/models/Addon.js
+[BACKEND] /modules/admin/models/Admin.js
+[BACKEND] /modules/admin/models/AdminCategoryManagement.js
+[BACKEND] /modules/admin/models/AdminCommission.js
+[BACKEND] /modules/admin/models/AdminWallet.js
+[BACKEND] /modules/admin/models/AuditLog.js
+[BACKEND] /modules/admin/models/BusinessSettings.js
+[BACKEND] /modules/admin/models/CafeCommission.js
+[BACKEND] /modules/admin/models/CafeComplaint.js
+[BACKEND] /modules/admin/models/CancellationPolicy.js
+[BACKEND] /modules/admin/models/DeliveryEmergencyHelp.js
+[BACKEND] /modules/admin/models/DeliverySupportTicket.js
+[BACKEND] /modules/admin/models/EarningAddon.js
+[BACKEND] /modules/admin/models/EarningAddonHistory.js
+[BACKEND] /modules/admin/models/EnvironmentVariable.js
+[BACKEND] /modules/admin/models/Feedback.js
+[BACKEND] /modules/admin/models/FeedbackExperience.js
+[BACKEND] /modules/admin/models/FeeSettings.js
+[BACKEND] /modules/admin/models/PrivacyPolicy.js
+[BACKEND] /modules/admin/models/RefundPolicy.js
+[BACKEND] /modules/admin/models/SafetyEmergency.js
+[BACKEND] /modules/admin/models/ShippingPolicy.js
+[BACKEND] /modules/admin/models/TermsAndCondition.js
+[BACKEND] /modules/admin/models/Zone.js
+[BACKEND] /modules/admin/routes/aboutPublicRoutes.js
+[BACKEND] /modules/admin/routes/addonPublicRoutes.js
+[BACKEND] /modules/admin/routes/adminAuthRoutes.js
+[BACKEND] /modules/admin/routes/adminRoutes.js
+[BACKEND] /modules/admin/routes/businessSettingsPublicRoutes.js
+[BACKEND] /modules/admin/routes/cancellationPublicRoutes.js
+[BACKEND] /modules/admin/routes/categoryPublicRoutes.js
+[BACKEND] /modules/admin/routes/envPublicRoutes.js
+[BACKEND] /modules/admin/routes/feedbackExperiencePublicRoutes.js
+[BACKEND] /modules/admin/routes/feedbackPublicRoutes.js
+[BACKEND] /modules/admin/routes/feeSettingsPublicRoutes.js
+[BACKEND] /modules/admin/routes/privacyPublicRoutes.js
+[BACKEND] /modules/admin/routes/refundPublicRoutes.js
+[BACKEND] /modules/admin/routes/safetyEmergencyPublicRoutes.js
+[BACKEND] /modules/admin/routes/shippingPublicRoutes.js
+[BACKEND] /modules/admin/routes/termsPublicRoutes.js
+[BACKEND] /modules/admin/routes/zonePublicRoutes.js
+[BACKEND] /modules/admin/routes/zoneRoutes.js
+[BACKEND] /modules/auth/controllers/authController.js
+[BACKEND] /modules/auth/middleware/auth.js
+[BACKEND] /modules/auth/models/Otp.js
+[BACKEND] /modules/auth/models/User.js
+[BACKEND] /modules/auth/routes/authRoutes.js
+[BACKEND] /modules/cafe/controllers/cafeAuthController.js
+[BACKEND] /modules/cafe/controllers/cafeController.js
+[BACKEND] /modules/cafe/controllers/cafeFinanceController.js
+[BACKEND] /modules/cafe/controllers/cafeOnboardingController.js
+[BACKEND] /modules/cafe/controllers/cafeOrderController.js
+[BACKEND] /modules/cafe/controllers/cafeWalletController.js
+[BACKEND] /modules/cafe/controllers/categoryController.js
+[BACKEND] /modules/cafe/controllers/complaintController.js
+[BACKEND] /modules/cafe/controllers/inventoryController.js
+[BACKEND] /modules/cafe/controllers/menuController.js
+[BACKEND] /modules/cafe/controllers/menuScheduleController.js
+[BACKEND] /modules/cafe/controllers/offerController.js
+[BACKEND] /modules/cafe/controllers/outletTimingsController.js
+[BACKEND] /modules/cafe/controllers/resendDeliveryNotification.js
+[BACKEND] /modules/cafe/controllers/reviewController.js
+[BACKEND] /modules/cafe/controllers/staffManagementController.js
+[BACKEND] /modules/cafe/controllers/withdrawalController.js
+[BACKEND] /modules/cafe/middleware/cafeAuth.js
+[BACKEND] /modules/cafe/models/Cafe.js
+[BACKEND] /modules/cafe/models/CafeCategory.js
+[BACKEND] /modules/cafe/models/CafeTransaction.js
+[BACKEND] /modules/cafe/models/CafeWallet.js
+[BACKEND] /modules/cafe/models/Inventory.js
+[BACKEND] /modules/cafe/models/Menu.js
+[BACKEND] /modules/cafe/models/MenuItemSchedule.js
+[BACKEND] /modules/cafe/models/Offer.js
+[BACKEND] /modules/cafe/models/OutletTimings.js
+[BACKEND] /modules/cafe/models/StaffManagement.js
+[BACKEND] /modules/cafe/models/WithdrawalRequest.js
+[BACKEND] /modules/cafe/routes/cafeAuthRoutes.js
+[BACKEND] /modules/cafe/routes/cafeOrderRoutes.js
+[BACKEND] /modules/cafe/routes/categoryRoutes.js
+[BACKEND] /modules/cafe/routes/complaintRoutes.js
+[BACKEND] /modules/cafe/routes/outletTimingsRoutes.js
+[BACKEND] /modules/chat/controllers/chatController.js
+[BACKEND] /modules/chat/models/Conversation.js
+[BACKEND] /modules/chat/models/Message.js
+[BACKEND] /modules/chat/routes/chatRoutes.js
+[BACKEND] /modules/delivery/controllers/deliveryAuthController.js
+[BACKEND] /modules/delivery/controllers/deliveryDashboardController.js
+[BACKEND] /modules/delivery/controllers/deliveryEarningsController.js
+[BACKEND] /modules/delivery/controllers/deliveryLocationController.js
+[BACKEND] /modules/delivery/controllers/deliveryOrdersController.js
+[BACKEND] /modules/delivery/controllers/deliveryProfileController.js
+[BACKEND] /modules/delivery/controllers/deliverySignupController.js
+[BACKEND] /modules/delivery/controllers/deliveryTripHistoryController.js
+[BACKEND] /modules/delivery/controllers/deliveryWalletController.js
+[BACKEND] /modules/delivery/controllers/locationTrackingController.js
+[BACKEND] /modules/delivery/middleware/deliveryAuth.js
+[BACKEND] /modules/delivery/models/Delivery.js
+[BACKEND] /modules/delivery/models/DeliveryTransaction.js
+[BACKEND] /modules/delivery/models/DeliveryWallet.js
+[BACKEND] /modules/delivery/routes/deliveryAuthRoutes.js
+[BACKEND] /modules/delivery/routes/deliveryDashboardRoutes.js
+[BACKEND] /modules/delivery/routes/deliveryEarningsRoutes.js
+[BACKEND] /modules/delivery/routes/deliveryLocationRoutes.js
+[BACKEND] /modules/delivery/routes/deliveryOrdersRoutes.js
+[BACKEND] /modules/delivery/routes/deliveryProfileRoutes.js
+[BACKEND] /modules/delivery/routes/deliverySignupRoutes.js
+[BACKEND] /modules/delivery/routes/deliveryWalletRoutes.js
+[BACKEND] /modules/dining/controllers/diningAdminController.js
+[BACKEND] /modules/dining/controllers/diningController.js
+[BACKEND] /modules/dining/models/DiningBankOffer.js
+[BACKEND] /modules/dining/models/DiningCafe.js
+[BACKEND] /modules/dining/models/DiningCategory.js
+[BACKEND] /modules/dining/models/DiningLimelight.js
+[BACKEND] /modules/dining/models/DiningMustTry.js
+[BACKEND] /modules/dining/models/DiningOfferBanner.js
+[BACKEND] /modules/dining/models/DiningReview.js
+[BACKEND] /modules/dining/models/DiningSlot.js
+[BACKEND] /modules/dining/models/DiningStory.js
+[BACKEND] /modules/dining/models/DiningTable.js
+[BACKEND] /modules/dining/models/TableBooking.js
+[BACKEND] /modules/dining/routes/diningAdminRoutes.js
+[BACKEND] /modules/dining/routes/diningRoutes.js
+[BACKEND] /modules/dining/routes/diningTablesAdminRoutes.js
+[BACKEND] /modules/heroBanner/controllers/heroBannerController.js
+[BACKEND] /modules/heroBanner/models/DiningBanner.js
+[BACKEND] /modules/heroBanner/models/GourmetCafe.js
+[BACKEND] /modules/heroBanner/models/HeroBanner.js
+[BACKEND] /modules/heroBanner/models/LandingPageCategory.js
+[BACKEND] /modules/heroBanner/models/LandingPageExploreMore.js
+[BACKEND] /modules/heroBanner/models/LandingPageSettings.js
+[BACKEND] /modules/heroBanner/models/Top10Cafe.js
+[BACKEND] /modules/heroBanner/models/Under250Banner.js
+[BACKEND] /modules/heroBanner/routes/heroBannerRoutes.js
+[BACKEND] /modules/location/controllers/locationController.js
+[BACKEND] /modules/location/routes/locationRoutes.js
+[BACKEND] /modules/notification/controllers/notificationController.js
+[BACKEND] /modules/order/controllers/etaController.js
+[BACKEND] /modules/order/controllers/orderController.js
+[BACKEND] /modules/order/models/ETALog.js
+[BACKEND] /modules/order/models/Order.js
+[BACKEND] /modules/order/models/OrderEvent.js
+[BACKEND] /modules/order/models/OrderSettlement.js
+[BACKEND] /modules/order/routes/etaRoutes.js
+[BACKEND] /modules/order/routes/orderRoutes.js
+[BACKEND] /modules/payment/models/Payment.js
+[BACKEND] /modules/upload/controllers/uploadController.js
+[BACKEND] /modules/upload/routes/uploadRoutes.js
+[BACKEND] /modules/user/controllers/complaintController.js
+[BACKEND] /modules/user/controllers/userController.js
+[BACKEND] /modules/user/controllers/userWalletController.js
+[BACKEND] /modules/user/models/UserTransaction.js
+[BACKEND] /modules/user/models/UserWallet.js
+[BACKEND] /modules/user/routes/complaintRoutes.js
+[BACKEND] /modules/user/routes/userRoutes.js
+[BACKEND] /modules/user/routes/userWalletRoutes.js
+[BACKEND] /nodemon.json
+[BACKEND] /OLA_MAPS_SETUP.md
+[BACKEND] /package-lock.json
+[BACKEND] /package.json
+[BACKEND] /scripts/README-DELIVERY-TEST.md
+[BACKEND] /scripts/seedChat.js
+[BACKEND] /scripts/seedDining.js
+[BACKEND] /scripts/seedRealtimeDb.js
+[BACKEND] /scripts/test-delivery-order-flow.js
+[BACKEND] /scripts/test-eta-system.js
+[BACKEND] /scripts/testCafeAPI.js
+[BACKEND] /scripts/testDeliveryAssignment.js
+[BACKEND] /scripts/testInventoryAPI.js
+[BACKEND] /scripts/TEST_RESULTS.md
+[BACKEND] /SETUP.md
+[BACKEND] /shared/middleware/asyncHandler.js
+[BACKEND] /shared/middleware/errorHandler.js
+[BACKEND] /shared/middleware/validate.js
+[BACKEND] /shared/utils/envService.js
+[BACKEND] /TEST_GOOGLE_SIGNIN.md
+
+4. Summary
+
+Total frontend unused files: 64
+Total backend unused files: 26
+Total suspicious files: 566

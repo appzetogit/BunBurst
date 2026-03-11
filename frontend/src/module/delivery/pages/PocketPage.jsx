@@ -41,7 +41,10 @@ export default function PocketPage() {
     totalWithdrawn: 0,
     totalEarned: 0,
     transactions: [],
-    joiningBonusClaimed: false
+    joiningBonusClaimed: false,
+    totalCollectedCash: 0,
+    totalSubmittedCash: 0,
+    pendingCash: 0
   })
   const [walletLoading, setWalletLoading] = useState(true)
 
@@ -315,9 +318,16 @@ export default function PocketPage() {
   // Total balance = all earnings + bonus - withdrawals
   // This is what delivery partner can withdraw
   // IMPORTANT: Use walletState.pocketBalance if available (from API), otherwise use totalBalance
-  let pocketBalance = walletState?.pocketBalance !== undefined
+  const rawPocketBalance = walletState?.pocketBalance !== undefined
     ? walletState.pocketBalance
     : (walletState?.totalBalance || balances.totalBalance || 0)
+  const derivedPocketBalance = (Number(walletState?.totalBalance) || 0) - (Number(walletState?.cashInHand) || 0)
+  let pocketBalance = rawPocketBalance
+
+  // If cash-in-hand exists, prefer derived pocket balance to show real earnings
+  if ((Number(walletState?.cashInHand) || 0) > 0 && Number.isFinite(derivedPocketBalance) && derivedPocketBalance >= 0) {
+    pocketBalance = derivedPocketBalance
+  }
 
   // IMPORTANT: Ensure pocket balance includes bonus
   // If backend totalBalance is 0 but we have bonus, calculate it manually
@@ -427,7 +437,10 @@ export default function PocketPage() {
           totalWithdrawn: 0,
           totalEarned: 0,
           transactions: [],
-          joiningBonusClaimed: false
+          joiningBonusClaimed: false,
+    totalCollectedCash: 0,
+    totalSubmittedCash: 0,
+    pendingCash: 0
         })
       } finally {
         setWalletLoading(false)
@@ -765,24 +778,53 @@ export default function PocketPage() {
           <div className="relative mb-4 my-4">
             <div className="h-px bg-gray-300"></div>
             <div className="absolute left-1/2 transform -translate-x-1/2 bg-gray-100 -top-3 px-3">
-              <span className="text-black text-xs font-medium">POCKET</span>
+              <span className="text-black text-xs font-medium uppercase tracking-wider">COD COLLECTED CASH</span>
             </div>
           </div>
 
-          <Card className="py-0  bg-white border-0 shadow-none" >
-            <CardContent className="p-4 space-y-4">
-              {/* Pocket Balance */}
-              <div onClick={() => navigate("/delivery/pocket-balance")} className="flex items-center justify-between">
-                <span className="text-black text-sm">Pocket balance</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-black text-sm font-medium">₹{pocketBalance.toFixed(2)}</span>
-                  <ArrowRight className="w-4 h-4 text-gray-600" />
-                </div>
+          <Card className="py-0 bg-white border-0 shadow-none overflow-hidden" >
+            <CardContent className="p-0">
+              {/* Pocket Balance (New Style) */}
+              <div className="p-4 bg-gray-900 text-white flex justify-between items-center">
+                 <div>
+                    <div className="text-[10px] opacity-70 mb-0.5">CASH TO BE SUBMITTED</div>
+                    <div className="text-2xl font-bold font-rupee">₹{walletState.pendingCash?.toFixed(2) || "0.00"}</div>
+                 </div>
+                 <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
+                    <WalletIcon className="w-5 h-5 text-white" />
+                 </div>
               </div>
 
-              <hr />
+              <div className="p-4 space-y-4">
+                <div onClick={() => navigate("/delivery/pocket-balance")} className="flex items-center justify-between">
+                  <span className="text-black text-sm">Earnings balance</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-black text-sm font-semibold">₹{pocketBalance.toFixed(2)}</span>
+                    <ArrowRight className="w-4 h-4 text-gray-500" />
+                  </div>
+                </div>
 
-              <div className="flex gap-3 pt-2" />
+                <hr className="border-gray-100" />
+
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                      <div className="text-[10px] text-gray-500 uppercase font-semibold mb-1">Total Collected</div>
+                      <div className="text-sm font-bold text-black font-rupee">₹{walletState.totalCollectedCash?.toFixed(2) || "0.00"}</div>
+                   </div>
+                   <div className="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                      <div className="text-[10px] text-gray-500 uppercase font-semibold mb-1">Total Submitted</div>
+                      <div className="text-sm font-bold text-green-600 font-rupee">₹{walletState.totalSubmittedCash?.toFixed(2) || "0.00"}</div>
+                   </div>
+                </div>
+
+                <button 
+                  onClick={() => navigate("/delivery/pocket-transactions")} 
+                  className="w-full mt-2 py-3 text-xs font-bold text-black bg-yellow-400 rounded-xl hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                >
+                  <FileTextIcon className="w-4 h-4" />
+                  VIEW CASH TRANSACTIONS
+                </button>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -8,7 +8,7 @@ import Loader from "@/components/Loader"
 const DeliveryHome = lazy(() => import("../pages/DeliveryHome"))
 const Notifications = lazy(() => import("../pages/Notifications"))
 const MyOrders = lazy(() => import("../pages/MyOrders"))
-const PocketPage = lazy(() => import("../pages/PocketPage"))
+const CodCashPage = lazy(() => import("../pages/CodCashPage"))
 const GigBooking = lazy(() => import("../pages/GigBooking"))
 const PickupDirectionsPage = lazy(() => import("../pages/PickupDirectionsPage"))
 const ProfilePage = lazy(() => import("../pages/ProfilePage"))
@@ -24,7 +24,6 @@ const PrivacyPolicy = lazy(() => import("../pages/PrivacyPolicy"))
 const Payout = lazy(() => import("../pages/Payout"))
 const DeductionStatement = lazy(() => import("../pages/DeductionStatement"))
 const TipsStatement = lazy(() => import("../pages/TipsStatement"))
-const PocketStatement = lazy(() => import("../pages/PocketStatement"))
 const FuelPayment = lazy(() => import("../pages/FuelPayment"))
 const LimitSettlement = lazy(() => import("../pages/LimitSettlement"))
 const OffersPage = lazy(() => import("../pages/OffersPage"))
@@ -37,12 +36,9 @@ const ChangeLanguage = lazy(() => import("../pages/ChangeLanguage"))
 const SelectDropLocation = lazy(() => import("../pages/SelectDropLocation"))
 const ReferAndEarn = lazy(() => import("../pages/ReferAndEarn"))
 const YourReferrals = lazy(() => import("../pages/YourReferrals"))
-const Earnings = lazy(() => import("../pages/Earnings"))
 const TripHistory = lazy(() => import("../pages/TripHistory"))
 const TimeOnOrders = lazy(() => import("../pages/TimeOnOrders"))
-const PocketBalancePage = lazy(() => import("../pages/PocketBalance"))
 const CustomerTipsBalancePage = lazy(() => import("../pages/CustomerTips"))
-const PocketDetails = lazy(() => import("../pages/PocketDetails"))
 
 export default function DeliveryRouter() {
   return (
@@ -83,7 +79,7 @@ export default function DeliveryRouter() {
           element={
             <ProtectedRoute>
               <DeliveryLayout showGig={true} showPocket={true}>
-                <PocketPage />
+                <CodCashPage />
               </DeliveryLayout>
             </ProtectedRoute>
           }
@@ -191,16 +187,6 @@ export default function DeliveryRouter() {
           element={
             <ProtectedRoute>
               <DeliveryLayout>
-                <Earnings />
-              </DeliveryLayout>
-            </ProtectedRoute>
-          }
-          path="/earnings"
-        />
-        <Route
-          element={
-            <ProtectedRoute>
-              <DeliveryLayout>
                 <TripHistory />
               </DeliveryLayout>
             </ProtectedRoute>
@@ -261,7 +247,7 @@ export default function DeliveryRouter() {
           element={
             <ProtectedRoute>
               <DeliveryLayout>
-                <PocketBalancePage />
+                <CodCashPage />
               </DeliveryLayout>
             </ProtectedRoute>
           }
@@ -281,7 +267,7 @@ export default function DeliveryRouter() {
           element={
             <ProtectedRoute>
               <DeliveryLayout>
-                <PocketStatement />
+                <CodCashPage />
               </DeliveryLayout>
             </ProtectedRoute>
           }
@@ -311,11 +297,21 @@ export default function DeliveryRouter() {
           element={
             <ProtectedRoute>
               <DeliveryLayout>
-                <PocketDetails />
+                <CodCashPage />
               </DeliveryLayout>
             </ProtectedRoute>
           }
           path="/pocket-details"
+        />
+        <Route
+          element={
+            <ProtectedRoute>
+              <DeliveryLayout>
+                <CodCashPage />
+              </DeliveryLayout>
+            </ProtectedRoute>
+          }
+          path="/pocket-transactions"
         />
         <Route
           element={

@@ -364,5 +364,19 @@ deliverySchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Initialize wallet after creation
+deliverySchema.post('save', async function (doc) {
+  try {
+    const DeliveryBoyWallet = mongoose.model('DeliveryBoyWallet');
+    await DeliveryBoyWallet.findOneAndUpdate(
+      { deliveryBoyId: doc._id },
+      { $setOnInsert: { deliveryBoyId: doc._id, totalCollectedCash: 0, totalSubmittedCash: 0, pendingCash: 0 } },
+      { upsert: true, new: true }
+    );
+  } catch (error) {
+    console.error('Error initializing wallet for delivery boy:', error);
+  }
+});
+
 export default mongoose.model('Delivery', deliverySchema);
 

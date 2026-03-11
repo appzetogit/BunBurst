@@ -108,6 +108,10 @@ import {
   updateTicket,
   getTicketStats,
 } from "../controllers/deliverySupportTicketController.js";
+import {
+  getDeliveryWallets,
+  settleDeliveryWallet,
+} from "../controllers/adminDeliveryPocketController.js";
 
 import {
   getPendingFoodApprovals,
@@ -247,6 +251,10 @@ router.post("/delivery-withdrawal/:id/reject", rejectDeliveryWithdrawal);
 
 router.get("/delivery-boy-wallet", getDeliveryBoyWallets);
 router.post("/delivery-boy-wallet/adjustment", addWalletAdjustment);
+
+// New Delivery Pocket (COD Wallet) Management
+router.get("/delivery-wallets", getDeliveryWallets);
+router.post("/delivery-wallets/settle", settleDeliveryWallet);
 
 // Admin Management
 router.get("/admins", getAdmins);

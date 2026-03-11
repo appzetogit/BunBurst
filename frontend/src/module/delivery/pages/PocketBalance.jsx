@@ -97,9 +97,16 @@ export default function PocketBalancePage() {
   // Pocket balance = total balance (includes bonus + earnings)
   // Formula: Pocket Balance = Earnings + Bonus - Withdrawals
   // Use walletState.pocketBalance if available, otherwise calculate from totalBalance
-  let pocketBalance = walletState?.pocketBalance !== undefined 
-    ? walletState.pocketBalance 
+  const rawPocketBalance = walletState?.pocketBalance !== undefined
+    ? walletState.pocketBalance
     : (walletState?.totalBalance || balances.totalBalance || 0)
+  const derivedPocketBalance = (Number(walletState?.totalBalance) || 0) - (Number(walletState?.cashInHand) || 0)
+  let pocketBalance = rawPocketBalance
+
+  // If cash-in-hand exists, prefer derived pocket balance to show real earnings
+  if ((Number(walletState?.cashInHand) || 0) > 0 && Number.isFinite(derivedPocketBalance) && derivedPocketBalance >= 0) {
+    pocketBalance = derivedPocketBalance
+  }
   
   // IMPORTANT: Ensure pocket balance includes bonus
   // If backend totalBalance is 0 but we have bonus, calculate it manually
@@ -119,6 +126,16 @@ export default function PocketBalancePage() {
   
   // Calculate cash collected (cash in hand)
   const cashCollected = balances.cashInHand || 0
+
+  // Earnings display: prefer real earnings excluding COD cash-in-hand
+  const derivedEarningsBalance = (Number(walletState?.totalBalance) || 0) - (Number(walletState?.cashInHand) || 0)
+  let earningsDisplay = weeklyEarnings
+  if (!Number.isFinite(earningsDisplay) || earningsDisplay === 0) {
+    earningsDisplay = Number(walletState?.totalEarned) || Number(walletState?.totalBalance) || 0
+  }
+  if ((Number(walletState?.cashInHand) || 0) > 0 && Number.isFinite(derivedEarningsBalance) && derivedEarningsBalance >= 0) {
+    earningsDisplay = derivedEarningsBalance
+  }
   
   // Deductions = actual deductions only (fees, penalties). Pending withdrawal is NOT a deduction.
   const deductions = 0
@@ -324,7 +341,7 @@ export default function PocketBalancePage() {
       {/* Detail Rows */}
       <div className="px-4 pt-2">
 
-        <DetailRow label="Earnings" value={formatCurrency(weeklyEarnings)} />
+        <DetailRow label="Earnings" value={formatCurrency(earningsDisplay)} />
         <DetailRow label="Bonus" value={formatCurrency(totalBonus)} />
         <DetailRow label="Amount withdrawn" value={formatCurrency(totalWithdrawn)} />
         <DetailRow label="Cash collected" value={formatCurrency(cashCollected)} />

@@ -73,6 +73,46 @@ export const fetchDeliveryWallet = async () => {
         totalTransactions: walletData.totalTransactions || 0
       }
 
+      // Fetch COP pocket summary as well
+      try {
+        const pocketResponse = await deliveryAPI.getPocketSummary()
+        if (pocketResponse?.data?.success && pocketResponse?.data?.data?.wallet) {
+          const pocketSummary = pocketResponse.data.data.wallet
+          transformedData.totalCollectedCash = pocketSummary.totalCollectedCash || 0
+          transformedData.totalSubmittedCash = pocketSummary.totalSubmittedCash || 0
+          transformedData.pendingCash = pocketSummary.pendingCash || 0
+        } else if (pocketResponse?.data?.wallet) {
+          const pocketSummary = pocketResponse.data.wallet
+          transformedData.totalCollectedCash = pocketSummary.totalCollectedCash || 0
+          transformedData.totalSubmittedCash = pocketSummary.totalSubmittedCash || 0
+          transformedData.pendingCash = pocketSummary.pendingCash || 0
+        }
+      } catch (pocketError) {
+        console.warn('⚠️ Error fetching COP pocket summary:', pocketError)
+      }
+
+      // Fallback: if pocket summary isn't available or looks stale, use cashInHand as pending cash
+      const normalizedCashInHand = Number(transformedData.cashInHand) || 0
+      const normalizedPendingCash = Number(transformedData.pendingCash) || 0
+      const normalizedCollectedCash = Number(transformedData.totalCollectedCash) || 0
+      if (
+        transformedData.pendingCash === undefined ||
+        transformedData.pendingCash === null ||
+        normalizedCashInHand > normalizedPendingCash
+      ) {
+        transformedData.pendingCash = normalizedCashInHand
+      }
+      // Fallback for total collected cash if pocket wallet isn't populated yet
+      if (
+        transformedData.totalCollectedCash === undefined ||
+        transformedData.totalCollectedCash === null ||
+        normalizedCollectedCash === 0
+      ) {
+        if (normalizedCashInHand > 0) {
+          transformedData.totalCollectedCash = normalizedCashInHand
+        }
+      }
+
       console.log('✅ Transformed Wallet Data:', JSON.stringify(transformedData, null, 2))
       return transformedData
     } else {

@@ -65,7 +65,7 @@ export const getWallet = asyncHandler(async (req, res) => {
     const walletData = {
       totalBalance: wallet.totalBalance || 0,
       pocketBalance: wallet.totalBalance || 0,
-      cashInHand: 0,
+      cashInHand: wallet.cashInHand || 0,
       totalEarned: 0,
       totalWithdrawn: 0,
       totalCashLimit: 0,
@@ -222,9 +222,7 @@ export const getWalletStats = asyncHandler(async (req, res) => {
  * For salaried model, this might still be called but should add 0 to the wallet
  */
 export const addEarning = asyncHandler(async (req, res) => {
-  // Salaried partners don't get per-order commissions. 
-  // We return success but don't add monetary value.
-  return successResponse(res, 200, 'Salaried partner, no commission added');
+  return errorResponse(res, 410, 'Earnings are disabled for salaried delivery partners');
 });
 
 /**
@@ -232,38 +230,5 @@ export const addEarning = asyncHandler(async (req, res) => {
  * Still allowing bonuses as they might be separate from monthly salary
  */
 export const claimJoiningBonus = asyncHandler(async (req, res) => {
-  try {
-    const delivery = req.delivery;
-    let wallet = await DeliveryWallet.findOrCreateByDeliveryId(delivery._id);
-
-    if (wallet.joiningBonusClaimed) {
-      return errorResponse(res, 400, 'Bonus already claimed');
-    }
-
-    const completedOrders = await Order.countDocuments({
-      deliveryPartnerId: delivery._id,
-      status: 'delivered'
-    });
-
-    if (completedOrders < 1) {
-      return errorResponse(res, 400, 'Complete at least 1 order to unlock bonus');
-    }
-
-    const bonusAmount = 100;
-    const transaction = await wallet.addTransaction({
-      amount: bonusAmount,
-      type: 'bonus',
-      status: 'Completed',
-      description: 'Joining bonus reward'
-    });
-
-    wallet.joiningBonusClaimed = true;
-    wallet.joiningBonusAmount = bonusAmount;
-    await wallet.save();
-
-    return successResponse(200, 'Bonus claimed successfully', { bonusAmount });
-  } catch (error) {
-    logger.error('Error claiming bonus:', error);
-    return errorResponse(res, 500, 'Failed to claim bonus');
-  }
+  return errorResponse(res, 410, 'Bonuses are disabled for salaried delivery partners');
 });

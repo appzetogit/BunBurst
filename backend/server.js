@@ -641,7 +641,7 @@ io.on('connection', (socket) => {
 
         // Send current location immediately
         socket.emit(`current-location-${orderId}`, locationData);
-        console.log(`📍 Sent requested location for order ${orderId}`);
+        // console.log(`📍 Sent requested location for order ${orderId}`);
       }
     } catch (error) {
       console.error('Error fetching current location:', error.message);

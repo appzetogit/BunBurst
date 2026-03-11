@@ -1040,6 +1040,14 @@ export const deliveryAPI = {
   },
 
   // Get zones within radius (for delivery boy to see nearby zones)
+  // Pocket (COD Wallet)
+  getPocketSummary: () => {
+    return apiClient.get(API_ENDPOINTS.DELIVERY.POCKET);
+  },
+  getPocketTransactions: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.DELIVERY.POCKET_TRANSACTIONS, { params });
+  },
+
   getZonesInRadius: (latitude, longitude, radius = 70) => {
     return apiClient.get(API_ENDPOINTS.DELIVERY.ZONES_IN_RADIUS, {
       params: { latitude, longitude, radius },
@@ -1419,6 +1427,13 @@ export const adminAPI = {
       API_ENDPOINTS.ADMIN.DELIVERY_PARTNER_BONUS_TRANSACTIONS,
       { params },
     );
+  },
+
+  // Get deliveryman reviews
+  getDeliverymanReviews: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.DELIVERY_PARTNER_REVIEWS, {
+      params,
+    });
   },
 
   // Get orders
@@ -1850,6 +1865,14 @@ export const adminAPI = {
     return apiClient.get(
       API_ENDPOINTS.ADMIN.FEEDBACK_EXPERIENCE_BY_ID.replace(":id", id),
     );
+  },
+
+  // COD Pocket Wallets
+  getDeliveryWallets: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.DELIVERY_WALLETS, { params });
+  },
+  settleDeliveryWallet: (data) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.DELIVERY_WALLETS_SETTLE, data);
   },
 
   deleteFeedbackExperience: (id) => {

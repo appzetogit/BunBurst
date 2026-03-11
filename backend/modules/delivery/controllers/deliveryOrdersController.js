@@ -5,6 +5,8 @@ import Order from '../../order/models/Order.js';
 import Payment from '../../payment/models/Payment.js';
 import Cafe from '../../cafe/models/Cafe.js';
 import DeliveryWallet from '../models/DeliveryWallet.js';
+import DeliveryBoyWallet from '../models/DeliveryBoyWallet.js';
+import WalletTransaction from '../models/WalletTransaction.js';
 import CafeWallet from '../../cafe/models/CafeWallet.js';
 import { calculateRoute } from '../../order/services/routeCalculationService.js';
 import { notifyUserOrderStatusUpdate } from '../../order/services/userNotificationService.js';
@@ -1561,6 +1563,48 @@ export const completeDelivery = asyncHandler(async (req, res) => {
       }
     }
 
+    // --- INTEGRATE NEW COD WALLET (POCKET) SYSTEM ---
+    try {
+      const orderTotalForPocket = Number(updatedOrder.pricing?.total) || 0;
+      const paymentMethodForPocket = (updatedOrder.payment?.method || '').toString().toLowerCase();
+      const isCODForPocket = paymentMethodForPocket === 'cash' || paymentMethodForPocket === 'cod';
+
+      if (isCODForPocket && orderTotalForPocket > 0 && delivery?._id) {
+        // 1. Check if credit already processed for this order
+        const existingTx = await WalletTransaction.findOne({
+          orderId: orderMongoId,
+          source: 'COD_ORDER'
+        });
+
+        if (!existingTx) {
+          // 2. Find or create delivery boy pocket/wallet
+          const pocket = await DeliveryBoyWallet.findOrCreateByDeliveryBoyId(delivery._id);
+
+          // 3. Update pocket values
+          pocket.totalCollectedCash += orderTotalForPocket;
+          // Note: pendingCash will be updated by pre-save hook 
+          // (totalCollectedCash - totalSubmittedCash)
+          await pocket.save();
+
+          // 4. Create wallet transaction record
+          await WalletTransaction.create({
+            deliveryBoyId: delivery._id,
+            type: 'credit',
+            source: 'COD_ORDER',
+            orderId: orderMongoId,
+            amount: orderTotalForPocket
+          });
+
+          console.log(`💰 [Pocket] Credited ₹${orderTotalForPocket.toFixed(2)} for COD order ${orderIdForLog}`);
+        } else {
+          console.warn(`⚠️ [Pocket] COD credit already processed for order ${orderIdForLog}`);
+        }
+      }
+    } catch (pocketError) {
+      console.error(`❌ [Pocket] Error updating delivery boy wallet:`, pocketError);
+    }
+    // --- END INTEGRATE NEW COD WALLET SYSTEM ---
+
     // Release escrow and distribute funds (this handles all wallet credits)
     try {
       const { releaseEscrow } = await import('../../order/services/escrowWalletService.js');
@@ -1624,12 +1668,11 @@ export const completeDelivery = asyncHandler(async (req, res) => {
         t => t.orderId && t.orderId.toString() === orderIdForTransaction && t.type === 'payment'
       );
 
-      if (existingTransaction) {
+      if (existingTransaction || totalEarning <= 0) {
         console.warn(`⚠️ Earning already added for order ${orderIdForLog}, skipping wallet update`);
       } else {
         // Add payment transaction (earning) with paymentCollected: false so cashInHand gets COD amount, not commission
-        const isCOD = order.payment?.method === 'cash' || order.payment?.method === 'cod';
-        walletTransaction = wallet.addTransaction({
+        walletTransaction = await wallet.addTransaction({
           amount: totalEarning,
           type: 'payment',
           status: 'Completed',
@@ -1638,9 +1681,7 @@ export const completeDelivery = asyncHandler(async (req, res) => {
           paymentCollected: false
         });
 
-        await wallet.save();
-
-        // COD: add cash collected (order total) to cashInHand so Pocket balance shows it
+        // COD: add cash collected (order total) to cashInHand so legacy wallet stays in sync
         const codAmount = Number(order.pricing?.total) || 0;
         const paymentMethod = (order.payment?.method || '').toString().toLowerCase();
         const isCashOrder = paymentMethod === 'cash' || paymentMethod === 'cod';

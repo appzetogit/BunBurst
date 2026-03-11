@@ -641,6 +641,7 @@ export default function DeliveryHome() {
   const [customerRating, setCustomerRating] = useState(0)
   const [customerReviewText, setCustomerReviewText] = useState("")
   const [orderEarnings, setOrderEarnings] = useState(0) // Store earnings from completed order
+  const [orderEarningsBreakdown, setOrderEarningsBreakdown] = useState(null)
   const [routePolyline, setRoutePolyline] = useState([])
   const [showRoutePath, setShowRoutePath] = useState(false) // Toggle to show/hide route path - disabled by default
   const [directionsResponse, setDirectionsResponse] = useState(null) // Directions API response for road-based routing
@@ -885,70 +886,9 @@ export default function DeliveryHome() {
   // State for active earning addon
   const [activeEarningAddon, setActiveEarningAddon] = useState(null)
 
-  // Fetch active earning addon offers
+  // Active earning offers are disabled for salaried delivery partners
   useEffect(() => {
-    const fetchActiveEarningAddons = async () => {
-      try {
-        const response = await deliveryAPI.getActiveEarningAddons()
-        if (response?.data?.success && response?.data?.data?.activeOffers) {
-          const offers = response.data.data.activeOffers
-          // Get the first valid active offer (prioritize isValid, then isUpcoming, then any active status)
-          const activeOffer = offers.find(offer => offer.isValid) ||
-            offers.find(offer => offer.isUpcoming) ||
-            offers.find(offer => offer.status === 'active') ||
-            offers[0] ||
-            null
-
-          setActiveEarningAddon(activeOffer)
-        } else {
-          setActiveEarningAddon(null)
-        }
-      } catch (error) {
-        // Suppress network errors - backend might be down or endpoint not available
-        if (error.code === 'ERR_NETWORK') {
-          // Silently handle network errors - backend might not be running
-          setActiveEarningAddon(null)
-          return
-        }
-
-        // Skip logging timeout errors (handled by axios interceptor)
-        if (error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          // Only log non-network errors
-          if (error.response) {
-            console.error('Error fetching active earning addons:', error.response?.data || error.message)
-          }
-        }
-        setActiveEarningAddon(null)
-      }
-    }
-
-    // Fetch immediately on mount
-    fetchActiveEarningAddons()
-
-    // Refresh every 5 minutes (instead of 5s) to get latest offers without rate limiting
-    const refreshInterval = setInterval(() => {
-      fetchActiveEarningAddons()
-    }, 300000)
-
-    // Refresh when page becomes visible
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchActiveEarningAddons()
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    // Also listen for focus events for instant refresh
-    const handleFocus = () => {
-      fetchActiveEarningAddons()
-    }
-    window.addEventListener('focus', handleFocus)
-
-    return () => {
-      clearInterval(refreshInterval)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
-    }
+    setActiveEarningAddon(null)
   }, [])
 
   // Calculate bonus earnings from earning_addon transactions (only for active offer)
@@ -7583,16 +7523,16 @@ export default function DeliveryHome() {
       }
     }
 
-    // Slide 5: Pocket balance info
+    // Slide 5: COD cash pending
     if (deliveryStatus === 'approved' || deliveryStatus === 'active') {
-      const pocketBal = walletState?.pocketBalance ?? walletState?.totalBalance ?? 0
-      if (pocketBal > 0) {
+      const pendingCash = Number(walletState?.pendingCash) || 0
+      if (pendingCash > 0) {
         slides.push({
           id: 'pocket-balance',
-          title: `Pocket balance: ₹${pocketBal.toFixed(0)}`,
-          subtitle: 'Withdraw to your bank account anytime',
+          title: `Pending COD cash: ₹${pendingCash.toFixed(0)}`,
+          subtitle: 'Submit collected cash to admin',
           icon: 'bank',
-          buttonText: 'Withdraw',
+          buttonText: 'View',
           bgColor: 'bg-[#FFC400]',
           action: 'navigate',
           path: '/delivery/requests'
@@ -8168,6 +8108,31 @@ export default function DeliveryHome() {
   }, [mapLoading, riderLocation])
 
   const desktopBottomPopupPanelClass = "lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:w-[min(920px,calc(100%-2.5rem))] lg:bottom-4 lg:rounded-3xl lg:border lg:border-[#f0e4da] lg:shadow-[0_30px_80px_rgba(30,30,30,0.20)]"
+
+  const getTotalEarningsValue = () => {
+    if (orderEarnings > 0) return orderEarnings
+    const breakdownTotal = Number(orderEarningsBreakdown?.total)
+    if (Number.isFinite(breakdownTotal) && breakdownTotal > 0) return breakdownTotal
+    const earnings = selectedCafe?.amount || selectedCafe?.estimatedEarnings || 0
+    if (typeof earnings === "object" && earnings.totalEarning) {
+      return Number(earnings.totalEarning) || 0
+    }
+    return typeof earnings === "number" ? earnings : 0
+  }
+
+  const getLongDistanceReturnPay = () => {
+    const distanceCommission = Number(orderEarningsBreakdown?.distanceCommission)
+    if (Number.isFinite(distanceCommission) && distanceCommission > 0) {
+      return distanceCommission
+    }
+    return 0
+  }
+
+  const getTripPay = () => {
+    const total = getTotalEarningsValue()
+    const longDistance = getLongDistanceReturnPay()
+    return Math.max(0, total - longDistance)
+  }
 
   // Render normal feed view when offline or no gig booked
   return (
@@ -10464,6 +10429,7 @@ export default function DeliveryHome() {
                         response.data.data?.totalEarning ||
                         orderEarnings
                       setOrderEarnings(earnings)
+                      setOrderEarningsBreakdown(response.data.data?.earnings?.breakdown || null)
 
                       // Notify wallet listeners (Pocket balance, Pocket page) so cash collected updates
                       window.dispatchEvent(new Event('deliveryWalletStateUpdated'))
@@ -10521,17 +10487,7 @@ export default function DeliveryHome() {
             <div className="px-6 py-8 text-center bg-gray-50">
               <p className="text-gray-600 text-sm mb-2">Earnings from this order</p>
               <p className="text-5xl font-bold text-[#1E1E1E]">
-                ₹{(() => {
-                  if (orderEarnings > 0) {
-                    return orderEarnings.toFixed(2);
-                  }
-                  // Handle estimatedEarnings - can be number or object
-                  const earnings = selectedCafe?.amount || selectedCafe?.estimatedEarnings || 0;
-                  if (typeof earnings === 'object' && earnings.totalEarning) {
-                    return earnings.totalEarning.toFixed(2);
-                  }
-                  return typeof earnings === 'number' ? earnings.toFixed(2) : '0.00';
-                })()}
+                ₹{getTotalEarningsValue().toFixed(2)}
               </p>
               <p className="text-[#FFC400] text-sm mt-2">💰 Added to your wallet</p>
             </div>
@@ -10544,40 +10500,17 @@ export default function DeliveryHome() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-2 border-b border-[#F5F5F5]">
                     <span className="text-gray-600">Trip pay</span>
-                    <span className="text-[#1E1E1E] font-semibold">₹{(() => {
-                      let earnings = 0;
-                      if (orderEarnings > 0) {
-                        earnings = orderEarnings;
-                      } else {
-                        const estEarnings = selectedCafe?.amount || selectedCafe?.estimatedEarnings || 0;
-                        if (typeof estEarnings === 'object' && estEarnings.totalEarning) {
-                          earnings = estEarnings.totalEarning;
-                        } else if (typeof estEarnings === 'number') {
-                          earnings = estEarnings;
-                        }
-                      }
-                      return (earnings - 5).toFixed(2);
-                    })()}</span>
+                    <span className="text-[#1E1E1E] font-semibold">₹{getTripPay().toFixed(2)}</span>
                   </div>
 
                   <div className="flex justify-between items-center py-2 border-b border-[#F5F5F5]">
                     <span className="text-gray-600">Long distance return pay</span>
-                    <span className="text-[#1E1E1E] font-semibold">₹5.00</span>
+                    <span className="text-[#1E1E1E] font-semibold">₹{getLongDistanceReturnPay().toFixed(2)}</span>
                   </div>
 
                   <div className="flex justify-between items-center py-2">
                     <span className="text-lg font-bold text-[#1E1E1E]">Total Earnings</span>
-                    <span className="text-lg font-bold text-[#1E1E1E]">₹{(() => {
-                      if (orderEarnings > 0) {
-                        return orderEarnings.toFixed(2);
-                      }
-                      // Handle estimatedEarnings - can be number or object
-                      const earnings = selectedCafe?.amount || selectedCafe?.estimatedEarnings || 0;
-                      if (typeof earnings === 'object' && earnings.totalEarning) {
-                        return earnings.totalEarning.toFixed(2);
-                      }
-                      return typeof earnings === 'number' ? earnings.toFixed(2) : '0.00';
-                    })()}</span>
+                    <span className="text-lg font-bold text-[#1E1E1E]">₹{getTotalEarningsValue().toFixed(2)}</span>
                   </div>
                 </div>
               </div>

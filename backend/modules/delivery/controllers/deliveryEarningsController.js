@@ -24,134 +24,27 @@ const logger = winston.createLogger({
  * Query params: period (today, week, month, all), page, limit, date (for specific date/week/month)
  */
 export const getEarnings = asyncHandler(async (req, res) => {
-  try {
-    const delivery = req.delivery;
-    const { period = 'all', page = 1, limit = 1000, date } = req.query;
-
-    // Calculate date range based on period and optional date parameter
-    let startDate = null;
-    let endDate = new Date();
-    endDate.setHours(23, 59, 59, 999); // End of day
-
-    // If date is provided, use it as base date for period calculation
-    const baseDate = date ? new Date(date) : new Date();
-
-    switch (period) {
-      case 'today':
-        startDate = new Date(baseDate);
-        startDate.setHours(0, 0, 0, 0);
-        endDate = new Date(baseDate);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case 'week':
-        // Get week range (Monday to Sunday)
-        startDate = new Date(baseDate);
-        const day = startDate.getDay();
-        const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-        startDate.setDate(diff);
-        startDate.setHours(0, 0, 0, 0);
-        endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case 'month':
-        startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
-        startDate.setHours(0, 0, 0, 0);
-        endDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      case 'all':
-      default:
-        startDate = null;
-        endDate = new Date();
-        endDate.setHours(23, 59, 59, 999);
-        break;
+  return successResponse(res, 200, 'Earnings are disabled for salaried delivery partners', {
+    earnings: [],
+    summary: {
+      period: req.query?.period || 'all',
+      startDate: null,
+      endDate: null,
+      totalOrders: 0,
+      totalEarnings: 0,
+      totalHours: 0,
+      totalMinutes: 0,
+      orderEarning: 0,
+      incentive: 0,
+      otherEarnings: 0
+    },
+    pagination: {
+      page: parseInt(req.query?.page || 1),
+      limit: parseInt(req.query?.limit || 1000),
+      total: 0,
+      pages: 0
     }
-
-    // Get or create wallet for delivery partner
-    const wallet = await DeliveryWallet.findOrCreateByDeliveryId(delivery._id);
-
-    // Filter transactions based on period and type
-    const query = {
-      deliveryId: delivery._id,
-      type: 'payment',
-      status: 'Completed'
-    };
-
-    if (startDate) {
-      query.createdAt = { $gte: startDate, $lte: endDate };
-    }
-
-    const transactions = await DeliveryTransaction.find(query)
-      .sort({ createdAt: -1 })
-      .lean();
-
-    // Get order details for each transaction
-    const orderIds = transactions
-      .filter(t => t.orderId)
-      .map(t => t.orderId);
-
-    // Fetch orders in batch
-    const orders = await Order.find({
-      _id: { $in: orderIds }
-    })
-      .select('orderId cafeName deliveredAt createdAt')
-      .lean();
-
-    // Create order map for quick lookup
-    const orderMap = {};
-    orders.forEach(order => {
-      orderMap[order._id.toString()] = order;
-    });
-
-    // For salaried employees, per-order earnings are always 0
-    const earnings = transactions.map(transaction => {
-      const order = transaction.orderId ? orderMap[transaction.orderId.toString()] : null;
-      return {
-        transactionId: transaction._id?.toString(),
-        orderId: order?.orderId || transaction.orderId?.toString() || 'Unknown',
-        cafeName: order?.cafeName || 'Unknown Cafe',
-        amount: 0, // Force to 0 for salaried model
-        description: transaction.description || '',
-        deliveredAt: order?.deliveredAt || transaction.createdAt || transaction.processedAt,
-        createdAt: transaction.createdAt || transaction.processedAt,
-        paymentCollected: transaction.paymentCollected || false
-      };
-    });
-
-    // Calculate pagination
-    const totalEarnings = earnings.length;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const paginatedEarnings = earnings.slice(skip, skip + parseInt(limit));
-
-    // Summary statistics for salaried model (always 0)
-    return successResponse(res, 200, 'Earnings retrieved successfully', {
-      earnings: paginatedEarnings,
-      summary: {
-        period,
-        startDate: startDate ? startDate.toISOString() : null,
-        endDate: endDate ? endDate.toISOString() : null,
-        totalOrders: earnings.length,
-        totalEarnings: 0,
-        totalHours: 0,
-        totalMinutes: 0,
-        orderEarning: 0,
-        incentive: 0,
-        otherEarnings: 0
-      },
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: totalEarnings,
-        pages: Math.ceil(totalEarnings / parseInt(limit))
-      },
-      salary: delivery.salary,
-      joiningDate: delivery.joiningDate
-    });
-  } catch (error) {
-    logger.error(`Error fetching delivery earnings: ${error.message}`, { stack: error.stack });
-    return errorResponse(res, 500, 'Failed to fetch earnings');
-  }
+  });
 });
 
 /**
@@ -159,14 +52,8 @@ export const getEarnings = asyncHandler(async (req, res) => {
  * GET /api/delivery/earnings/active-offers
  */
 export const getActiveEarningAddons = asyncHandler(async (req, res) => {
-  try {
-    // For salaried employees, earning addons are disabled
-    return successResponse(res, 200, 'Active earning addons retrieved successfully', {
-      activeOffers: []
-    });
-  } catch (error) {
-    logger.error(`Error fetching active earning addons: ${error.message}`, { stack: error.stack });
-    return errorResponse(res, 500, 'Failed to fetch active earning addons');
-  }
+  return successResponse(res, 200, 'Active earning offers are disabled for salaried delivery partners', {
+    activeOffers: []
+  });
 });
 

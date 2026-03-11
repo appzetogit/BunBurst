@@ -261,6 +261,8 @@ export const API_ENDPOINTS = {
     EMERGENCY_HELP: "/delivery/emergency-help",
     SUPPORT_TICKETS: "/delivery/support-tickets",
     SUPPORT_TICKET_BY_ID: "/delivery/support-tickets/:id",
+    POCKET: "/delivery/pocket",
+    POCKET_TRANSACTIONS: "/delivery/pocket/transactions",
   },
   // Admin endpoints
   ADMIN: {
@@ -356,6 +358,8 @@ export const API_ENDPOINTS = {
     FEE_SETTINGS_BY_ID: "/admin/fee-settings/:id",
     DELIVERY_BOY_WALLET: "/admin/delivery-boy-wallet",
     DELIVERY_BOY_WALLET_ADJUSTMENT: "/admin/delivery-boy-wallet/adjustment",
+    DELIVERY_WALLETS: "/admin/delivery-wallets",
+    DELIVERY_WALLETS_SETTLE: "/admin/delivery-wallets/settle",
     DELIVERY_EMERGENCY_HELP: "/admin/delivery-emergency-help",
     DELIVERY_EMERGENCY_HELP_STATUS: "/admin/delivery-emergency-help/status",
     DELIVERY_SUPPORT_TICKETS: "/admin/delivery-support-tickets",

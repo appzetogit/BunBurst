@@ -98,7 +98,7 @@ export default function BottomNavigation() {
           className="flex flex-col items-center gap-1 p-2"
         >
           {TabIcon(isActive("/delivery/requests"), WalletOutline, WalletSolid)}
-          {TabLabel(isActive("/delivery/requests"), "Pocket")}
+          {TabLabel(isActive("/delivery/requests"), "COD Cash")}
         </button>
 
         {/* Trip History */}
