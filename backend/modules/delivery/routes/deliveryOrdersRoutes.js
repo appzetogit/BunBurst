@@ -8,7 +8,7 @@ import {
   confirmReachedDrop,
   completeDelivery
 } from '../controllers/deliveryOrdersController.js';
-import { getTripHistory } from '../controllers/deliveryTripHistoryController.js';
+import { getTripHistory, getDeliveredTrips } from '../controllers/deliveryTripHistoryController.js';
 import { authenticate } from '../middleware/deliveryAuth.js';
 
 const router = express.Router();
@@ -18,6 +18,8 @@ router.use(authenticate);
 
 // Orders routes
 router.get('/orders', getOrders);
+// Trip History route (must be before /orders/:orderId)
+router.get('/orders/trips', getDeliveredTrips);
 router.get('/orders/:orderId', getOrderDetails);
 router.patch('/orders/:orderId/accept', acceptOrder);
 router.patch('/orders/:orderId/reached-pickup', confirmReachedPickup);

@@ -253,6 +253,7 @@ export const API_ENDPOINTS = {
     ORDER_REACHED_DROP: "/delivery/orders/:orderId/reached-drop",
     ORDER_COMPLETE_DELIVERY: "/delivery/orders/:orderId/complete-delivery",
     TRIP_HISTORY: "/delivery/trip-history",
+    TRIPS: "/delivery/orders/trips",
     EARNINGS: "/delivery/earnings",
     EARNINGS_ACTIVE_OFFERS: "/delivery/earnings/active-offers",
     LOCATION: "/delivery/location",

@@ -992,6 +992,10 @@ export const deliveryAPI = {
   getTripHistory: (params = {}) => {
     return apiClient.get(API_ENDPOINTS.DELIVERY.TRIP_HISTORY, { params });
   },
+  // Get delivered trips (COD/ONLINE)
+  getDeliveredTrips: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.DELIVERY.TRIPS, { params });
+  },
 
   // Get earnings
   getEarnings: (params = {}) => {

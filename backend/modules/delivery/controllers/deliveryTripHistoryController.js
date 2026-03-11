@@ -244,3 +244,173 @@ export const getTripHistory = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Get Delivery Partner Delivered Trips (COD/ONLINE)
+ * GET /api/delivery/orders/trips
+ * Query params: period (daily/weekly/monthly), date, paymentType (COD/ONLINE), page, limit
+ */
+export const getDeliveredTrips = asyncHandler(async (req, res) => {
+  try {
+    const delivery = req.delivery;
+    const {
+      period = 'daily',
+      date,
+      paymentType,
+      page = 1,
+      limit = 50
+    } = req.query;
+
+    // Build date range based on period (delivery date)
+    let startDate, endDate;
+    const selectedDate = date ? new Date(date) : new Date();
+    selectedDate.setHours(0, 0, 0, 0);
+
+    switch (period) {
+      case 'daily':
+        startDate = new Date(selectedDate);
+        endDate = new Date(selectedDate);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      case 'weekly': {
+        const dayOfWeek = selectedDate.getDay();
+        const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        startDate = new Date(selectedDate);
+        startDate.setDate(selectedDate.getDate() + diff);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      }
+      case 'monthly':
+        startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      default:
+        startDate = new Date(selectedDate);
+        endDate = new Date(selectedDate);
+        endDate.setHours(23, 59, 59, 999);
+    }
+
+    const query = {
+      deliveryPartnerId: delivery._id,
+      status: 'delivered',
+      $or: [
+        { deliveredAt: { $gte: startDate, $lte: endDate } },
+        { deliveredAt: null, createdAt: { $gte: startDate, $lte: endDate } }
+      ]
+    };
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const orders = await Order.find(query)
+      .populate('userId', 'name phone')
+      .sort({ deliveredAt: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Order.countDocuments(query);
+
+    const orderIds = orders.map(o => o._id);
+    const codOrderIds = new Set();
+    try {
+      const codPayments = await Payment.find({
+        orderId: { $in: orderIds },
+        method: 'cash'
+      }).select('orderId').lean();
+      codPayments.forEach(p => codOrderIds.add(p.orderId?.toString()));
+    } catch (e) {
+      logger.warn('Could not fetch payment records for COD check:', e.message);
+    }
+
+    const cafeIdsToLookup = [...new Set(
+      orders
+        .filter(o => !o.cafeName || o.cafeName.trim() === '')
+        .map(o => o.cafeId)
+        .filter(Boolean)
+    )];
+
+    const cafeNameMap = new Map();
+    if (cafeIdsToLookup.length > 0) {
+      try {
+        const cafeQueries = cafeIdsToLookup.map(id => {
+          if (mongoose.Types.ObjectId.isValid(id) && id.length === 24) {
+            return {
+              $or: [
+                { cafeId: id },
+                { _id: new mongoose.Types.ObjectId(id) }
+              ]
+            };
+          }
+          return { cafeId: id };
+        });
+
+        const cafes = await Cafe.find({ $or: cafeQueries }).select('cafeId name _id').lean();
+        cafes.forEach(cafe => {
+          if (cafe.cafeId) cafeNameMap.set(cafe.cafeId, cafe.name);
+          if (cafe._id) cafeNameMap.set(cafe._id.toString(), cafe.name);
+        });
+      } catch (e) {
+        logger.warn('Could not fetch cafe names:', e.message);
+      }
+    }
+
+    let formattedTrips = orders.map(order => {
+      let cafeName = order.cafeName;
+      if (!cafeName || cafeName.trim() === '') {
+        cafeName = cafeNameMap.get(order.cafeId) ||
+          cafeNameMap.get(order.cafeId?.toString()) ||
+          'Unknown Cafe';
+      }
+
+      let paymentMethod = order.payment?.method || 'razorpay';
+      if (paymentMethod !== 'cash' && codOrderIds.has(order._id?.toString())) {
+        paymentMethod = 'cash';
+      }
+
+      const paymentType = (paymentMethod === 'cash' || paymentMethod === 'cod') ? 'COD' : 'ONLINE';
+      const orderAmount = Number(order.pricing?.total) || 0;
+      const cashCollected = paymentType === 'COD' ? orderAmount : 0;
+      const deliveredAt = order.deliveredAt || order.createdAt;
+
+      return {
+        id: order._id.toString(),
+        orderId: order.orderId,
+        cafeName,
+        customerName: order.userId?.name || 'Unknown Customer',
+        paymentMethod: paymentType,
+        orderAmount,
+        cashCollected,
+        deliveryTime: deliveredAt,
+        orderStatus: 'Delivered',
+        deliveredAt
+      };
+    });
+
+    if (paymentType && (paymentType === 'COD' || paymentType === 'ONLINE')) {
+      formattedTrips = formattedTrips.filter(t => t.paymentMethod === paymentType);
+    }
+
+    return successResponse(res, 200, 'Trip history retrieved successfully', {
+      trips: formattedTrips,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      },
+      period,
+      dateRange: {
+        startDate,
+        endDate
+      }
+    });
+  } catch (error) {
+    logger.error(`Error fetching delivered trips: ${error.message}`, { error: error.stack });
+    return errorResponse(res, 500, 'Failed to fetch trip history');
+  }
+});
+

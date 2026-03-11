@@ -1,28 +1,20 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, ChevronDown, Loader2, Gift, X } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { ArrowLeft, ChevronDown, Loader2 } from "lucide-react"
 import { useProgressStore } from "../store/progressStore"
-import FeedNavbar from "../components/FeedNavbar"
 import { deliveryAPI } from "@/lib/api"
-import { fetchWalletTransactions } from "../utils/deliveryWalletState"
 
 export default function TripHistory() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState("daily")
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [selectedTripType, setSelectedTripType] = useState("ALL TRIPS")
+  const [selectedTripType, setSelectedTripType] = useState("All Trips")
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showTripTypePicker, setShowTripTypePicker] = useState(false)
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [showBonusModal, setShowBonusModal] = useState(false)
-  const [bonusTransactions, setBonusTransactions] = useState([])
-  const [bonusLoading, setBonusLoading] = useState(false)
-  const [hasViewedBonus, setHasViewedBonus] = useState(false)
-
-  const tripTypes = ["ALL TRIPS", "Completed", "Cancelled", "Pending"]
+  const tripTypes = ["All Trips", "COD Orders", "Online Orders"]
 
   const { updateTodayTrips } = useProgressStore()
 
@@ -36,11 +28,16 @@ export default function TripHistory() {
         const params = {
           period: activeTab,
           date: selectedDate.toISOString().split('T')[0],
-          status: selectedTripType !== "ALL TRIPS" ? selectedTripType : undefined,
+          paymentType:
+            selectedTripType === "COD Orders"
+              ? "COD"
+              : selectedTripType === "Online Orders"
+                ? "ONLINE"
+                : undefined,
           limit: 1000
         }
-        
-        const response = await deliveryAPI.getTripHistory(params)
+
+        const response = await deliveryAPI.getDeliveredTrips(params)
         
         if (response.data?.success && response.data?.data?.trips) {
           const tripsData = response.data.data.trips
@@ -52,7 +49,7 @@ export default function TripHistory() {
           const selectedDateNormalized = new Date(selectedDate)
           selectedDateNormalized.setHours(0, 0, 0, 0)
           
-          if (activeTab === "daily" && selectedDateNormalized.getTime() === today.getTime() && selectedTripType === "ALL TRIPS") {
+          if (activeTab === "daily" && selectedDateNormalized.getTime() === today.getTime() && selectedTripType === "All Trips") {
             updateTodayTrips(tripsData.length)
           }
         } else {
@@ -111,47 +108,13 @@ export default function TripHistory() {
 
   const recentDates = generateRecentDates()
 
-  // Fetch bonus transactions when modal opens
-  useEffect(() => {
-    const fetchBonusTransactions = async () => {
-      if (showBonusModal) {
-        setBonusLoading(true)
-        try {
-          const transactions = await fetchWalletTransactions({ type: 'bonus', limit: 100 })
-          setBonusTransactions(transactions)
-          // Mark as viewed when modal opens and transactions are loaded
-          if (transactions.length > 0) {
-            setHasViewedBonus(true)
-          }
-        } catch (error) {
-          console.error('Error fetching bonus transactions:', error)
-          setBonusTransactions([])
-        } finally {
-          setBonusLoading(false)
-        }
-      }
-    }
-
-    fetchBonusTransactions()
-  }, [showBonusModal])
-
-  // Check for new bonuses on component mount and periodically
-  useEffect(() => {
-    const checkForBonuses = async () => {
-      try {
-        const transactions = await fetchWalletTransactions({ type: 'bonus', limit: 100 })
-        setBonusTransactions(transactions)
-      } catch (error) {
-        console.error('Error checking bonus transactions:', error)
-      }
-    }
-
-    checkForBonuses()
-    // Check for new bonuses every 30 seconds
-    const interval = setInterval(checkForBonuses, 30000)
-
-    return () => clearInterval(interval)
-  }, [])
+  const formatTime = (dateValue) => {
+    if (!dateValue) return "—"
+    const d = new Date(dateValue)
+    const hours = d.getHours()
+    const minutes = d.getMinutes()
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+  }
 
   return (
     <div className="h-screen bg-white flex flex-col overflow-hidden">
@@ -164,20 +127,7 @@ export default function TripHistory() {
           <ArrowLeft className="w-5 h-5 text-[#1E1E1E]" />
         </button>
         <h1 className="text-lg font-bold text-[#1E1E1E] flex-1 text-center">Trip History</h1>
-        <button
-          onClick={() => {
-            setShowBonusModal(true)
-            setHasViewedBonus(true)
-          }}
-          className="p-2 hover:bg-[#fff8f7] rounded-full transition-colors relative"
-        >
-          <Gift className="w-5 h-5 text-[#FFC400]" />
-          {bonusTransactions.length > 0 && !hasViewedBonus && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#e53935] text-white text-xs rounded-full flex items-center justify-center">
-              {bonusTransactions.length}
-            </span>
-          )}
-        </button>
+        <div className="w-9" />
       </div>
 
       {/* Sticky Period Selection Tabs */}
@@ -326,7 +276,7 @@ export default function TripHistory() {
           </div>
         ) : trips.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-base">No trips found</p>
+            <p className="text-gray-500 text-base">No trips found for selected date</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -338,36 +288,39 @@ export default function TripHistory() {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <p className="text-base font-semibold text-[#1E1E1E]">{trip.orderId}</p>
-                    <p className="text-sm text-gray-600 mt-1">{trip.cafe || trip.cafeName || 'Unknown Cafe'}</p>
-                    {/* Payment Method Badge */}
+                    <p className="text-sm text-gray-600 mt-1">Cafe: {trip.cafeName || trip.cafe || 'Unknown Cafe'}</p>
                     {(() => {
-                      const paymentMethod = trip.paymentMethod || trip.payment?.method || 'razorpay';
-                      const isCOD = paymentMethod === 'cash' || paymentMethod === 'cod';
+                      const paymentType = trip.paymentMethod || trip.payment?.method || 'ONLINE'
+                      const isCOD = paymentType === 'COD' || paymentType === 'cash' || paymentType === 'cod'
                       return (
                         <span className={`inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full ${
-                          isCOD ? 'bg-[#FFF9E0] text-[#FFC400]' : 'bg-[#fff8f7] text-[#e53935]'
+                          isCOD ? 'bg-[#FFF9E0] text-[#FFC400]' : 'bg-[#E8F1FF] text-[#1E88E5]'
                         }`}>
-                          {isCOD ? 'COD' : 'Online'}
+                          {isCOD ? 'COD' : 'ONLINE'}
                         </span>
-                      );
+                      )
                     })()}
                   </div>
-                  <span className={`text-sm font-medium ${
-                    trip.status === 'Completed' ? 'text-[#e53935]' :
-                    trip.status === 'Cancelled' ? 'text-[#e53935]' :
-                    'text-[#FFC400]'
-                  }`}>
-                    {trip.status}
-                  </span>
+                  <span className="text-sm font-medium text-[#e53935]">Delivered</span>
                 </div>
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#F5F5F5]">
+                <div className="mt-3 pt-3 border-t border-[#F5F5F5] grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-xs text-gray-500">Time</p>
-                    <p className="text-sm font-medium text-[#1E1E1E] mt-1">{trip.time}</p>
+                    <p className="text-xs text-gray-500">Delivered At</p>
+                    <p className="text-sm font-medium text-[#1E1E1E] mt-1">
+                      {formatTime(trip.deliveredAt || trip.deliveryTime || trip.createdAt)}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Amount</p>
-                    <p className="text-sm font-semibold text-[#1E1E1E] mt-1">₹{trip.amount}</p>
+                    <p className="text-xs text-gray-500">Order Amount</p>
+                    <p className="text-sm font-semibold text-[#1E1E1E] mt-1">₹{Number(trip.orderAmount || trip.amount || 0).toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Cash Collected</p>
+                    <p className="text-sm font-semibold text-[#1E1E1E] mt-1">₹{Number(trip.cashCollected || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Customer</p>
+                    <p className="text-sm font-medium text-[#1E1E1E] mt-1">{trip.customerName || trip.customer || "—"}</p>
                   </div>
                 </div>
               </div>
@@ -375,114 +328,6 @@ export default function TripHistory() {
           </div>
         )}
       </div>
-
-      {/* Bonus Transactions Modal */}
-      <AnimatePresence>
-        {showBonusModal && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setShowBonusModal(false)}
-              className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
-            />
-
-            {/* Modal */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.3 }}
-              className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md bg-white rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col max-h-[90vh]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="px-6 py-4 border-b border-[#F5F5F5] flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#FFF9E0] rounded-full flex items-center justify-center">
-                    <Gift className="w-5 h-5 text-[#FFC400]" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-[#1E1E1E]">Bonus History</h2>
-                    <p className="text-xs text-gray-500">Admin added bonuses</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowBonusModal(false)}
-                  className="p-2 hover:bg-[#fff8f7] rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto px-6 py-4">
-                {bonusLoading ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 text-[#e53935] animate-spin mb-4" />
-                    <p className="text-gray-500 text-sm">Loading bonuses...</p>
-                  </div>
-                ) : bonusTransactions.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 text-base">No bonus transactions found</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {bonusTransactions.map((transaction) => (
-                      <div
-                        key={transaction._id || transaction.id}
-                        className="bg-white rounded-lg p-4 border border-[#F5F5F5]"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <p className="text-lg font-bold text-[#1E1E1E]">
-                              ₹{transaction.amount?.toFixed(2) || '0.00'}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {transaction.description || transaction.metadata?.reference || 'Bonus'}
-                            </p>
-                            {transaction.metadata?.reference && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                Reference: {transaction.metadata.reference}
-                              </p>
-                            )}
-                          </div>
-                          <span className={`text-xs font-medium px-3 py-1 rounded-full ${
-                            transaction.status === 'Completed' 
-                              ? 'bg-[#fff8f7] text-[#e53935]' 
-                              : transaction.status === 'Pending'
-                              ? 'bg-[#FFF9E0] text-[#FFC400]'
-                              : 'bg-[#fff8f7] text-[#e53935]'
-                          }`}>
-                            {transaction.status || 'Pending'}
-                          </span>
-                        </div>
-                        <div className="mt-3 pt-3 border-t border-[#F5F5F5]">
-                          <p className="text-xs text-gray-500">
-                            {transaction.createdAt || transaction.date
-                              ? new Date(transaction.createdAt || transaction.date).toLocaleDateString('en-IN', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
-                              : 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
