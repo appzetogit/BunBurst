@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { adminAPI } from "@/lib/api"
 import { toast } from "sonner"
 import { Eye, MapPin, Package, User, Phone, Mail, Calendar, Clock, Truck, CreditCard, X, Receipt, FileText, CheckCircle } from "lucide-react"
@@ -79,6 +79,24 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
   const [showDigitalBillPopup, setShowDigitalBillPopup] = useState(false)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
   const [fetchedCafeAddress, setFetchedCafeAddress] = useState("")
+  const [detailedOrder, setDetailedOrder] = useState(null)
+  const fetchedOrderDetailsIdRef = useRef(null)
+
+  const resolvedOrder = detailedOrder ? { ...order, ...detailedOrder } : order
+  const deliveryPartnerName =
+    resolvedOrder?.deliveryPartnerName ||
+    resolvedOrder?.deliveryPartnerId?.name ||
+    null
+  const deliveryPartnerPhone =
+    resolvedOrder?.deliveryPartnerPhone ||
+    resolvedOrder?.deliveryPartnerId?.phone ||
+    null
+
+  useEffect(() => {
+    if (!isOpen) {
+      fetchedOrderDetailsIdRef.current = null
+    }
+  }, [isOpen])
 
   const isPartnerOnline = (partner) => {
     if (typeof partner?.availability?.isOnline === "boolean") {
@@ -119,9 +137,17 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
     try {
       setIsAssigning(true)
       await adminAPI.assignOrder(order.id || order.orderId, selectedPartner)
+      try {
+        const refreshed = await adminAPI.getOrderById(order.id || order._id || order.orderId)
+        const refreshedOrder = refreshed?.data?.data?.order || refreshed?.data?.order || null
+        if (refreshedOrder) {
+          setDetailedOrder(refreshedOrder)
+        }
+      } catch (refreshError) {
+        console.error("Failed to refresh order after assignment", refreshError)
+      }
       toast.success("Delivery partner assigned successfully")
       setShowAssignDialog(false)
-      onOpenChange(false) // Close main dialog to refresh
     } catch (error) {
       console.error(error)
       toast.error(error.response?.data?.message || "Failed to assign delivery partner")
@@ -133,6 +159,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
   useEffect(() => {
     if (!isOpen || !order) return
     let isCancelled = false
+    setDetailedOrder(null)
 
     // Self-contained: check if a string is a real usable address
     const isValidText = (v) => {
@@ -231,11 +258,16 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
       if (!orderId) return
 
       try {
+        if (fetchedOrderDetailsIdRef.current === orderId) {
+          return
+        }
+        fetchedOrderDetailsIdRef.current = orderId
         const resp = await adminAPI.getOrderById(orderId)
         if (isCancelled) return
         const detailed = resp?.data?.data?.order || resp?.data?.order
         detailedOrder = detailed || null
         if (detailed) {
+          setDetailedOrder(detailed)
           // Try text fields from detailed order
           const rest = (detailed.cafeId && typeof detailed.cafeId === 'object') ? detailed.cafeId
             : (detailed.cafe && typeof detailed.cafe === 'object') ? detailed.cafe : {}
@@ -999,20 +1031,29 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                 <Truck className="w-4 h-4" />
                 Delivery Partner
               </h3>
-              {order.deliveryPartnerName || order.deliveryPartnerPhone ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {order.deliveryPartnerName && (
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Name</p>
-                      <p className="text-sm font-medium text-[#1E1E1E]">{order.deliveryPartnerName}</p>
-                    </div>
-                  )}
-                  {order.deliveryPartnerPhone && (
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Phone</p>
-                      <p className="text-sm font-medium text-[#1E1E1E]">{order.deliveryPartnerPhone}</p>
-                    </div>
-                  )}
+              {deliveryPartnerName || deliveryPartnerPhone ? (
+                <div className="bg-[#F5F5F5] p-4 rounded-lg flex items-center justify-between gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                    {deliveryPartnerName && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Name</p>
+                        <p className="text-sm font-medium text-[#1E1E1E]">{deliveryPartnerName}</p>
+                      </div>
+                    )}
+                    {deliveryPartnerPhone && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Phone</p>
+                        <p className="text-sm font-medium text-[#1E1E1E]">{deliveryPartnerPhone}</p>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    disabled
+                    className="px-3 py-1.5 bg-[#F5F5F5] text-[#1E1E1E] text-xs font-medium rounded border border-[#E0E0E0] cursor-default"
+                  >
+                    Assigned
+                  </button>
                 </div>
               ) : (
                 <div className="bg-[#F5F5F5] p-4 rounded-lg flex items-center justify-between">

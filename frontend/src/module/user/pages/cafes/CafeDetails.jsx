@@ -78,6 +78,7 @@ export default function CafeDetails() {
   const [showMenuOptionsSheet, setShowMenuOptionsSheet] = useState(false)
   const [expandedAddButtons, setExpandedAddButtons] = useState(new Set())
   const [expandedSections, setExpandedSections] = useState(new Set([0])) // Default: Recommended section is expanded
+  const [itemDetailQuantity, setItemDetailQuantity] = useState(1)
   const [filters, setFilters] = useState({
     sortBy: null, // "low-to-high" | "high-to-low"
     vegNonVeg: null, // "veg" | "non-veg"
@@ -92,21 +93,57 @@ export default function CafeDetails() {
   const [cafe, setCafe] = useState(null)
   const [loadingCafe, setLoadingCafe] = useState(true)
   const [cafeError, setCafeError] = useState(null)
-  const fetchedCafeRef = useRef(false) // Track if cafe has been fetched for current slug
+  const fetchedCafeRef = useRef(null) // Track the last fetched slug/zone combination
+  const loggedPreparationTimesRef = useRef(new Set())
+
+  const isVegFoodType = (foodType) => {
+    const normalized = String(foodType || "").trim().toLowerCase()
+    return normalized === "veg" || normalized === "pure veg" || normalized === "vegan"
+  }
+
+  useEffect(() => {
+    if (!cafe?.menuSections || !Array.isArray(cafe.menuSections)) return
+
+    cafe.menuSections.forEach((section, sectionIndex) => {
+      section?.items?.forEach((item, itemIndex) => {
+        if (!item?.preparationTime) return
+
+        const itemKey = item.id || item._id || `${sectionIndex}-item-${itemIndex}-${item.name}`
+        const logKey = `${itemKey}:${item.preparationTime}`
+        if (loggedPreparationTimesRef.current.has(logKey)) return
+
+        loggedPreparationTimesRef.current.add(logKey)
+        console.log(`[FRONTEND] Item "${item.name}" preparationTime:`, item.preparationTime, 'Type:', typeof item.preparationTime)
+      })
+
+      section?.subsections?.forEach((subsection, subsectionIndex) => {
+        subsection?.items?.forEach((item, itemIndex) => {
+          if (!item?.preparationTime) return
+
+          const itemKey =
+            item.id ||
+            item._id ||
+            `${sectionIndex}-${subsectionIndex}-subitem-${itemIndex}-${item.name}`
+          const logKey = `${itemKey}:${item.preparationTime}`
+          if (loggedPreparationTimesRef.current.has(logKey)) return
+
+          loggedPreparationTimesRef.current.add(logKey)
+          console.log(`[FRONTEND] Subsection item "${item.name}" preparationTime:`, item.preparationTime, 'Type:', typeof item.preparationTime)
+        })
+      })
+    })
+  }, [cafe?.menuSections])
 
   // Fetch cafe data from API
   useEffect(() => {
+    const fetchKey = `${slug || 'no-slug'}:${zoneId || 'no-zone'}`
+
     const fetchCafe = async () => {
       if (!slug) return
 
-      // Prevent re-fetching if we've already fetched for this slug and zoneId hasn't changed meaningfully
-      // Only re-fetch if slug changed or if we're waiting for zoneId and it just became available
-      if (fetchedCafeRef.current && cafe && cafe.slug === slug) {
-        // Only re-fetch if zoneId changed from null to a value (zone just detected)
-        if (zoneId && !loadingZone) {
-          // Zone is available, but we already have cafe data - don't re-fetch
-          return
-        }
+      // Skip duplicate fetches for the same slug/zone combination.
+      if (fetchedCafeRef.current === fetchKey) {
+        return
       }
 
       try {
@@ -419,7 +456,7 @@ export default function CafeDetails() {
           }
 
           setCafe(transformedCafe)
-          fetchedCafeRef.current = true // Mark as fetched
+          fetchedCafeRef.current = fetchKey // Mark this slug/zone combination as fetched
 
           // Fetch menu and inventory for this cafe
           // If no cafe ID, try to find matching cafe by name
@@ -606,6 +643,7 @@ export default function CafeDetails() {
           console.error('❌ apiCafe:', apiCafe)
           setCafeError('Cafe not found')
           setCafe(null)
+          fetchedCafeRef.current = null
         }
       } catch (error) {
         // Check if it's a network error (backend not running)
@@ -621,25 +659,23 @@ export default function CafeDetails() {
           console.error('Network error fetching cafe (backend may not be running):', error)
           setCafeError('Backend server is not connected. Please make sure the backend is running.')
           setCafe(null)
+          fetchedCafeRef.current = null
         } else if (is404Error) {
           // 404 error - cafe doesn't exist in database
           console.log(`Cafe "${slug}" not found in database`)
           setCafeError('Cafe not found')
           setCafe(null)
+          fetchedCafeRef.current = null
         } else {
           // Other errors
           console.error('Error fetching cafe:', error)
           setCafeError(error.message || 'Failed to load cafe')
           setCafe(null)
+          fetchedCafeRef.current = null
         }
       } finally {
         setLoadingCafe(false)
       }
-    }
-
-    // Reset fetched flag when slug changes
-    if (fetchedCafeRef.current && cafe?.slug !== slug) {
-      fetchedCafeRef.current = false
     }
 
     // Wait for zone to load before fetching (if zone-based search might be needed)
@@ -650,7 +686,7 @@ export default function CafeDetails() {
     }
 
     fetchCafe()
-  }, [slug, zoneId, loadingZone, cafe?.slug])
+  }, [slug, zoneId, loadingZone])
 
   // Track previous values to prevent unnecessary recalculations
   const prevCoordsRef = useRef({ userLat: null, userLng: null, cafeLat: null, cafeLng: null })
@@ -810,7 +846,7 @@ export default function CafeDetails() {
       sectionName: item.sectionName || null,
       description: item.description,
       originalPrice: item.originalPrice ? (item.originalPrice + addonsPrice) : null,
-      isVeg: item.isVeg !== false
+      isVeg: item.isVeg !== undefined ? item.isVeg : isVegFoodType(item.foodType)
     }
 
     // Get source position for animation
@@ -847,6 +883,9 @@ export default function CafeDetails() {
           }
         } else {
           addToCart(cartItem, sourcePosition)
+          if (newQuantity > 1) {
+            updateQuantity(cartItemId, newQuantity, sourcePosition, { id: cartItemId, name: item.name, imageUrl: item.image })
+          }
         }
       }
     } catch (error) {
@@ -972,11 +1011,11 @@ export default function CafeDetails() {
   // Handle share cafe
   const handleShareCafe = async () => {
     const companyName = await getCompanyNameAsync()
-    const cafeSlug = cafe?.slug || slug || ""
     const cafeName = cafe?.name || "this cafe"
+    const currentPath = window.location.pathname || `/cafes/${cafe?.slug || slug || ""}`
 
     // Create share URL
-    const shareUrl = `${window.location.origin}/user/cafes/${cafeSlug}`
+    const shareUrl = `${window.location.origin}${currentPath}`
     const shareText = `Check out ${cafeName} on ${companyName}! ${shareUrl}`
 
     // Try Web Share API first (mobile)
@@ -1006,12 +1045,11 @@ export default function CafeDetails() {
 
   // Handle share click
   const handleShareClick = async (item) => {
-    const cafeId = cafe?.cafeId || cafe?._id || cafe?.id
     const dishId = item.id || item._id
-    const cafeSlug = cafe?.slug || slug || ""
+    const currentPath = window.location.pathname || `/cafes/${cafe?.slug || slug || ""}`
 
     // Create share URL
-    const shareUrl = `${window.location.origin}/user/cafes/${cafeSlug}?dish=${dishId}`
+    const shareUrl = `${window.location.origin}${currentPath}?dish=${encodeURIComponent(dishId)}`
     const shareText = `Check out ${item.name} from ${cafe?.name || "this cafe"}! ${shareUrl}`
 
     // Try Web Share API first (mobile)
@@ -1061,7 +1099,11 @@ export default function CafeDetails() {
 
   // Handle item card click
   const handleItemClick = (item) => {
-    setSelectedItem(item)
+    setSelectedItem({
+      ...item,
+      isVeg: item.isVeg !== undefined ? item.isVeg : isVegFoodType(item.foodType),
+    })
+    setItemDetailQuantity(Math.max(1, quantities[item.id] || 1))
     setSelectedAddons([]) // Reset selected addons when opening item
     setShowItemDetail(true)
   }
@@ -1106,7 +1148,7 @@ export default function CafeDetails() {
     if (!selectedItem) return 0
     const basePrice = selectedItem.price || 0
     const addonsPrice = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-    return basePrice + addonsPrice
+    return (basePrice + addonsPrice) * Math.max(1, itemDetailQuantity)
   }
 
   // Helper function to calculate final price after discount
@@ -1147,17 +1189,17 @@ export default function CafeDetails() {
       // VegMode filter - when vegMode is ON, show only Veg items
       // When vegMode is false/null/undefined, show all items (Veg and Non-Veg)
       if (vegMode === true) {
-        if (item.foodType !== "Veg") return false
+        if (!isVegFoodType(item.foodType)) return false
       }
 
       // Veg/Non-veg filter (local filter override)
       if (filters.vegNonVeg === "veg") {
         // Show only veg items
-        if (item.foodType !== "Veg") return false
+        if (!isVegFoodType(item.foodType)) return false
       }
       if (filters.vegNonVeg === "non-veg") {
         // Show only non-veg items
-        if (item.foodType !== "Non-Veg") return false
+        if (isVegFoodType(item.foodType)) return false
       }
 
 
@@ -1607,12 +1649,7 @@ export default function CafeDetails() {
                       {sortMenuItems(filterMenuItems(section.items)).map((item) => {
                         const quantity = quantities[item.id] || 0
                         // Determine veg/non-veg based on foodType
-                        const isVeg = item.foodType === "Veg"
-
-                        // Debug: Log preparationTime for troubleshooting
-                        if (item.preparationTime) {
-                          console.log(`[FRONTEND] Item "${item.name}" preparationTime:`, item.preparationTime, 'Type:', typeof item.preparationTime)
-                        }
+                        const isVeg = isVegFoodType(item.foodType)
 
                         return (
                           <div
@@ -1827,12 +1864,7 @@ export default function CafeDetails() {
                                 {sortMenuItems(filterMenuItems(subsection.items)).map((item) => {
                                   const quantity = quantities[item.id] || 0
                                   // Determine veg/non-veg based on foodType
-                                  const isVeg = item.foodType === "Veg"
-
-                                  // Debug: Log preparationTime for troubleshooting
-                                  if (item.preparationTime) {
-                                    console.log(`[FRONTEND] Subsection item "${item.name}" preparationTime:`, item.preparationTime)
-                                  }
+                                  const isVeg = isVegFoodType(item.foodType)
 
                                   return (
                                     <div
@@ -2641,7 +2673,13 @@ export default function CafeDetails() {
                             }`}
                         />
                       </button>
-                      <button className="h-10 w-10 rounded-full border border-white dark:border-gray-800 bg-white/90 dark:bg-[#1a1a1a]/90 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-[#2a2a2a] flex items-center justify-center transition-colors">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleShareClick(selectedItem)
+                        }}
+                        className="h-10 w-10 rounded-full border border-white dark:border-gray-800 bg-white/90 dark:bg-[#1a1a1a]/90 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-[#2a2a2a] flex items-center justify-center transition-colors"
+                      >
                         <Share2 className="h-5 w-5" />
                       </button>
                     </div>
@@ -2652,8 +2690,16 @@ export default function CafeDetails() {
                     {/* Item Name and Indicator */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2 flex-1">
-                        <div className="h-5 w-5 rounded border-2 border-amber-700 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-                          <div className="h-2.5 w-2.5 rounded-full bg-amber-700 dark:bg-amber-600" />
+                        <div className={`h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                          selectedItem.isVeg
+                            ? "border-green-600 dark:border-green-500 bg-green-50 dark:bg-green-900/30"
+                            : "border-amber-700 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/30"
+                        }`}>
+                          <div className={`h-2.5 w-2.5 rounded-full ${
+                            selectedItem.isVeg
+                              ? "bg-green-600 dark:bg-green-500"
+                              : "bg-amber-700 dark:bg-amber-600"
+                          }`} />
                         </div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                           {selectedItem.name}
@@ -2676,7 +2722,13 @@ export default function CafeDetails() {
                               }`}
                           />
                         </button>
-                        <button className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 flex items-center justify-center transition-colors">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleShareClick(selectedItem)
+                          }}
+                          className="h-8 w-8 rounded-full border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 flex items-center justify-center transition-colors"
+                        >
                           <Share2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -2765,10 +2817,10 @@ export default function CafeDetails() {
                         <button
                           onClick={(e) => {
                             if (!shouldShowGrayscale) {
-                              updateItemQuantity(selectedItem, Math.max(0, (quantities[selectedItem.id] || 0) - 1), e)
+                              setItemDetailQuantity((prev) => Math.max(1, prev - 1))
                             }
                           }}
-                          disabled={(quantities[selectedItem.id] || 0) === 0 || shouldShowGrayscale}
+                          disabled={itemDetailQuantity <= 1 || shouldShowGrayscale}
                           className={`${shouldShowGrayscale
                             ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed'
@@ -2780,12 +2832,12 @@ export default function CafeDetails() {
                           ? 'text-gray-400 dark:text-gray-600'
                           : 'text-gray-900 dark:text-white'
                           }`}>
-                          {quantities[selectedItem.id] || 0}
+                          {itemDetailQuantity}
                         </span>
                         <button
                           onClick={(e) => {
                             if (!shouldShowGrayscale) {
-                              updateItemQuantity(selectedItem, (quantities[selectedItem.id] || 0) + 1, e)
+                              setItemDetailQuantity((prev) => prev + 1)
                             }
                           }}
                           disabled={shouldShowGrayscale}
@@ -2806,7 +2858,7 @@ export default function CafeDetails() {
                           }`}
                         onClick={(e) => {
                           if (!shouldShowGrayscale) {
-                            updateItemQuantity(selectedItem, (quantities[selectedItem.id] || 0) + 1, e, selectedAddons)
+                            updateItemQuantity(selectedItem, itemDetailQuantity, e, selectedAddons)
                             setShowItemDetail(false)
                           }
                         }}

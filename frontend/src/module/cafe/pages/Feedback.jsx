@@ -309,12 +309,14 @@ export default function Feedback() {
                           (cafeData?.name) ||
                           'Cafe'
 
-            // Get rating if available (from order.review or order.rating)
-            const rating = order.review?.rating || 
+            // Prefer customer cafe reviews; fall back to legacy review fields
+            const rating = order.customerReview?.rating ||
+                          order.review?.rating || 
                           order.rating || 
                           order.feedback?.rating ||
                           null
-            const reviewText = order.review?.comment ||
+            const reviewText = order.customerReview?.comment ||
+                             order.review?.comment ||
                              order.review?.text ||
                              order.feedback?.comment ||
                              order.feedback?.text ||
@@ -335,7 +337,7 @@ export default function Feedback() {
               rating: rating || 5, // Default to 5 if no rating
               date: formattedDate,
               reviewText: reviewText,
-              reply: order.review?.reply || order.feedback?.reply || null,
+              reply: order.customerReview?.reply || order.review?.reply || order.feedback?.reply || null,
               orderData: order // Keep original order data
             }
           })

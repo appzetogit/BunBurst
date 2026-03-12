@@ -398,6 +398,7 @@ export const API_ENDPOINTS = {
     CREATE: "/order",
     LIST: "/order",
     DETAILS: "/order/:id",
+    CUSTOMER_REVIEW: "/order/:id/customer-review",
     UPDATE_STATUS: "/order/:id/status",
     VERIFY_PAYMENT: "/order/verify-payment",
     CALCULATE: "/order/calculate",

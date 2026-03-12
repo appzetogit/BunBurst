@@ -1947,6 +1947,14 @@ export const orderAPI = {
     return apiClient.get(API_ENDPOINTS.ORDER.DETAILS.replace(":id", orderId));
   },
 
+  // Submit customer cafe review for a delivered order
+  submitCustomerReview: (orderId, reviewData) => {
+    return apiClient.post(
+      API_ENDPOINTS.ORDER.CUSTOMER_REVIEW.replace(":id", orderId),
+      reviewData,
+    );
+  },
+
   // Cancel order
   cancelOrder: (orderId, reason) => {
     return apiClient.patch(API_ENDPOINTS.ORDER.CANCEL.replace(":id", orderId), {

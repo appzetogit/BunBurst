@@ -227,7 +227,7 @@ router.use(authenticateAdmin);
 
 // Debug middleware - log ALL requests to help debug routing
 router.use((req, res, next) => {
-  if (req.path.includes("refund") || req.path.includes("orders")) {
+  if (req.path.includes("refund")) {
     console.log("🔍 [DEBUG MIDDLEWARE] Request detected:", {
       method: req.method,
       url: req.url,

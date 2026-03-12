@@ -3225,7 +3225,6 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
       `📤 Sending response with commissionPercentage: ${commissionPercentage}`,
     );
 
-    // Get ratings from FeedbackExperience (cafeId is ObjectId in FeedbackExperience)
     const FeedbackExperience = (await import("../models/FeedbackExperience.js"))
       .default;
 

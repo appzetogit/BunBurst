@@ -149,7 +149,7 @@ const creditCafeWallet = async (cafeId, orderId, netAmount, orderNumber) => {
 
     const description = `Payment for order ${orderNumber}`;
 
-    wallet.addTransaction({
+    await wallet.addTransaction({
       amount: netAmount, // Credit net amount (₹170)
       type: 'payment',
       status: 'Completed',
@@ -157,7 +157,6 @@ const creditCafeWallet = async (cafeId, orderId, netAmount, orderNumber) => {
       orderId: orderId
     });
 
-    await wallet.save();
 
     // Create audit log
     await AuditLog.createLog({
@@ -192,7 +191,7 @@ const creditDeliveryWallet = async (deliveryId, orderId, amount, orderNumber) =>
     const DeliveryWallet = (await import('../../delivery/models/DeliveryWallet.js')).default;
     const wallet = await DeliveryWallet.findOrCreateByDeliveryId(deliveryId);
 
-    wallet.addTransaction({
+    await wallet.addTransaction({
       amount: amount,
       type: 'payment',
       status: 'Completed',
@@ -201,7 +200,6 @@ const creditDeliveryWallet = async (deliveryId, orderId, amount, orderNumber) =>
       paymentCollected: false // Will be updated when COD is collected
     });
 
-    await wallet.save();
 
     // Create audit log
     await AuditLog.createLog({
@@ -242,7 +240,7 @@ const creditAdminWallet = async (orderId, adminEarning, orderNumber, cafeId, set
 
     // Credit platform fee
     if (adminEarning.platformFee > 0) {
-      wallet.addTransaction({
+      await wallet.addTransaction({
         amount: adminEarning.platformFee,
         type: 'platform_fee',
         status: 'Completed',
@@ -253,7 +251,7 @@ const creditAdminWallet = async (orderId, adminEarning, orderNumber, cafeId, set
 
     // Credit delivery fee
     if (adminEarning.deliveryFee > 0) {
-      wallet.addTransaction({
+      await wallet.addTransaction({
         amount: adminEarning.deliveryFee,
         type: 'delivery_fee',
         status: 'Completed',
@@ -264,7 +262,7 @@ const creditAdminWallet = async (orderId, adminEarning, orderNumber, cafeId, set
 
     // Credit GST
     if (adminEarning.gst > 0) {
-      wallet.addTransaction({
+      await wallet.addTransaction({
         amount: adminEarning.gst,
         type: 'gst',
         status: 'Completed',

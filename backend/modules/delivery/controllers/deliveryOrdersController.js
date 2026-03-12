@@ -1505,6 +1505,12 @@ export const completeDelivery = asyncHandler(async (req, res) => {
       'deliveryState.currentPhase': 'completed'
     };
 
+    const orderPaymentMethod = (order.payment?.method || '').toString().toLowerCase();
+    const isCODOrder = orderPaymentMethod === 'cash' || orderPaymentMethod === 'cod';
+    if (isCODOrder) {
+      updateData['payment.status'] = 'completed';
+    }
+
     // Add review and rating if provided
     if (rating && rating >= 1 && rating <= 5) {
       updateData['review.rating'] = rating;
@@ -1551,7 +1557,7 @@ export const completeDelivery = asyncHandler(async (req, res) => {
     }
 
     // Mark COD payment as collected (admin Payment Status → Collected)
-    if (order.payment?.method === 'cash' || order.payment?.method === 'cod') {
+    if (isCODOrder) {
       try {
         await Payment.updateOne(
           { orderId: orderMongoId },

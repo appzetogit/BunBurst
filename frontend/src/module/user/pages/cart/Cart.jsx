@@ -338,7 +338,6 @@ export default function Cart() {
   const [showNoteInput, setShowNoteInput] = useState(false)
   const [sendCutlery, setSendCutlery] = useState(true)
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
-  const [showBillDetails, setShowBillDetails] = useState(false)
   const [showPlacingOrder, setShowPlacingOrder] = useState(false)
   const [orderProgress, setOrderProgress] = useState(0)
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
@@ -1518,7 +1517,7 @@ export default function Cart() {
                           </div>
 
                           <p className="text-sm md:text-base font-medium text-foreground min-w-[50px] md:min-w-[70px] text-right">
-                            ₹{formatAmount((item.price || 0) * (item.quantity || 1))}
+                            ₹{Math.round((item.price || 0) * (item.quantity || 1))}
                           </p>
                         </div>
                       </div>
@@ -1800,10 +1799,7 @@ export default function Cart() {
 
               {/* Bill Details */}
               <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl">
-                <button
-                  onClick={() => setShowBillDetails(!showBillDetails)}
-                  className="flex items-center justify-between w-full"
-                >
+                <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-3 md:gap-4">
                     <FileText className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                     <div className="text-left">
@@ -1818,41 +1814,7 @@ export default function Cart() {
                       <p className="text-xs md:text-sm text-muted-foreground">Incl. taxes and charges</p>
                     </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-                </button>
-
-                {showBillDetails && (
-                  <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-dashed border-border space-y-2 md:space-y-3">
-                    <div className="flex justify-between text-sm md:text-base">
-                      <span className="text-muted-foreground">Item Total</span>
-                      <span className="text-foreground">₹{formatAmount(subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm md:text-base">
-                      <span className="text-muted-foreground">Delivery Fee</span>
-                      <span className={deliveryFee === 0 ? "text-primary font-bold" : "text-foreground"}>
-                        {deliveryFee === 0 ? "FREE" : `₹${formatAmount(deliveryFee)}`}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm md:text-base">
-                      <span className="text-muted-foreground">Platform Fee</span>
-                      <span className="text-foreground">₹{formatAmount(platformFee)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm md:text-base">
-                      <span className="text-muted-foreground">GST and Cafe Charges</span>
-                      <span className="text-foreground">₹{formatAmount(gstCharges)}</span>
-                    </div>
-                    {discount > 0 && (
-                      <div className="flex justify-between text-sm md:text-base text-primary">
-                        <span>Coupon Discount</span>
-                        <span>-₹{formatAmount(discount)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm md:text-base font-semibold pt-2 md:pt-3 border-t border-border">
-                      <span>To Pay</span>
-                      <span>₹{formatAmount(total)}</span>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
 
             </div>

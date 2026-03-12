@@ -686,6 +686,16 @@ export default function DeliveryHome() {
   const isSwiping = useRef(false)
   const acceptButtonSwipeStartX = useRef(0)
   const acceptButtonSwipeStartY = useRef(0)
+
+  const triggerSwipeAction = (touchEndHandler, startXRef, startYRef, isSwipingRef, buttonRef) => {
+    const buttonWidth = buttonRef.current?.offsetWidth || 300
+    startXRef.current = 0
+    startYRef.current = 0
+    isSwipingRef.current = true
+    touchEndHandler({
+      changedTouches: [{ clientX: buttonWidth, clientY: 0 }]
+    })
+  }
   const acceptButtonIsSwiping = useRef(false)
   const autoShowTimerRef = useRef(null)
 
@@ -2638,6 +2648,16 @@ export default function DeliveryHome() {
     newOrderAcceptButtonIsSwiping.current = false
   }
 
+  const handleNewOrderAcceptClick = () => {
+    triggerSwipeAction(
+      handleNewOrderAcceptTouchEnd,
+      newOrderAcceptButtonSwipeStartX,
+      newOrderAcceptButtonSwipeStartY,
+      newOrderAcceptButtonIsSwiping,
+      newOrderAcceptButtonRef
+    )
+  }
+
   // Handle new order popup swipe down to minimize (not close)
   // Popup should stay visible until accept/reject is clicked
   const handleNewOrderPopupTouchStart = (e) => {
@@ -2934,6 +2954,16 @@ export default function DeliveryHome() {
     reachedPickupIsSwiping.current = false
   }
 
+  const handleReachedPickupClick = () => {
+    triggerSwipeAction(
+      handlereachedPickupTouchEnd,
+      reachedPickupSwipeStartX,
+      reachedPickupSwipeStartY,
+      reachedPickupIsSwiping,
+      reachedPickupButtonRef
+    )
+  }
+
   // Handle Reached Drop button swipe
   const handleReachedDropTouchStart = (e) => {
     reachedDropSwipeStartX.current = e.touches[0].clientX
@@ -3056,6 +3086,16 @@ export default function DeliveryHome() {
     reachedDropSwipeStartX.current = 0
     reachedDropSwipeStartY.current = 0
     reachedDropIsSwiping.current = false
+  }
+
+  const handleReachedDropClick = () => {
+    triggerSwipeAction(
+      handleReachedDropTouchEnd,
+      reachedDropSwipeStartX,
+      reachedDropSwipeStartY,
+      reachedDropIsSwiping,
+      reachedDropButtonRef
+    )
   }
 
   // Handle Order ID Confirmation button swipe
@@ -3528,6 +3568,16 @@ export default function DeliveryHome() {
     orderIdConfirmIsSwiping.current = false
   }
 
+  const handleOrderPickedUpClick = () => {
+    triggerSwipeAction(
+      handleOrderIdConfirmTouchEnd,
+      orderIdConfirmSwipeStartX,
+      orderIdConfirmSwipeStartY,
+      orderIdConfirmIsSwiping,
+      orderIdConfirmButtonRef
+    )
+  }
+
   // Handle Start Navigation Button - Opens Google Maps app in navigation mode
   const handleStartNavigation = async () => {
     let customerLat = toFiniteCoordinate(selectedCafe?.customerLat)
@@ -3674,6 +3724,16 @@ export default function DeliveryHome() {
     orderDeliveredSwipeStartX.current = 0
     orderDeliveredSwipeStartY.current = 0
     orderDeliveredIsSwiping.current = false
+  }
+
+  const handleOrderDeliveredClick = () => {
+    triggerSwipeAction(
+      handleOrderDeliveredTouchEnd,
+      orderDeliveredSwipeStartX,
+      orderDeliveredSwipeStartY,
+      orderDeliveredIsSwiping,
+      orderDeliveredButtonRef
+    )
   }
 
   // Handle accept orders button swipe
@@ -7465,24 +7525,7 @@ export default function DeliveryHome() {
       })
     }
 
-    // Slide 2: Cash limit reached → COD orders paused
-    if (availableCashLimit <= 0 && walletState?.totalCashLimit > 0) {
-      slides.push({
-        id: 'cash-limit',
-        title: 'Cash limit reached!',
-        subtitle: `Deposit ₹${Math.round(walletState?.cashInHand || 0)} to continue receiving COD orders`,
-        icon: 'bag',
-        buttonText: 'Deposit',
-        bgColor: 'bg-[#e53935]',
-        titleColor: 'text-white',
-        subtitleColor: 'text-white/90',
-        buttonBgColor: 'bg-white text-[#e53935]',
-        action: 'navigate',
-        path: '/delivery/requests'
-      })
-    }
-
-    // Slide 3: Active earning addon / earnings guarantee offer
+    // Slide 2: Active earning addon / earnings guarantee offer
     if (activeEarningAddon && (activeEarningAddon.isValid || activeEarningAddon.isUpcoming)) {
       const target = activeEarningAddon.earningAmount || 0
       const orders = activeEarningAddon.requiredOrders || 0
@@ -9101,67 +9144,14 @@ export default function DeliveryHome() {
                     })()}
                   </div>
 
-                  {/* Accept Order Button with Swipe */}
-                  <div className="relative w-full">
-                    <motion.div
-                      ref={newOrderAcceptButtonRef}
-                      className="relative w-full bg-[#e53935] rounded-full overflow-hidden shadow-xl"
-                      style={{ touchAction: 'pan-x' }} // Prevent vertical scrolling, allow horizontal pan
-                      onTouchStart={handleNewOrderAcceptTouchStart}
-                      onTouchMove={handleNewOrderAcceptTouchMove}
-                      onTouchEnd={handleNewOrderAcceptTouchEnd}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {/* Swipe progress background */}
-                      <motion.div
-                        className="absolute inset-0 bg-[#e53935] rounded-full"
-                        animate={{
-                          width: `${newOrderAcceptButtonProgress * 100}%`
-                        }}
-                        transition={newOrderIsAnimatingToComplete ? {
-                          type: "spring",
-                          stiffness: 200,
-                          damping: 25
-                        } : { duration: 0 }}
-                      />
-
-                      {/* Button content container */}
-                      <div className="relative flex items-center h-[64px] px-1">
-                        {/* Left: Black circle with arrow */}
-                        <motion.div
-                          className="w-14 h-14 bg-gray-900 rounded-full flex items-center justify-center shrink-0 relative z-20 shadow-2xl"
-                          animate={{
-                            x: newOrderAcceptButtonProgress * (newOrderAcceptButtonRef.current ? (newOrderAcceptButtonRef.current.offsetWidth - 56 - 32) : 240)
-                          }}
-                          transition={newOrderIsAnimatingToComplete ? {
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 30
-                          } : { duration: 0 }}
-                        >
-                          <ArrowRight className="w-5 h-5 text-white" />
-                        </motion.div>
-
-                        {/* Text - centered and stays visible */}
-                        <div className="absolute inset-0 flex items-center justify-center left-16 right-4 pointer-events-none">
-                          <motion.span
-                            className="text-white font-semibold flex items-center justify-center text-center text-base select-none"
-                            animate={{
-                              opacity: newOrderAcceptButtonProgress > 0.5 ? Math.max(0.2, 1 - newOrderAcceptButtonProgress * 0.8) : 1,
-                              x: newOrderAcceptButtonProgress > 0.5 ? newOrderAcceptButtonProgress * 15 : 0
-                            }}
-                            transition={newOrderIsAnimatingToComplete ? {
-                              type: "spring",
-                              stiffness: 200,
-                              damping: 25
-                            } : { duration: 0 }}
-                          >
-                            {newOrderAcceptButtonProgress > 0.5 ? 'Release to Accept' : 'Accept order'}
-                          </motion.span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
+                  <button
+                    ref={newOrderAcceptButtonRef}
+                    type="button"
+                    onClick={handleNewOrderAcceptClick}
+                    className="w-full h-[56px] bg-[#e53935] rounded-xl shadow-lg flex items-center justify-center text-white font-semibold text-base hover:bg-[#d32f2f] active:scale-[0.99] transition-all"
+                  >
+                    <span>Accept order</span>
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -9566,67 +9556,14 @@ export default function DeliveryHome() {
             </button>
           </div>
 
-          {/* Reached Pickup Button with Swipe */}
-          <div className="relative w-full">
-            <motion.div
-              ref={reachedPickupButtonRef}
-              className="relative w-full bg-[#e53935] rounded-full overflow-hidden shadow-xl"
-              style={{ touchAction: 'pan-x' }} // Prevent vertical scrolling, allow horizontal pan
-              onTouchStart={handlereachedPickupTouchStart}
-              onTouchMove={handlereachedPickupTouchMove}
-              onTouchEnd={handlereachedPickupTouchEnd}
-              whileTap={{ scale: 0.98 }}
-            >
-              {/* Swipe progress background */}
-              <motion.div
-                className="absolute inset-0 bg-[#e53935] rounded-full"
-                animate={{
-                  width: `${reachedPickupButtonProgress * 100}%`
-                }}
-                transition={reachedPickupIsAnimatingToComplete ? {
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 25
-                } : { duration: 0 }}
-              />
-
-              {/* Button content container */}
-              <div className="relative flex items-center h-[64px] px-1">
-                {/* Left: Black circle with arrow */}
-                <motion.div
-                  className="w-14 h-14 bg-gray-900 rounded-full flex items-center justify-center shrink-0 relative z-20 shadow-2xl"
-                  animate={{
-                    x: reachedPickupButtonProgress * (reachedPickupButtonRef.current ? (reachedPickupButtonRef.current.offsetWidth - 56 - 32) : 240)
-                  }}
-                  transition={reachedPickupIsAnimatingToComplete ? {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30
-                  } : { duration: 0 }}
-                >
-                  <ArrowRight className="w-5 h-5 text-white" />
-                </motion.div>
-
-                {/* Text - centered and stays visible */}
-                <div className="absolute inset-0 flex items-center justify-center left-16 right-4 pointer-events-none">
-                  <motion.span
-                    className="text-white font-semibold flex items-center justify-center text-center text-base select-none"
-                    animate={{
-                      opacity: reachedPickupButtonProgress > 0.5 ? Math.max(0.2, 1 - reachedPickupButtonProgress * 0.8) : 1,
-                      x: reachedPickupButtonProgress > 0.5 ? reachedPickupButtonProgress * 15 : 0
-                    }}
-                    transition={reachedPickupIsAnimatingToComplete ? {
-                      type: "spring",
-                      stiffness: 200,
-                      damping: 25
-                    } : { duration: 0 }}
-                  >
-                    {reachedPickupButtonProgress > 0.5 ? 'Release to Confirm' : 'Reached Pickup'}
-                  </motion.span>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+          <button
+            ref={reachedPickupButtonRef}
+            type="button"
+            onClick={handleReachedPickupClick}
+            className="w-full h-[56px] bg-[#e53935] rounded-xl shadow-lg flex items-center justify-center text-white font-semibold text-base hover:bg-[#d32f2f] active:scale-[0.99] transition-all"
+          >
+            <span>Reached Pickup</span>
+          </button>
         </div>
       </BottomPopup>
 
@@ -9937,71 +9874,14 @@ export default function DeliveryHome() {
 
 
 
-            {/* Order Picked Up Button with Swipe */}
-            <div className="relative w-full">
-              <motion.div
-                ref={orderIdConfirmButtonRef}
-                className="relative w-full bg-[#e53935] rounded-full overflow-hidden shadow-xl"
-                style={{
-                  touchAction: 'pan-x'
-                }}
-                onTouchStart={handleOrderIdConfirmTouchStart}
-                onTouchMove={handleOrderIdConfirmTouchMove}
-                onTouchEnd={handleOrderIdConfirmTouchEnd}
-                whileTap={{ scale: 0.98 }}
-              >
-                {/* Swipe progress background */}
-                <motion.div
-                  className="absolute inset-0 bg-[#d32f2f] rounded-full"
-                  animate={{
-                    width: `${orderIdConfirmButtonProgress * 100}%`
-                  }}
-                  transition={orderIdConfirmIsAnimatingToComplete ? {
-                    type: "spring",
-                    stiffness: 200,
-                    damping: 25
-                  } : { duration: 0 }}
-                />
-
-                {/* Button content container */}
-                <div className="relative flex items-center h-[64px] px-1">
-                  {/* Left: Black circle with arrow */}
-                  <motion.div
-                    className="w-14 h-14 bg-gray-900 rounded-full flex items-center justify-center shrink-0 relative z-20 shadow-2xl"
-                    animate={{
-                      x: orderIdConfirmButtonProgress * (orderIdConfirmButtonRef.current ? (orderIdConfirmButtonRef.current.offsetWidth - 56 - 32) : 240)
-                    }}
-                    transition={orderIdConfirmIsAnimatingToComplete ? {
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30
-                    } : { duration: 0 }}
-                  >
-                    <ArrowRight className="w-5 h-5 text-white" />
-                  </motion.div>
-
-                  {/* Text - centered and stays visible */}
-                  <div className="absolute inset-0 flex items-center justify-center left-16 right-4 pointer-events-none">
-                    <motion.span
-                      className="text-white font-semibold flex items-center justify-center text-center text-base select-none"
-                      animate={{
-                        opacity: orderIdConfirmButtonProgress > 0.5 ? Math.max(0.2, 1 - orderIdConfirmButtonProgress * 0.8) : 1,
-                        x: orderIdConfirmButtonProgress > 0.5 ? orderIdConfirmButtonProgress * 15 : 0
-                      }}
-                      transition={orderIdConfirmIsAnimatingToComplete ? {
-                        type: "spring",
-                        stiffness: 200,
-                        damping: 25
-                      } : { duration: 0 }}
-                    >
-                      {orderIdConfirmButtonProgress > 0.5
-                        ? 'Release to Confirm'
-                        : 'Order Picked Up'}
-                    </motion.span>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
+            <button
+              ref={orderIdConfirmButtonRef}
+              type="button"
+              onClick={handleOrderPickedUpClick}
+              className="w-full h-[56px] bg-[#e53935] rounded-xl shadow-lg flex items-center justify-center text-white font-semibold text-base hover:bg-[#d32f2f] active:scale-[0.99] transition-all"
+            >
+              <span>Order Picked Up</span>
+            </button>
           </div>
         </div>
       </BottomPopup>
@@ -10142,67 +10022,14 @@ export default function DeliveryHome() {
             </button>
           </div>
 
-          {/* Reached Drop Button with Swipe */}
-          <div className="relative w-full">
-            <motion.div
-              ref={reachedDropButtonRef}
-              className="relative w-full bg-[#e53935] rounded-full overflow-hidden shadow-xl"
-              style={{ touchAction: 'pan-x' }} // Prevent vertical scrolling, allow horizontal pan
-              onTouchStart={handleReachedDropTouchStart}
-              onTouchMove={handleReachedDropTouchMove}
-              onTouchEnd={handleReachedDropTouchEnd}
-              whileTap={{ scale: 0.98 }}
-            >
-              {/* Swipe progress background */}
-              <motion.div
-                className="absolute inset-0 bg-[#e53935] rounded-full"
-                animate={{
-                  width: `${reachedDropButtonProgress * 100}%`
-                }}
-                transition={reachedDropIsAnimatingToComplete ? {
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 25
-                } : { duration: 0 }}
-              />
-
-              {/* Button content container */}
-              <div className="relative flex items-center h-[64px] px-1">
-                {/* Left: Black circle with arrow */}
-                <motion.div
-                  className="w-14 h-14 bg-gray-900 rounded-full flex items-center justify-center shrink-0 relative z-20 shadow-2xl"
-                  animate={{
-                    x: reachedDropButtonProgress * (reachedDropButtonRef.current ? (reachedDropButtonRef.current.offsetWidth - 56 - 32) : 240)
-                  }}
-                  transition={reachedDropIsAnimatingToComplete ? {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30
-                  } : { duration: 0 }}
-                >
-                  <ArrowRight className="w-5 h-5 text-white" />
-                </motion.div>
-
-                {/* Text - centered and stays visible */}
-                <div className="absolute inset-0 flex items-center justify-center left-16 right-4 pointer-events-none">
-                  <motion.span
-                    className="text-white font-semibold flex items-center justify-center text-center text-base select-none"
-                    animate={{
-                      opacity: reachedDropButtonProgress > 0.5 ? Math.max(0.2, 1 - reachedDropButtonProgress * 0.8) : 1,
-                      x: reachedDropButtonProgress > 0.5 ? reachedDropButtonProgress * 15 : 0
-                    }}
-                    transition={reachedDropIsAnimatingToComplete ? {
-                      type: "spring",
-                      stiffness: 200,
-                      damping: 25
-                    } : { duration: 0 }}
-                  >
-                    {reachedDropButtonProgress > 0.5 ? 'Release to Confirm' : 'Reached Drop'}
-                  </motion.span>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+          <button
+            ref={reachedDropButtonRef}
+            type="button"
+            onClick={handleReachedDropClick}
+            className="w-full h-[56px] bg-[#e53935] rounded-xl shadow-lg flex items-center justify-center text-white font-semibold text-base hover:bg-[#d32f2f] active:scale-[0.99] transition-all"
+          >
+            <span>Reached Drop</span>
+          </button>
         </div>
       </BottomPopup>
 
@@ -10288,67 +10115,14 @@ export default function DeliveryHome() {
             )
           })()}
 
-          {/* Order Delivered Button with Swipe */}
-          <div className="relative w-full">
-            <motion.div
-              ref={orderDeliveredButtonRef}
-              className="relative w-full bg-[#e53935] rounded-full overflow-hidden shadow-xl"
-              style={{ touchAction: 'pan-x' }} // Prevent vertical scrolling, allow horizontal pan
-              onTouchStart={handleOrderDeliveredTouchStart}
-              onTouchMove={handleOrderDeliveredTouchMove}
-              onTouchEnd={handleOrderDeliveredTouchEnd}
-              whileTap={{ scale: 0.98 }}
-            >
-              {/* Swipe progress background */}
-              <motion.div
-                className="absolute inset-0 bg-[#e53935] rounded-full"
-                animate={{
-                  width: `${orderDeliveredButtonProgress * 100}%`
-                }}
-                transition={orderDeliveredIsAnimatingToComplete ? {
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 25
-                } : { duration: 0 }}
-              />
-
-              {/* Button content container */}
-              <div className="relative flex items-center h-[64px] px-1">
-                {/* Left: Black circle with arrow */}
-                <motion.div
-                  className="w-14 h-14 bg-gray-900 rounded-full flex items-center justify-center shrink-0 relative z-20 shadow-2xl"
-                  animate={{
-                    x: orderDeliveredButtonProgress * (orderDeliveredButtonRef.current ? (orderDeliveredButtonRef.current.offsetWidth - 56 - 32) : 240)
-                  }}
-                  transition={orderDeliveredIsAnimatingToComplete ? {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30
-                  } : { duration: 0 }}
-                >
-                  <ArrowRight className="w-5 h-5 text-white" />
-                </motion.div>
-
-                {/* Text - centered and stays visible */}
-                <div className="absolute inset-0 flex items-center justify-center left-16 right-4 pointer-events-none">
-                  <motion.span
-                    className="text-white font-semibold flex items-center justify-center text-center text-base select-none"
-                    animate={{
-                      opacity: orderDeliveredButtonProgress > 0.5 ? Math.max(0.2, 1 - orderDeliveredButtonProgress * 0.8) : 1,
-                      x: orderDeliveredButtonProgress > 0.5 ? orderDeliveredButtonProgress * 15 : 0
-                    }}
-                    transition={orderDeliveredIsAnimatingToComplete ? {
-                      type: "spring",
-                      stiffness: 200,
-                      damping: 25
-                    } : { duration: 0 }}
-                  >
-                    {orderDeliveredButtonProgress > 0.5 ? 'Release to Confirm' : 'Order Delivered'}
-                  </motion.span>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+          <button
+            ref={orderDeliveredButtonRef}
+            type="button"
+            onClick={handleOrderDeliveredClick}
+            className="w-full h-[56px] bg-[#e53935] rounded-xl shadow-lg flex items-center justify-center text-white font-semibold text-base hover:bg-[#d32f2f] active:scale-[0.99] transition-all"
+          >
+            <span>Order Delivered</span>
+          </button>
         </div>
       </BottomPopup>
 

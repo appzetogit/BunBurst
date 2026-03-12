@@ -755,10 +755,7 @@ function initializeScheduledTasks() {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
-  // Close server & exit process
-  httpServer.close(() => {
-    process.exit(1);
-  });
+  // Log and continue so non-fatal background task failures do not take down the API server.
 });
 
 export default app;

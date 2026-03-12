@@ -297,8 +297,24 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    if (error.response?.status === 401 && originalRequest?.skipAuthRefresh) {
+      if (import.meta.env.DEV) {
+        console.warn("[API] 401 bypassed for background request", {
+          path: window.location.pathname,
+          requestUrl: originalRequest?.url,
+          method: originalRequest?.method,
+        });
+      }
+      return Promise.reject(error);
+    }
+
     // If error is 401 and we haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.warn("[API] 401 received", {
+        path: window.location.pathname,
+        requestUrl: originalRequest?.url,
+        method: originalRequest?.method,
+      });
       originalRequest._retry = true;
 
       try {
@@ -318,6 +334,12 @@ apiClient.interceptors.response.use(
           refreshEndpoint = "/delivery/auth/refresh-token";
         }
 
+        console.warn("[API] token refresh:start", {
+          path: currentPath,
+          refreshEndpoint,
+          requestUrl: originalRequest?.url,
+        });
+
         // Try to refresh the token
         // The refresh token is sent via httpOnly cookie automatically
         const response = await axios.post(
@@ -331,6 +353,10 @@ apiClient.interceptors.response.use(
         const { accessToken } = response.data.data || response.data;
 
         if (accessToken) {
+          console.warn("[API] token refresh:success", {
+            path: window.location.pathname,
+            requestUrl: originalRequest?.url,
+          });
           // Determine which module's token to update based on current route
           const currentPath = window.location.pathname;
           let tokenKey = "accessToken"; // fallback
@@ -358,6 +384,11 @@ apiClient.interceptors.response.use(
 
           // Only store token if role matches expected module; otherwise treat as invalid for this module
           if (!role || role !== expectedRole) {
+            console.error("[API] token refresh:role-mismatch", {
+              expectedRole,
+              actualRole: role,
+              path: currentPath,
+            });
             clearModuleAuth(tokenKey.replace("_accessToken", ""));
             throw new Error("Role mismatch on refreshed token");
           }
@@ -370,6 +401,13 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
+        console.error("[API] token refresh:failed", {
+          path: window.location.pathname,
+          requestUrl: originalRequest?.url,
+          status: refreshError?.response?.status,
+          message:
+            refreshError?.response?.data?.message || refreshError?.message,
+        });
         // Show error toast in development mode for refresh errors
         if (import.meta.env.DEV) {
           const currentPath = window.location.pathname;
@@ -444,6 +482,11 @@ apiClient.interceptors.response.use(
             const currentPath = window.location.pathname;
 
             if (currentPath !== userLoginPath && currentPath !== userAltLoginPath) {
+              console.warn("[API] redirect:user-login", {
+                reason: "refresh_failed_or_session_expired",
+                from: currentPath,
+                to: userLoginPath,
+              });
               window.location.href = userLoginPath;
             }
           }

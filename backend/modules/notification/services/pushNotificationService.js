@@ -95,6 +95,12 @@ async function removeInvalidTokensFromDatabase(invalidTokens = []) {
   ]);
 }
 
+async function removeSingleInvalidTokenFromDatabase(token) {
+  const cleanToken = typeof token === 'string' ? token.trim() : '';
+  if (!cleanToken) return;
+  await removeInvalidTokensFromDatabase([cleanToken]);
+}
+
 async function tryInitializeFirebaseFromEnvOrFile() {
   if (admin.apps.length > 0) return true;
 
@@ -274,11 +280,23 @@ export async function sendPushNotificationToSingleToken({
       responseId: response
     };
   } catch (err) {
+    const errorCode = err?.code || err?.errorInfo?.code;
     console.error('[Push] ❌ Failed to send notification:', {
-      errorCode: err?.code || err?.errorInfo?.code,
+      errorCode,
       errorMessage: err?.message,
       tokenPreview: `${cleanToken.slice(0, 12)}...`
     });
+
+    if (
+      [
+        'messaging/registration-token-not-registered',
+        'messaging/invalid-registration-token',
+        'messaging/invalid-argument'
+      ].includes(errorCode)
+    ) {
+      await removeSingleInvalidTokenFromDatabase(cleanToken);
+      console.log('[Push] Removed invalid single token from DB');
+    }
 
     if (err?.message?.includes('CONFIGURATION_NOT_FOUND')) {
       console.error('[Push] 💡 CONFIGURATION_NOT_FOUND means the Firebase Cloud Messaging API is NOT enabled.');

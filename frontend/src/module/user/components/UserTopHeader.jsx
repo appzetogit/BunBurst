@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation as useRouteLocation } from "react-router-dom"
 import { useState, useEffect } from "react"
-import { ChevronDown, ShoppingCart, Search, Mic, MapPin, User, Wallet } from "lucide-react"
+import { ChevronDown, ShoppingCart, Search, MapPin, User, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -134,11 +134,6 @@ export default function UserTopHeader({
         openSearch(triggerVoice)
     }
 
-    const handleVoiceSearch = (e) => {
-        e.stopPropagation()
-        handleSearchFocus(true)
-    }
-
     return (
         <header
             className={cn(
@@ -205,9 +200,6 @@ export default function UserTopHeader({
                                             </div>
                                         )}
                                     </div>
-                                    <button type="button" onClick={handleVoiceSearch} className="p-1.5 hover:bg-muted rounded-lg transition-all">
-                                        <Mic className="h-4 w-4 text-muted-foreground" />
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -320,9 +312,6 @@ export default function UserTopHeader({
                                     </div>
                                 )}
                             </div>
-                            <button type="button" onClick={handleVoiceSearch} className="p-1.5 hover:bg-muted rounded-lg transition-all">
-                                <Mic className="h-4 w-4 text-muted-foreground" />
-                            </button>
                         </div>
                     </div>
 

@@ -6,10 +6,12 @@ import { toast } from "sonner"
 import { getCompanyNameAsync } from "@/lib/utils/businessSettings"
 
 export default function Orders() {
+  const ORDERS_PER_PAGE = 6
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
   const [ratingModal, setRatingModal] = useState({ open: false, order: null })
   const [activeMenuOrderId, setActiveMenuOrderId] = useState(null)
   const [selectedRating, setSelectedRating] = useState(null)
@@ -62,7 +64,22 @@ export default function Orders() {
           newCountdowns[order.id] = remaining
         }
       })
-      setCountdowns(newCountdowns)
+      setCountdowns((previousCountdowns) => {
+        const previousKeys = Object.keys(previousCountdowns)
+        const nextKeys = Object.keys(newCountdowns)
+
+        if (previousKeys.length !== nextKeys.length) {
+          return newCountdowns
+        }
+
+        for (const key of nextKeys) {
+          if (previousCountdowns[key] !== newCountdowns[key]) {
+            return newCountdowns
+          }
+        }
+
+        return previousCountdowns
+      })
     }
 
     updateCountdowns()
@@ -110,9 +127,9 @@ export default function Orders() {
         transformedStatus.toLowerCase() === 'delivered' ||
         transformedStatus.toLowerCase() === 'completed'
       
-      // Check if order has rating - check multiple places where rating might be stored
+      // Check if order has rating (user experience rating), not delivery module rating
       const hasRating = 
-        (order.rating !== null && order.rating !== undefined && order.rating !== '') ||
+        (order.userRating !== null && order.userRating !== undefined && order.userRating !== '') ||
         (order.review?.rating !== null && order.review?.rating !== undefined) ||
         (order.review !== null && order.review !== undefined)
       
@@ -130,7 +147,7 @@ export default function Orders() {
         isDelivered,
         hasDeliveredAt,
         hasRating,
-        rating: order.rating,
+        userRating: order.userRating,
         review: order.review,
         hasShownPopup,
         shouldShow
@@ -173,9 +190,49 @@ export default function Orders() {
 
   // Fetch orders from backend API
   useEffect(() => {
-    const fetchOrders = async () => {
+    const areOrdersEqual = (currentOrders, nextOrders) => {
+      if (currentOrders.length !== nextOrders.length) return false
+
+      return currentOrders.every((order, index) => {
+        const nextOrder = nextOrders[index]
+        if (!nextOrder) return false
+
+        return JSON.stringify({
+          id: order.id,
+          status: order.status,
+          originalStatus: order.originalStatus,
+          userRating: order.userRating,
+          deliveredAt: order.deliveredAt,
+          total: order.total,
+          paymentStatus: order.payment?.status,
+          itemCount: order.items?.length || 0,
+        }) === JSON.stringify({
+          id: nextOrder.id,
+          status: nextOrder.status,
+          originalStatus: nextOrder.originalStatus,
+          userRating: nextOrder.userRating,
+          deliveredAt: nextOrder.deliveredAt,
+          total: nextOrder.total,
+          paymentStatus: nextOrder.payment?.status,
+          itemCount: nextOrder.items?.length || 0,
+        })
+      })
+    }
+
+    const fetchOrders = async ({ silent = false } = {}) => {
+      const startedAt = new Date().toISOString()
+
       try {
-        setLoading(true)
+        if (!silent) {
+          setLoading(true)
+        }
+        console.log("[Orders] fetchOrders:start", {
+          startedAt,
+          path: window.location.pathname,
+          hasUserToken: !!localStorage.getItem("user_accessToken"),
+          hasLegacyToken: !!localStorage.getItem("accessToken"),
+          silent,
+        })
         
         const response = await orderAPI.getOrders({
           limit: 100, // Get all orders
@@ -200,7 +257,7 @@ export default function Orders() {
           console.log('📦 Raw orders from API:', ordersData.slice(0, 3).map(o => ({
             id: o.orderId || o._id,
             status: o.status,
-            rating: o.rating || o.review?.rating,
+            userRating: o.userRating || o.review?.rating,
             deliveredAt: o.deliveredAt,
             cafe: o.cafeId?.name || o.cafeName
           })))
@@ -252,8 +309,8 @@ export default function Orders() {
               cafeId: order.cafeId?._id || order.cafeId,
               cafeImage: order.cafeId?.profileImage?.url || order.cafeId?.profileImage || null,
               cafeLocation: order.cafeId?.location?.area || order.cafeId?.location?.city || order.address?.city || '',
-              rating: order.rating || order.review?.rating || null, // Check both rating and review.rating
               review: order.review || null,
+              userRating: order.userRating || order.review?.rating || null,
               tracking: order.tracking || {},
               cancellationReason: cancellationReason,
               isCafeCancelled: isCafeCancelled,
@@ -275,33 +332,66 @@ export default function Orders() {
           console.log('✅ Orders fetched and transformed:', {
             total: transformedOrders.length,
             delivered: transformedOrders.filter(o => o.status === 'delivered' || o.originalStatus === 'delivered').length,
-            withRating: transformedOrders.filter(o => o.rating).length,
+            withRating: transformedOrders.filter(o => o.userRating).length,
             sample: transformedOrders.slice(0, 2).map(o => ({
               id: o.id,
               status: o.status,
               originalStatus: o.originalStatus,
-              rating: o.rating,
+              userRating: o.userRating,
               deliveredAt: o.deliveredAt
             }))
           })
-          
-          setOrders(transformedOrders)
+          console.log("[Orders] fetchOrders:success", {
+            startedAt,
+            finishedAt: new Date().toISOString(),
+            totalOrders: transformedOrders.length,
+            silent,
+          })
+
+          setOrders((currentOrders) => {
+            if (areOrdersEqual(currentOrders, transformedOrders)) {
+              console.log("[Orders] fetchOrders:unchanged", {
+                startedAt,
+                finishedAt: new Date().toISOString(),
+              })
+              return currentOrders
+            }
+
+            return transformedOrders
+          })
         } else {
           console.log('⚠️ No orders data in response')
+          console.log("[Orders] fetchOrders:empty", {
+            startedAt,
+            finishedAt: new Date().toISOString(),
+            responseShape: Object.keys(response?.data || {}),
+            silent,
+          })
           setOrders([])
         }
       } catch (error) {
         console.error('Error fetching user orders:', error)
+        console.error("[Orders] fetchOrders:error", {
+          startedAt,
+          finishedAt: new Date().toISOString(),
+          status: error?.response?.status,
+          message: error?.response?.data?.message || error?.message,
+          silent,
+        })
         let errorMessage = 'Failed to load orders'
         if (error?.response?.status === 401) {
           errorMessage = 'Please login to view your orders'
         } else if (error?.response?.data?.message) {
           errorMessage = error.response.data.message
         }
-        toast.error(errorMessage)
+        if (!silent) {
+          toast.error(errorMessage)
+        }
         setOrders([])
       } finally {
-        setLoading(false)
+        if (!silent) {
+          setLoading(false)
+        }
       }
     }
 
@@ -310,7 +400,12 @@ export default function Orders() {
     // Poll for order updates every 20 seconds to detect delivered orders
     // This ensures rating popup shows quickly when order is delivered
     const pollInterval = setInterval(() => {
-      fetchOrders()
+      console.log("[Orders] pollInterval:tick", {
+        tickAt: new Date().toISOString(),
+        intervalMs: 20000,
+        path: window.location.pathname,
+      })
+      fetchOrders({ silent: true })
     }, 20000) // Poll every 20 seconds
 
     return () => clearInterval(pollInterval)
@@ -341,6 +436,21 @@ export default function Orders() {
     
     return cafeMatch || itemsMatch
   })
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PER_PAGE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const pageStartIndex = (safeCurrentPage - 1) * ORDERS_PER_PAGE
+  const paginatedOrders = filteredOrders.slice(pageStartIndex, pageStartIndex + ORDERS_PER_PAGE)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, orders.length])
+
+  useEffect(() => {
+    if (currentPage !== safeCurrentPage) {
+      setCurrentPage(safeCurrentPage)
+    }
+  }, [currentPage, safeCurrentPage])
 
   // Handle reorder
   const handleReorder = (order) => {
@@ -397,7 +507,7 @@ Order again from this cafe in the ${companyName} app.`
   // Open rating modal for an order
   const handleOpenRating = (order) => {
     setRatingModal({ open: true, order })
-    setSelectedRating(order.rating || null)
+    setSelectedRating(order.userRating || order.review?.rating || null)
     setFeedbackText("")
   }
 
@@ -437,8 +547,8 @@ Order again from this cafe in the ${companyName} app.`
         prev.map(o =>
           o.id === order.id ? { 
             ...o, 
-            rating: selectedRating,
-            review: { rating: selectedRating, comment: feedbackText || undefined }
+            userRating: selectedRating,
+            review: { ...(o.review || {}), rating: selectedRating, comment: feedbackText || undefined }
           } : o
         )
       )
@@ -531,7 +641,7 @@ Order again from this cafe in the ${companyName} app.`
             <p className="text-gray-600">No orders found matching your search</p>
           </div>
         ) : (
-          filteredOrders.map((order) => {
+          paginatedOrders.map((order) => {
             // Check payment method - COD/wallet orders have 'pending' status which is normal
             const isCodOrWallet = order.payment?.method === 'cash' || 
                                  order.payment?.method === 'cod' || 
@@ -800,12 +910,12 @@ Order again from this cafe in the ${companyName} app.`
                       </div>
                       <span className="text-xs font-semibold text-red-500">Payment failed</span>
                     </div>
-                  ) : isDelivered && order.rating ? (
+                  ) : isDelivered && order.userRating ? (
                     <div>
                       <div className="flex items-center gap-1">
                         <span className="text-sm text-gray-800">You rated</span>
                         <div className="flex bg-yellow-400 text-white px-1 rounded text-[10px] items-center gap-0.5 h-4">
-                          {order.rating}<Star className="w-2 h-2 fill-current" />
+                          {order.userRating}<Star className="w-2 h-2 fill-current" />
                         </div>
                       </div>
                     </div>
@@ -849,6 +959,37 @@ Order again from this cafe in the ${companyName} app.`
           })
         )}
       </div>
+
+      {filteredOrders.length > ORDERS_PER_PAGE && (
+        <div className="w-full lg:max-w-[1100px] mx-auto px-4 pt-2">
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between gap-3">
+            <div className="text-xs text-gray-500">
+              Showing {pageStartIndex + 1}-{Math.min(pageStartIndex + ORDERS_PER_PAGE, filteredOrders.length)} of {filteredOrders.length} orders
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={safeCurrentPage === 1}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Prev
+              </button>
+              <div className="min-w-[84px] text-center text-sm font-semibold text-gray-700">
+                {safeCurrentPage} / {totalPages}
+              </div>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={safeCurrentPage === totalPages}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer Branding */}
       <div className="flex justify-center mt-8 mb-4">

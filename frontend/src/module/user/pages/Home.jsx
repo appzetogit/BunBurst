@@ -2,7 +2,7 @@ import { useSearchParams, Link, useNavigate } from "react-router-dom"
 import React, { useRef, useEffect, useState, useMemo, useCallback } from "react"
 import { createPortal } from "react-dom"
 import Lenis from "lenis"
-import { Star, Clock, MapPin, Heart, Search, Tag, Flame, ShoppingBag, ShoppingCart, Mic, SlidersHorizontal, CheckCircle2, Bookmark, BadgePercent, X, ArrowDownUp, Timer, CalendarClock, ShieldCheck, IndianRupee, UtensilsCrossed, Leaf, AlertCircle, Loader2, Plus, Check, Share2, ChevronRight, ChevronLeft } from "lucide-react"
+import { Star, Clock, MapPin, Heart, Search, Tag, Flame, ShoppingBag, ShoppingCart, SlidersHorizontal, CheckCircle2, Bookmark, BadgePercent, X, ArrowDownUp, Timer, CalendarClock, ShieldCheck, IndianRupee, UtensilsCrossed, Leaf, AlertCircle, Loader2, Plus, Check, Share2, ChevronRight, ChevronLeft } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import Footer from "../components/Footer"
 import AddToCartButton from "../components/AddToCartButton"
@@ -41,8 +41,6 @@ import { API_BASE_URL } from "@/lib/api/config"
 import OptimizedImage from "@/components/OptimizedImage"
 // Explore More Icons
 import exploreOffers from "@/assets/explore more icons/offers.png"
-import exploreGourmet from "@/assets/explore more icons/gourmet.png"
-import exploreTop10 from "@/assets/explore more icons/top 10.png"
 import exploreCollection from "@/assets/explore more icons/collection.png"
 import mealDealLogo from "@/assets/meal-deal-logo.jpeg"
 
@@ -1076,15 +1074,6 @@ export default function Home() {
                   </motion.span>
                 </AnimatePresence>
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  openSearch(true)
-                }}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-              >
-                <Mic className="h-5 w-5 text-[#e53935]" />
-              </button>
             </div>
           </div>
 
@@ -1405,18 +1394,6 @@ export default function Home() {
                   label: 'Offers',
                   image: exploreOffers,
                   href: '/user/offers'
-                },
-                {
-                  id: 'gourmet',
-                  label: 'Gourmet',
-                  image: exploreGourmet,
-                  href: '/user/gourmet'
-                },
-                {
-                  id: 'top10',
-                  label: 'Top 10',
-                  image: exploreTop10,
-                  href: '/user/top-10'
                 },
                 {
                   id: 'collection',

@@ -282,7 +282,10 @@ async function syncTokenToBackend() {
       return;
     }
 
-    const config = { headers: { Authorization: authHeader } };
+    const config = {
+      headers: { Authorization: authHeader },
+      skipAuthRefresh: true,
+    };
     if (context.audience === "delivery") {
       await apiClient.post(API_ENDPOINTS.NOTIFICATION.DELIVERY_FCM_TOKEN, {
         token: currentFcmToken,

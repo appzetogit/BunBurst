@@ -16,6 +16,7 @@ import etaCalculationService from '../services/etaCalculationService.js';
 import etaWebSocketService from '../services/etaWebSocketService.js';
 import OrderEvent from '../models/OrderEvent.js';
 import UserWallet from '../../user/models/UserWallet.js';
+import FeedbackExperience from '../../admin/models/FeedbackExperience.js';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -968,10 +969,119 @@ export const getUserOrders = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip(skip)
-      .select('-__v')
+      // Explicitly exclude legacy/extra fields (e.g. `rating`) that may exist in DB from other modules.
+      .select('-__v -rating')
       .populate('cafeId', 'name slug profileImage address location')
       .populate('userId', 'name phone email')
       .lean();
+
+    const orderIds = orders.map(order => order._id).filter(Boolean);
+    const paymentMap = new Map();
+
+    if (orderIds.length > 0) {
+      const payments = await Payment.find({ orderId: { $in: orderIds } })
+        .select('orderId method status completedAt failedAt updatedAt')
+        .lean();
+
+      payments.forEach((payment) => {
+        if (payment?.orderId) {
+          paymentMap.set(payment.orderId.toString(), payment);
+        }
+      });
+    }
+
+    const reconciledOrders = orders.map((order) => {
+      const paymentRecord = order._id ? paymentMap.get(order._id.toString()) : null;
+      if (!paymentRecord) {
+        return order;
+      }
+
+      const orderPaymentMethod = (order.payment?.method || '').toString().toLowerCase();
+      const recordPaymentMethod = (paymentRecord.method || '').toString().toLowerCase();
+      const isCashOrder = ['cash', 'cod'].includes(orderPaymentMethod) || ['cash', 'cod'].includes(recordPaymentMethod);
+
+      if (!isCashOrder) {
+        return order;
+      }
+
+      return {
+        ...order,
+        payment: {
+          ...(order.payment || {}),
+          method: order.payment?.method || paymentRecord.method,
+          status: paymentRecord.status || order.payment?.status,
+          completedAt: paymentRecord.completedAt || order.payment?.completedAt,
+          failedAt: paymentRecord.failedAt || order.payment?.failedAt,
+          updatedAt: paymentRecord.updatedAt || order.payment?.updatedAt
+        }
+      };
+    });
+
+    // Attach user order rating from FeedbackExperience (module: user), so UI doesn't depend on delivery module fields.
+    // Prefer Order.review.rating if present.
+    const orderMongoIds = reconciledOrders
+      .map((order) => order?._id?.toString())
+      .filter(Boolean);
+    const orderIdStrings = reconciledOrders
+      .map((order) => order?.orderId?.toString())
+      .filter(Boolean);
+
+    const ratingByOrderMongoId = new Map();
+    const ratingByOrderId = new Map();
+
+    if (orderMongoIds.length > 0 || orderIdStrings.length > 0) {
+      const feedbackUserId =
+        typeof userId === 'string' && mongoose.Types.ObjectId.isValid(userId)
+          ? new mongoose.Types.ObjectId(userId)
+          : userId;
+
+      const feedbackQuery = {
+        userId: feedbackUserId,
+        module: 'user',
+        $or: [
+          ...(orderMongoIds.length > 0
+            ? [{ 'metadata.orderMongoId': { $in: orderMongoIds } }]
+            : []),
+          ...(orderIdStrings.length > 0
+            ? [{ 'metadata.orderId': { $in: orderIdStrings } }]
+            : [])
+        ]
+      };
+
+      const feedbacks = await FeedbackExperience.find(feedbackQuery)
+        .select('rating metadata createdAt')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      for (const feedback of feedbacks) {
+        const mongoIdKey = feedback?.metadata?.orderMongoId?.toString();
+        const orderIdKey = feedback?.metadata?.orderId?.toString();
+        const ratingValue = feedback?.rating;
+
+        if (mongoIdKey && !ratingByOrderMongoId.has(mongoIdKey)) {
+          ratingByOrderMongoId.set(mongoIdKey, ratingValue);
+        }
+        if (orderIdKey && !ratingByOrderId.has(orderIdKey)) {
+          ratingByOrderId.set(orderIdKey, ratingValue);
+        }
+      }
+    }
+
+    const enrichedOrders = reconciledOrders.map((order) => {
+      const mongoIdKey = order?._id?.toString();
+      const orderIdKey = order?.orderId?.toString();
+      const feedbackRating =
+        (mongoIdKey && ratingByOrderMongoId.get(mongoIdKey)) ||
+        (orderIdKey && ratingByOrderId.get(orderIdKey)) ||
+        null;
+
+      const reviewRating = order?.review?.rating ?? null;
+
+      return {
+        ...order,
+        userRating: reviewRating ?? feedbackRating
+      };
+    });
 
     const total = await Order.countDocuments(query);
 
@@ -980,7 +1090,7 @@ export const getUserOrders = async (req, res) => {
     res.json({
       success: true,
       data: {
-        orders,
+        orders: enrichedOrders,
         pagination: {
           total,
           page: parseInt(page),

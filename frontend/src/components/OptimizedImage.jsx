@@ -9,7 +9,7 @@ import { motion } from 'framer-motion'
  * - Responsive srcset for different screen sizes
  * - WebP/AVIF format support with fallback
  * - Blur placeholder (LQIP) for smooth loading
- * - Preloading for critical images
+ * - High-priority loading for critical images
  * - Proper decoding and fetchpriority
  * - Error handling with fallback
  */
@@ -97,24 +97,6 @@ const OptimizedImage = React.memo(({
       }
     }
   }, [priority, isInView])
-
-  // Preload critical images
-  useEffect(() => {
-    if (priority && src && !src.startsWith('data:')) {
-      const preloadUrl = isCloudinary ? getTransformedUrl(1200) : src
-      const link = document.createElement('link')
-      link.rel = 'preload'
-      link.as = 'image'
-      link.href = preloadUrl
-      link.fetchPriority = 'high'
-      link.crossOrigin = 'anonymous'
-      document.head.appendChild(link)
-
-      return () => {
-        document.head.removeChild(link)
-      }
-    }
-  }, [priority, src, isCloudinary, getTransformedUrl])
 
   const handleLoad = (e) => {
     setIsLoaded(true)
