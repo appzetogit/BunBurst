@@ -28,14 +28,13 @@ async function initializeCloudinary() {
     const apiKey = cleanEnv(credentials.apiKey || process.env.CLOUDINARY_API_KEY);
     const apiSecret = cleanEnv(credentials.apiSecret || process.env.CLOUDINARY_API_SECRET);
 
-    console.log('🔧 Cloudinary initialization check:', {
-      hasCloudName: !!cloudName,
-      hasApiKey: !!apiKey,
-      hasApiSecret: !!apiSecret,
-      cloudNameLength: cloudName?.length || 0,
-      apiKeyLength: apiKey?.length || 0,
-      apiSecretLength: apiSecret?.length || 0
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 Cloudinary initialization check:', {
+        hasCloudName: !!cloudName,
+        hasApiKey: !!apiKey,
+        hasApiSecret: !!apiSecret
+      });
+    }
 
     if (!cloudName || !apiKey || !apiSecret) {
       const missing = [];

@@ -233,24 +233,24 @@ export default function JoinRequest() {
   const vehicleTypes = [...new Set(requests.map(r => r.vehicleType))].filter(Boolean)
 
   return (
-    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 lg:p-6 bg-[#F5F5F5] min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-[#e53935] flex items-center justify-center">
               <Package className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">New Joining Request</h1>
+            <h1 className="text-2xl font-bold text-[#1E1E1E]">New Joining Request</h1>
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-2 border-b border-slate-200 mb-6">
+          <div className="flex items-center gap-2 border-b border-[#F5F5F5] mb-6">
             <button
               onClick={() => handleTabChange("pending")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "pending"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
+                  ? "border-[#e53935] text-[#e53935]"
+                  : "border-transparent text-[#1E1E1E]/70 hover:text-[#1E1E1E]"
               }`}
             >
               Pending Delivery Man
@@ -259,8 +259,8 @@ export default function JoinRequest() {
               onClick={() => handleTabChange("denied")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "denied"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
+                  ? "border-[#e53935] text-[#e53935]"
+                  : "border-transparent text-[#1E1E1E]/70 hover:text-[#1E1E1E]"
               }`}
             >
               Denied Deliveryman
@@ -275,42 +275,42 @@ export default function JoinRequest() {
                   placeholder="Search by name"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
+                  className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-[#F5F5F5] bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935] text-[#1E1E1E] placeholder:text-[#1E1E1E]/40"
                 />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1E1E1E]/40" />
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsFilterOpen(true)}
-                className={`px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 flex items-center gap-2 transition-all relative ${
-                  activeFiltersCount > 0 ? "border-emerald-500 bg-emerald-50" : ""
+                className={`px-4 py-2.5 text-sm font-medium rounded-lg border border-[#F5F5F5] bg-white hover:bg-[#F5F5F5] text-[#1E1E1E] flex items-center gap-2 transition-all relative ${
+                  activeFiltersCount > 0 ? "border-[#FFC400] bg-[#FFFBEA]" : ""
                 }`}
               >
                 <Filter className="w-4 h-4" />
-                <span className="text-black font-bold">Filter</span>
+                <span className="text-[#1E1E1E] font-bold">Filter</span>
                 {activeFiltersCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white rounded-full text-[10px] flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FFC400] text-[#1E1E1E] rounded-full text-[10px] flex items-center justify-center font-bold">
                     {activeFiltersCount}
                   </span>
                 )}
               </button>
               <button
                 onClick={handleExportPDF}
-                className="px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 flex items-center gap-2 transition-all"
+                className="px-4 py-2.5 text-sm font-medium rounded-lg border border-[#F5F5F5] bg-white hover:bg-[#F5F5F5] text-[#1E1E1E] flex items-center gap-2 transition-all"
                 title="Export as PDF"
               >
                 <FileText className="w-4 h-4" />
-                <span className="text-black font-bold">PDF</span>
+                <span className="text-[#1E1E1E] font-bold">PDF</span>
               </button>
               <button
                 onClick={handleExportExcel}
-                className="px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 flex items-center gap-2 transition-all"
+                className="px-4 py-2.5 text-sm font-medium rounded-lg border border-[#F5F5F5] bg-white hover:bg-[#F5F5F5] text-[#1E1E1E] flex items-center gap-2 transition-all"
                 title="Export as Excel"
               >
                 <FileSpreadsheet className="w-4 h-4" />
-                <span className="text-black font-bold">Excel</span>
+                <span className="text-[#1E1E1E] font-bold">Excel</span>
               </button>
             </div>
           </div>
@@ -332,104 +332,95 @@ export default function JoinRequest() {
           <div className="overflow-x-auto">
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                <span className="ml-3 text-sm text-slate-600">Loading requests...</span>
+                <Loader2 className="w-8 h-8 animate-spin text-[#e53935]" />
+                <span className="ml-3 text-sm text-[#1E1E1E]/70">Loading requests...</span>
               </div>
             ) : (
               <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-[#F5F5F5] border-b border-[#F5F5F5]">
                   <tr>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
                       <div className="flex items-center gap-2">
                         <span>SI</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
+                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
                       <div className="flex items-center gap-2">
                         <span>Name</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
+                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
                       <div className="flex items-center gap-2">
                         <span>Contact</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
+                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
                       <div className="flex items-center gap-2">
                         <span>Zone</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
+                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <span>Job Type</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
                       <div className="flex items-center gap-2">
                         <span>Vehicle Type</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
+                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
                       <div className="flex items-center gap-2">
                         <span>Availability Status</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
+                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Action</th>
+                    <th className="px-6 py-4 text-center text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-100">
+                <tbody className="bg-white divide-y divide-[#F5F5F5]">
                   {filteredRequests.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-20 text-center">
-                        <p className="text-sm text-slate-500">
+                      <td colSpan={7} className="px-6 py-20 text-center">
+                        <p className="text-sm text-[#1E1E1E]/50">
                           {error ? "Error loading requests" : "No requests found"}
                         </p>
                       </td>
                     </tr>
                   ) : (
                     filteredRequests.map((request) => (
-                      <tr key={request._id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={request._id} className="hover:bg-[#F5F5F5] transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-slate-700">{request.sl}</span>
+                          <span className="text-sm font-medium text-[#1E1E1E]/80">{request.sl}</span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-[#F5F5F5] flex items-center justify-center flex-shrink-0">
                               <span className="text-sm">👤</span>
                             </div>
-                            <span className="text-sm font-medium text-slate-900">{request.name}</span>
+                            <span className="text-sm font-medium text-[#1E1E1E]">{request.name}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="text-sm text-slate-700">{request.email}</span>
-                            <span className="text-xs text-slate-500">{request.phone}</span>
+                            <span className="text-sm text-[#1E1E1E]/80">{request.email}</span>
+                            <span className="text-xs text-[#1E1E1E]/50">{request.phone}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-slate-700">{request.zone}</span>
+                          <span className="text-sm text-[#1E1E1E]/80">{request.zone}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-slate-700">{request.jobType}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-slate-700">{request.vehicleType}</span>
+                          <span className="text-sm text-[#1E1E1E]/80">{request.vehicleType}</span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-1">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium inline-block w-fit ${
                               request.status === "Pending" || request.status === "pending"
-                                ? "bg-blue-100 text-blue-700"
+                                ? "bg-[#FFFBEA] text-[#1E1E1E] border border-[#FFC400]"
                                 : request.status === "Denied" || request.status === "denied" || request.status === "blocked"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-green-100 text-green-700"
+                                ? "bg-[#FFECEC] text-[#e53935] border border-[#e53935]/40"
+                                : "bg-[#F5F5F5] text-[#1E1E1E] border border-[#F5F5F5]"
                             }`}>
                               {request.status === "blocked" || request.status === "Blocked" || request.status === "Denied" || request.status === "denied" ? "Rejected" : request.status}
                             </span>
@@ -444,7 +435,7 @@ export default function JoinRequest() {
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => handleView(request)}
-                              className="p-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                              className="p-1.5 rounded bg-[#F5F5F5] text-[#e53935] hover:bg-[#FFECEC] transition-colors"
                               title="View Details"
                             >
                               <Eye className="w-4 h-4" />
@@ -454,7 +445,7 @@ export default function JoinRequest() {
                                 <button
                                   onClick={() => handleApprove(request)}
                                   disabled={processing}
-                                  className="p-1.5 rounded bg-green-50 text-green-600 hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="p-1.5 rounded bg-[#F5F5F5] text-[#e53935] hover:bg-[#FFECEC] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Approve"
                                 >
                                   <Check className="w-4 h-4" />
@@ -462,7 +453,7 @@ export default function JoinRequest() {
                                 <button
                                   onClick={() => handleDeny(request)}
                                   disabled={processing}
-                                  className="p-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="p-1.5 rounded bg-[#F5F5F5] text-[#e53935] hover:bg-[#FFECEC] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Deny"
                                 >
                                   <X className="w-4 h-4" />
@@ -488,7 +479,7 @@ export default function JoinRequest() {
             <DialogTitle>Approve Request</DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6">
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-[#1E1E1E]/80">
               Are you sure you want to approve "{selectedRequest?.name}"'s join request?
             </p>
           </div>
@@ -496,14 +487,14 @@ export default function JoinRequest() {
             <button
               onClick={() => setIsApproveOpen(false)}
               disabled={processing}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium rounded-lg border border-[#F5F5F5] bg-white text-[#1E1E1E] hover:bg-[#F5F5F5] transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={confirmApprove}
               disabled={processing}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-[#e53935] text-white hover:bg-[#c62828] transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
             >
               {processing && <Loader2 className="w-4 h-4 animate-spin" />}
               Approve
@@ -519,11 +510,11 @@ export default function JoinRequest() {
             <DialogTitle>Deny Request</DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6 space-y-4">
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-[#1E1E1E]/80">
               Are you sure you want to deny "{selectedRequest?.name}"'s join request?
             </p>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-sm font-semibold text-[#1E1E1E] mb-2">
                 Reason for Rejection <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -531,10 +522,10 @@ export default function JoinRequest() {
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="Please provide specific reasons for rejection (e.g., Invalid documents, Incomplete information, etc.)"
                 rows={5}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm resize-none"
+                className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935] text-sm resize-none text-[#1E1E1E] placeholder:text-[#1E1E1E]/40"
                 disabled={processing}
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-[#1E1E1E]/50 mt-1">
                 This reason will be shown to the delivery partner
               </p>
             </div>
@@ -546,14 +537,14 @@ export default function JoinRequest() {
                 setRejectionReason("")
               }}
               disabled={processing}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium rounded-lg border border-[#F5F5F5] bg-white text-[#1E1E1E] hover:bg-[#F5F5F5] transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={confirmDeny}
               disabled={processing || !rejectionReason.trim()}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-[#e53935] text-white hover:bg-[#c62828] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {processing && <Loader2 className="w-4 h-4 animate-spin" />}
               Deny
@@ -564,65 +555,65 @@ export default function JoinRequest() {
 
       {/* View Details Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="max-w-3xl bg-white p-0 opacity-0 data-[state=open]:opacity-100 data-[state=closed]:opacity-0 transition-opacity duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:scale-100 data-[state=closed]:scale-100 max-h-[85vh] overflow-y-auto">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200">
-            <DialogTitle className="text-xl font-bold text-slate-900">Delivery Partner Details</DialogTitle>
+        <DialogContent className="max-w-3xl bg-white p-0 opacity-0 data-[state=open]:opacity-100 data-[state=closed]:opacity-0 transition-opacity duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:scale-100 data-[state=closed]:scale-100 max-h-[85vh] overflow-y-auto text-[#1E1E1E] [&_.text-slate-900]:text-[#1E1E1E] [&_.text-slate-700]:text-[#1E1E1E]/80 [&_.text-slate-600]:text-[#1E1E1E]/70 [&_.text-slate-500]:text-[#1E1E1E]/50 [&_.border-slate-200]:border-[#F5F5F5] [&_.border-slate-300]:border-[#F5F5F5] [&_.bg-slate-50]:bg-[#F5F5F5] [&_.bg-slate-200]:bg-[#F5F5F5]">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-[#F5F5F5]">
+            <DialogTitle className="text-xl font-bold text-[#1E1E1E]">Delivery Partner Details</DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6">
             {viewDetails ? (
               <div className="space-y-6 mt-4">
                 {/* Profile Image & Basic Info */}
-                <div className="flex items-start gap-6 pb-6 border-b border-slate-200">
+                <div className="flex items-start gap-6 pb-6 border-b border-[#F5F5F5]">
                   <div className="flex-shrink-0">
                     {viewDetails.profileImage?.url ? (
                       <img 
                         src={viewDetails.profileImage.url} 
                         alt={viewDetails.name}
-                        className="w-24 h-24 rounded-full object-cover border-2 border-slate-200"
+                        className="w-24 h-24 rounded-full object-cover border-2 border-[#F5F5F5]"
                       />
                     ) : (
-                      <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center">
-                        <User className="w-12 h-12 text-slate-400" />
+                      <div className="w-24 h-24 rounded-full bg-[#F5F5F5] flex items-center justify-center">
+                        <User className="w-12 h-12 text-[#1E1E1E]/40" />
                       </div>
                     )}
                   </div>
                   <div className="flex-1 grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-1">
+                      <label className="text-xs font-semibold text-[#1E1E1E]/50 uppercase flex items-center gap-1">
                         <User className="w-3 h-3" /> Name
                       </label>
-                      <p className="text-sm font-medium text-slate-900 mt-1">{viewDetails.name || "N/A"}</p>
+                      <p className="text-sm font-medium text-[#1E1E1E] mt-1">{viewDetails.name || "N/A"}</p>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-1">
+                      <label className="text-xs font-semibold text-[#1E1E1E]/50 uppercase flex items-center gap-1">
                         <Mail className="w-3 h-3" /> Email
                       </label>
-                      <p className="text-sm text-slate-900 mt-1">{viewDetails.email || "N/A"}</p>
+                      <p className="text-sm text-[#1E1E1E] mt-1">{viewDetails.email || "N/A"}</p>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-1">
+                      <label className="text-xs font-semibold text-[#1E1E1E]/50 uppercase flex items-center gap-1">
                         <Phone className="w-3 h-3" /> Phone
                       </label>
-                      <p className="text-sm text-slate-900 mt-1">{viewDetails.phone || "N/A"}</p>
+                      <p className="text-sm text-[#1E1E1E] mt-1">{viewDetails.phone || "N/A"}</p>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase">Delivery ID</label>
-                      <p className="text-sm font-medium text-slate-900 mt-1">{viewDetails.deliveryId || "N/A"}</p>
+                      <label className="text-xs font-semibold text-[#1E1E1E]/50 uppercase">Delivery ID</label>
+                      <p className="text-sm font-medium text-[#1E1E1E] mt-1">{viewDetails.deliveryId || "N/A"}</p>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase">Status</label>
+                      <label className="text-xs font-semibold text-[#1E1E1E]/50 uppercase">Status</label>
                       <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                        viewDetails.status === 'pending' ? 'bg-blue-100 text-blue-700' :
-                        viewDetails.status === 'approved' || viewDetails.status === 'active' ? 'bg-green-100 text-green-700' :
-                        viewDetails.status === 'blocked' ? 'bg-red-100 text-red-700' :
-                        'bg-slate-100 text-slate-700'
+                        viewDetails.status === 'pending' ? 'bg-[#FFFBEA] text-[#1E1E1E] border border-[#FFC400]' :
+                        viewDetails.status === 'approved' || viewDetails.status === 'active' ? 'bg-[#F5F5F5] text-[#1E1E1E] border border-[#F5F5F5]' :
+                        viewDetails.status === 'blocked' ? 'bg-[#FFECEC] text-[#e53935] border border-[#e53935]/40' :
+                        'bg-[#F5F5F5] text-[#1E1E1E]/80 border border-[#F5F5F5]'
                       }`}>
                         {viewDetails.status === 'blocked' ? 'Rejected' : (viewDetails.status?.charAt(0).toUpperCase() + viewDetails.status?.slice(1) || "N/A")}
                       </span>
                     </div>
                     {viewDetails.rejectionReason && (
                       <div className="col-span-2">
-                        <label className="text-xs font-semibold text-slate-500 uppercase text-red-600">Rejection Reason</label>
+                        <label className="text-xs font-semibold text-[#1E1E1E]/50 uppercase text-[#e53935]">Rejection Reason</label>
                         <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-1">
                           <p className="text-sm text-red-700 whitespace-pre-wrap">{viewDetails.rejectionReason}</p>
                         </div>
@@ -630,10 +621,10 @@ export default function JoinRequest() {
                     )}
                     {viewDetails.dateOfBirth && (
                       <div>
-                        <label className="text-xs font-semibold text-slate-500 uppercase flex items-center gap-1">
+                        <label className="text-xs font-semibold text-[#1E1E1E]/50 uppercase flex items-center gap-1">
                           <Calendar className="w-3 h-3" /> Date of Birth
                         </label>
-                        <p className="text-sm text-slate-900 mt-1">
+                        <p className="text-sm text-[#1E1E1E] mt-1">
                           {new Date(viewDetails.dateOfBirth).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                       </div>
@@ -649,8 +640,8 @@ export default function JoinRequest() {
 
                 {/* Location Details */}
                 {viewDetails.location && (
-                  <div className="pb-6 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <div className="pb-6 border-b border-[#F5F5F5]">
+                    <h3 className="text-sm font-bold text-[#1E1E1E] mb-3 flex items-center gap-2">
                       <MapPin className="w-4 h-4" /> Location Details
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -704,8 +695,8 @@ export default function JoinRequest() {
 
                 {/* Vehicle Details */}
                 {viewDetails.vehicle && (
-                  <div className="pb-6 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <div className="pb-6 border-b border-[#F5F5F5]">
+                    <h3 className="text-sm font-bold text-[#1E1E1E] mb-3 flex items-center gap-2">
                       <Bike className="w-4 h-4" /> Vehicle Details
                     </h3>
                     <div className="grid grid-cols-4 gap-4">
@@ -739,8 +730,8 @@ export default function JoinRequest() {
 
                 {/* Documents */}
                 {viewDetails.documents && (
-                  <div className="pb-6 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <div className="pb-6 border-b border-[#F5F5F5]">
+                    <h3 className="text-sm font-bold text-[#1E1E1E] mb-3 flex items-center gap-2">
                       <FileCheck className="w-4 h-4" /> Documents
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -757,7 +748,7 @@ export default function JoinRequest() {
                                 href={viewDetails.documents.aadhar.document} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                                className="inline-flex items-center gap-1 text-sm text-[#e53935] hover:text-[#c62828]"
                               >
                                 <ExternalLink className="w-3 h-3" /> View Document
                               </a>
@@ -779,7 +770,7 @@ export default function JoinRequest() {
                                 href={viewDetails.documents.pan.document} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                                className="inline-flex items-center gap-1 text-sm text-[#e53935] hover:text-[#c62828]"
                               >
                                 <ExternalLink className="w-3 h-3" /> View Document
                               </a>
@@ -806,7 +797,7 @@ export default function JoinRequest() {
                                 href={viewDetails.documents.drivingLicense.document} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                                className="inline-flex items-center gap-1 text-sm text-[#e53935] hover:text-[#c62828]"
                               >
                                 <ExternalLink className="w-3 h-3" /> View Document
                               </a>
@@ -828,7 +819,7 @@ export default function JoinRequest() {
                                 href={viewDetails.documents.vehicleRC.document} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                                className="inline-flex items-center gap-1 text-sm text-[#e53935] hover:text-[#c62828]"
                               >
                                 <ExternalLink className="w-3 h-3" /> View Document
                               </a>
@@ -842,8 +833,8 @@ export default function JoinRequest() {
 
                 {/* Bank Details */}
                 {viewDetails.documents?.bankDetails && (
-                  <div className="pb-6 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <div className="pb-6 border-b border-[#F5F5F5]">
+                    <h3 className="text-sm font-bold text-[#1E1E1E] mb-3 flex items-center gap-2">
                       <CreditCard className="w-4 h-4" /> Bank Details
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -913,14 +904,14 @@ export default function JoinRequest() {
               </div>
             ) : (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                <Loader2 className="w-6 h-6 animate-spin text-[#e53935]" />
               </div>
             )}
           </div>
-          <DialogFooter className="px-6 pb-6 border-t border-slate-200">
+          <DialogFooter className="px-6 pb-6 border-t border-[#F5F5F5]">
             <button
               onClick={() => setIsViewOpen(false)}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all"
+              className="px-4 py-2 text-sm font-medium rounded-lg border border-[#F5F5F5] bg-white text-[#1E1E1E] hover:bg-[#F5F5F5] transition-all"
             >
               Close
             </button>
@@ -939,11 +930,11 @@ export default function JoinRequest() {
           </DialogHeader>
           <div className="px-6 pb-6 space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Zone</label>
+              <label className="block text-sm font-semibold text-[#1E1E1E] mb-2">Zone</label>
               <select
                 value={filters.zone}
                 onChange={(e) => setFilters({ ...filters, zone: e.target.value })}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935] text-sm text-[#1E1E1E]"
               >
                 <option value="">All Zones</option>
                 {zones.map(zone => (
@@ -952,11 +943,11 @@ export default function JoinRequest() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Job Type</label>
+              <label className="block text-sm font-semibold text-[#1E1E1E] mb-2">Job Type</label>
               <select
                 value={filters.jobType}
                 onChange={(e) => setFilters({ ...filters, jobType: e.target.value })}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935] text-sm text-[#1E1E1E]"
               >
                 <option value="">All Job Types</option>
                 {jobTypes.map(type => (
@@ -965,11 +956,11 @@ export default function JoinRequest() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Vehicle Type</label>
+              <label className="block text-sm font-semibold text-[#1E1E1E] mb-2">Vehicle Type</label>
               <select
                 value={filters.vehicleType}
                 onChange={(e) => setFilters({ ...filters, vehicleType: e.target.value })}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935] text-sm text-[#1E1E1E]"
               >
                 <option value="">All Vehicle Types</option>
                 {vehicleTypes.map(type => (
@@ -981,13 +972,13 @@ export default function JoinRequest() {
           <DialogFooter className="px-6 pb-6">
             <button
               onClick={handleResetFilters}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all"
+              className="px-4 py-2 text-sm font-medium rounded-lg border border-[#F5F5F5] bg-white text-[#1E1E1E] hover:bg-[#F5F5F5] transition-all"
             >
               Reset
             </button>
             <button
               onClick={() => setIsFilterOpen(false)}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-md"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-[#e53935] text-white hover:bg-[#c62828] transition-all shadow-md"
             >
               Apply
             </button>

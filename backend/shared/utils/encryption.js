@@ -34,6 +34,7 @@ const getEncryptionKey = () => {
 };
 
 const ENCRYPTION_KEY = getEncryptionKey();
+const isDev = process.env.NODE_ENV === 'development';
 
 // Validate encryption key
 if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
@@ -98,9 +99,10 @@ export function encrypt(text) {
     
     return result;
   } catch (error) {
-    console.error('Encryption error:', error);
-    console.error('Text to encrypt length:', text?.length);
-    console.error('Encryption key length:', ENCRYPTION_KEY?.length);
+    console.error('Encryption error:', isDev ? error : (error?.message || error));
+    if (isDev) {
+      console.error('Text to encrypt length:', text?.length);
+    }
     throw new Error(`Failed to encrypt data: ${error.message}`);
   }
 }
@@ -133,7 +135,9 @@ export function decrypt(encryptedText) {
     
     return decrypted;
   } catch (error) {
-    console.error('Decryption error:', error);
+    if (isDev) {
+      console.error('Decryption error:', error);
+    }
     // If decryption fails, return empty string (might be unencrypted legacy data)
     return '';
   }

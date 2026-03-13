@@ -450,6 +450,7 @@ export default function Category() {
   const handleRemoveImage = () => {
     setSelectedImageFile(null)
     setImagePreview(null)
+    setFormData(prev => ({ ...prev, image: "" }))
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -485,9 +486,9 @@ export default function Category() {
       // Add image file if selected, otherwise use existing image URL
       if (selectedImageFile) {
         formDataToSend.append('image', selectedImageFile)
-      } else if (formData.image && formData.image !== 'https://via.placeholder.com/40') {
+      } else {
         // If no new file but existing image URL, send it as string
-        formDataToSend.append('image', formData.image)
+        formDataToSend.append('image', formData.image || 'https://via.placeholder.com/40')
       }
 
       if (editingCategory) {

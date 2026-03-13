@@ -752,6 +752,68 @@ export const verifyOrderPayment = async (req, res) => {
       });
     }
 
+    // Idempotency guard: prevent duplicate Payment rows / escrow holds on retries.
+    const existingPayment = await Payment.findOne({
+      orderId: order._id,
+      status: 'completed',
+      $or: [
+        { transactionId: razorpayPaymentId },
+        { 'razorpay.paymentId': razorpayPaymentId },
+        { 'razorpay.orderId': razorpayOrderId }
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (existingPayment) {
+      // Ensure order state matches the completed payment (best-effort).
+      if (order.payment?.status !== 'completed' || order.status !== 'confirmed') {
+        order.payment = {
+          ...(order.payment || {}),
+          method: order.payment?.method || 'razorpay',
+          status: 'completed',
+          razorpayOrderId,
+          razorpayPaymentId,
+          razorpaySignature,
+          transactionId: razorpayPaymentId
+        };
+        order.status = 'confirmed';
+        order.tracking.confirmed = order.tracking?.confirmed?.status
+          ? order.tracking.confirmed
+          : { status: true, timestamp: new Date() };
+        await order.save();
+      }
+
+      // Best-effort recovery: if settlement/escrow missed previously, attempt once.
+      try {
+        const { default: OrderSettlement } = await import('../models/OrderSettlement.js');
+        const settlement = await OrderSettlement.findOne({ orderId: order._id }).lean();
+        if (!settlement || settlement.escrowStatus !== 'held') {
+          await calculateOrderSettlement(order._id);
+          await holdEscrow(order._id, userId, order.pricing.total);
+        }
+      } catch (settlementError) {
+        logger.error(`❌ Idempotency recovery failed for order ${order.orderId}:`, settlementError);
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          order: {
+            id: order._id.toString(),
+            orderId: order.orderId,
+            status: order.status
+          },
+          payment: {
+            id: existingPayment._id?.toString?.() || existingPayment.paymentId,
+            paymentId: existingPayment.paymentId,
+            status: existingPayment.status
+          },
+          idempotent: true
+        }
+      });
+    }
+
     // Verify payment signature
     const isValid = await verifyPayment(razorpayOrderId, razorpayPaymentId, razorpaySignature);
 
@@ -808,10 +870,16 @@ export const verifyOrderPayment = async (req, res) => {
     // Calculate order settlement and hold escrow
     try {
       // Calculate settlement breakdown
-      await calculateOrderSettlement(order._id);
+      const { default: OrderSettlement } = await import('../models/OrderSettlement.js');
+      const existingSettlement = await OrderSettlement.findOne({ orderId: order._id }).lean();
 
-      // Hold funds in escrow
-      await holdEscrow(order._id, userId, order.pricing.total);
+      if (!existingSettlement) {
+        await calculateOrderSettlement(order._id);
+      }
+
+      if (!existingSettlement || existingSettlement.escrowStatus !== 'held') {
+        await holdEscrow(order._id, userId, order.pricing.total);
+      }
 
       logger.info(`✅ Order settlement calculated and escrow held for order ${order.orderId}`);
     } catch (settlementError) {
@@ -956,9 +1024,6 @@ export const getUserOrders = async (req, res) => {
       } else {
         query.status = status;
       }
-    }
-    if (status) {
-      query.status = status;
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);

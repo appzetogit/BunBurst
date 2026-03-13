@@ -7,6 +7,31 @@ import { toast } from "sonner"
 // Indian vehicle registration number format: MH12AB1234, DL8CAB1234, KA03MX9876
 const VEHICLE_NUMBER_REGEX = /^[A-Z]{2}\d{1,2}[A-Z]{1,3}\d{4}$/
 
+const sanitizeFullName = (value = "") => value.replace(/\d/g, "")
+const sanitizePlaceName = (value = "") => {
+  const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
+  const normalizedSpaces = lettersAndSpacesOnly.replace(/\s+/g, " ").trim()
+  if (!normalizedSpaces) return ""
+  return normalizedSpaces
+    .toLowerCase()
+    .replace(/\b[a-z]/g, (c) => c.toUpperCase())
+}
+
+const sanitizePlaceNameInput = (value = "") => {
+  const hadTrailingSpace = /\s$/.test(value)
+  const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
+  const collapsedSpaces = lettersAndSpacesOnly.replace(/\s+/g, " ").replace(/^\s+/, "")
+  const core = collapsedSpaces.trimEnd()
+  if (!core) return ""
+  const titled = core.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase())
+  return hadTrailingSpace ? `${titled} ` : titled
+}
+
+const isShortStateCode = (value = "") => {
+  const lettersOnly = value.replace(/\s/g, "")
+  return lettersOnly.length > 0 && lettersOnly.length <= 2
+}
+
 export default function SignupStep1() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
@@ -44,7 +69,13 @@ export default function SignupStep1() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        setFormData(prev => ({ ...prev, ...parsed }))
+        setFormData(prev => ({
+          ...prev,
+          ...parsed,
+          name: sanitizeFullName(parsed?.name || ""),
+          city: sanitizePlaceName(parsed?.city || ""),
+          state: sanitizePlaceName(parsed?.state || ""),
+        }))
         return // already have data, no need to hit API
       } catch { /* ignore parse errors */ }
     }
@@ -56,11 +87,11 @@ export default function SignupStep1() {
         if (!p) return
         setFormData(prev => ({
           ...prev,
-          name: p.name || "",
+          name: sanitizeFullName(p.name || ""),
           email: p.email || "",
           address: p.address || "",
-          city: p.city || "",
-          state: p.state || "",
+          city: sanitizePlaceName(p.city || ""),
+          state: sanitizePlaceName(p.state || ""),
           vehicleType: p.vehicle?.type || "bike",
           vehicleName: p.vehicle?.name || "",
           vehicleNumber: p.vehicle?.number || "",
@@ -74,6 +105,33 @@ export default function SignupStep1() {
 
   const handleChange = (e) => {
     const { name, value } = e.target
+
+    if (name === "name") {
+      const sanitized = sanitizeFullName(value)
+      setFormData(prev => ({ ...prev, name: sanitized }))
+      if (sanitized !== value) {
+        setErrors(prev => ({ ...prev, name: "Digits are not allowed in name" }))
+      } else if (errors.name) {
+        setErrors(prev => ({ ...prev, name: "" }))
+      }
+      return
+    }
+
+    if (name === "city" || name === "state") {
+      const sanitized = sanitizePlaceNameInput(value)
+      setFormData(prev => ({ ...prev, [name]: sanitized }))
+      if (name === "state") {
+        if (sanitized && isShortStateCode(sanitized)) {
+          setErrors(prev => ({ ...prev, state: "Please enter full state name (e.g., Maharashtra)" }))
+        } else if (errors.state) {
+          setErrors(prev => ({ ...prev, state: "" }))
+        }
+      } else if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: "" }))
+      }
+      return
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -96,10 +154,12 @@ export default function SignupStep1() {
   const validate = () => {
     const newErrors = {}
     if (!formData.name.trim()) newErrors.name = "Name is required"
+    else if (/\d/.test(formData.name)) newErrors.name = "Digits are not allowed in name"
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Invalid email format"
     if (!formData.address.trim()) newErrors.address = "Address is required"
     if (!formData.city.trim()) newErrors.city = "City is required"
     if (!formData.state.trim()) newErrors.state = "State is required"
+    else if (isShortStateCode(formData.state)) newErrors.state = "Please enter full state name (e.g., Maharashtra)"
     if (!formData.vehicleNumber.trim()) {
       newErrors.vehicleNumber = 'Vehicle number is required'
     } else if (!VEHICLE_NUMBER_REGEX.test(formData.vehicleNumber.trim().toUpperCase())) {

@@ -397,7 +397,17 @@ export default function Profile() {
         {/* Profile Info Card */}
         <Card className="bg-card rounded-2xl py-0 pt-1 shadow-sm mb-0 border border-border overflow-hidden">
           <CardContent className="p-4 py-0 pt-2">
-            <div className="flex items-start gap-4 mb-4">
+            <div className="flex items-start gap-4 mb-4 relative">
+              <Link to="/profile/edit" className="absolute top-0 right-0">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-border/60 bg-background/80 hover:bg-background"
+                  title="Edit profile"
+                >
+                  <PenSquare className="h-4 w-4" />
+                </Button>
+              </Link>
               <div className="relative group">
                 {/* Avatar wrapper for Gallery/Dialog */}
                 <motion.div
@@ -909,7 +919,7 @@ export default function Profile() {
                       >
                         <SettingsIcon className="h-5 w-5 text-muted-foreground" />
                       </motion.div>
-                      <span className="text-base font-medium text-foreground">Settings</span>
+                      <span className="text-base font-medium text-foreground">Notification Setting</span>
                     </div>
                     <motion.div
                       whileHover={{ x: 4 }}

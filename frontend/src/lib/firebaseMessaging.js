@@ -17,13 +17,23 @@ let currentFcmToken = "";
 let currentServiceWorkerRegistration = null;
 
 const TOKEN_SYNC_STATE_KEY = "fcm_token_sync_state_v1";
+const TOKEN_RESYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6h
+
+const shouldLogInfo = (() => {
+  try {
+    return Boolean(import.meta.env.DEV) || localStorage.getItem("debug_fcm") === "1";
+  } catch {
+    return Boolean(import.meta.env.DEV);
+  }
+})();
 
 function logInfo(message, data) {
+  if (!shouldLogInfo) return;
   if (data !== undefined) {
-
+    console.log(`${LOG_PREFIX} ${message}`, data);
     return;
   }
-
+  console.log(`${LOG_PREFIX} ${message}`);
 }
 
 function logWarn(message, data) {
@@ -94,6 +104,18 @@ function readSyncState() {
   }
 }
 
+function normalizeSyncEntry(entry) {
+  if (!entry) return { token: "", at: 0 };
+  if (typeof entry === "string") return { token: entry, at: 0 };
+  if (typeof entry === "object") {
+    return {
+      token: String(entry.token || ""),
+      at: Number(entry.at || entry.lastSyncedAt || 0) || 0,
+    };
+  }
+  return { token: "", at: 0 };
+}
+
 function writeSyncState(state) {
   try {
     localStorage.setItem(TOKEN_SYNC_STATE_KEY, JSON.stringify(state || {}));
@@ -104,12 +126,15 @@ function writeSyncState(state) {
 
 function isTokenAlreadySynced(audience, token) {
   const state = readSyncState();
-  return state?.[audience] === token;
+  const entry = normalizeSyncEntry(state?.[audience]);
+  const isSameToken = entry.token === token;
+  const isFresh = entry.at && Date.now() - entry.at < TOKEN_RESYNC_INTERVAL_MS;
+  return isSameToken && isFresh;
 }
 
 function markTokenSynced(audience, token) {
   const state = readSyncState();
-  state[audience] = token;
+  state[audience] = { token, at: Date.now() };
   writeSyncState(state);
 }
 

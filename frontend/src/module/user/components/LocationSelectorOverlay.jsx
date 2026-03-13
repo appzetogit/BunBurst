@@ -44,7 +44,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
   const navigate = useNavigate()
   const inputRef = useRef(null)
   const [searchValue, setSearchValue] = useState("")
-  const { location, loading, requestLocation } = useGeoLocation()
+  const { location, loading, requestLocation, setManualLocation } = useGeoLocation()
   const { addresses = [], addAddress, updateAddress, userProfile } = useProfile()
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [mapPosition, setMapPosition] = useState([22.7196, 75.8577]) // Default Indore coordinates [lat, lng]
@@ -839,8 +839,8 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       // User can manually open address form if needed
       if (locationData?.latitude && locationData?.longitude) {
         setMapPosition([locationData.latitude, locationData.longitude])
-        // Don't automatically show address form - keep user on same page
-        // setShowAddressForm(true)
+        // Automatically show address form with current location details
+        setShowAddressForm(true)
 
         // Update address form data with complete address (for when user opens form)
         if (locationData.formattedAddress) {
@@ -852,6 +852,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             state: locationData.state || prev.state,
             zipCode: locationData.postalCode || prev.zipCode,
             additionalDetails: locationData.formattedAddress || prev.additionalDetails,
+            phone: userProfile?.phone || prev.phone || "",
           }))
         }
 
@@ -887,11 +888,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         duration: 2000,
       })
 
-      // Wait 2 seconds then redirect to home page
-      setTimeout(() => {
-        onClose()
-        navigate("/")
-      }, 2000)
+
     } catch (error) {
       // Handle permission denied or other errors
       if (error.code === 1 || error.message?.includes("denied") || error.message?.includes("permission")) {
@@ -1988,6 +1985,24 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         toast.success(`Address saved as ${normalizedLabel}!`)
       }
 
+      const zipPart = addressToSave.zipCode ? ` ${addressToSave.zipCode}` : ""
+      const locationData = {
+        latitude: addressToSave.latitude,
+        longitude: addressToSave.longitude,
+        city: addressToSave.city,
+        state: addressToSave.state,
+        street: addressToSave.street,
+        postalCode: addressToSave.zipCode,
+        area: addressToSave.additionalDetails || "",
+        address: `${addressToSave.street}, ${addressToSave.city}`,
+        formattedAddress: addressToSave.additionalDetails
+          ? `${addressToSave.additionalDetails}, ${addressToSave.street}, ${addressToSave.city}, ${addressToSave.state}${zipPart}`
+          : `${addressToSave.street}, ${addressToSave.city}, ${addressToSave.state}${zipPart}`,
+      }
+
+      setManualLocation(locationData)
+      window.dispatchEvent(new CustomEvent("userDeliveryLabelChanged", { detail: { label: normalizedLabel } }))
+
       // Reset form
       setAddressFormData({
         street: "",
@@ -2001,9 +2016,8 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       setShowAddressForm(false)
       setLoadingAddress(false)
 
-      // Close overlay and redirect to home page
+      // Close overlay and stay on the current page
       onClose()
-      navigate("/")
     } catch (error) {
       console.error("❌ Error saving address:", error)
       console.error("❌ Error details:", {
@@ -2039,7 +2053,6 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       label: "Home",
       phone: "",
     })
-    navigate("/")
   }
 
   const handleSelectSavedAddress = async (address) => {
@@ -2073,7 +2086,9 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         longitude,
         formattedAddress: `${address.street}, ${address.city}, ${address.state}`
       }
+      setManualLocation(locationData)
       localStorage.setItem("userLocation", JSON.stringify(locationData))
+      window.dispatchEvent(new CustomEvent("userDeliveryLabelChanged", { detail: { label: address.label || "Location" } }))
 
       // Update map position to show selected address
       setMapPosition([latitude, longitude])
@@ -2375,7 +2390,6 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
               size="icon"
               onClick={() => {
                 onClose()
-                navigate("/")
               }}
               className="rounded-full hover:bg-muted -ml-2"
             >

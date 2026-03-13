@@ -14,6 +14,37 @@ export default function DeliveryEmergencyHelp() {
   })
   const [formErrors, setFormErrors] = useState({})
 
+  const sanitizePhoneInput = (value = "") => {
+    const allowed = String(value).replace(/[^\d\s\-\+\(\)]/g, "")
+    // Keep only one '+' and only at the beginning
+    const hasLeadingPlus = allowed.trimStart().startsWith("+")
+    const withoutPlus = allowed.replace(/\+/g, "")
+    const rebuilt = hasLeadingPlus ? `+${withoutPlus}` : withoutPlus
+    // Collapse spaces
+    return rebuilt.replace(/\s+/g, " ").trimStart().slice(0, 24)
+  }
+
+  const normalizeForDial = (value = "") => {
+    const raw = String(value).trim()
+    if (!raw) return ""
+    const stripped = raw.replace(/[\s\-\(\)]/g, "")
+    const hasPlus = stripped.startsWith("+")
+    const digitsOnly = stripped.replace(/[^\d]/g, "")
+    return hasPlus ? `+${digitsOnly}` : digitsOnly
+  }
+
+  const validatePhoneValue = (value = "") => {
+    const normalized = normalizeForDial(value)
+    if (!normalized) return ""
+    if (normalized.startsWith("+")) {
+      const digits = normalized.slice(1)
+      if (!/^\d{8,15}$/.test(digits)) return "Invalid phone number"
+      return ""
+    }
+    if (!/^\d{3,15}$/.test(normalized)) return "Invalid phone number"
+    return ""
+  }
+
   // Fetch emergency help numbers on component mount
   useEffect(() => {
     fetchEmergencyHelp()
@@ -43,29 +74,28 @@ export default function DeliveryEmergencyHelp() {
 
   const validateForm = () => {
     const errors = {}
-    const phoneRegex = /^[\d\s\-\+\(\)]+$/
 
-    if (formData.medicalEmergency && !phoneRegex.test(formData.medicalEmergency.trim())) {
-      errors.medicalEmergency = "Invalid phone number format"
-    }
-    if (formData.accidentHelpline && !phoneRegex.test(formData.accidentHelpline.trim())) {
-      errors.accidentHelpline = "Invalid phone number format"
-    }
-    if (formData.contactPolice && !phoneRegex.test(formData.contactPolice.trim())) {
-      errors.contactPolice = "Invalid phone number format"
-    }
-    if (formData.insurance && !phoneRegex.test(formData.insurance.trim())) {
-      errors.insurance = "Invalid phone number format"
-    }
+    const medicalError = validatePhoneValue(formData.medicalEmergency)
+    if (medicalError) errors.medicalEmergency = medicalError
+
+    const accidentError = validatePhoneValue(formData.accidentHelpline)
+    if (accidentError) errors.accidentHelpline = accidentError
+
+    const policeError = validatePhoneValue(formData.contactPolice)
+    if (policeError) errors.contactPolice = policeError
+
+    const insuranceError = validatePhoneValue(formData.insurance)
+    if (insuranceError) errors.insurance = insuranceError
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
 
   const handleInputChange = (field, value) => {
+    const sanitized = sanitizePhoneInput(value)
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: sanitized
     }))
     // Clear error for this field when user starts typing
     if (formErrors[field]) {
@@ -88,10 +118,10 @@ export default function DeliveryEmergencyHelp() {
     try {
       setSaving(true)
       const response = await adminAPI.createOrUpdateEmergencyHelp({
-        medicalEmergency: formData.medicalEmergency.trim(),
-        accidentHelpline: formData.accidentHelpline.trim(),
-        contactPolice: formData.contactPolice.trim(),
-        insurance: formData.insurance.trim(),
+        medicalEmergency: normalizeForDial(formData.medicalEmergency),
+        accidentHelpline: normalizeForDial(formData.accidentHelpline),
+        contactPolice: normalizeForDial(formData.contactPolice),
+        insurance: normalizeForDial(formData.insurance),
       })
 
       if (response?.data?.success) {
@@ -142,11 +172,11 @@ export default function DeliveryEmergencyHelp() {
 
   if (loading) {
     return (
-      <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
+      <div className="p-4 lg:p-6 bg-[#F5F5F5] min-h-screen">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-[#e53935]" />
             </div>
           </div>
         </div>
@@ -155,26 +185,26 @@ export default function DeliveryEmergencyHelp() {
   }
 
   return (
-    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 lg:p-6 bg-[#F5F5F5] min-h-screen">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
-            <Phone className="w-6 h-6 text-slate-600" />
+            <Phone className="w-6 h-6 text-[#e53935]" />
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Delivery Emergency Help</h1>
-              <p className="text-sm text-slate-600 mt-1">
+              <h1 className="text-2xl font-bold text-[#1E1E1E]">Delivery Emergency Help</h1>
+              <p className="text-sm text-[#1E1E1E]/70 mt-1">
                 Manage emergency contact numbers for delivery partners
               </p>
             </div>
           </div>
 
           {/* Info Card */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mb-6 p-4 bg-[#FFFBEA] border border-[#FFC400] rounded-lg">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-              <div className="text-sm text-blue-800">
-                <p className="font-semibold mb-1">Important Information</p>
+              <AlertCircle className="w-5 h-5 text-[#FFC400] mt-0.5 shrink-0" />
+              <div className="text-sm text-[#1E1E1E]/80">
+                <p className="font-semibold mb-1 text-[#1E1E1E]">Important Information</p>
                 <p>
                   These phone numbers will be displayed to delivery partners in the emergency help section.
                   When a delivery partner clicks on any emergency option, it will automatically dial the corresponding number.
@@ -187,20 +217,20 @@ export default function DeliveryEmergencyHelp() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {emergencyFields.map((field) => (
               <div key={field.id} className="space-y-2">
-                <label className="block text-sm font-semibold text-slate-900">
+                <label className="block text-sm font-semibold text-[#1E1E1E]">
                   <span className="mr-2">{field.icon}</span>
                   {field.label}
                 </label>
-                <p className="text-xs text-slate-600 mb-2">{field.description}</p>
+                <p className="text-xs text-[#1E1E1E]/70 mb-2">{field.description}</p>
                 <div className="relative">
                   <input
                     type="text"
                     value={formData[field.id]}
                     onChange={(e) => handleInputChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors[field.id]
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935] text-[#1E1E1E] placeholder:text-[#1E1E1E]/40 ${formErrors[field.id]
                       ? "border-red-300 focus:ring-red-500"
-                      : "border-slate-300"
+                      : "border-[#F5F5F5]"
                       }`}
                   />
                   {formErrors[field.id] && (
@@ -214,11 +244,11 @@ export default function DeliveryEmergencyHelp() {
             ))}
 
             {/* Submit Button */}
-            <div className="pt-4 border-t border-slate-200">
+            <div className="pt-4 border-t border-[#F5F5F5]">
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 bg-[#e53935] text-white rounded-lg font-semibold hover:bg-[#c62828] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {saving ? (
                   <>
@@ -237,9 +267,9 @@ export default function DeliveryEmergencyHelp() {
 
           {/* Success Message */}
           {!loading && !saving && (
-            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center gap-2 text-green-800">
-                <CheckCircle2 className="w-5 h-5" />
+            <div className="mt-6 p-4 bg-[#FFFBEA] border border-[#FFC400] rounded-lg">
+              <div className="flex items-center gap-2 text-[#1E1E1E]">
+                <CheckCircle2 className="w-5 h-5 text-[#FFC400]" />
                 <p className="text-sm font-medium">
                   Changes will be reflected immediately for all delivery partners
                 </p>

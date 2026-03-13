@@ -190,6 +190,19 @@ export default function Orders() {
 
   // Fetch orders from backend API
   useEffect(() => {
+    const shouldDebug = (() => {
+      try {
+        return Boolean(import.meta.env.DEV) && localStorage.getItem("debug_orders") === "1"
+      } catch {
+        return false
+      }
+    })()
+    const dlog = (...args) => {
+      if (shouldDebug) console.log(...args)
+    }
+
+    let fetchInFlight = false
+
     const areOrdersEqual = (currentOrders, nextOrders) => {
       if (currentOrders.length !== nextOrders.length) return false
 
@@ -223,10 +236,13 @@ export default function Orders() {
       const startedAt = new Date().toISOString()
 
       try {
+        if (fetchInFlight) return
+        fetchInFlight = true
+
         if (!silent) {
           setLoading(true)
         }
-        console.log("[Orders] fetchOrders:start", {
+        dlog("[Orders] fetchOrders:start", {
           startedAt,
           path: window.location.pathname,
           hasUserToken: !!localStorage.getItem("user_accessToken"),
@@ -254,7 +270,7 @@ export default function Orders() {
         }
         
         if (ordersData.length > 0) {
-          console.log('📦 Raw orders from API:', ordersData.slice(0, 3).map(o => ({
+          dlog('📦 Raw orders from API:', ordersData.slice(0, 3).map(o => ({
             id: o.orderId || o._id,
             status: o.status,
             userRating: o.userRating || o.review?.rating,
@@ -329,7 +345,7 @@ export default function Orders() {
           // Sort by date (newest first)
           transformedOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           
-          console.log('✅ Orders fetched and transformed:', {
+          dlog('✅ Orders fetched and transformed:', {
             total: transformedOrders.length,
             delivered: transformedOrders.filter(o => o.status === 'delivered' || o.originalStatus === 'delivered').length,
             withRating: transformedOrders.filter(o => o.userRating).length,
@@ -341,7 +357,7 @@ export default function Orders() {
               deliveredAt: o.deliveredAt
             }))
           })
-          console.log("[Orders] fetchOrders:success", {
+          dlog("[Orders] fetchOrders:success", {
             startedAt,
             finishedAt: new Date().toISOString(),
             totalOrders: transformedOrders.length,
@@ -350,7 +366,7 @@ export default function Orders() {
 
           setOrders((currentOrders) => {
             if (areOrdersEqual(currentOrders, transformedOrders)) {
-              console.log("[Orders] fetchOrders:unchanged", {
+              dlog("[Orders] fetchOrders:unchanged", {
                 startedAt,
                 finishedAt: new Date().toISOString(),
               })
@@ -360,8 +376,8 @@ export default function Orders() {
             return transformedOrders
           })
         } else {
-          console.log('⚠️ No orders data in response')
-          console.log("[Orders] fetchOrders:empty", {
+          dlog('⚠️ No orders data in response')
+          dlog("[Orders] fetchOrders:empty", {
             startedAt,
             finishedAt: new Date().toISOString(),
             responseShape: Object.keys(response?.data || {}),
@@ -389,6 +405,7 @@ export default function Orders() {
         }
         setOrders([])
       } finally {
+        fetchInFlight = false
         if (!silent) {
           setLoading(false)
         }
@@ -400,7 +417,10 @@ export default function Orders() {
     // Poll for order updates every 20 seconds to detect delivered orders
     // This ensures rating popup shows quickly when order is delivered
     const pollInterval = setInterval(() => {
-      console.log("[Orders] pollInterval:tick", {
+      if (document.visibilityState !== 'visible') return
+      if (fetchInFlight) return
+
+      dlog("[Orders] pollInterval:tick", {
         tickAt: new Date().toISOString(),
         intervalMs: 20000,
         path: window.location.pathname,

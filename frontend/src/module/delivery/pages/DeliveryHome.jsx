@@ -417,7 +417,6 @@ export default function DeliveryHome() {
   // Default location - will be set from saved location or GPS, not hardcoded
   const [riderLocation, setRiderLocation] = useState(null) // Will be set from GPS or saved location
   const [isRefreshingLocation, setIsRefreshingLocation] = useState(false)
-  const [bankDetailsFilled, setBankDetailsFilled] = useState(false)
   const [deliveryStatus, setDeliveryStatus] = useState(null) // Store delivery partner status
   const [rejectionReason, setRejectionReason] = useState(null) // Store rejection reason
   const [isReverifying, setIsReverifying] = useState(false) // Loading state for reverify
@@ -4495,14 +4494,13 @@ export default function DeliveryHome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount
 
-  // Fetch bank details status and delivery partner status
+  // Fetch delivery partner status
   useEffect(() => {
-    const checkBankDetails = async () => {
+    const refreshDeliveryProfileStatus = async () => {
       try {
         const response = await deliveryAPI.getProfile()
         if (response?.data?.success && response?.data?.data?.profile) {
           const profile = response.data.data.profile
-          const bankDetails = profile?.documents?.bankDetails
 
           // Store delivery partner status first
           if (profile?.status) {
@@ -4515,46 +4513,20 @@ export default function DeliveryHome() {
           } else {
             setRejectionReason(null)
           }
-
-          // Only check bank details if status is approved/active
-          // Pending users don't need bank details check
-          if (profile?.status && profile.status !== 'pending') {
-            // Check if all required bank details fields are filled
-            const isFilled = !!(
-              bankDetails?.accountHolderName?.trim() &&
-              bankDetails?.accountNumber?.trim() &&
-              bankDetails?.ifscCode?.trim() &&
-              bankDetails?.bankName?.trim()
-            )
-
-            setBankDetailsFilled(isFilled)
-          } else {
-            // For pending status, don't show bank details banner
-            setBankDetailsFilled(true) // Set to true to hide banner
-          }
         }
       } catch (error) {
         // Only log error if it's not a network or timeout error (backend might be down/slow)
         if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          console.error("Error checking bank details:", error)
-        }
-        // Default to showing the bank details banner if we can't check (only for approved users)
-        // For network/timeout errors, DON'T override deliveryStatus to 'pending'
-        // so that already-approved riders don't see the verification banner again.
-        if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-          // Keep existing deliveryStatus; just hide bank-details banner so UI doesn't block
-          setBankDetailsFilled(true)
-        } else {
-          setBankDetailsFilled(false)
+          console.error("Error fetching delivery profile:", error)
         }
       }
     }
 
-    checkBankDetails()
+    refreshDeliveryProfileStatus()
 
     // Listen for profile updates
     const handleProfileRefresh = () => {
-      checkBankDetails()
+      refreshDeliveryProfileStatus()
     }
 
     window.addEventListener('deliveryProfileRefresh', handleProfileRefresh)
@@ -7511,21 +7483,7 @@ export default function DeliveryHome() {
   const carouselSlides = useMemo(() => {
     const slides = []
 
-    // Slide 1: Bank details not filled → always show as priority
-    if (!bankDetailsFilled) {
-      slides.push({
-        id: 'bank-details',
-        title: 'Submit bank details',
-        subtitle: 'PAN & bank details required for payouts',
-        icon: 'bank',
-        buttonText: 'Submit',
-        bgColor: 'bg-[#FFC400]',
-        action: 'navigate',
-        path: '/delivery/profile/details'
-      })
-    }
-
-    // Slide 2: Active earning addon / earnings guarantee offer
+    // Slide 1: Active earning addon / earnings guarantee offer
     if (activeEarningAddon && (activeEarningAddon.isValid || activeEarningAddon.isUpcoming)) {
       const target = activeEarningAddon.earningAmount || 0
       const orders = activeEarningAddon.requiredOrders || 0
@@ -7566,22 +7524,7 @@ export default function DeliveryHome() {
       }
     }
 
-    // Slide 5: COD cash pending
-    if (deliveryStatus === 'approved' || deliveryStatus === 'active') {
-      const pendingCash = Number(walletState?.pendingCash) || 0
-      if (pendingCash > 0) {
-        slides.push({
-          id: 'pocket-balance',
-          title: `Pending COD cash: ₹${pendingCash.toFixed(0)}`,
-          subtitle: 'Submit collected cash to admin',
-          icon: 'bank',
-          buttonText: 'View',
-          bgColor: 'bg-[#FFC400]',
-          action: 'navigate',
-          path: '/delivery/requests'
-        })
-      }
-    }
+    // Slide 5: COD cash pending removed as per request
 
     // Slide 3.5: Active order / en-route cafe info
     const activeCafeName =
@@ -7639,7 +7582,6 @@ export default function DeliveryHome() {
 
     return slides
   }, [
-    bankDetailsFilled,
     availableCashLimit,
     walletState,
     activeEarningAddon,
@@ -7657,6 +7599,15 @@ export default function DeliveryHome() {
 
   // Auto-rotate carousel
   useEffect(() => {
+    if (carouselAutoRotateRef.current) {
+      clearInterval(carouselAutoRotateRef.current)
+    }
+
+    if (carouselSlides.length <= 1) {
+      setCurrentCarouselSlide(0)
+      return undefined
+    }
+
     // Reset to first slide if current slide is out of bounds
     setCurrentCarouselSlide((prev) => {
       if (prev >= carouselSlides.length) {
@@ -7673,10 +7624,11 @@ export default function DeliveryHome() {
         clearInterval(carouselAutoRotateRef.current)
       }
     }
-  }, [carouselSlides])
+  }, [carouselSlides.length])
 
   // Reset auto-rotate timer after manual swipe
   const resetCarouselAutoRotate = useCallback(() => {
+    if (carouselSlides.length <= 1) return
     if (carouselAutoRotateRef.current) {
       clearInterval(carouselAutoRotateRef.current)
     }
@@ -7711,6 +7663,12 @@ export default function DeliveryHome() {
 
   const handleCarouselTouchEnd = useCallback((e) => {
     if (!carouselIsSwiping.current) return
+    if (carouselSlides.length === 0) {
+      carouselIsSwiping.current = false
+      carouselStartX.current = 0
+      carouselStartY.current = 0
+      return
+    }
 
     const endX = e.changedTouches[0].clientX
     const endY = e.changedTouches[0].clientY
@@ -7758,6 +7716,13 @@ export default function DeliveryHome() {
       const threshold = 50
 
       if (Math.abs(deltaX) > threshold) {
+        if (carouselSlides.length === 0) {
+          carouselIsSwiping.current = false
+          carouselStartX.current = 0
+          document.removeEventListener('mousemove', handleMouseMove)
+          document.removeEventListener('mouseup', handleMouseUp)
+          return
+        }
         if (deltaX > 0) {
           // Swiped left - go to next slide
           setCurrentCarouselSlide((prev) => (prev + 1) % carouselSlides.length)

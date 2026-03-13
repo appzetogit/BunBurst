@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Plus, Minus, ArrowLeft, ChevronRight, Clock, MapPin, Phone, FileText, Utensils, Tag, Percent, Truck, Share2, ChevronUp, ChevronDown, X, Check, Settings, CreditCard, Wallet, Building2, Sparkles, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -342,6 +342,24 @@ export default function Cart() {
   const [orderProgress, setOrderProgress] = useState(0)
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
   const [placedOrderId, setPlacedOrderId] = useState(null)
+  const [selectedAddressLabel, setSelectedAddressLabel] = useState(() => {
+    return localStorage.getItem("userDeliveryAddressLabel") || "Location"
+  })
+
+  // Keep the selected label in sync when the location selector overlay saves/chooses an address.
+  useEffect(() => {
+    const handleLabelChange = (e) => {
+      const nextLabel = e?.detail?.label
+      if (!nextLabel) return
+      setSelectedAddressLabel(nextLabel)
+      localStorage.setItem("userDeliveryAddressLabel", nextLabel)
+    }
+
+    window.addEventListener("userDeliveryLabelChanged", handleLabelChange)
+    return () => {
+      window.removeEventListener("userDeliveryLabelChanged", handleLabelChange)
+    }
+  }, [])
 
 
   // Cafe and pricing state
@@ -881,12 +899,14 @@ export default function Cart() {
 
   // Handler to select address by label (Home, Office, Other)
   const handleSelectAddressByLabel = async (label) => {
+    setSelectedAddressLabel(label)
+    localStorage.setItem("userDeliveryAddressLabel", label)
     try {
       // Find address with matching label
       const address = addresses.find(addr => addr.label === label)
 
       if (!address) {
-        toast.error(`No ${label} address found. Please add an address first.`)
+        toast.info(`Using current location as ${label}`)
         return
       }
 
@@ -1537,34 +1557,38 @@ export default function Cart() {
 
 
               {/* Note & Cutlery */}
-              <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl flex flex-col sm:flex-row gap-2 md:gap-3">
-                <button
-                  onClick={() => setShowNoteInput(!showNoteInput)}
-                  className="flex-1 flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border border-border rounded-lg md:rounded-xl text-sm md:text-base text-muted-foreground hover:bg-muted"
-                >
-                  <FileText className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="truncate">{note || "Add a note for the cafe"}</span>
-                </button>
-                <button
-                  onClick={() => setSendCutlery(!sendCutlery)}
-                  className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border rounded-lg md:rounded-xl text-sm md:text-base ${sendCutlery ? 'border-border text-muted-foreground' : 'border-primary text-primary bg-primary/10'}`}
-                >
-                  <Utensils className="h-4 w-4 md:h-5 md:w-5" />
-                  <span className="whitespace-nowrap">{sendCutlery ? "Don't send cutlery" : "No cutlery"}</span>
-                </button>
-              </div>
+              <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl">
+                <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+                  <div className="flex-1 flex flex-col">
+                    <button
+                      onClick={() => setShowNoteInput(!showNoteInput)}
+                      className="w-full flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border border-border rounded-lg md:rounded-xl text-sm md:text-base text-muted-foreground hover:bg-muted"
+                    >
+                      <FileText className="h-4 w-4 md:h-5 md:w-5" />
+                      <span className="truncate">{note || "Add a note for the cafe"}</span>
+                    </button>
 
-              {/* Note Input */}
-              {showNoteInput && (
-                <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl">
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Add cooking instructions, allergies, etc."
-                    className="w-full border border-border rounded-lg md:rounded-xl p-3 md:p-4 text-sm md:text-base resize-none h-20 md:h-24 focus:outline-none focus:border-primary bg-background text-foreground"
-                  />
+                    {/* Note Input (opens right below the note button) */}
+                    {showNoteInput && (
+                      <div className="mt-3">
+                        <textarea
+                          value={note}
+                          onChange={(e) => setNote(e.target.value)}
+                          placeholder="Add cooking instructions, allergies, etc."
+                          className="w-full border border-border rounded-lg md:rounded-xl p-3 md:p-4 text-sm md:text-base resize-none h-20 md:h-24 focus:outline-none focus:border-primary bg-background text-foreground"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setSendCutlery(!sendCutlery)}
+                    className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border rounded-lg md:rounded-xl text-sm md:text-base ${sendCutlery ? 'border-border text-muted-foreground' : 'border-primary text-primary bg-primary/10'}`}
+                  >
+                    <Utensils className="h-4 w-4 md:h-5 md:w-5" />
+                    <span className="whitespace-nowrap">{sendCutlery ? "Don't send cutlery" : "No cutlery"}</span>
+                  </button>
                 </div>
-              )}
+              </div>
 
               {/* Complete your meal section - Approved Addons */}
               {addons.length > 0 && (
@@ -1749,7 +1773,7 @@ export default function Cart() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between w-full">
                         <p className="text-sm md:text-base text-foreground">
-                          Delivery at <span className="font-semibold">Location</span>
+                          Delivery at <span className="font-semibold">{selectedAddressLabel}</span>
                         </p>
                         <span className="text-primary font-medium text-xs md:text-sm">Edit</span>
                       </div>
@@ -1760,6 +1784,7 @@ export default function Cart() {
                       <div className="flex gap-2 mt-2">
                         {["Home", "Office", "Other"].map((label) => {
                           const addressExists = addresses.some(addr => addr.label === label)
+                          const isActive = selectedAddressLabel === label
                           return (
                             <button
                               key={label}
@@ -1768,10 +1793,12 @@ export default function Cart() {
                                 e.stopPropagation()
                                 handleSelectAddressByLabel(label)
                               }}
-                              disabled={!addressExists}
-                              className={`text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded-md border transition-colors ${addressExists
-                                ? 'border-border text-foreground hover:bg-muted bg-card'
-                                : 'border-border/30 text-muted-foreground/50 cursor-not-allowed opacity-50'
+
+                              className={`text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded-md border transition-all duration-200 ${isActive
+                                ? 'border-primary text-primary bg-primary/10 shadow-sm scale-110'
+                                : addressExists
+                                  ? 'border-border text-foreground hover:bg-muted bg-card'
+                                  : 'border-border/30 text-muted-foreground/60 bg-muted/50 hover:bg-muted'
                                 }`}
                             >
                               {label}

@@ -2795,6 +2795,125 @@ export const getAllOffers = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Create Offer (Admin)
+ * POST /api/admin/offers
+ * Body: { cafeId, goalId, discountType, items: [{ itemId?, itemName, originalPrice, discountPercentage? | discountedPrice?, couponCode }], startDate?, endDate? }
+ */
+export const createOfferAdmin = asyncHandler(async (req, res) => {
+  try {
+    const {
+      cafeId,
+      goalId,
+      discountType,
+      items = [],
+      startDate,
+      endDate,
+    } = req.body || {};
+
+    if (!cafeId || !mongoose.Types.ObjectId.isValid(cafeId)) {
+      return errorResponse(res, 400, "Valid cafeId is required");
+    }
+
+    const cafe = await Cafe.findById(cafeId).select("_id name").lean();
+    if (!cafe) {
+      return errorResponse(res, 404, "Cafe not found");
+    }
+
+    const allowedGoalIds = [
+      "grow-customers",
+      "increase-value",
+      "mealtime-orders",
+      "delight-customers",
+    ];
+    if (!goalId || !allowedGoalIds.includes(goalId)) {
+      return errorResponse(res, 400, "Valid goalId is required");
+    }
+
+    const allowedDiscountTypes = ["percentage", "flat-price"];
+    if (!discountType || !allowedDiscountTypes.includes(discountType)) {
+      return errorResponse(
+        res,
+        400,
+        "Valid discountType is required (percentage, flat-price)",
+      );
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return errorResponse(res, 400, "At least one item is required");
+    }
+
+    const normalizedItems = items.map((item) => {
+      const itemName = trimText(item?.itemName);
+      const couponCode = trimText(item?.couponCode);
+      const itemId =
+        trimText(item?.itemId) || new mongoose.Types.ObjectId().toString();
+      const originalPrice = Number(item?.originalPrice);
+
+      if (!itemName) {
+        throw new Error("itemName is required");
+      }
+      if (!couponCode) {
+        throw new Error("couponCode is required");
+      }
+      if (!Number.isFinite(originalPrice) || originalPrice <= 0) {
+        throw new Error("originalPrice must be a positive number");
+      }
+
+      let discountPercentage = Number(item?.discountPercentage);
+      let discountedPrice = Number(item?.discountedPrice);
+
+      if (discountType === "percentage") {
+        if (!Number.isFinite(discountPercentage)) {
+          throw new Error("discountPercentage is required for percentage offer");
+        }
+        if (discountPercentage < 0 || discountPercentage > 100) {
+          throw new Error("discountPercentage must be between 0 and 100");
+        }
+        discountedPrice = Math.round(
+          originalPrice * (1 - discountPercentage / 100) * 100,
+        ) / 100;
+      } else if (discountType === "flat-price") {
+        if (!Number.isFinite(discountedPrice)) {
+          throw new Error("discountedPrice is required for flat-price offer");
+        }
+        if (discountedPrice < 0 || discountedPrice > originalPrice) {
+          throw new Error("discountedPrice must be between 0 and originalPrice");
+        }
+        discountPercentage = Math.round(
+          ((originalPrice - discountedPrice) / originalPrice) * 100 * 100,
+        ) / 100;
+      }
+
+      return {
+        itemId,
+        itemName,
+        originalPrice,
+        discountPercentage,
+        discountedPrice,
+        couponCode,
+      };
+    });
+
+    const offer = await Offer.create({
+      cafe: cafe._id,
+      goalId,
+      discountType,
+      items: normalizedItems,
+      status: "active",
+      startDate: startDate ? new Date(startDate) : new Date(),
+      endDate: endDate ? new Date(endDate) : null,
+    });
+
+    return successResponse(res, 201, "Offer created successfully", { offer });
+  } catch (error) {
+    logger.error(`Error creating offer: ${error.message}`, {
+      error: error.stack,
+    });
+    return errorResponse(res, 500, error.message || "Failed to create offer");
+  }
+});
+
+/**
  * Get Cafe Analytics for POS
  * GET /api/admin/cafe-analytics/:cafeId
  */

@@ -125,6 +125,12 @@ export default function EditProfile() {
   }, [formData, initialData])
 
   const handleChange = (field, value) => {
+    if ((field === "dateOfBirth" || field === "anniversary") && value?.isValid?.()) {
+      if (value.isAfter(dayjs(), "day")) {
+        toast.error("Future dates are not allowed")
+        return
+      }
+    }
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -194,6 +200,15 @@ export default function EditProfile() {
     try {
       setIsSaving(true)
 
+      if (formData.dateOfBirth?.isValid?.() && formData.dateOfBirth.isAfter(dayjs(), "day")) {
+        toast.error("Date of birth cannot be in the future")
+        return
+      }
+      if (formData.anniversary?.isValid?.() && formData.anniversary.isAfter(dayjs(), "day")) {
+        toast.error("Anniversary cannot be in the future")
+        return
+      }
+
       // Prepare data for API
       const updateData = {
         name: formData.name,
@@ -253,17 +268,17 @@ export default function EditProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a]">
+    <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#0a0a0a]">
       {/* Header */}
-      <div className="bg-white dark:bg-[#1a1a1a] sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
+      <div className="bg-white dark:bg-[#1a1a1a] sticky top-0 z-10 border-b border-[#F5F5F5] dark:border-gray-800">
         <div className="max-w-[1100px] mx-auto flex items-center gap-3 px-4 sm:px-0 py-4 md:py-5 lg:py-6">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
+            className="w-9 h-9 flex items-center justify-center hover:bg-[#F5F5F5] dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
           >
-            <ArrowLeft className="h-5 w-5 text-gray-700 dark:text-white" />
+            <ArrowLeft className="h-5 w-5 text-[#1E1E1E] dark:text-white" />
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Your Profile</h1>
+          <h1 className="text-lg font-semibold text-[#1E1E1E] dark:text-white">Your Profile</h1>
         </div>
       </div>
 
@@ -272,14 +287,14 @@ export default function EditProfile() {
         {/* Avatar Section */}
         <div className="flex justify-center">
           <div className="relative">
-            <Avatar className="h-24 w-24 bg-blue-400 border-0">
+            <Avatar className="h-24 w-24 bg-[#FFC400] border-0">
               {imagePreview && (
                 <AvatarImage
                   src={imagePreview}
                   alt={formData.name || 'User'}
                 />
               )}
-              <AvatarFallback className="bg-blue-400 text-white text-3xl font-semibold">
+              <AvatarFallback className="bg-[#FFC400] text-[#1E1E1E] text-3xl font-semibold">
                 {avatarInitial}
               </AvatarFallback>
             </Avatar>
@@ -287,7 +302,7 @@ export default function EditProfile() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingImage}
-              className="absolute bottom-0 right-0 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="absolute bottom-0 right-0 w-8 h-8 bg-[#e53935] rounded-full flex items-center justify-center shadow-lg border-2 border-white hover:bg-[#c62828] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUploadingImage ? (
                 <Loader2 className="h-4 w-4 text-white animate-spin" />
@@ -306,11 +321,11 @@ export default function EditProfile() {
         </div>
 
         {/* Form Card */}
-        <Card className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800">
+        <Card className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border border-[#F5F5F5] dark:border-gray-800">
           <CardContent className="p-4 sm:p-5 md:p-6 lg:p-8 space-y-4 md:space-y-5 lg:space-y-6">
             {/* Name Field */}
             <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-white">
+              <Label htmlFor="name" className="text-sm font-medium text-[#1E1E1E] dark:text-white">
                 Name
               </Label>
               <div className="relative">
@@ -319,14 +334,14 @@ export default function EditProfile() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
-                  className="pr-10 h-12 text-base border border-gray-300 dark:border-gray-700 focus:border-green-600 focus:ring-1 focus:ring-green-600 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
+                  className="pr-10 h-12 text-base border border-[#F5F5F5] dark:border-gray-700 focus:border-[#e53935] focus:ring-1 focus:ring-[#e53935] rounded-lg bg-white dark:bg-[#1a1a1a] text-[#1E1E1E] dark:text-white"
                   placeholder="Name"
                 />
                 {formData.name && (
                   <button
                     type="button"
                     onClick={() => handleClear('name')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1E1E1E]/40 dark:text-gray-500 hover:text-[#1E1E1E]/70 dark:hover:text-gray-300"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -336,7 +351,7 @@ export default function EditProfile() {
 
             {/* Mobile Field */}
             <div className="space-y-1.5">
-              <Label htmlFor="mobile" className="text-sm font-medium text-gray-700 dark:text-white">
+              <Label htmlFor="mobile" className="text-sm font-medium text-[#1E1E1E] dark:text-white">
                 Mobile
               </Label>
               <div className="flex items-center gap-2">
@@ -345,7 +360,7 @@ export default function EditProfile() {
                   type="tel"
                   value={formData.mobile}
                   onChange={(e) => handleChange('mobile', e.target.value)}
-                  className="flex-1 h-12 text-base  border border-gray-300 dark:border-gray-700 focus:border-green-600 focus:ring-1 focus:ring-green-600 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
+                  className="flex-1 h-12 text-base border border-[#F5F5F5] dark:border-gray-700 focus:border-[#e53935] focus:ring-1 focus:ring-[#e53935] rounded-lg bg-white dark:bg-[#1a1a1a] text-[#1E1E1E] dark:text-white"
                   placeholder="Mobile"
                 />
               </div>
@@ -353,7 +368,7 @@ export default function EditProfile() {
 
             {/* Email Field */}
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-white">
+              <Label htmlFor="email" className="text-sm font-medium text-[#1E1E1E] dark:text-white">
                 Email
               </Label>
               <div className="flex items-center gap-2">
@@ -362,7 +377,7 @@ export default function EditProfile() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
-                  className="flex-1 h-12 text-base border border-gray-300 dark:border-gray-700 focus:border-green-600 focus:ring-1 focus:ring-green-600 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white"
+                  className="flex-1 h-12 text-base border border-[#F5F5F5] dark:border-gray-700 focus:border-[#e53935] focus:ring-1 focus:ring-[#e53935] rounded-lg bg-white dark:bg-[#1a1a1a] text-[#1E1E1E] dark:text-white"
                   placeholder="Email"
                 />
               </div>
@@ -370,11 +385,12 @@ export default function EditProfile() {
 
             {/* Date of Birth Field */}
             <div className="space-y-1.5">
-              <Label htmlFor="dateOfBirth" className="text-sm font-medium text-gray-700 dark:text-white">
+              <Label htmlFor="dateOfBirth" className="text-sm font-medium text-[#1E1E1E] dark:text-white">
                 Date of birth
               </Label>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  disableFuture
                   value={formData.dateOfBirth}
                   onChange={(newValue) => handleChange('dateOfBirth', newValue)}
                   slotProps={{
@@ -385,19 +401,20 @@ export default function EditProfile() {
                           height: '48px',
                           borderRadius: '8px',
                           '& fieldset': {
-                            borderColor: '#d1d5db',
+                            borderColor: '#F5F5F5',
                           },
                           '&:hover fieldset': {
-                            borderColor: '#9ca3af',
+                            borderColor: '#F5F5F5',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#16a34a',
+                            borderColor: '#e53935',
                             borderWidth: '1px',
                           },
                         },
                         '& .MuiInputBase-input': {
                           padding: '12px 14px',
                           fontSize: '16px',
+                          color: '#1E1E1E',
                         },
                       },
                     },
@@ -408,11 +425,12 @@ export default function EditProfile() {
 
             {/* Anniversary Field */}
             <div className="space-y-1.5">
-              <Label htmlFor="anniversary" className="text-sm font-medium text-gray-700 dark:text-white">
-                Anniversary <span className="text-gray-400 dark:text-gray-500 font-normal">(Optional)</span>
+              <Label htmlFor="anniversary" className="text-sm font-medium text-[#1E1E1E] dark:text-white">
+                Anniversary <span className="text-[#1E1E1E]/50 dark:text-gray-500 font-normal">(Optional)</span>
               </Label>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
+                  disableFuture
                   value={formData.anniversary}
                   onChange={(newValue) => handleChange('anniversary', newValue)}
                   slotProps={{
@@ -423,19 +441,20 @@ export default function EditProfile() {
                           height: '48px',
                           borderRadius: '8px',
                           '& fieldset': {
-                            borderColor: '#d1d5db',
+                            borderColor: '#F5F5F5',
                           },
                           '&:hover fieldset': {
-                            borderColor: '#9ca3af',
+                            borderColor: '#F5F5F5',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#16a34a',
+                            borderColor: '#e53935',
                             borderWidth: '1px',
                           },
                         },
                         '& .MuiInputBase-input': {
                           padding: '12px 14px',
                           fontSize: '16px',
+                          color: '#1E1E1E',
                         },
                       },
                     },
@@ -446,14 +465,14 @@ export default function EditProfile() {
 
             {/* Gender Field */}
             <div className="space-y-1.5">
-              <Label htmlFor="gender" className="text-sm font-medium text-gray-700 dark:text-white">
+              <Label htmlFor="gender" className="text-sm font-medium text-[#1E1E1E] dark:text-white">
                 Gender
               </Label>
               <Select
                 value={formData.gender || ""}
                 onValueChange={(value) => handleChange('gender', value)}
               >
-                <SelectTrigger className="h-12 text-base border border-gray-300 dark:border-gray-700 focus:border-green-600 focus:ring-1 focus:ring-green-600 rounded-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white">
+                <SelectTrigger className="h-12 text-base border border-[#F5F5F5] dark:border-gray-700 focus:border-[#e53935] focus:ring-1 focus:ring-[#e53935] rounded-lg bg-white dark:bg-[#1a1a1a] text-[#1E1E1E] dark:text-white">
                   <SelectValue placeholder="Gender" />
                 </SelectTrigger>
                 <SelectContent>
@@ -473,7 +492,7 @@ export default function EditProfile() {
           onClick={handleUpdate}
           disabled={!hasChanges || isSaving || isUploadingImage}
           className={`w-full h-14 rounded-xl font-semibold text-base transition-all ${hasChanges && !isSaving && !isUploadingImage
-            ? 'bg-green-600 hover:bg-green-700 text-white'
+            ? 'bg-[#e53935] hover:bg-[#c62828] text-white'
             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
         >

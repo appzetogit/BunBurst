@@ -84,6 +84,9 @@ feedbackExperienceSchema.index({ rating: 1 });
 feedbackExperienceSchema.index({ experience: 1 });
 feedbackExperienceSchema.index({ module: 1 });
 feedbackExperienceSchema.index({ createdAt: -1 });
+// Used to attach order-specific ratings back onto orders without scanning the whole collection.
+feedbackExperienceSchema.index({ 'metadata.orderMongoId': 1 });
+feedbackExperienceSchema.index({ 'metadata.orderId': 1 });
 
 export default mongoose.model('FeedbackExperience', feedbackExperienceSchema);
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Search } from "lucide-react"
+import { Plus, Search } from "lucide-react"
 import { adminAPI } from "@/lib/api"
 
 export default function Coupons() {
@@ -8,28 +8,56 @@ export default function Coupons() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [cafes, setCafes] = useState([])
+  const [isCreating, setIsCreating] = useState(false)
+  const [createForm, setCreateForm] = useState({
+    cafeId: "",
+    goalId: "delight-customers",
+    discountType: "percentage",
+    itemId: "",
+    dishName: "",
+    couponCode: "",
+    originalPrice: "",
+    discountPercentage: "",
+    discountedPrice: "",
+    endDate: "",
+  })
+
+  const fetchOffers = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await adminAPI.getAllOffers({})
+
+      if (response?.data?.success) {
+        setOffers(response.data.data.offers || [])
+      } else {
+        setError("Failed to fetch offers")
+      }
+    } catch (err) {
+      console.error("Error fetching offers:", err)
+      setError(err?.response?.data?.message || "Failed to fetch offers")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCafes = async () => {
+    try {
+      const res = await adminAPI.getCafes({})
+      const list = res?.data?.data?.cafes || res?.data?.data || res?.data?.cafes || []
+      setCafes(Array.isArray(list) ? list : [])
+    } catch (err) {
+      console.error("Error fetching cafes:", err)
+      setCafes([])
+    }
+  }
+
   // Fetch offers from backend
   useEffect(() => {
-    const fetchOffers = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await adminAPI.getAllOffers({})
-
-        if (response?.data?.success) {
-          setOffers(response.data.data.offers || [])
-        } else {
-          setError("Failed to fetch offers")
-        }
-      } catch (err) {
-        console.error("Error fetching offers:", err)
-        setError(err?.response?.data?.message || "Failed to fetch offers")
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchOffers()
+    fetchCafes()
   }, [])
 
   // Filter offers based on search query
@@ -72,9 +100,19 @@ export default function Coupons() {
             <h2 className="text-xl font-bold text-slate-900">
               Offers List
             </h2>
-            <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">
-              {filteredOffers.length} {filteredOffers.length === 1 ? 'offer' : 'offers'}
-            </span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsAddOpen(true)}
+                className="px-4 py-2.5 text-sm font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Offer
+              </button>
+              <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">
+                {filteredOffers.length} {filteredOffers.length === 1 ? 'offer' : 'offers'}
+              </span>
+            </div>
           </div>
 
           {loading ? (
@@ -162,6 +200,232 @@ export default function Coupons() {
           )}
         </div>
       </div>
+
+      {/* Add Offer Modal */}
+      {isAddOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <div className="w-full max-w-2xl bg-white rounded-xl shadow-xl border border-slate-200">
+            <div className="p-5 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">Add Offer</h3>
+              <button
+                type="button"
+                onClick={() => !isCreating && setIsAddOpen(false)}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Cafe</label>
+                <select
+                  value={createForm.cafeId}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, cafeId: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Select cafe</option>
+                  {cafes.map((c) => (
+                    <option key={c._id || c.id} value={c._id || c.id}>
+                      {c.name || c.cafeName || "Unnamed Cafe"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Goal</label>
+                <select
+                  value={createForm.goalId}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, goalId: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="delight-customers">Delight customers</option>
+                  <option value="grow-customers">Grow customers</option>
+                  <option value="increase-value">Increase value</option>
+                  <option value="mealtime-orders">Mealtime orders</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Discount Type</label>
+                <select
+                  value={createForm.discountType}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, discountType: e.target.value, discountPercentage: "", discountedPrice: "" }))}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="percentage">Percentage</option>
+                  <option value="flat-price">Flat price</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Dish / Item Name</label>
+                <input
+                  type="text"
+                  value={createForm.dishName}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, dishName: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="e.g., Paneer Burger"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Item ID (Optional)</label>
+                <input
+                  type="text"
+                  value={createForm.itemId}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, itemId: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="e.g., 65f..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Coupon Code</label>
+                <input
+                  type="text"
+                  value={createForm.couponCode}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, couponCode: e.target.value.toUpperCase() }))}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="e.g., SAVE20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Original Price</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={createForm.originalPrice}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, originalPrice: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="e.g., 199"
+                />
+              </div>
+
+              {createForm.discountType === "percentage" ? (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Discount %</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={createForm.discountPercentage}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, discountPercentage: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="e.g., 20"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Discounted Price</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={createForm.discountedPrice}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, discountedPrice: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="e.g., 149"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Valid Until (Optional)</label>
+                <input
+                  type="date"
+                  value={createForm.endDate}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, endDate: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsAddOpen(false)}
+                disabled={isCreating}
+                className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isCreating}
+                onClick={async () => {
+                  if (isCreating) return
+                  const cafeId = createForm.cafeId
+                  const itemName = createForm.dishName.trim()
+                  const couponCode = createForm.couponCode.trim()
+                  const originalPrice = Number(createForm.originalPrice)
+
+                  if (!cafeId || !itemName || !couponCode || !Number.isFinite(originalPrice) || originalPrice <= 0) {
+                    alert("Please fill Cafe, Item Name, Coupon Code and a valid Original Price")
+                    return
+                  }
+
+                  const payloadItem = {
+                    itemId: createForm.itemId.trim() || undefined,
+                    itemName,
+                    originalPrice,
+                    couponCode,
+                  }
+
+                  if (createForm.discountType === "percentage") {
+                    const discountPercentage = Number(createForm.discountPercentage)
+                    if (!Number.isFinite(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) {
+                      alert("Please enter a valid discount percentage (0-100)")
+                      return
+                    }
+                    payloadItem.discountPercentage = discountPercentage
+                  } else {
+                    const discountedPrice = Number(createForm.discountedPrice)
+                    if (!Number.isFinite(discountedPrice) || discountedPrice < 0 || discountedPrice > originalPrice) {
+                      alert("Please enter a valid discounted price")
+                      return
+                    }
+                    payloadItem.discountedPrice = discountedPrice
+                  }
+
+                  setIsCreating(true)
+                  try {
+                    await adminAPI.createOffer({
+                      cafeId,
+                      goalId: createForm.goalId,
+                      discountType: createForm.discountType,
+                      items: [payloadItem],
+                      endDate: createForm.endDate ? new Date(createForm.endDate).toISOString() : null,
+                    })
+                    setIsAddOpen(false)
+                    setCreateForm(prev => ({
+                      ...prev,
+                      cafeId: "",
+                      itemId: "",
+                      dishName: "",
+                      couponCode: "",
+                      originalPrice: "",
+                      discountPercentage: "",
+                      discountedPrice: "",
+                      endDate: "",
+                    }))
+                    fetchOffers()
+                  } catch (err) {
+                    console.error("Error creating offer:", err)
+                    alert(err?.response?.data?.message || "Failed to create offer")
+                  } finally {
+                    setIsCreating(false)
+                  }
+                }}
+                className="px-4 py-2.5 text-sm font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all disabled:opacity-50"
+              >
+                {isCreating ? "Creating..." : "Create Offer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

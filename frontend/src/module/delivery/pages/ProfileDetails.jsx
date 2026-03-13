@@ -5,6 +5,59 @@ import BottomPopup from "../components/BottomPopup"
 import { toast } from "sonner"
 import { deliveryAPI } from "@/lib/api"
 
+const sanitizeAccountHolderName = (value = "") => {
+  const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
+  const normalizedSpaces = lettersAndSpacesOnly.replace(/\s+/g, " ").trim()
+  if (!normalizedSpaces) return ""
+  return normalizedSpaces
+    .toLowerCase()
+    .replace(/\b[a-z]/g, (c) => c.toUpperCase())
+}
+
+const sanitizeAccountHolderNameInput = (value = "") => {
+  const hadTrailingSpace = /\s$/.test(value)
+  const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
+  const collapsedSpaces = lettersAndSpacesOnly.replace(/\s+/g, " ").replace(/^\s+/, "")
+  const core = collapsedSpaces.trimEnd()
+  if (!core) return ""
+  const titled = core.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase())
+  return hadTrailingSpace ? `${titled} ` : titled
+}
+
+const sanitizeAccountNumber = (value = "") => value.replace(/\D/g, "")
+const sanitizeIFSC = (value = "") => value.toUpperCase().replace(/[^A-Z0-9]/g, "")
+const sanitizeBankName = (value = "") => {
+  const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
+  const normalizedSpaces = lettersAndSpacesOnly.replace(/\s+/g, " ").trim()
+  if (!normalizedSpaces) return ""
+
+  const maybeSplitBankName = (() => {
+    // If user can't type spaces (or pasted without spaces), try a light split for common patterns like "statebankofindia"
+    if (normalizedSpaces.includes(" ")) return normalizedSpaces
+    if (!/bankof/i.test(normalizedSpaces)) return normalizedSpaces
+    return normalizedSpaces
+      .replace(/bank/ig, " bank ")
+      .replace(/of/ig, " of ")
+      .replace(/india/ig, " india ")
+      .replace(/\s+/g, " ")
+      .trim()
+  })()
+
+  return maybeSplitBankName
+    .toLowerCase()
+    .replace(/\b[a-z]/g, (c) => c.toUpperCase())
+}
+
+const sanitizeBankNameInput = (value = "") => {
+  const hadTrailingSpace = /\s$/.test(value)
+  const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
+  const collapsedSpaces = lettersAndSpacesOnly.replace(/\s+/g, " ").replace(/^\s+/, "")
+  const core = collapsedSpaces.trimEnd()
+  if (!core) return ""
+  const titled = sanitizeBankName(core)
+  return hadTrailingSpace ? `${titled} ` : titled
+}
+
 export default function ProfileDetails() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
@@ -45,10 +98,10 @@ export default function ProfileDetails() {
           setVehicleInput(profileData?.vehicle?.number || "")
           // Set bank details
           setBankDetails({
-            accountHolderName: profileData?.documents?.bankDetails?.accountHolderName || "",
-            accountNumber: profileData?.documents?.bankDetails?.accountNumber || "",
-            ifscCode: profileData?.documents?.bankDetails?.ifscCode || "",
-            bankName: profileData?.documents?.bankDetails?.bankName || ""
+            accountHolderName: sanitizeAccountHolderName(profileData?.documents?.bankDetails?.accountHolderName || ""),
+            accountNumber: sanitizeAccountNumber(profileData?.documents?.bankDetails?.accountNumber || ""),
+            ifscCode: sanitizeIFSC(profileData?.documents?.bankDetails?.ifscCode || ""),
+            bankName: sanitizeBankName(profileData?.documents?.bankDetails?.bankName || "")
           })
         }
       } catch (error) {
@@ -316,14 +369,6 @@ export default function ProfileDetails() {
                 <p className="text-sm text-gray-900 mb-1">Rating</p>
                 <p className="text-base text-gray-900">
                   {profile?.metrics?.rating ? `${profile.metrics.rating.toFixed(1)} (${profile.metrics.ratingCount || 0})` : "-"}
-                </p>
-              </div>
-            </div>
-            <div className="p-2 px-3 flex items-center justify-between">
-              <div className="w-full align-center flex content-center justify-between">
-                <p className="text-sm text-gray-900 mb-1">Wallet Balance</p>
-                <p className="text-base text-gray-900">
-                  ₹{profile?.wallet?.balance?.toFixed(2) || "0.00"}
                 </p>
               </div>
             </div>
@@ -627,7 +672,7 @@ export default function ProfileDetails() {
               type="text"
               value={bankDetails.accountHolderName}
               onChange={(e) => {
-                setBankDetails(prev => ({ ...prev, accountHolderName: e.target.value }))
+                setBankDetails(prev => ({ ...prev, accountHolderName: sanitizeAccountHolderNameInput(e.target.value) }))
                 setBankDetailsErrors(prev => ({ ...prev, accountHolderName: "" }))
               }}
               placeholder="Enter account holder name"
@@ -648,8 +693,7 @@ export default function ProfileDetails() {
               type="text"
               value={bankDetails.accountNumber}
               onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '') // Only numbers
-                setBankDetails(prev => ({ ...prev, accountNumber: value }))
+                setBankDetails(prev => ({ ...prev, accountNumber: sanitizeAccountNumber(e.target.value) }))
                 setBankDetailsErrors(prev => ({ ...prev, accountNumber: "" }))
               }}
               placeholder="Enter account number"
@@ -671,8 +715,7 @@ export default function ProfileDetails() {
               type="text"
               value={bankDetails.ifscCode}
               onChange={(e) => {
-                const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') // Only uppercase letters and numbers
-                setBankDetails(prev => ({ ...prev, ifscCode: value }))
+                setBankDetails(prev => ({ ...prev, ifscCode: sanitizeIFSC(e.target.value) }))
                 setBankDetailsErrors(prev => ({ ...prev, ifscCode: "" }))
               }}
               placeholder="Enter IFSC code"
@@ -694,7 +737,7 @@ export default function ProfileDetails() {
               type="text"
               value={bankDetails.bankName}
               onChange={(e) => {
-                setBankDetails(prev => ({ ...prev, bankName: e.target.value }))
+                setBankDetails(prev => ({ ...prev, bankName: sanitizeBankNameInput(e.target.value) }))
                 setBankDetailsErrors(prev => ({ ...prev, bankName: "" }))
               }}
               placeholder="Enter bank name"

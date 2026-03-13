@@ -174,7 +174,8 @@ export async function notifyMultipleDeliveryBoys(order, deliveryPartnerIds, phas
       data: {
         type: 'new_order_available',
         orderId: order.orderId,
-        orderMongoId: order._id.toString()
+        orderMongoId: order._id.toString(),
+        link: `/delivery`
       }
     };
 
@@ -214,7 +215,8 @@ export async function notifyDeliveryBoyOrderReady(order, deliveryPartnerId) {
       data: {
         type: 'order_ready',
         orderId: order.orderId,
-        orderMongoId: order._id.toString()
+        orderMongoId: order._id.toString(),
+        link: `/delivery/order/${order._id}`
       }
     });
 

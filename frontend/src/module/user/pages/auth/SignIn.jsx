@@ -690,7 +690,7 @@ export default function SignIn() {
         throw new Error("Firebase Auth is not initialized. Please check your Firebase configuration.")
       }
 
-      const { signInWithRedirect } = await import("firebase/auth")
+      const { signInWithPopup, signInWithRedirect } = await import("firebase/auth")
 
       // Log current origin for debugging
       console.log("🚀 Starting Google sign-in redirect...", {
@@ -699,7 +699,33 @@ export default function SignIn() {
         pathname: window.location.pathname
       })
 
-      // Use redirect directly to avoid COOP issues
+      // Prefer popup on web (more reliable on localhost); fallback to redirect when popup isn't usable.
+      try {
+        console.log("🪟 Trying Google sign-in with popup...")
+        const result = await signInWithPopup(firebaseAuth, googleProvider)
+        if (result?.user) {
+          await processSignedInUser(result.user, "popup")
+          return
+        }
+        console.warn("⚠️ Popup sign-in returned no user; falling back to redirect.")
+      } catch (popupError) {
+        const popupCode = popupError?.code || ""
+        const popupMessage = popupError?.message || ""
+        console.warn("⚠️ Popup sign-in failed; may fall back to redirect.", { popupCode, popupMessage })
+
+        const shouldFallbackToRedirect = [
+          "auth/popup-blocked",
+          "auth/popup-closed-by-user",
+          "auth/cancelled-popup-request",
+          "auth/operation-not-supported-in-this-environment",
+        ].includes(popupCode)
+
+        if (!shouldFallbackToRedirect) {
+          throw popupError
+        }
+      }
+
+      console.log("🔁 Falling back to Google sign-in redirect...")
       // The redirect result will be handled by the useEffect hook above
       await signInWithRedirect(firebaseAuth, googleProvider)
 

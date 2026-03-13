@@ -2,6 +2,8 @@ import multer from 'multer';
 import { Readable } from 'stream';
 import { cloudinary } from '../../config/cloudinary.js';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Use in‑memory storage; we stream to Cloudinary
 const storage = multer.memoryStorage();
 
@@ -67,7 +69,7 @@ export function uploadToCloudinary(buffer, options = {}) {
         }
       });
 
-      console.log('📤 Cloudinary upload options:', {
+      if (isDev) console.log('📤 Cloudinary upload options:', {
         folder: uploadOptions.folder,
         resource_type: uploadOptions.resource_type,
         bufferSize: buffer.length
@@ -82,18 +84,18 @@ export function uploadToCloudinary(buffer, options = {}) {
         uploadOptions,
         (error, result) => {
           if (error) {
-            console.error('❌ Cloudinary upload error:', {
+            console.error('❌ Cloudinary upload error:', isDev ? {
               message: error.message,
               http_code: error.http_code,
               name: error.name,
               stack: error.stack
-            });
+            } : { message: error.message, http_code: error.http_code, name: error.name });
             return reject(error);
           }
           if (!result) {
             return reject(new Error('Upload failed: No result returned from Cloudinary'));
           }
-          console.log('✅ Cloudinary upload successful:', {
+          if (isDev) console.log('✅ Cloudinary upload successful:', {
             publicId: result.public_id,
             url: result.secure_url,
             resourceType: result.resource_type
@@ -104,14 +106,14 @@ export function uploadToCloudinary(buffer, options = {}) {
 
       // Handle stream errors
       uploadStream.on('error', (streamError) => {
-        console.error('❌ Cloudinary upload stream error event:', streamError);
+        console.error('❌ Cloudinary upload stream error event:', isDev ? streamError : (streamError?.message || streamError));
         reject(streamError);
       });
 
       // Pipe buffer stream to upload stream
       stream.pipe(uploadStream);
     } catch (error) {
-      console.error('❌ Error in uploadToCloudinary:', error);
+      console.error('❌ Error in uploadToCloudinary:', isDev ? error : (error?.message || error));
       reject(error);
     }
   });

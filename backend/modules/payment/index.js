@@ -1,5 +1,6 @@
 import express from 'express';
 import { initializeRazorpay } from './services/razorpayService.js';
+import { handleRazorpayWebhook } from './controllers/razorpayWebhookController.js';
 
 // Initialize Razorpay on module load
 initializeRazorpay();
@@ -14,6 +15,9 @@ router.get('/health', (req, res) => {
     razorpayConfigured: !!process.env.RAZORPAY_KEY_ID
   });
 });
+
+// Razorpay webhook (signature verified using req.rawBody set in server.js)
+router.post('/razorpay/webhook', handleRazorpayWebhook);
 
 export default router;
 

@@ -1223,6 +1223,11 @@ export const adminAPI = {
     return apiClient.get(API_ENDPOINTS.ADMIN.OFFERS, { params });
   },
 
+  // Create offer (admin)
+  createOffer: (data) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.OFFERS, data);
+  },
+
   // Cafe Commission Management
   getCafeCommissions: (params = {}) => {
     return apiClient.get(API_ENDPOINTS.ADMIN.CAFE_COMMISSION, { params });
