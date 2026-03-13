@@ -53,6 +53,10 @@ export default function DeliverySignIn() {
       return "Phone number is required"
     }
 
+    if (countryCode !== "+91") {
+      return "Only India (+91) mobile numbers are supported"
+    }
+
     const digitsOnly = phone.replace(/\D/g, "")
 
     if (digitsOnly.length === 0) {
@@ -111,12 +115,12 @@ export default function DeliverySignIn() {
   }
 
   const handlePhoneChange = (e) => {
-    // Only allow digits
-    const value = e.target.value.replace(/\D/g, "")
-    setFormData({
-      ...formData,
+    const raw = e.target.value || ""
+    const value = raw.replace(/\D/g, "")
+    setFormData(prev => ({
+      ...prev,
       phone: value,
-    })
+    }))
   }
 
   const handleCountryCodeChange = (value) => {
@@ -194,8 +198,9 @@ export default function DeliverySignIn() {
                 </SelectContent>
               </Select>
               <input
-                type="tel"
+                type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Enter 10-digit mobile number"
                 value={formData.phone}
                 onChange={handlePhoneChange}

@@ -177,13 +177,13 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     }).lean();
 
     console.log(
-      `📊 Dashboard Stats - Total settlements found: ${allSettlements.length}`,
+      `?? Dashboard Stats - Total settlements found: ${allSettlements.length}`,
     );
 
     // Debug: Log first settlement to see actual structure
     if (allSettlements.length > 0) {
       const firstSettlement = allSettlements[0];
-      console.log("🔍 First settlement sample:", {
+      console.log("?? First settlement sample:", {
         orderNumber: firstSettlement.orderNumber,
         adminEarning: firstSettlement.adminEarning,
         userPayment: firstSettlement.userPayment,
@@ -211,7 +211,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
       if (index < 5) {
         // Log first 5 settlements
         console.log(
-          `📦 Settlement ${index + 1} (${s.orderNumber}): Commission: ₹${commission}, Platform: ₹${platformFee}, Delivery: ₹${deliveryFee}, GST: ₹${gst}`,
+          `?? Settlement ${index + 1} (${s.orderNumber}): Commission: ?${commission}, Platform: ?${platformFee}, Delivery: ?${deliveryFee}, GST: ?${gst}`,
         );
       }
     });
@@ -222,7 +222,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     totalGST = Math.round(totalGST * 100) / 100;
 
     console.log(
-      `💰 Final calculated totals - Commission: ₹${totalCommission}, Platform Fee: ₹${totalPlatformFee}, Delivery Fee: ₹${totalDeliveryFee}, GST: ₹${totalGST}`,
+      `?? Final calculated totals - Commission: ?${totalCommission}, Platform Fee: ?${totalPlatformFee}, Delivery Fee: ?${totalDeliveryFee}, GST: ?${totalGST}`,
     );
 
     // Get last 30 days data from OrderSettlement
@@ -1229,7 +1229,7 @@ export const getCafes = asyncHandler(async (req, res) => {
     }
     // Default: Show all cafes (no filter on isActive) if status is not provided or 'all'
 
-    console.log("🔍 Admin Cafes List Query:", {
+    console.log("?? Admin Cafes List Query:", {
       status,
       isActive: query.isActive,
       query: JSON.stringify(query, null, 2),
@@ -1446,7 +1446,7 @@ export const getCafeJoinRequests = asyncHandler(async (req, res) => {
     }
 
     console.log(
-      "🔍 Cafe Join Requests Query:",
+      "?? Cafe Join Requests Query:",
       JSON.stringify(query, null, 2),
     );
 
@@ -1462,7 +1462,7 @@ export const getCafeJoinRequests = asyncHandler(async (req, res) => {
       .lean();
 
     // Debug: Log found cafes with detailed info
-    console.log(`📊 Found ${cafes.length} cafes matching query:`, {
+    console.log(`?? Found ${cafes.length} cafes matching query:`, {
       status,
       queryStructure: Object.keys(query).length,
       cafesFound: cafes.length,
@@ -1483,7 +1483,7 @@ export const getCafeJoinRequests = asyncHandler(async (req, res) => {
     // Get total count
     const total = await Cafe.countDocuments(query);
 
-    console.log(`📊 Total count: ${total} cafes`);
+    console.log(`?? Total count: ${total} cafes`);
 
     // Also log a sample of ALL inactive cafes (for debugging)
     if (status === "pending" && cafes.length === 0) {
@@ -1509,7 +1509,7 @@ export const getCafeJoinRequests = asyncHandler(async (req, res) => {
       });
 
       console.log(
-        "⚠️ No cafes found with query. Debugging inactive cafes:",
+        "?? No cafes found with query. Debugging inactive cafes:",
         {
           totalInactive,
           queryUsed: JSON.stringify(query, null, 2),
@@ -2745,6 +2745,7 @@ export const getAllOffers = asyncHandler(async (req, res) => {
           offerItems.push({
             sl: skip + offerItems.length + 1,
             offerId: offer._id.toString(),
+            itemIndex,
             cafeName: offer.cafe?.name || "Unknown Cafe",
             cafeId:
               offer.cafe?.cafeId ||
@@ -2914,6 +2915,126 @@ export const createOfferAdmin = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Update a single offer item (admin)
+ * PUT /api/admin/offers/:offerId/items
+ */
+export const updateOfferItemAdmin = asyncHandler(async (req, res) => {
+  try {
+    const { offerId } = req.params || {};
+    const {
+      itemIndex,
+      couponCode,
+      discountType,
+      originalPrice,
+      discountPercentage,
+      discountedPrice,
+      endDate,
+      status,
+    } = req.body || {};
+
+    if (!offerId || !mongoose.Types.ObjectId.isValid(offerId)) {
+      return errorResponse(res, 400, "Valid offerId is required");
+    }
+
+    const offer = await Offer.findById(offerId);
+    if (!offer) {
+      return errorResponse(res, 404, "Offer not found");
+    }
+
+    const index = Number.isFinite(Number(itemIndex)) ? Number(itemIndex) : -1;
+    if (index < 0 || index >= (offer.items?.length || 0)) {
+      return errorResponse(res, 400, "Valid itemIndex is required");
+    }
+
+    const targetItem = offer.items[index];
+    const nextDiscountType = discountType || offer.discountType;
+    const allowedDiscountTypes = ["percentage", "flat-price"];
+    if (!allowedDiscountTypes.includes(nextDiscountType)) {
+      return errorResponse(
+        res,
+        400,
+        "Valid discountType is required (percentage, flat-price)",
+      );
+    }
+
+    const nextOriginalPrice = Number.isFinite(Number(originalPrice))
+      ? Number(originalPrice)
+      : Number(targetItem.originalPrice);
+    if (!Number.isFinite(nextOriginalPrice) || nextOriginalPrice <= 0) {
+      return errorResponse(res, 400, "originalPrice must be a positive number");
+    }
+
+    const nextCouponCode = couponCode
+      ? trimText(couponCode)
+      : targetItem.couponCode;
+    if (!nextCouponCode) {
+      return errorResponse(res, 400, "couponCode is required");
+    }
+
+    let nextDiscountPercentage = Number(targetItem.discountPercentage) || 0;
+    let nextDiscountedPrice = Number(targetItem.discountedPrice) || 0;
+
+    if (nextDiscountType === "percentage") {
+      const dp = Number.isFinite(Number(discountPercentage))
+        ? Number(discountPercentage)
+        : nextDiscountPercentage;
+      if (!Number.isFinite(dp) || dp < 0 || dp > 100) {
+        return errorResponse(
+          res,
+          400,
+          "discountPercentage must be between 0 and 100",
+        );
+      }
+      nextDiscountPercentage = dp;
+      nextDiscountedPrice =
+        Math.round(nextOriginalPrice * (1 - dp / 100) * 100) / 100;
+    } else if (nextDiscountType === "flat-price") {
+      const dp = Number.isFinite(Number(discountedPrice))
+        ? Number(discountedPrice)
+        : nextDiscountedPrice;
+      if (!Number.isFinite(dp) || dp < 0 || dp > nextOriginalPrice) {
+        return errorResponse(
+          res,
+          400,
+          "discountedPrice must be between 0 and originalPrice",
+        );
+      }
+      nextDiscountedPrice = dp;
+      nextDiscountPercentage =
+        Math.round(
+          ((nextOriginalPrice - nextDiscountedPrice) / nextOriginalPrice) * 100 * 100,
+        ) / 100;
+    }
+
+    targetItem.couponCode = nextCouponCode;
+    targetItem.originalPrice = nextOriginalPrice;
+    targetItem.discountPercentage = nextDiscountPercentage;
+    targetItem.discountedPrice = nextDiscountedPrice;
+    offer.discountType = nextDiscountType;
+
+    if (status) {
+      offer.status = status;
+    }
+    if (endDate !== undefined) {
+      offer.endDate = endDate ? new Date(endDate) : null;
+    }
+
+    await offer.save();
+
+    return successResponse(res, 200, "Offer updated successfully", {
+      offerId: offer._id.toString(),
+      itemIndex: index,
+      item: targetItem,
+    });
+  } catch (error) {
+    logger.error(`Error updating offer: ${error.message}`, {
+      error: error.stack,
+    });
+    return errorResponse(res, 500, error.message || "Failed to update offer");
+  }
+});
+
+/**
  * Get Cafe Analytics for POS
  * GET /api/admin/cafe-analytics/:cafeId
  */
@@ -2964,7 +3085,7 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
     const cafeIdField = cafe?.cafeId || cafeIdString;
     const cafeObjectIdString = cafe._id.toString();
 
-    logger.info(`📊 Fetching order statistics for cafe:`, {
+    logger.info(`?? Fetching order statistics for cafe:`, {
       cafeId: cafeId,
       cafeIdString: cafeIdString,
       cafeIdField: cafeIdField,
@@ -2981,7 +3102,7 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
       ],
     };
 
-    logger.info(`🔍 Order query:`, orderMatchQuery);
+    logger.info(`?? Order query:`, orderMatchQuery);
 
     const orderStats = await Order.aggregate([
       {
@@ -3004,7 +3125,7 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
       },
     ]);
 
-    logger.info(`📊 Order stats found:`, orderStats);
+    logger.info(`?? Order stats found:`, orderStats);
 
     const orderStatusMap = {};
     let totalRevenue = 0;
@@ -3026,7 +3147,7 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
     const completedOrders = orderStatusMap.delivered || 0;
     const cancelledOrders = orderStatusMap.cancelled || 0;
 
-    logger.info(`📊 Calculated order statistics:`, {
+    logger.info(`?? Calculated order statistics:`, {
       totalOrders,
       completedOrders,
       cancelledOrders,
@@ -3183,7 +3304,7 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
         ? cafe._id
         : new mongoose.Types.ObjectId(cafe._id);
 
-    logger.info(`🔍 Looking for commission config:`, {
+    logger.info(`?? Looking for commission config:`, {
       cafeId: cafeId,
       cafeObjectId: cafeIdForQuery.toString(),
       cafeName: cafe.name,
@@ -3201,13 +3322,13 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
       commissionConfig = commissionConfig.toObject
         ? commissionConfig.toObject()
         : commissionConfig;
-      logger.info(`✅ Found commission using static method`);
+      logger.info(`? Found commission using static method`);
     }
 
     // If not found, try direct query
     if (!commissionConfig) {
       logger.info(
-        `⚠️ Static method didn't find commission, trying direct query`,
+        `?? Static method didn't find commission, trying direct query`,
       );
       commissionConfig = await CafeCommission.findOne({
         cafe: cafeIdForQuery,
@@ -3223,7 +3344,7 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
 
     // If still not found, try without status filter
     if (!commissionConfig) {
-      logger.info(`⚠️ Trying without status filter`);
+      logger.info(`?? Trying without status filter`);
       commissionConfig = await CafeCommission.findOne({
         cafe: cafeIdForQuery,
       });
@@ -3238,7 +3359,7 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
     // Also try by cafeId string field
     if (!commissionConfig && cafe?.cafeId) {
       logger.info(
-        `🔄 Trying by cafeId string: ${cafe.cafeId}`,
+        `?? Trying by cafeId string: ${cafe.cafeId}`,
       );
       commissionConfig = await CafeCommission.findOne({
         cafeId: cafe.cafeId,
@@ -3255,10 +3376,10 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
     if (!commissionConfig) {
       const allCommissions = await CafeCommission.find({}).lean();
       logger.warn(
-        `❌ No commission found. Total commissions in DB: ${allCommissions.length}`,
+        `? No commission found. Total commissions in DB: ${allCommissions.length}`,
       );
       logger.info(
-        `📋 All commissions:`,
+        `?? All commissions:`,
         allCommissions.map((c) => ({
           _id: c._id,
           cafe: c.cafe?.toString
@@ -3278,12 +3399,12 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
           : String(c.cafe);
         return cCafeId === cafeIdForQuery.toString();
       });
-      logger.info(`🔍 Matching commissions: ${matching.length}`, matching);
+      logger.info(`?? Matching commissions: ${matching.length}`, matching);
     }
 
     let commissionPercentage = 0;
     if (commissionConfig) {
-      logger.info(`✅ Commission config found for cafe ${cafeId}`);
+      logger.info(`? Commission config found for cafe ${cafeId}`);
       logger.info(`Commission config details:`, {
         _id: commissionConfig._id,
         cafe: commissionConfig.cafe?.toString
@@ -3299,7 +3420,7 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
 
       if (commissionConfig.defaultCommission) {
         // Get default commission value - if type is percentage, show the percentage value
-        logger.info(`📊 Processing defaultCommission:`, {
+        logger.info(`?? Processing defaultCommission:`, {
           type: commissionConfig.defaultCommission.type,
           value: commissionConfig.defaultCommission.value,
           valueType: typeof commissionConfig.defaultCommission.value,
@@ -3310,38 +3431,38 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
           commissionPercentage =
             typeof rawValue === "number" ? rawValue : parseFloat(rawValue) || 0;
           logger.info(
-            `✅ Found commission percentage: ${commissionPercentage}% for cafe ${cafeId} (raw value: ${rawValue})`,
+            `? Found commission percentage: ${commissionPercentage}% for cafe ${cafeId} (raw value: ${rawValue})`,
           );
         } else if (commissionConfig.defaultCommission.type === "amount") {
           // For amount type, we can't show a percentage, so keep it as 0
           commissionPercentage = 0;
           logger.info(
-            `⚠️ Commission type is 'amount', not 'percentage' for cafe ${cafeId}`,
+            `?? Commission type is 'amount', not 'percentage' for cafe ${cafeId}`,
           );
         }
       } else {
         logger.warn(
-          `⚠️ Commission config found but no defaultCommission for cafe ${cafeId}`,
+          `?? Commission config found but no defaultCommission for cafe ${cafeId}`,
         );
       }
     } else {
       logger.warn(
-        `❌ No commission config found for cafe ${cafeId} (cafe._id: ${cafeIdForQuery.toString()})`,
+        `? No commission config found for cafe ${cafeId} (cafe._id: ${cafeIdForQuery.toString()})`,
       );
       logger.warn(
-        `⚠️ This cafe may not have a commission configuration set up.`,
+        `?? This cafe may not have a commission configuration set up.`,
       );
       logger.warn(
-        `💡 To set up commission, go to Cafe Commission page and add commission for this cafe.`,
+        `?? To set up commission, go to Cafe Commission page and add commission for this cafe.`,
       );
     }
 
     // Log the final commission percentage being returned
     logger.info(
-      `📊 Final commission percentage being returned: ${commissionPercentage}%`,
+      `?? Final commission percentage being returned: ${commissionPercentage}%`,
     );
     logger.info(
-      `📤 Sending response with commissionPercentage: ${commissionPercentage}`,
+      `?? Sending response with commissionPercentage: ${commissionPercentage}`,
     );
 
     const FeedbackExperience = (await import("../models/FeedbackExperience.js"))
@@ -3352,7 +3473,7 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
         ? cafe._id
         : new mongoose.Types.ObjectId(cafe._id);
 
-    logger.info(`⭐ Fetching ratings for cafe:`, {
+    logger.info(`? Fetching ratings for cafe:`, {
       cafeId: cafeId,
       cafeObjectId: cafeIdForRating.toString(),
     });
@@ -3373,12 +3494,12 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
       },
     ]);
 
-    logger.info(`⭐ Rating stats found:`, ratingStats);
+    logger.info(`? Rating stats found:`, ratingStats);
 
     const averageRating = ratingStats[0]?.averageRating || 0;
     const totalRatings = ratingStats[0]?.totalRatings || 0;
 
-    logger.info(`⭐ Calculated ratings:`, {
+    logger.info(`? Calculated ratings:`, {
       averageRating,
       totalRatings,
     });
@@ -3483,10 +3604,10 @@ export const getCafeAnalytics = asyncHandler(async (req, res) => {
  */
 export const getCustomerWalletReport = asyncHandler(async (req, res) => {
   try {
-    console.log("🔍 Fetching customer wallet report...");
+    console.log("?? Fetching customer wallet report...");
     const { fromDate, toDate, all, customer, search } = req.query;
 
-    console.log("📋 Query params:", {
+    console.log("?? Query params:", {
       fromDate,
       toDate,
       all,
@@ -3642,7 +3763,7 @@ export const getCustomerWalletReport = asyncHandler(async (req, res) => {
 
     // Format currency
     const formatCurrency = (amount) => {
-      return `₹${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `?${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     // Format date
@@ -3719,7 +3840,7 @@ export const getCustomerWalletReport = asyncHandler(async (req, res) => {
       },
     );
   } catch (error) {
-    console.error("❌ Error fetching customer wallet report:", error);
+    console.error("? Error fetching customer wallet report:", error);
     console.error("Error stack:", error.stack);
     return errorResponse(
       res,

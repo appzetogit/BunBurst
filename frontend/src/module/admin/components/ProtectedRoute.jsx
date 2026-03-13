@@ -1,11 +1,12 @@
-import { Navigate } from "react-router-dom"
+import { Navigate, useLocation } from "react-router-dom"
+import { isModuleAuthenticated } from "@/lib/utils/auth"
 
 export default function ProtectedRoute({ children }) {
-  // Simple check - in real app, check authentication token
-  const isAuthenticated = localStorage.getItem("admin_authenticated") === "true"
+  const location = useLocation()
+  const isAuthenticated = isModuleAuthenticated("admin")
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />
+    return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />
   }
 
   return children

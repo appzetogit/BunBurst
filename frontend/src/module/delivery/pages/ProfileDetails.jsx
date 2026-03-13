@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Plus, Edit2, ChevronRight, FileText, CheckCircle, XCircle, Eye, X } from "lucide-react"
+import { ArrowLeft, Plus, Edit2, ChevronRight, FileText, CheckCircle, XCircle, Eye, X, Camera } from "lucide-react"
 import BottomPopup from "../components/BottomPopup"
 import { toast } from "sonner"
 import { deliveryAPI } from "@/lib/api"
+import apiClient from "@/lib/api/axios"
 
 const sanitizeAccountHolderName = (value = "") => {
   const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
@@ -25,7 +26,7 @@ const sanitizeAccountHolderNameInput = (value = "") => {
 }
 
 const sanitizeAccountNumber = (value = "") => value.replace(/\D/g, "")
-const sanitizeIFSC = (value = "") => value.toUpperCase().replace(/[^A-Z0-9]/g, "")
+  const sanitizeIFSC = (value = "") => value.toUpperCase().replace(/[^A-Z0-9]/g, "")
 const sanitizeBankName = (value = "") => {
   const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
   const normalizedSpaces = lettersAndSpacesOnly.replace(/\s+/g, " ").trim()
@@ -48,7 +49,7 @@ const sanitizeBankName = (value = "") => {
     .replace(/\b[a-z]/g, (c) => c.toUpperCase())
 }
 
-const sanitizeBankNameInput = (value = "") => {
+  const sanitizeBankNameInput = (value = "") => {
   const hadTrailingSpace = /\s$/.test(value)
   const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
   const collapsedSpaces = lettersAndSpacesOnly.replace(/\s+/g, " ").replace(/^\s+/, "")
@@ -56,6 +57,14 @@ const sanitizeBankNameInput = (value = "") => {
   if (!core) return ""
   const titled = sanitizeBankName(core)
   return hadTrailingSpace ? `${titled} ` : titled
+}
+
+const isValidIFSC = (value = "") => /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value)
+const isValidBankName = (value = "") => {
+  const trimmed = String(value || "").trim()
+  if (!trimmed) return false
+  if (!/^[A-Za-z\s]+$/.test(trimmed)) return false
+  return trimmed.replace(/\s+/g, " ").length >= 2
 }
 
 export default function ProfileDetails() {
@@ -72,6 +81,7 @@ export default function ProfileDetails() {
   const [personalDetails, setPersonalDetails] = useState({ phone: "", email: "" })
   const [personalErrors, setPersonalErrors] = useState({})
   const [isUpdatingPersonalDetails, setIsUpdatingPersonalDetails] = useState(false)
+  const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false)
   const [bankDetails, setBankDetails] = useState({
     accountHolderName: "",
     accountNumber: "",
@@ -80,6 +90,7 @@ export default function ProfileDetails() {
   })
   const [bankDetailsErrors, setBankDetailsErrors] = useState({})
   const [isUpdatingBankDetails, setIsUpdatingBankDetails] = useState(false)
+  const profileFileInputRef = useRef(null)
 
   // Note: All alternate phone related code has been removed
   const isEmailLocked = String(profile?.signupMethod || "").toLowerCase() === "email"
@@ -137,6 +148,59 @@ export default function ProfileDetails() {
     }
   }, [navigate])
 
+  const handleProfileImageSelect = async (event) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file")
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB")
+      return
+    }
+
+    setIsUploadingProfileImage(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("folder", "appzeto/delivery/profile")
+
+      const uploadResponse = await apiClient.post("/upload/media", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      })
+
+      if (!uploadResponse?.data?.success || !uploadResponse?.data?.data) {
+        toast.error("Upload failed. Please try again.")
+        return
+      }
+
+      const { url, publicId } = uploadResponse.data.data
+      const updateResponse = await deliveryAPI.updateProfile({
+        profileImage: { url, publicId }
+      })
+
+      const updatedProfile = updateResponse?.data?.data?.profile
+      if (updatedProfile) {
+        setProfile(updatedProfile)
+      } else {
+        setProfile(prev => ({
+          ...(prev || {}),
+          profileImage: { url, publicId }
+        }))
+      }
+
+      toast.success("Profile photo updated successfully")
+      window.dispatchEvent(new Event("deliveryProfileRefresh"))
+    } catch (error) {
+      console.error("Error updating profile image:", error)
+      toast.error(error?.response?.data?.message || "Failed to update profile photo")
+    } finally {
+      setIsUploadingProfileImage(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -163,6 +227,27 @@ export default function ProfileDetails() {
             className="w-full h-auto max-h-96 object-contain"
           />
         )}
+        <div className="absolute bottom-4 right-4">
+          <button
+            type="button"
+            onClick={() => profileFileInputRef.current?.click()}
+            disabled={isUploadingProfileImage}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-colors ${isUploadingProfileImage
+              ? "bg-[#1E1E1E]/60 text-white cursor-not-allowed"
+              : "bg-[#e53935] text-white hover:bg-[#c62828]"
+              }`}
+          >
+            <Camera className="w-4 h-4" />
+            <span>{isUploadingProfileImage ? "Uploading..." : "Update Photo"}</span>
+          </button>
+          <input
+            ref={profileFileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleProfileImageSelect}
+            className="hidden"
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -766,9 +851,13 @@ export default function ProfileDetails() {
                 errors.ifscCode = "IFSC code is required"
               } else if (bankDetails.ifscCode.length !== 11) {
                 errors.ifscCode = "IFSC code must be 11 characters"
+              } else if (!isValidIFSC(bankDetails.ifscCode.trim())) {
+                errors.ifscCode = "Enter valid IFSC (e.g., HDFC0XXXXXX)"
               }
               if (!bankDetails.bankName.trim()) {
                 errors.bankName = "Bank name is required"
+              } else if (!isValidBankName(bankDetails.bankName)) {
+                errors.bankName = "Bank name should contain only letters"
               }
 
               if (Object.keys(errors).length > 0) {

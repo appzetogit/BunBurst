@@ -31,6 +31,7 @@ import {
   updateCafeZone,
   getAllOffers,
   createOfferAdmin,
+  updateOfferItemAdmin,
   getCafeAnalytics,
   getCustomerWalletReport,
 } from "../controllers/adminController.js";
@@ -221,7 +222,7 @@ import { uploadMiddleware } from "../../../shared/utils/cloudinaryService.js";
 const router = express.Router();
 
 // Debug: Log route file loading
-console.log("📦 Loading adminRoutes.js - All routes will be registered");
+console.log("?? Loading adminRoutes.js - All routes will be registered");
 
 // All admin routes require admin authentication
 router.use(authenticateAdmin);
@@ -229,7 +230,7 @@ router.use(authenticateAdmin);
 // Debug middleware - log ALL requests to help debug routing
 router.use((req, res, next) => {
   if (req.path.includes("refund")) {
-    console.log("🔍 [DEBUG MIDDLEWARE] Request detected:", {
+    console.log("?? [DEBUG MIDDLEWARE] Request detected:", {
       method: req.method,
       url: req.url,
       path: req.path,
@@ -279,7 +280,7 @@ router.get("/customer-wallet-report", getCustomerWalletReport);
 
 // Cafe Management
 router.put("/cafes/:id/zone", (req, res, next) => {
-  console.log("✅ ZONE UPDATE ROUTE HIT! ID:", req.params.id);
+  console.log("? ZONE UPDATE ROUTE HIT! ID:", req.params.id);
   next();
 }, updateCafeZone);
 router.get("/cafes", getCafes);
@@ -394,6 +395,7 @@ router.post("/food-approvals/:id/reject", rejectFoodItem);
 // Offers Management
 router.get("/offers", getAllOffers);
 router.post("/offers", createOfferAdmin);
+router.put("/offers/:offerId/items", updateOfferItemAdmin);
 
 // Zone Management
 router.use("/zones", zoneRoutes);
@@ -454,10 +456,10 @@ router.post("/orders/:orderId/assign", manualAssignOrder);
 // Order Refund - MUST be before /orders/:id to avoid route conflicts
 // Using explicit pattern /orders/refund/:orderId
 console.log(
-  "🔧 [ROUTE REGISTRATION] Registering POST /orders/refund/:orderId route...",
+  "?? [ROUTE REGISTRATION] Registering POST /orders/refund/:orderId route...",
 );
 router.post("/orders/refund/:orderId", async (req, res, next) => {
-  console.log("🎯🎯🎯 REFUND ROUTE HIT! 🎯🎯🎯", {
+  console.log("?????? REFUND ROUTE HIT! ??????", {
     method: req.method,
     url: req.url,
     originalUrl: req.originalUrl,
@@ -471,22 +473,22 @@ router.post("/orders/refund/:orderId", async (req, res, next) => {
   return processRefund(req, res, next);
 });
 console.log(
-  "✅ [ROUTE REGISTRATION] POST /orders/refund/:orderId route registered",
+  "? [ROUTE REGISTRATION] POST /orders/refund/:orderId route registered",
 );
 
 // Refund Requests - MUST be registered before any catch-all routes
 // Register POST route FIRST (more specific) before GET route
-console.log("🔧 [ROUTE REGISTRATION] Registering /refund-requests routes...");
+console.log("?? [ROUTE REGISTRATION] Registering /refund-requests routes...");
 console.log(
-  "🔧 [ROUTE REGISTRATION] Route pattern: POST /refund-requests/:orderId/process",
+  "?? [ROUTE REGISTRATION] Route pattern: POST /refund-requests/:orderId/process",
 );
 console.log(
-  "🔧 [ROUTE REGISTRATION] Full path will be: /api/admin/refund-requests/:orderId/process",
+  "?? [ROUTE REGISTRATION] Full path will be: /api/admin/refund-requests/:orderId/process",
 );
 
 // Register the refund route handler directly
 router.post("/refund-requests/:orderId/process", async (req, res, next) => {
-  console.log("🎯🎯🎯 REFUND-REQUESTS ROUTE HIT! 🎯🎯🎯", {
+  console.log("?????? REFUND-REQUESTS ROUTE HIT! ??????", {
     method: req.method,
     url: req.url,
     originalUrl: req.originalUrl,
@@ -502,7 +504,7 @@ router.post("/refund-requests/:orderId/process", async (req, res, next) => {
 
   // Ensure orderId is passed correctly
   if (!req.params.orderId) {
-    console.error("❌ [ROUTE] orderId parameter is missing!");
+    console.error("? [ROUTE] orderId parameter is missing!");
     return res.status(400).json({
       success: false,
       message: "Order ID is required",
@@ -516,11 +518,11 @@ router.post("/refund-requests/:orderId/process", async (req, res, next) => {
 router.get("/refund-requests", getRefundRequests);
 
 console.log(
-  "✅ [ROUTE REGISTRATION] POST /refund-requests/:orderId/process route registered",
+  "? [ROUTE REGISTRATION] POST /refund-requests/:orderId/process route registered",
 );
-console.log("✅ [ROUTE REGISTRATION] GET /refund-requests route registered");
+console.log("? [ROUTE REGISTRATION] GET /refund-requests route registered");
 console.log(
-  "✅ [ROUTE REGISTRATION] Full path: /api/admin/refund-requests/:orderId/process",
+  "? [ROUTE REGISTRATION] Full path: /api/admin/refund-requests/:orderId/process",
 );
 
 // Review Management

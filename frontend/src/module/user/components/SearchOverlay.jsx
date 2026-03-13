@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
-import { useNavigate } from "react-router-dom"
-import { X, Search, Clock, Mic, UtensilsCrossed, Loader2 } from "lucide-react"
+import { useNavigate, useLocation } from "react-router-dom"
+import { X, Search, Clock, UtensilsCrossed, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
@@ -16,6 +16,7 @@ const RECENT_SEARCHES_KEY = 'bun_burst_recent_searches';
 
 export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchChange, autoStartVoice }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const inputRef = useRef(null)
   const [categories, setCategories] = useState([])
   const [filteredFoods, setFilteredFoods] = useState([])
@@ -37,6 +38,36 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
       return () => clearTimeout(timer)
     }
   }, [isOpen, autoStartVoice])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    // Push a history entry so back closes the overlay instead of showing it again
+    try {
+      window.history.pushState({ searchOverlayOpen: true }, "", window.location.pathname)
+    } catch {
+      // Ignore history failures
+    }
+
+    const handlePopState = () => {
+      onClose()
+      if (location.pathname === "/") {
+        navigate("/", { replace: true })
+      }
+    }
+
+    window.addEventListener("popstate", handlePopState)
+    return () => {
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [isOpen, navigate, onClose, location.pathname])
+
+  const handleClose = () => {
+    onClose()
+    if (location.pathname === "/") {
+      navigate("/", { replace: true })
+    }
+  }
 
   const startVoiceSearch = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -75,10 +106,8 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
         console.error("Speech recognition error", event.error)
         setIsListening(false)
         setShowVoiceModal(false)
-        if (event.error === 'not-allowed') {
-          toast.error("Microphone access denied. Please enable it in browser settings.")
-        } else if (event.error !== 'aborted') {
-          toast.error("Voice search failed. Please try again.")
+        if (event.error !== 'aborted') {
+          // Suppress microphone permission warnings as requested
         }
       }
 
@@ -241,23 +270,12 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
                   isListening && "border-primary-orange ring-2 ring-primary-orange/20"
                 )}
               />
-              <button
-                type="button"
-                onClick={startVoiceSearch}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-primary-orange transition-colors z-10"
-              >
-                {isListening ? (
-                  <Mic className="h-5 w-5 text-primary-orange animate-pulse" />
-                ) : (
-                  <Mic className="h-5 w-5" />
-                )}
-              </button>
             </div>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              onClick={onClose}
+              onClick={handleClose}
               className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <X className="h-5 w-5 text-gray-700 dark:text-gray-300" />

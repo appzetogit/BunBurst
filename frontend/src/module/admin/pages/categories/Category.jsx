@@ -957,7 +957,7 @@ export default function Category() {
       {/* Create/Edit Category Modal */}
       <AnimatePresence>
         <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
-          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+          <DialogContent showCloseButton={false} className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
             <div className="bg-gradient-to-r from-[#e53935] to-[#e53935] p-6 text-white relative">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl">
@@ -976,9 +976,10 @@ export default function Category() {
               </div>
               <button
                 onClick={handleCloseModal}
-                className="absolute top-6 right-6 p-1 rounded-full hover:bg-white/10 transition-colors"
+                type="button"
+                className="absolute top-5 right-5 flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/10 transition-colors hover:bg-white/20"
               >
-                <X className="w-5 h-5 text-white/80" />
+                <X className="h-4 w-4 text-white" />
               </button>
             </div>
 

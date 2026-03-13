@@ -390,7 +390,7 @@ export default function AddonsList() {
       {/* Add/Edit Modal */}
       <AnimatePresence>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[500px] max-h-[88vh] p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+          <DialogContent showCloseButton={false} className="sm:max-w-[500px] max-h-[88vh] p-0 overflow-hidden border-none shadow-2xl rounded-2xl [&_[data-slot=dialog-close]]:hidden">
             <div className="bg-[#e53935] p-4 text-white relative">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl">

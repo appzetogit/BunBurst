@@ -35,11 +35,268 @@ export default function AddCafe() {
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formErrors, setFormErrors] = useState({})
+  const [ownerEmailError, setOwnerEmailError] = useState("")
+  const [panNumberError, setPanNumberError] = useState("")
+  const [gstNumberError, setGstNumberError] = useState("")
+  const [authEmailError, setAuthEmailError] = useState("")
+  const [authPhoneError, setAuthPhoneError] = useState("")
+  const draftKey = "admin_add_cafe_draft"
+  const draftStepKey = "admin_add_cafe_step"
   const mapRef = useRef(null)
   const mainContentRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const markerRef = useRef(null)
   const zonePolygonRef = useRef(null)
+  const hasLoadedDraftRef = useRef(false)
+
+  const formatCafeName = (value) => {
+    if (!value) return ""
+    const cleaned = String(value)
+      .replace(/[^a-zA-Z\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    const normalized = cleaned
+    if (!normalized) return ""
+    return normalized
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        const lower = word.toLowerCase()
+        return lower.charAt(0).toUpperCase() + lower.slice(1)
+      })
+      .join(" ")
+  }
+
+  const formatFullName = (value) => {
+    if (!value) return ""
+    const cleaned = String(value)
+      .replace(/[^a-zA-Z\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    if (!cleaned) return ""
+    return cleaned
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        const lower = word.toLowerCase()
+        return lower.charAt(0).toUpperCase() + lower.slice(1)
+      })
+      .join(" ")
+  }
+
+  const formatTitleCaseLive = (value) => {
+    if (value === null || value === undefined) return ""
+    const cleaned = String(value).replace(/[^a-zA-Z\s]/g, " ")
+    const hasTrailingSpace = /\s$/.test(cleaned)
+    const normalized = cleaned.replace(/\s+/g, " ").trim()
+    if (!normalized) {
+      return hasTrailingSpace ? " " : ""
+    }
+    const formatted = normalized
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        const lower = word.toLowerCase()
+        return lower.charAt(0).toUpperCase() + lower.slice(1)
+      })
+      .join(" ")
+    return hasTrailingSpace ? `${formatted} ` : formatted
+  }
+
+  const formatAreaSector = (value) => {
+    if (!value) return ""
+    const cleaned = String(value)
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    if (!cleaned) return ""
+    return cleaned
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        if (/^\d+$/.test(word)) return word
+        const lower = word.toLowerCase()
+        return lower.charAt(0).toUpperCase() + lower.slice(1)
+      })
+      .join(" ")
+  }
+
+  const formatCityState = (value) => {
+    if (!value) return ""
+    const cleaned = String(value)
+      .replace(/[^a-zA-Z\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    if (!cleaned) return ""
+    return cleaned
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        const lower = word.toLowerCase()
+        return lower.charAt(0).toUpperCase() + lower.slice(1)
+      })
+      .join(" ")
+  }
+
+  const formatShopBuilding = (value) => {
+    if (!value) return ""
+    const cleaned = String(value)
+      .replace(/[^a-zA-Z0-9\s/-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    return cleaned
+  }
+
+  const formatFloorTower = (value) => {
+    if (!value) return ""
+    const cleaned = String(value)
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    if (!cleaned) return ""
+    return cleaned
+  }
+
+  const formatPincode = (value) => {
+    if (!value) return ""
+    return String(value).replace(/\D/g, "").slice(0, 6)
+  }
+
+  const formatLandmark = (value) => {
+    if (!value) return ""
+    const cleaned = String(value)
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    if (!cleaned) return ""
+    return cleaned
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        if (/^\d+$/.test(word)) return word
+        const lower = word.toLowerCase()
+        return lower.charAt(0).toUpperCase() + lower.slice(1)
+      })
+      .join(" ")
+  }
+
+  const formatPanNumber = (value) => {
+    if (!value) return ""
+    const cleaned = String(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+    return cleaned.slice(0, 10)
+  }
+
+  const isValidPanNumber = (value) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(String(value || ""))
+
+  const formatGstNumber = (value) => {
+    if (!value) return ""
+    const cleaned = String(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+    return cleaned.slice(0, 15)
+  }
+
+  const isValidGstNumber = (value) => /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(String(value || ""))
+
+  const formatTitleCaseWithDigitsLive = (value) => {
+    if (value === null || value === undefined) return ""
+    const cleaned = String(value).replace(/[^a-zA-Z0-9\s]/g, " ")
+    const hasTrailingSpace = /\s$/.test(cleaned)
+    const normalized = cleaned.replace(/\s+/g, " ").trim()
+    if (!normalized) {
+      return hasTrailingSpace ? " " : ""
+    }
+    const formatted = normalized
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        if (/^\d+$/.test(word)) return word
+        const lower = word.toLowerCase()
+        const first = lower.charAt(0)
+        if (!/[a-z]/.test(first)) return lower
+        return first.toUpperCase() + lower.slice(1)
+      })
+      .join(" ")
+    return hasTrailingSpace ? `${formatted} ` : formatted
+  }
+
+  const formatAccountNumber = (value) => {
+    if (!value) return ""
+    return String(value).replace(/\D/g, "").slice(0, 18)
+  }
+
+  const isValidAccountNumber = (value) => {
+    const cleaned = String(value || "").replace(/\D/g, "")
+    return cleaned.length >= 9 && cleaned.length <= 18
+  }
+
+  const formatIfscCode = (value) => {
+    if (!value) return ""
+    return String(value).replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 11)
+  }
+
+  const isValidIfscCode = (value) => /^[A-Z]{4}0[A-Z0-9]{6}$/.test(String(value || ""))
+
+  const formatAccountHolderName = (value) => {
+    if (!value) return ""
+    const cleaned = String(value)
+      .replace(/[^a-zA-Z\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    if (!cleaned) return ""
+    return cleaned
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        const lower = word.toLowerCase()
+        return lower.charAt(0).toUpperCase() + lower.slice(1)
+      })
+      .join(" ")
+  }
+
+  const formatAccountType = (value) => {
+    if (!value) return ""
+    const cleaned = String(value)
+      .replace(/[^a-zA-Z\s/]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+    if (!cleaned) return ""
+    return cleaned
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        const lower = word.toLowerCase()
+        return lower.charAt(0).toUpperCase() + lower.slice(1)
+      })
+      .join(" ")
+  }
+
+  const formatAddressLive = (value) => {
+    if (value === null || value === undefined) return ""
+    const cleaned = String(value).replace(/[^a-zA-Z0-9\s,/]/g, " ")
+    const hasTrailingSpace = /\s$/.test(cleaned)
+    const normalized = cleaned.replace(/\s+/g, " ").trim()
+    if (!normalized) {
+      return hasTrailingSpace ? " " : ""
+    }
+    const formatted = normalized
+      .split(" ")
+      .map((word) => {
+        if (!word) return ""
+        const parts = word.split(/([,/])/)
+        return parts
+          .map((part) => {
+            if (part === "," || part === "/") return part
+            if (!part) return ""
+            if (/^\d+$/.test(part)) return part
+            const lower = part.toLowerCase()
+            const first = lower.charAt(0)
+            if (!/[a-z]/.test(first)) return lower
+            return first.toUpperCase() + lower.slice(1)
+          })
+          .join("")
+      })
+      .join(" ")
+    return hasTrailingSpace ? `${formatted} ` : formatted
+  }
 
   // Step 1: Basic Info
   const [step1, setStep1] = useState({
@@ -122,6 +379,61 @@ export default function AddCafe() {
     { key: "ar", label: "Arabic - العربية (AR)" },
     { key: "es", label: "Spanish - español(ES)" },
   ]
+
+  useEffect(() => {
+    if (isEditMode) return
+    const storedStep = localStorage.getItem(draftStepKey)
+    if (storedStep) {
+      const parsedStep = parseInt(storedStep, 10)
+      if (Number.isFinite(parsedStep) && parsedStep >= 1 && parsedStep <= 5) {
+        setStep(parsedStep)
+      }
+    }
+    const stored = localStorage.getItem(draftKey)
+    if (!stored) {
+      hasLoadedDraftRef.current = true
+      return
+    }
+    try {
+      const draft = JSON.parse(stored)
+      if (draft?.step1) setStep1(draft.step1)
+      if (draft?.step2) setStep2(draft.step2)
+      if (draft?.step3) setStep3(draft.step3)
+      if (draft?.step4) setStep4(draft.step4)
+      if (draft?.auth) setAuth(draft.auth)
+    } catch (e) {
+      console.warn("Failed to load add cafe draft:", e)
+    } finally {
+      hasLoadedDraftRef.current = true
+    }
+  }, [isEditMode])
+
+  useEffect(() => {
+    if (isEditMode) return
+    if (!hasLoadedDraftRef.current) return
+    const draft = {
+      step1,
+      step2,
+      step3,
+      step4,
+      auth,
+    }
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(draft))
+    } catch (e) {
+      console.warn("Failed to store add cafe draft:", e)
+    }
+  }, [isEditMode, step1, step2, step3, step4, auth])
+
+  useEffect(() => {
+    if (isEditMode) return
+    if (!hasLoadedDraftRef.current) return
+    try {
+      localStorage.setItem(draftStepKey, String(step))
+    } catch (e) {
+      console.warn("Failed to store add cafe step:", e)
+    }
+  }, [isEditMode, step])
 
   // Fetch cafe data in edit mode
   useEffect(() => {
@@ -631,14 +943,27 @@ export default function AddCafe() {
   // Validation functions
   const validateStep1 = () => {
     const errors = []
-    if (!step1.cafeName?.trim()) errors.push("Cafe name is required")
-    if (!step1.ownerName?.trim()) errors.push("Owner name is required")
-    if (!step1.ownerEmail?.trim()) errors.push("Owner email is required")
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(step1.ownerEmail)) errors.push("Please enter a valid email address")
+    const formattedCafeName = formatCafeName(step1.cafeName)
+    if (!formattedCafeName) errors.push("Cafe name is required")
+    const formattedOwnerName = formatFullName(step1.ownerName)
+    if (!formattedOwnerName) errors.push("Owner name is required")
+    const ownerEmailValue = String(step1.ownerEmail || "").trim().toLowerCase()
+    if (!ownerEmailValue) errors.push("Owner email is required")
+    if (ownerEmailValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmailValue)) {
+      errors.push("Please enter a valid email address")
+    }
     if (!step1.ownerPhone?.trim()) errors.push("Owner phone number is required")
+    if (step1.ownerPhone && step1.ownerPhone.length !== 10) errors.push("Owner phone number must be 10 digits")
     if (!step1.primaryContactNumber?.trim()) errors.push("Primary contact number is required")
-    if (!step1.location?.area?.trim()) errors.push("Area/Sector/Locality is required")
-    if (!step1.location?.city?.trim()) errors.push("City is required")
+    if (step1.primaryContactNumber && step1.primaryContactNumber.length !== 10) errors.push("Primary contact number must be 10 digits")
+    const formattedArea = formatAreaSector(step1.location?.area)
+    if (!formattedArea) errors.push("Area/Sector/Locality is required")
+    const formattedCity = formatCityState(step1.location?.city)
+    if (!formattedCity) errors.push("City is required")
+    const formattedState = formatCityState(step1.location?.state)
+    if (step1.location?.state && !formattedState) errors.push("Please enter a valid state name")
+    const formattedPincode = formatPincode(step1.location?.pincode)
+    if (step1.location?.pincode && formattedPincode.length !== 6) errors.push("Pin code must be 6 digits")
     return errors
   }
 
@@ -655,21 +980,38 @@ export default function AddCafe() {
 
   const validateStep3 = () => {
     const errors = []
-    if (!step3.panNumber?.trim()) errors.push("PAN number is required")
-    if (!step3.nameOnPan?.trim()) errors.push("Name on PAN is required")
+    const formattedPan = formatPanNumber(step3.panNumber)
+    if (!formattedPan) errors.push("PAN number is required")
+    if (formattedPan && !isValidPanNumber(formattedPan)) errors.push("PAN number must be in format: AAAAA9999A")
+    const formattedPanName = formatFullName(step3.nameOnPan)
+    if (!formattedPanName) errors.push("Name on PAN is required")
     if (!step3.panImage) errors.push("PAN image is required")
     if (!step3.fssaiNumber?.trim()) errors.push("FSSAI number is required")
+    if (step3.fssaiNumber && step3.fssaiNumber.length !== 14) errors.push("FSSAI number must be 14 digits")
     if (!step3.fssaiExpiry?.trim()) errors.push("FSSAI expiry date is required")
+    if (step3.fssaiExpiry) {
+      const todayIso = new Date().toISOString().split("T")[0]
+      if (step3.fssaiExpiry < todayIso) errors.push("FSSAI expiry date cannot be in the past")
+    }
     if (!step3.fssaiImage) errors.push("FSSAI image is required")
     if (step3.gstRegistered) {
-      if (!step3.gstNumber?.trim()) errors.push("GST number is required when GST registered")
-      if (!step3.gstLegalName?.trim()) errors.push("GST legal name is required when GST registered")
-      if (!step3.gstAddress?.trim()) errors.push("GST registered address is required when GST registered")
+      const formattedGst = formatGstNumber(step3.gstNumber)
+      if (!formattedGst) errors.push("GST number is required when GST registered")
+      if (formattedGst && !isValidGstNumber(formattedGst)) errors.push("GST number format is invalid")
+      const formattedLegalName = formatTitleCaseWithDigitsLive(step3.gstLegalName).trim()
+      if (!formattedLegalName) errors.push("GST legal name is required when GST registered")
+      const formattedGstAddress = formatAddressLive(step3.gstAddress).trim()
+      if (!formattedGstAddress) errors.push("GST registered address is required when GST registered")
       if (!step3.gstImage) errors.push("GST image is required when GST registered")
     }
     if (!step3.accountNumber?.trim()) errors.push("Account number is required")
+    if (step3.accountNumber && !isValidAccountNumber(step3.accountNumber)) {
+      errors.push("Account number must be 9 to 18 digits")
+    }
     if (step3.accountNumber !== step3.confirmAccountNumber) errors.push("Account number and confirmation do not match")
+    if (!step3.confirmAccountNumber?.trim()) errors.push("Please re-enter account number")
     if (!step3.ifscCode?.trim()) errors.push("IFSC code is required")
+    if (step3.ifscCode && !isValidIfscCode(step3.ifscCode)) errors.push("IFSC code must be in format: ABCD0XXXXXX")
     if (!step3.accountHolderName?.trim()) errors.push("Account holder name is required")
     if (!step3.accountType?.trim()) errors.push("Account type is required")
     return errors
@@ -729,6 +1071,8 @@ export default function AddCafe() {
     setFormErrors({})
 
     try {
+      const formattedCafeName = formatCafeName(step1.cafeName)
+      const formattedOwnerName = formatFullName(step1.ownerName)
       // Upload all images first
       let profileImageData = null
       if (step2.profileImage instanceof File) {
@@ -793,10 +1137,13 @@ export default function AddCafe() {
       }
 
       // Prepare payload
+      const formattedGstNumber = formatGstNumber(step3.gstNumber)
+      const formattedGstLegalName = formatTitleCaseWithDigitsLive(step3.gstLegalName).trim()
+      const formattedGstAddress = formatAddressLive(step3.gstAddress).trim()
       const payload = {
         // Step 1
-        cafeName: step1.cafeName,
-        ownerName: step1.ownerName,
+        cafeName: formattedCafeName,
+        ownerName: formattedOwnerName,
         ownerEmail: step1.ownerEmail,
         ownerPhone: step1.ownerPhone,
         primaryContactNumber: step1.primaryContactNumber,
@@ -813,9 +1160,9 @@ export default function AddCafe() {
         nameOnPan: step3.nameOnPan,
         panImage: panImageData,
         gstRegistered: step3.gstRegistered,
-        gstNumber: step3.gstNumber,
-        gstLegalName: step3.gstLegalName,
-        gstAddress: step3.gstAddress,
+        gstNumber: formattedGstNumber,
+        gstLegalName: formattedGstLegalName,
+        gstAddress: formattedGstAddress,
         gstImage: gstImageData,
         fssaiNumber: step3.fssaiNumber,
         fssaiExpiry: step3.fssaiExpiry,
@@ -848,6 +1195,10 @@ export default function AddCafe() {
 
       if (response.data.success) {
         toast.success(isEditMode ? "Cafe updated successfully!" : "Cafe created successfully!")
+        if (!isEditMode) {
+          localStorage.removeItem(draftKey)
+          localStorage.removeItem(draftStepKey)
+        }
         navigate("/admin/cafes")
       } else {
         throw new Error(response.data.message || "Failed to create cafe")
@@ -869,12 +1220,21 @@ export default function AddCafe() {
         <h2 className="text-lg font-semibold text-black mb-4">Cafe information</h2>
         <div className="space-y-3">
           <div>
-            <Label className="text-xs text-gray-700">Cafe name*</Label>
-            <Input
-              value={step1.cafeName || ""}
-              onChange={(e) => setStep1({ ...step1, cafeName: e.target.value })}
+          <Label className="text-xs text-gray-700">Cafe name*</Label>
+          <Input
+            value={step1.cafeName || ""}
+            onChange={(e) => {
+              const formatted = formatTitleCaseLive(e.target.value)
+              setStep1({ ...step1, cafeName: formatted })
+            }}
+            onBlur={() => {
+              setStep1((prev) => ({
+                ...prev,
+                cafeName: formatCafeName(prev.cafeName),
+                }))
+              }}
               className="mt-1 bg-white text-sm text-black placeholder-black"
-              placeholder="Customers will see this name"
+              placeholder="Only letters and spaces"
             />
           </div>
         </div>
@@ -885,31 +1245,64 @@ export default function AddCafe() {
         <div className="space-y-4">
           <div>
             <Label className="text-xs text-gray-700">Full name*</Label>
-            <Input
-              value={step1.ownerName || ""}
-              onChange={(e) => setStep1({ ...step1, ownerName: e.target.value })}
-              className="mt-1 bg-white text-sm text-black placeholder-black"
-              placeholder="Owner full name"
-            />
+          <Input
+            value={step1.ownerName || ""}
+            onChange={(e) => {
+              const formatted = formatTitleCaseLive(e.target.value)
+              setStep1({ ...step1, ownerName: formatted })
+            }}
+            onBlur={() => {
+              setStep1((prev) => ({
+                ...prev,
+                ownerName: formatFullName(prev.ownerName),
+              }))
+            }}
+            className="mt-1 bg-white text-sm text-black placeholder-black"
+            placeholder="Only letters and spaces"
+          />
           </div>
           <div>
             <Label className="text-xs text-gray-700">Email address*</Label>
-            <Input
-              type="email"
-              value={step1.ownerEmail || ""}
-              onChange={(e) => setStep1({ ...step1, ownerEmail: e.target.value })}
-              className="mt-1 bg-white text-sm text-black placeholder-black"
-              placeholder="owner@example.com"
-            />
+          <Input
+            type="email"
+            value={step1.ownerEmail || ""}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\s+/g, "").toLowerCase()
+              setStep1({ ...step1, ownerEmail: value })
+              if (!value) {
+                setOwnerEmailError("")
+              } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                setOwnerEmailError("Enter email in format: text@domain.extension")
+              } else {
+                setOwnerEmailError("")
+              }
+            }}
+            onBlur={() => {
+              const value = String(step1.ownerEmail || "").trim().toLowerCase()
+              if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                setOwnerEmailError("Enter email in format: text@domain.extension")
+              } else {
+                setOwnerEmailError("")
+              }
+            }}
+            className="mt-1 bg-white text-sm text-black placeholder-black"
+            placeholder="name@domain.com"
+          />
+          {ownerEmailError && (
+            <p className="mt-1 text-xs text-red-500">{ownerEmailError}</p>
+          )}
           </div>
           <div>
             <Label className="text-xs text-gray-700">Phone number*</Label>
-            <Input
-              value={step1.ownerPhone || ""}
-              onChange={(e) => setStep1({ ...step1, ownerPhone: e.target.value })}
-              className="mt-1 bg-white text-sm text-black placeholder-black"
-              placeholder="+91 98XXXXXX"
-            />
+          <Input
+            value={step1.ownerPhone || ""}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 10)
+              setStep1({ ...step1, ownerPhone: digits })
+            }}
+            className="mt-1 bg-white text-sm text-black placeholder-black"
+            placeholder="10-digit number"
+          />
           </div>
         </div>
       </section>
@@ -920,51 +1313,117 @@ export default function AddCafe() {
           <Label className="text-xs text-gray-700">Primary contact number*</Label>
           <Input
             value={step1.primaryContactNumber || ""}
-            onChange={(e) => setStep1({ ...step1, primaryContactNumber: e.target.value })}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 10)
+              setStep1({ ...step1, primaryContactNumber: digits })
+            }}
             className="mt-1 bg-white text-sm text-black placeholder-black"
-            placeholder="Cafe's primary contact number"
+            placeholder="10-digit number"
           />
         </div>
         <div className="space-y-3">
           <Input
             value={step1.location?.area || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, area: e.target.value } })}
+            onChange={(e) => {
+              const formatted = formatTitleCaseLive(
+                e.target.value.replace(/[^a-zA-Z0-9\s]/g, " ")
+              )
+              setStep1({ ...step1, location: { ...step1.location, area: formatted } })
+            }}
+            onBlur={() => {
+              setStep1((prev) => ({
+                ...prev,
+                location: { ...prev.location, area: formatAreaSector(prev.location?.area) },
+              }))
+            }}
             className="bg-white text-sm"
             placeholder="Area / Sector / Locality*"
           />
           <Input
             value={step1.location?.city || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, city: e.target.value } })}
+            onChange={(e) => {
+              const formatted = formatTitleCaseLive(
+                e.target.value.replace(/[^a-zA-Z\s]/g, " ")
+              )
+              setStep1({ ...step1, location: { ...step1.location, city: formatted } })
+            }}
+            onBlur={() => {
+              setStep1((prev) => ({
+                ...prev,
+                location: { ...prev.location, city: formatCityState(prev.location?.city) },
+              }))
+            }}
             className="bg-white text-sm"
             placeholder="City*"
           />
           <Input
             value={step1.location?.addressLine1 || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, addressLine1: e.target.value } })}
+            onChange={(e) => {
+              const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s/-]/g, " ").replace(/\s+/g, " ")
+              setStep1({ ...step1, location: { ...step1.location, addressLine1: cleaned } })
+            }}
+            onBlur={() => {
+              setStep1((prev) => ({
+                ...prev,
+                location: { ...prev.location, addressLine1: formatShopBuilding(prev.location?.addressLine1) },
+              }))
+            }}
             className="bg-white text-sm"
             placeholder="Shop no. / building no. (optional)"
           />
           <Input
             value={step1.location?.addressLine2 || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, addressLine2: e.target.value } })}
+            onChange={(e) => {
+              const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ")
+              setStep1({ ...step1, location: { ...step1.location, addressLine2: cleaned } })
+            }}
+            onBlur={() => {
+              setStep1((prev) => ({
+                ...prev,
+                location: { ...prev.location, addressLine2: formatFloorTower(prev.location?.addressLine2) },
+              }))
+            }}
             className="bg-white text-sm"
             placeholder="Floor / tower (optional)"
           />
           <Input
             value={step1.location?.state || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, state: e.target.value } })}
+            onChange={(e) => {
+              const formatted = formatTitleCaseLive(
+                e.target.value.replace(/[^a-zA-Z\s]/g, " ")
+              )
+              setStep1({ ...step1, location: { ...step1.location, state: formatted } })
+            }}
+            onBlur={() => {
+              setStep1((prev) => ({
+                ...prev,
+                location: { ...prev.location, state: formatCityState(prev.location?.state) },
+              }))
+            }}
             className="bg-white text-sm"
             placeholder="State (optional)"
           />
           <Input
             value={step1.location?.pincode || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, pincode: e.target.value } })}
+            onChange={(e) => {
+              const digits = formatPincode(e.target.value)
+              setStep1({ ...step1, location: { ...step1.location, pincode: digits } })
+            }}
             className="bg-white text-sm"
             placeholder="Pin code (optional)"
           />
           <Input
             value={step1.location?.landmark || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, landmark: e.target.value } })}
+            onChange={(e) => {
+              const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ")
+              setStep1({ ...step1, location: { ...step1.location, landmark: cleaned } })
+            }}
+            onBlur={() => {
+              setStep1((prev) => ({
+                ...prev,
+                location: { ...prev.location, landmark: formatLandmark(prev.location?.landmark) },
+              }))
+            }}
             className="bg-white text-sm"
             placeholder="Nearby landmark (optional)"
           />
@@ -973,7 +1432,7 @@ export default function AddCafe() {
             <select
               value={step1.location?.zoneId || ""}
               onChange={(e) => setStep1({ ...step1, location: { ...step1.location, zoneId: e.target.value } })}
-              className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
+              className="w-full rounded-md border border-input bg-white px-3 py-2 pr-9 text-sm"
               disabled={loadingZones}
             >
               <option value="">Select zone</option>
@@ -1192,21 +1651,60 @@ export default function AddCafe() {
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <h2 className="text-lg font-semibold text-black">PAN details</h2>
+        <p className="text-xs text-gray-500">Please re-upload files after refresh.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label className="text-xs text-gray-700">PAN number*</Label>
             <Input
               value={step3.panNumber || ""}
-              onChange={(e) => setStep3({ ...step3, panNumber: e.target.value })}
+              onChange={(e) => {
+                const cleaned = formatPanNumber(e.target.value)
+                setStep3({ ...step3, panNumber: cleaned })
+                if (!cleaned) {
+                  setPanNumberError("")
+                } else if (!isValidPanNumber(cleaned)) {
+                  setPanNumberError("PAN must be in format: AAAAA9999A")
+                } else {
+                  setPanNumberError("")
+                }
+              }}
+              onBlur={() => {
+                setStep3((prev) => ({
+                  ...prev,
+                  panNumber: formatPanNumber(prev.panNumber),
+                }))
+                const cleaned = formatPanNumber(step3.panNumber)
+                if (cleaned && !isValidPanNumber(cleaned)) {
+                  setPanNumberError("PAN must be in format: AAAAA9999A")
+                } else {
+                  setPanNumberError("")
+                }
+              }}
               className="mt-1 bg-white text-sm text-black placeholder-black"
+              placeholder="ABCDE1234F"
             />
+            {panNumberError && (
+              <p className="mt-1 text-xs text-red-500">{panNumberError}</p>
+            )}
           </div>
           <div>
             <Label className="text-xs text-gray-700">Name on PAN*</Label>
             <Input
               value={step3.nameOnPan || ""}
-              onChange={(e) => setStep3({ ...step3, nameOnPan: e.target.value })}
+              onChange={(e) => {
+                const formatted = formatTitleCaseLive(
+                  e.target.value.replace(/[^a-zA-Z\s]/g, " ")
+                )
+                setStep3({ ...step3, nameOnPan: formatted })
+              }}
+              onBlur={() => {
+                setStep3((prev) => ({
+                  ...prev,
+                  nameOnPan: formatFullName(prev.nameOnPan),
+                }))
+              }}
               className="mt-1 bg-white text-sm text-black placeholder-black"
+              placeholder="Full name as per PAN"
             />
           </div>
         </div>
@@ -1223,6 +1721,7 @@ export default function AddCafe() {
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <h2 className="text-lg font-semibold text-black">GST details</h2>
+        <p className="text-xs text-gray-500">Please re-upload files after refresh.</p>
         <div className="flex gap-4 items-center text-sm">
           <span className="text-gray-700">GST registered?</span>
           <button
@@ -1234,7 +1733,10 @@ export default function AddCafe() {
           </button>
           <button
             type="button"
-            onClick={() => setStep3({ ...step3, gstRegistered: false })}
+            onClick={() => {
+              setStep3({ ...step3, gstRegistered: false })
+              setGstNumberError("")
+            }}
             className={`px-3 py-1.5 text-xs rounded-full ${!step3.gstRegistered ? "bg-black text-white" : "bg-gray-100 text-gray-800"}`}
           >
             No
@@ -1242,9 +1744,66 @@ export default function AddCafe() {
         </div>
         {step3.gstRegistered && (
           <div className="space-y-3">
-            <Input value={step3.gstNumber || ""} onChange={(e) => setStep3({ ...step3, gstNumber: e.target.value })} className="bg-white text-sm" placeholder="GST number*" />
-            <Input value={step3.gstLegalName || ""} onChange={(e) => setStep3({ ...step3, gstLegalName: e.target.value })} className="bg-white text-sm" placeholder="Legal name*" />
-            <Input value={step3.gstAddress || ""} onChange={(e) => setStep3({ ...step3, gstAddress: e.target.value })} className="bg-white text-sm" placeholder="Registered address*" />
+            <div>
+              <Input
+                value={step3.gstNumber || ""}
+                onChange={(e) => {
+                  const cleaned = formatGstNumber(e.target.value)
+                  setStep3({ ...step3, gstNumber: cleaned })
+                  if (!cleaned) {
+                    setGstNumberError("")
+                  } else if (!isValidGstNumber(cleaned)) {
+                    setGstNumberError("GST must be 15 characters (e.g., 22AAAAA0000A1Z5)")
+                  } else {
+                    setGstNumberError("")
+                  }
+                }}
+                onBlur={() => {
+                  setStep3((prev) => ({ ...prev, gstNumber: formatGstNumber(prev.gstNumber) }))
+                  const cleaned = formatGstNumber(step3.gstNumber)
+                  if (cleaned && !isValidGstNumber(cleaned)) {
+                    setGstNumberError("GST must be 15 characters (e.g., 22AAAAA0000A1Z5)")
+                  } else {
+                    setGstNumberError("")
+                  }
+                }}
+                className="bg-white text-sm"
+                placeholder="GST number*"
+              />
+              {gstNumberError && (
+                <p className="mt-1 text-xs text-red-500">{gstNumberError}</p>
+              )}
+            </div>
+            <Input
+              value={step3.gstLegalName || ""}
+              onChange={(e) => {
+                const formatted = formatTitleCaseWithDigitsLive(e.target.value)
+                setStep3({ ...step3, gstLegalName: formatted })
+              }}
+              onBlur={() => {
+                setStep3((prev) => ({
+                  ...prev,
+                  gstLegalName: formatTitleCaseWithDigitsLive(prev.gstLegalName).trim(),
+                }))
+              }}
+              className="bg-white text-sm"
+              placeholder="Legal name*"
+            />
+            <Input
+              value={step3.gstAddress || ""}
+              onChange={(e) => {
+                const formatted = formatAddressLive(e.target.value)
+                setStep3({ ...step3, gstAddress: formatted })
+              }}
+              onBlur={() => {
+                setStep3((prev) => ({
+                  ...prev,
+                  gstAddress: formatAddressLive(prev.gstAddress).trim(),
+                }))
+              }}
+              className="bg-white text-sm"
+              placeholder="Registered address*"
+            />
             <Input type="file" accept="image/*" onChange={(e) => setStep3({ ...step3, gstImage: e.target.files?.[0] || null })} className="bg-white text-sm" />
           </div>
         )}
@@ -1252,14 +1811,24 @@ export default function AddCafe() {
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <h2 className="text-lg font-semibold text-black">FSSAI details</h2>
+        <p className="text-xs text-gray-500">Please re-upload files after refresh.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input value={step3.fssaiNumber || ""} onChange={(e) => setStep3({ ...step3, fssaiNumber: e.target.value })} className="bg-white text-sm" placeholder="FSSAI number*" />
+          <Input
+            value={step3.fssaiNumber || ""}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 14)
+              setStep3({ ...step3, fssaiNumber: digits })
+            }}
+            className="bg-white text-sm"
+            placeholder="14-digit FSSAI number*"
+          />
           <div>
             <Label className="text-xs text-gray-700 mb-1 block">FSSAI expiry date*</Label>
             <Input
               type="date"
               value={step3.fssaiExpiry || ""}
               onChange={(e) => setStep3({ ...step3, fssaiExpiry: e.target.value })}
+              min={new Date().toISOString().split("T")[0]}
               className="bg-white text-sm"
             />
           </div>
@@ -1270,14 +1839,60 @@ export default function AddCafe() {
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <h2 className="text-lg font-semibold text-black">Bank account details</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input value={step3.accountNumber || ""} onChange={(e) => setStep3({ ...step3, accountNumber: e.target.value.trim() })} className="bg-white text-sm" placeholder="Account number*" />
-          <Input value={step3.confirmAccountNumber || ""} onChange={(e) => setStep3({ ...step3, confirmAccountNumber: e.target.value.trim() })} className="bg-white text-sm" placeholder="Re-enter account number*" />
+          <Input
+            value={step3.accountNumber || ""}
+            onChange={(e) => setStep3({ ...step3, accountNumber: formatAccountNumber(e.target.value) })}
+            onBlur={() => {
+              setStep3((prev) => ({
+                ...prev,
+                accountNumber: formatAccountNumber(prev.accountNumber),
+              }))
+            }}
+            className="bg-white text-sm"
+            placeholder="Account number*"
+          />
+          <Input
+            value={step3.confirmAccountNumber || ""}
+            onChange={(e) => setStep3({ ...step3, confirmAccountNumber: formatAccountNumber(e.target.value) })}
+            onBlur={() => {
+              setStep3((prev) => ({
+                ...prev,
+                confirmAccountNumber: formatAccountNumber(prev.confirmAccountNumber),
+              }))
+            }}
+            className="bg-white text-sm"
+            placeholder="Re-enter account number*"
+          />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input value={step3.ifscCode || ""} onChange={(e) => setStep3({ ...step3, ifscCode: e.target.value })} className="bg-white text-sm" placeholder="IFSC code*" />
-          <Input value={step3.accountType || ""} onChange={(e) => setStep3({ ...step3, accountType: e.target.value })} className="bg-white text-sm" placeholder="Account type (savings / current)*" />
+          <Input
+            value={step3.ifscCode || ""}
+            onChange={(e) => setStep3({ ...step3, ifscCode: formatIfscCode(e.target.value) })}
+            onBlur={() => {
+              setStep3((prev) => ({ ...prev, ifscCode: formatIfscCode(prev.ifscCode) }))
+            }}
+            className="bg-white text-sm"
+            placeholder="IFSC code*"
+          />
+          <select
+            className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            value={step3.accountType || ""}
+            onChange={(e) => setStep3({ ...step3, accountType: e.target.value })}
+          >
+            <option value="" disabled>Account type (savings / current)*</option>
+            <option value="Saving">Saving</option>
+            <option value="Current">Current</option>
+          </select>
         </div>
-        <Input value={step3.accountHolderName || ""} onChange={(e) => setStep3({ ...step3, accountHolderName: e.target.value })} className="bg-white text-sm" placeholder="Account holder name*" />
+        <Input
+          value={step3.accountHolderName || ""}
+          onChange={(e) => setStep3({ ...step3, accountHolderName: formatTitleCaseLive(e.target.value) })}
+          onBlur={() => {
+            setStep3((prev) => ({ ...prev, accountHolderName: formatAccountHolderName(prev.accountHolderName) }))
+          }}
+          className="bg-white text-sm"
+          placeholder="Account holder name*"
+        />
       </section>
     </div>
   )
@@ -1332,8 +1947,16 @@ export default function AddCafe() {
                 type="number"
                 min="1"
                 max="50"
-                value={String(step4.diningSettings?.maxGuests ?? 6)}
-                onChange={(e) => setStep4({ ...step4, diningSettings: { ...step4.diningSettings, maxGuests: parseInt(e.target.value) || 1 } })}
+                value={step4.diningSettings?.maxGuests ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === "") {
+                    setStep4({ ...step4, diningSettings: { ...step4.diningSettings, maxGuests: "" } })
+                    return
+                  }
+                  const next = Math.max(1, Math.min(50, parseInt(value, 10) || 1))
+                  setStep4({ ...step4, diningSettings: { ...step4.diningSettings, maxGuests: next } })
+                }}
                 className="mt-1 bg-white text-sm"
               />
             </div>
@@ -1368,20 +1991,63 @@ export default function AddCafe() {
           <Input
             type="email"
             value={String(auth.email || "")}
-            onChange={(e) => setAuth({ ...auth, email: e.target.value || "", signupMethod: e.target.value ? 'email' : 'phone' })}
+            onChange={(e) => {
+              const value = String(e.target.value || "").trim().toLowerCase()
+              setAuth({ ...auth, email: value, signupMethod: value ? 'email' : 'phone' })
+              if (!value) {
+                setAuthEmailError("")
+              } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                setAuthEmailError("Please enter a valid email address")
+              } else {
+                setAuthEmailError("")
+              }
+            }}
+            onBlur={() => {
+              const value = String(auth.email || "").trim().toLowerCase()
+              if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                setAuthEmailError("Please enter a valid email address")
+              } else {
+                setAuthEmailError("")
+              }
+            }}
             className="mt-1 bg-white text-sm"
             placeholder="cafe@example.com"
           />
+          {authEmailError && (
+            <p className="mt-1 text-xs text-red-500">{authEmailError}</p>
+          )}
         </div>
         <div>
           <Label className="text-xs text-gray-700">Phone (if no email)</Label>
           <Input
             type="tel"
-            value={String(auth.phone || "")}
-            onChange={(e) => setAuth({ ...auth, phone: e.target.value || "", signupMethod: !auth.email ? 'phone' : 'email' })}
+            value={String(auth.phone || "").replace(/\D/g, "").slice(0, 10)}
+            onChange={(e) => {
+              const digits = String(e.target.value || "").replace(/\D/g, "").slice(0, 10)
+              setAuth({ ...auth, phone: digits, signupMethod: !auth.email ? 'phone' : 'email' })
+              if (!digits) {
+                setAuthPhoneError("")
+              } else if (digits.length !== 10) {
+                setAuthPhoneError("Phone number must be 10 digits")
+              } else {
+                setAuthPhoneError("")
+              }
+            }}
+            onBlur={() => {
+              const digits = String(auth.phone || "").replace(/\D/g, "")
+              setAuth((prev) => ({ ...prev, phone: digits.slice(0, 10) }))
+              if (digits && digits.length !== 10) {
+                setAuthPhoneError("Phone number must be 10 digits")
+              } else {
+                setAuthPhoneError("")
+              }
+            }}
             className="mt-1 bg-white text-sm"
             placeholder="+91 9876543210"
           />
+          {authPhoneError && (
+            <p className="mt-1 text-xs text-red-500">{authPhoneError}</p>
+          )}
         </div>
 
       </section>

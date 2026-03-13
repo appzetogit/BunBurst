@@ -1022,11 +1022,7 @@ export default function OrderTracking() {
               return 'Add delivery address'
             })()}
           />
-          <SectionItem
-            icon={MessageSquare}
-            title="Add delivery instructions"
-            subtitle=""
-          />
+          {/* Delivery instructions removed as requested */}
         </motion.div>
 
         {/* Cafe Section */}

@@ -9,8 +9,10 @@ export default function Coupons() {
   const [error, setError] = useState(null)
 
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   const [cafes, setCafes] = useState([])
   const [isCreating, setIsCreating] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [createForm, setCreateForm] = useState({
     cafeId: "",
     goalId: "delight-customers",
@@ -22,6 +24,19 @@ export default function Coupons() {
     discountPercentage: "",
     discountedPrice: "",
     endDate: "",
+  })
+  const [editForm, setEditForm] = useState({
+    offerId: "",
+    itemIndex: null,
+    cafeName: "",
+    dishName: "",
+    discountType: "percentage",
+    couponCode: "",
+    originalPrice: "",
+    discountPercentage: "",
+    discountedPrice: "",
+    endDate: "",
+    status: "active",
   })
 
   const fetchOffers = async () => {
@@ -73,43 +88,67 @@ export default function Coupons() {
       offer.couponCode?.toLowerCase().includes(query)
     )
   }, [offers, searchQuery])
+  const openEditModal = (offer) => {
+    setEditForm({
+      offerId: offer.offerId || "",
+      itemIndex: offer.itemIndex ?? null,
+      cafeName: offer.cafeName || "",
+      dishName: offer.dishName || "",
+      discountType: offer.discountType || "percentage",
+      couponCode: offer.couponCode || "",
+      originalPrice: offer.originalPrice || "",
+      discountPercentage: offer.discountPercentage || "",
+      discountedPrice: offer.discountedPrice || "",
+      endDate: offer.endDate ? new Date(offer.endDate).toISOString().split("T")[0] : "",
+      status: offer.status || "active",
+    })
+    setIsEditOpen(true)
+  }
 
   return (
-    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#fafafa] p-4 lg:p-6 text-[#1E1E1E]">
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 mb-4">Cafe Offers & Coupons</h1>
+        <div className="mb-6 rounded-2xl border border-[#F5F5F5] bg-white p-6 shadow-[0_10px_30px_rgba(17,17,17,0.06)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1E1E1E]/60">Promotions</p>
+              <h1 className="text-2xl font-bold text-[#1E1E1E]">Cafe Offers & Coupons</h1>
+            </div>
+            <span className="rounded-full border border-[#F5F5F5] bg-[#FFF7D1] px-3 py-1 text-xs font-semibold text-[#1E1E1E]">
+              Highlighted deals
+            </span>
+          </div>
 
           {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#1E1E1E]/40" />
             <input
               type="text"
               placeholder="Search by cafe name, dish name, or coupon code..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full rounded-xl border border-[#F5F5F5] bg-white px-10 py-3 text-sm text-[#1E1E1E] shadow-sm outline-none transition focus:border-[#e53935] focus:ring-2 focus:ring-[#e53935]/20"
             />
           </div>
         </div>
 
         {/* Offers List */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-slate-900">
+        <div className="rounded-2xl border border-[#F5F5F5] bg-white p-6 shadow-[0_14px_40px_rgba(17,17,17,0.08)]">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-[#1E1E1E]">
               Offers List
             </h2>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setIsAddOpen(true)}
-                className="px-4 py-2.5 text-sm font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all flex items-center gap-2"
+                className="flex items-center gap-2 rounded-xl bg-[#e53935] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d32f2f]"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="h-4 w-4" />
                 Add Offer
               </button>
-              <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">
+              <span className="rounded-full border border-[#F5F5F5] bg-[#FFF7D1] px-3 py-1 text-sm font-semibold text-[#1E1E1E]">
                 {filteredOffers.length} {filteredOffers.length === 1 ? 'offer' : 'offers'}
               </span>
             </div>
@@ -117,55 +156,56 @@ export default function Coupons() {
 
           {loading ? (
             <div className="text-center py-20">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="text-sm text-slate-500 mt-4">Loading offers...</p>
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-[#e53935]"></div>
+              <p className="mt-4 text-sm text-[#1E1E1E]/60">Loading offers...</p>
             </div>
           ) : error ? (
             <div className="text-center py-20">
-              <p className="text-lg font-semibold text-red-600 mb-1">Error</p>
-              <p className="text-sm text-slate-500">{error}</p>
+              <p className="mb-1 text-lg font-semibold text-[#e53935]">Error</p>
+              <p className="text-sm text-[#1E1E1E]/60">{error}</p>
             </div>
           ) : filteredOffers.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-lg font-semibold text-slate-700 mb-1">No Offers Found</p>
-              <p className="text-sm text-slate-500">
+              <p className="mb-1 text-lg font-semibold text-[#1E1E1E]">No Offers Found</p>
+              <p className="text-sm text-[#1E1E1E]/60">
                 {searchQuery ? "No offers match your search criteria" : "No offers have been created yet"}
               </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="border-b border-[#F5F5F5] bg-[#fafafa]">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">SI</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Cafe</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Dish</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Coupon Code</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Discount</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Price</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Valid Until</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#1E1E1E]/70">SI</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#1E1E1E]/70">Cafe</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#1E1E1E]/70">Dish</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#1E1E1E]/70">Coupon Code</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#1E1E1E]/70">Discount</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#1E1E1E]/70">Price</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#1E1E1E]/70">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#1E1E1E]/70">Valid Until</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-[#1E1E1E]/70">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-100">
+                <tbody className="divide-y divide-[#F5F5F5] bg-white">
                   {filteredOffers.map((offer) => (
-                    <tr key={`${offer.offerId}-${offer.dishId}`} className="hover:bg-slate-50 transition-colors">
+                    <tr key={`${offer.offerId}-${offer.dishId}`} className="transition-colors hover:bg-[#FFFDF5]">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-700">{offer.sl}</span>
+                        <span className="text-sm font-medium text-[#1E1E1E]/70">{offer.sl}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-slate-900">{offer.cafeName}</span>
+                        <span className="text-sm font-medium text-[#1E1E1E]">{offer.cafeName}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-slate-700">{offer.dishName}</span>
+                        <span className="text-sm text-[#1E1E1E]/80">{offer.dishName}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-mono font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                        <span className="rounded-full bg-[#FFC400]/20 px-3 py-1 text-xs font-semibold text-[#1E1E1E]">
                           {offer.couponCode}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-slate-700">
+                        <span className="text-sm text-[#1E1E1E]/80">
                           {offer.discountType === 'flat-price'
                             ? `₹${offer.originalPrice - offer.discountedPrice} OFF`
                             : `${offer.discountPercentage}% OFF`}
@@ -173,24 +213,33 @@ export default function Coupons() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-400 line-through">₹{offer.originalPrice}</span>
-                          <span className="text-sm font-semibold text-green-600">₹{offer.discountedPrice}</span>
+                          <span className="text-xs text-[#1E1E1E]/40 line-through">₹{offer.originalPrice}</span>
+                          <span className="text-sm font-semibold text-[#1E1E1E]">₹{offer.discountedPrice}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${offer.status === 'active'
-                            ? 'bg-green-100 text-green-700'
+                            ? 'bg-[#FFC400]/25 text-[#1E1E1E]'
                             : offer.status === 'paused'
-                              ? 'bg-orange-100 text-orange-700'
-                              : 'bg-gray-100 text-gray-700'
+                              ? 'bg-[#F5F5F5] text-[#1E1E1E]/70'
+                              : 'bg-[#F5F5F5] text-[#1E1E1E]/70'
                           }`}>
                           {offer.status || 'Inactive'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-slate-700">
+                        <span className="text-sm text-[#1E1E1E]/80">
                           {offer.endDate ? new Date(offer.endDate).toLocaleDateString() : 'No expiry'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(offer)}
+                          className="rounded-lg border border-[#F5F5F5] px-3 py-1.5 text-xs font-semibold text-[#1E1E1E] transition hover:bg-[#FFF7D1]"
+                        >
+                          Edit
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -204,25 +253,25 @@ export default function Coupons() {
       {/* Add Offer Modal */}
       {isAddOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
-          <div className="w-full max-w-2xl bg-white rounded-xl shadow-xl border border-slate-200">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">Add Offer</h3>
+          <div className="w-full max-w-2xl rounded-2xl border border-[#F5F5F5] bg-white shadow-[0_20px_60px_rgba(17,17,17,0.18)]">
+            <div className="p-5 border-b border-[#F5F5F5] flex items-center justify-between">
+              <h3 className="text-lg font-bold text-[#1E1E1E]">Add Offer</h3>
               <button
                 type="button"
                 onClick={() => !isCreating && setIsAddOpen(false)}
-                className="text-slate-500 hover:text-slate-700"
+                className="text-[#1E1E1E]/60 hover:text-[#1E1E1E]/80"
               >
-                ×
+                x
               </button>
             </div>
 
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Cafe</label>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Cafe</label>
                 <select
                   value={createForm.cafeId}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, cafeId: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                 >
                   <option value="">Select cafe</option>
                   {cafes.map((c) => (
@@ -234,11 +283,11 @@ export default function Coupons() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Goal</label>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Goal</label>
                 <select
                   value={createForm.goalId}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, goalId: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                 >
                   <option value="delight-customers">Delight customers</option>
                   <option value="grow-customers">Grow customers</option>
@@ -248,11 +297,11 @@ export default function Coupons() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Discount Type</label>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Discount Type</label>
                 <select
                   value={createForm.discountType}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, discountType: e.target.value, discountPercentage: "", discountedPrice: "" }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                 >
                   <option value="percentage">Percentage</option>
                   <option value="flat-price">Flat price</option>
@@ -260,94 +309,95 @@ export default function Coupons() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Dish / Item Name</label>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Dish / Item Name</label>
                 <input
                   type="text"
                   value={createForm.dishName}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, dishName: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                   placeholder="e.g., Paneer Burger"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Item ID (Optional)</label>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Item ID (Optional)</label>
                 <input
                   type="text"
                   value={createForm.itemId}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, itemId: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                   placeholder="e.g., 65f..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Coupon Code</label>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Coupon Code</label>
                 <input
                   type="text"
                   value={createForm.couponCode}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, couponCode: e.target.value.toUpperCase() }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                   placeholder="e.g., SAVE20"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Original Price</label>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Original Price</label>
                 <input
                   type="number"
                   min="0"
                   value={createForm.originalPrice}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, originalPrice: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                   placeholder="e.g., 199"
                 />
               </div>
 
               {createForm.discountType === "percentage" ? (
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Discount %</label>
+                  <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Discount %</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={createForm.discountPercentage}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, discountPercentage: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                     placeholder="e.g., 20"
                   />
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Discounted Price</label>
+                  <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Discounted Price</label>
                   <input
                     type="number"
                     min="0"
                     value={createForm.discountedPrice}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, discountedPrice: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                     placeholder="e.g., 149"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Valid Until (Optional)</label>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Valid Until (Optional)</label>
                 <input
                   type="date"
                   value={createForm.endDate}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
                 />
               </div>
             </div>
 
-            <div className="p-5 border-t border-slate-200 flex items-center justify-end gap-3">
+            <div className="p-5 border-t border-[#F5F5F5] flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setIsAddOpen(false)}
                 disabled={isCreating}
-                className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-50"
+                className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-[#F5F5F5] bg-white text-[#1E1E1E]/80 hover:bg-[#fafafa] transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -418,9 +468,184 @@ export default function Coupons() {
                     setIsCreating(false)
                   }
                 }}
-                className="px-4 py-2.5 text-sm font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all disabled:opacity-50"
+                className="px-4 py-2.5 text-sm font-semibold rounded-lg bg-[#e53935] text-white hover:bg-[#d32f2f] transition-all disabled:opacity-50"
               >
                 {isCreating ? "Creating..." : "Create Offer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Offer Modal */}
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <div className="w-full max-w-2xl rounded-2xl border border-[#F5F5F5] bg-white shadow-[0_20px_60px_rgba(17,17,17,0.18)]">
+            <div className="p-5 border-b border-[#F5F5F5] flex items-center justify-between">
+              <h3 className="text-lg font-bold text-[#1E1E1E]">Edit Offer</h3>
+              <button
+                type="button"
+                onClick={() => !isUpdating && setIsEditOpen(false)}
+                className="text-[#1E1E1E]/60 hover:text-[#1E1E1E]/80"
+              >
+                x
+              </button>
+            </div>
+
+            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Cafe</label>
+                <input
+                  type="text"
+                  value={editForm.cafeName}
+                  readOnly
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white text-sm"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Dish / Item Name</label>
+                <input
+                  type="text"
+                  value={editForm.dishName}
+                  readOnly
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Discount Type</label>
+                <select
+                  value={editForm.discountType}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, discountType: e.target.value, discountPercentage: "", discountedPrice: "" }))}
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
+                >
+                  <option value="percentage">Percentage</option>
+                  <option value="flat-price">Flat price</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Coupon Code</label>
+                <input
+                  type="text"
+                  value={editForm.couponCode}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, couponCode: e.target.value.toUpperCase() }))}
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Original Price</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editForm.originalPrice}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, originalPrice: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
+                />
+              </div>
+
+              {editForm.discountType === "percentage" ? (
+                <div>
+                  <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Discount %</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editForm.discountPercentage}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, discountPercentage: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Discounted Price</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.discountedPrice}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, discountedPrice: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Valid Until (Optional)</label>
+                <input
+                  type="date"
+                  value={editForm.endDate}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, endDate: e.target.value }))}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#1E1E1E]/80 mb-1">Status</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 text-sm"
+                >
+                  <option value="active">Active</option>
+                  <option value="paused">Paused</option>
+                  <option value="expired">Expired</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-[#F5F5F5] flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsEditOpen(false)}
+                disabled={isUpdating}
+                className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-[#F5F5F5] bg-white text-[#1E1E1E]/80 hover:bg-[#fafafa] transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isUpdating}
+                onClick={async () => {
+                  if (isUpdating) return
+                  if (!editForm.offerId || editForm.itemIndex === null) {
+                    alert("Offer item is missing. Please refresh and try again.")
+                    return
+                  }
+
+                  const payload = {
+                    itemIndex: editForm.itemIndex,
+                    discountType: editForm.discountType,
+                    couponCode: editForm.couponCode.trim(),
+                    originalPrice: Number(editForm.originalPrice),
+                    endDate: editForm.endDate ? new Date(editForm.endDate).toISOString() : null,
+                    status: editForm.status,
+                  }
+
+                  if (editForm.discountType === "percentage") {
+                    payload.discountPercentage = Number(editForm.discountPercentage)
+                  } else {
+                    payload.discountedPrice = Number(editForm.discountedPrice)
+                  }
+
+                  setIsUpdating(true)
+                  try {
+                    await adminAPI.updateOfferItem(editForm.offerId, payload)
+                    setIsEditOpen(false)
+                    fetchOffers()
+                  } catch (err) {
+                    console.error("Error updating offer:", err)
+                    alert(err?.response?.data?.message || "Failed to update offer")
+                  } finally {
+                    setIsUpdating(false)
+                  }
+                }}
+                className="px-4 py-2.5 text-sm font-semibold rounded-lg bg-[#e53935] text-white hover:bg-[#d32f2f] transition-all disabled:opacity-50"
+              >
+                {isUpdating ? "Updating..." : "Update Offer"}
               </button>
             </div>
           </div>

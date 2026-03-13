@@ -248,13 +248,13 @@ export const getCouponsByItemId = asyncHandler(async (req, res) => {
           startDate: offer.startDate,
           endDate: offer.endDate,
         };
-        console.log(`[COUPONS]   ✅ Adding coupon:`, coupon);
+        console.log(`[COUPONS]   ? Adding coupon:`, coupon);
         coupons.push(coupon);
       }
     });
   });
 
-  console.log(`[COUPONS] ✅ Returning ${coupons.length} coupons for itemId ${itemId}`);
+  console.log(`[COUPONS] ? Returning ${coupons.length} coupons for itemId ${itemId}`);
   console.log(`[COUPONS] Coupons array:`, JSON.stringify(coupons, null, 2));
 
   return successResponse(res, 200, 'Coupons retrieved successfully', {
@@ -411,7 +411,7 @@ export const getPublicOffers = asyncHandler(async (req, res) => {
             offerText = `Flat ${item.discountPercentage}% OFF`;
           } else if (offer.discountType === 'flat-price') {
             const discountAmount = item.originalPrice - item.discountedPrice;
-            offerText = `Flat ₹${Math.round(discountAmount)} OFF`;
+            offerText = `Flat ?${Math.round(discountAmount)} OFF`;
           } else if (offer.discountType === 'bogo') {
             offerText = 'Buy 1 Get 1 Free';
           } else {

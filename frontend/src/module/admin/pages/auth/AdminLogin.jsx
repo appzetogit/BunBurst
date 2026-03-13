@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import { adminAPI } from "@/lib/api"
 import { setAuthData, isModuleAuthenticated } from "@/lib/utils/auth"
 import { loadBusinessSettings } from "@/lib/utils/businessSettings"
@@ -19,6 +19,7 @@ import appzetoLogo from "@/assets/appzetologo.png"
 
 export default function AdminLogin() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -71,8 +72,9 @@ export default function AdminLogin() {
         // Store admin token and data
         setAuthData("admin", data.accessToken, data.admin)
 
-        // Navigate to admin dashboard after successful login
-        navigate("/admin", { replace: true })
+        // Navigate back to the requested admin page if available
+        const redirectTo = location.state?.from || "/admin"
+        navigate(redirectTo, { replace: true })
       } else {
         throw new Error("Login failed. Please try again.")
       }

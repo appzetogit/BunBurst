@@ -71,6 +71,39 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
   const [currentAddress, setCurrentAddress] = useState("")
   const [GOOGLE_MAPS_API_KEY, setGOOGLE_MAPS_API_KEY] = useState(null)
 
+  useEffect(() => {
+    if (!isOpen) {
+      window.__locationSelectorFormOpen = false
+      return
+    }
+
+    if (showAddressForm) {
+      window.__locationSelectorFormOpen = true
+      try {
+        window.history.pushState({ locationSelectorForm: true }, "", window.location.pathname)
+      } catch {
+        // Ignore history failures
+      }
+    } else {
+      window.__locationSelectorFormOpen = false
+    }
+
+    const handlePopState = () => {
+      if (showAddressForm) {
+        setShowAddressForm(false)
+        window.__locationSelectorFormOpen = false
+        if (window.location.pathname === "/") {
+          onClose()
+        }
+      }
+    }
+
+    window.addEventListener("popstate", handlePopState)
+    return () => {
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [isOpen, showAddressForm])
+
   // Load Google Maps API key from backend
   useEffect(() => {
     import('@/lib/utils/googleMapsApiKey.js').then(({ getGoogleMapsApiKey }) => {
@@ -2053,6 +2086,9 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       label: "Home",
       phone: "",
     })
+    if (window.location.pathname === "/") {
+      onClose()
+    }
   }
 
   const handleSelectSavedAddress = async (address) => {

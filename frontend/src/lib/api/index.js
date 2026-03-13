@@ -577,7 +577,7 @@ export const cafeAPI = {
     return apiClient.get(API_ENDPOINTS.CAFE.LIST, { params });
   },
 
-  // Get cafes with dishes under ₹250
+  // Get cafes with dishes under ?250
   getCafesUnder250: (zoneId) => {
     const params = zoneId ? { zoneId } : {};
     return apiClient.get(API_ENDPOINTS.CAFE.UNDER_250, { params });
@@ -1226,6 +1226,12 @@ export const adminAPI = {
   // Create offer (admin)
   createOffer: (data) => {
     return apiClient.post(API_ENDPOINTS.ADMIN.OFFERS, data);
+  },
+  updateOfferItem: (offerId, data) => {
+    return apiClient.put(
+      API_ENDPOINTS.ADMIN.OFFERS_ITEM_UPDATE.replace(":offerId", offerId),
+      data,
+    );
   },
 
   // Cafe Commission Management

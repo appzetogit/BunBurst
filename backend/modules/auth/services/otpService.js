@@ -172,7 +172,7 @@ class OTPService {
    * @param {string} email - Email address (optional if phone provided)
    * @returns {Promise<Object>}
    */
-  async verifyOTP(phone = null, otp, purpose = 'login', email = null) {
+  async verifyOTP(phone = null, otp, purpose = 'login', email = null, options = {}) {
     try {
       // Validate that either phone or email is provided
       if (!phone && !email) {
@@ -194,6 +194,11 @@ class OTPService {
           message: 'OTP verified successfully'
         };
       }
+
+      const {
+        allowVerifiedReuse = false,
+        reuseWindowMinutes = 10,
+      } = options;
 
       // Verify OTP from database
       // For reset-password purpose, allow already-verified OTPs within 10 minutes
@@ -236,7 +241,7 @@ class OTPService {
           }
         }
       } else {
-        // For other purposes, only check unverified OTPs
+        // For other purposes, check unverified OTPs first
         const query = {
           otp,
           purpose,
@@ -247,6 +252,29 @@ class OTPService {
         if (email) query.email = email;
         
         otpRecord = await Otp.findOne(query);
+
+        // Optionally allow recently verified OTPs (e.g., multi-step flows)
+        if (!otpRecord && allowVerifiedReuse) {
+          const reuseWindowAgo = new Date(Date.now() - reuseWindowMinutes * 60 * 1000);
+          const verifiedQuery = {
+            otp,
+            purpose,
+            verified: true,
+            expiresAt: { $gt: new Date() },
+            updatedAt: { $gt: reuseWindowAgo }
+          };
+          if (phone) verifiedQuery.phone = phone;
+          if (email) verifiedQuery.email = email;
+
+          otpRecord = await Otp.findOne(verifiedQuery);
+
+          if (otpRecord) {
+            return {
+              success: true,
+              message: 'OTP verified successfully'
+            };
+          }
+        }
       }
 
       if (!otpRecord) {

@@ -126,12 +126,18 @@ apiClient.interceptors.request.use(
           requestUrl.match(/\/cafe\/[^/]+\/inventory/) ||
           requestUrl.match(/\/cafe\/[^/]+\/offers/)));
 
+    const isPublicDeliveryRoute =
+      path.startsWith("/delivery/sign-in") ||
+      path.startsWith("/delivery/signup") ||
+      path.startsWith("/delivery/otp") ||
+      path.startsWith("/delivery/welcome");
+
     const isAuthenticatedRoute =
       (path.startsWith("/admin") ||
         (path.startsWith("/cafe") &&
           !path.startsWith("/cafes") &&
           !isPublicCafeRoute) ||
-        path.startsWith("/delivery")) &&
+        (path.startsWith("/delivery") && !isPublicDeliveryRoute)) &&
       !isPublicCafeRoute;
 
     // For authenticated routes, ALWAYS ensure Authorization header is set if we have a token

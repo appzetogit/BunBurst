@@ -1,5 +1,5 @@
-import { Outlet, useLocation } from "react-router-dom"
-import { useEffect, useState, createContext, useContext, lazy, Suspense } from "react"
+import { Outlet, useLocation, useNavigate } from "react-router-dom"
+import { useEffect, useState, useRef, createContext, useContext, lazy, Suspense } from "react"
 import { ProfileProvider } from "../context/ProfileContext"
 import LocationPrompt from "./LocationPrompt"
 import { CartProvider } from "../context/CartContext"
@@ -83,9 +83,18 @@ export function useLocationSelector() {
 
 function LocationSelectorProvider({ children }) {
   const [isLocationSelectorOpen, setIsLocationSelectorOpen] = useState(false)
+  const navigate = useNavigate()
+  const lastPathRef = useRef(window.location.pathname)
 
   const openLocationSelector = () => {
+    lastPathRef.current = window.location.pathname || "/"
     setIsLocationSelectorOpen(true)
+    // Push a history entry so browser back can close the overlay cleanly
+    try {
+      window.history.pushState({ locationSelectorOpen: true }, "", window.location.pathname)
+    } catch {
+      // Ignore history failures (e.g., Safari private mode)
+    }
   }
 
   const closeLocationSelector = () => {
@@ -97,6 +106,24 @@ function LocationSelectorProvider({ children }) {
     openLocationSelector,
     closeLocationSelector
   }
+
+  useEffect(() => {
+    if (!isLocationSelectorOpen) return
+
+    const handlePopState = () => {
+      if (window.__locationSelectorFormOpen) {
+        return
+      }
+      setIsLocationSelectorOpen(false)
+      const targetPath = lastPathRef.current || "/"
+      navigate(targetPath, { replace: true })
+    }
+
+    window.addEventListener("popstate", handlePopState)
+    return () => {
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [isLocationSelectorOpen, navigate])
 
   return (
     <LocationSelectorContext.Provider value={value}>
@@ -161,4 +188,3 @@ export default function UserLayout() {
     </div>
   )
 }
-
