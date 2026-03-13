@@ -1,11 +1,11 @@
 import React from 'react';
-import { ArrowLeft, Share2, RefreshCcw, Home, UtensilsCrossed, ChevronRight, Shield, Phone } from 'lucide-react';
+import { ArrowLeft, RefreshCcw, Home, UtensilsCrossed, ChevronRight, Shield, Phone } from 'lucide-react';
 
 const TrackingPage = () => {
 
   return (
     <div className="relative min-h-screen bg-gray-900 font-sans overflow-hidden">
-      
+
       {/* --- 2. Floating Header (Green) --- */}
       <div className="absolute top-0 left-0 right-0 z-20 bg-[#23633F] p-4 pt-4 rounded-b-2xl shadow-lg">
         <div className="flex items-center justify-between text-white mb-3">
@@ -13,9 +13,9 @@ const TrackingPage = () => {
           <div className="flex items-center gap-2">
             <span className="font-semibold text-lg">Sagar Cafe</span>
           </div>
-          <Share2 className="w-5 h-5 cursor-pointer" />
+          <div className="w-6" />
         </div>
-        
+
         <div className="text-center text-white">
           <h2 className="text-2xl font-bold mb-3">Order placed</h2>
           <div className="flex items-center justify-center gap-2 bg-[#1a4d31] w-fit mx-auto px-4 py-2 rounded-full">
@@ -84,7 +84,6 @@ const TrackingPage = () => {
                 <p className="font-semibold text-white">Ajay Panchal</p>
                 <p className="text-sm text-gray-400">+91 7610416911</p>
               </div>
-              <span className="text-green-400 font-medium text-sm cursor-pointer">Edit</span>
             </div>
           </div>
 
@@ -94,9 +93,8 @@ const TrackingPage = () => {
               <Home className="w-5 h-5 text-gray-400" />
               <div className="flex-1">
                 <p className="font-semibold text-white">Delivery at Location</p>
-                <p className="text-sm text-gray-400">X2RJ+QHR, Dewas, Madhya Pradesh 45...</p>
+                <p className="text-sm text-gray-400">X2RJ+QHR, Dewas, Madhya Pradesh 452018</p>
               </div>
-              <span className="text-green-400 font-medium text-sm cursor-pointer">Edit</span>
             </div>
           </div>
         </div>

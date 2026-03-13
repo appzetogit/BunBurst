@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import {
   ArrowLeft,
-  Share2,
   RefreshCw,
   Phone,
   ChevronRight,
@@ -13,7 +12,6 @@ import {
   MessageSquare,
   X,
   Check,
-  Shield,
   Receipt,
   CircleSlash,
   Loader2
@@ -200,8 +198,8 @@ const SectionItem = ({ icon: Icon, title, subtitle, onClick, showArrow = true, r
       </div>
     )}
     <div className="flex-1 min-w-0">
-      <p className="font-medium text-[#1E1E1E] truncate">{title}</p>
-      {subtitle && <p className="text-sm text-gray-500 truncate">{subtitle}</p>}
+      <p className="font-medium text-[#1E1E1E]">{title}</p>
+      {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
     </div>
     {rightContent || (showArrow && <ChevronRight className="w-5 h-5 text-gray-400" />)}
   </motion.button>
@@ -215,6 +213,26 @@ export default function OrderTracking() {
   const { getOrderById } = useOrders()
   const { profile, getDefaultAddress } = useProfile()
   const { openLocationSelector } = useLocationSelector()
+  const { location: userLiveLocation } = useUserLocation()
+
+  const [selectedAddressLabel, setSelectedAddressLabel] = useState(() => {
+    return localStorage.getItem("userDeliveryAddressLabel") || "Location"
+  })
+
+  // Keep the selected label in sync
+  useEffect(() => {
+    const handleLabelChange = (e) => {
+      const nextLabel = e?.detail?.label
+      if (!nextLabel) return
+      setSelectedAddressLabel(nextLabel)
+      localStorage.setItem("userDeliveryAddressLabel", nextLabel)
+    }
+
+    window.addEventListener("userDeliveryLabelChanged", handleLabelChange)
+    return () => {
+      window.removeEventListener("userDeliveryLabelChanged", handleLabelChange)
+    }
+  }, [])
 
   // State for order data
   const [order, setOrder] = useState(null)
@@ -821,12 +839,7 @@ export default function OrderTracking() {
             </motion.button>
           </Link>
           <h2 className="font-semibold text-lg">{order.cafe}</h2>
-          <motion.button
-            className="w-10 h-10 flex items-center justify-center"
-            whileTap={{ scale: 0.9 }}
-          >
-            <Share2 className="w-5 h-5" />
-          </motion.button>
+          <div className="w-10" /> {/* Placeholder to keep title centered */}
         </div>
 
         {/* Status section */}
@@ -911,20 +924,6 @@ export default function OrderTracking() {
           return null
         })()}
 
-        {/* Delivery Partner Safety */}
-        <motion.button
-          className="w-full bg-white rounded-xl p-4 shadow-sm border border-[#F5F5F5] flex items-center gap-3"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          whileTap={{ scale: 0.99 }}
-        >
-          <Shield className="w-6 h-6 text-[#FFC400]" />
-          <span className="flex-1 text-left font-medium text-[#1E1E1E]">
-            Learn about delivery partner safety
-          </span>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
-        </motion.button>
 
         {/* Delivery Details Banner */}
         <motion.div
@@ -976,15 +975,20 @@ export default function OrderTracking() {
           />
           <SectionItem
             icon={HomeIcon}
-            title="Delivery at Location"
-            onClick={openLocationSelector}
+            title={`Delivery at ${selectedAddressLabel || 'Location'}`}
+            showArrow={false}
             subtitle={(() => {
               // Priority 1: Use order address formattedAddress (live location address)
               if (order?.address?.formattedAddress && order.address.formattedAddress !== "Select location") {
                 return order.address.formattedAddress
               }
 
-              // Priority 2: Build full address from order address parts
+              // Priority 2: Use current live location from hook (reflects what's in Cart)
+              if (userLiveLocation?.formattedAddress && userLiveLocation.formattedAddress !== "Select location") {
+                return userLiveLocation.formattedAddress
+              }
+
+              // Priority 3: Build full address from order address parts
               if (order?.address) {
                 const orderAddressParts = []
                 if (order.address.street) orderAddressParts.push(order.address.street)
@@ -997,7 +1001,7 @@ export default function OrderTracking() {
                 }
               }
 
-              // Priority 3: Use defaultAddress formattedAddress (live location address)
+              // Priority 4: Use defaultAddress formattedAddress (live location address)
               if (defaultAddress?.formattedAddress && defaultAddress.formattedAddress !== "Select location") {
                 return defaultAddress.formattedAddress
               }
@@ -1017,9 +1021,6 @@ export default function OrderTracking() {
 
               return 'Add delivery address'
             })()}
-            rightContent={
-              <span className="text-[#e53935] font-medium text-sm">Edit</span>
-            }
           />
           <SectionItem
             icon={MessageSquare}
