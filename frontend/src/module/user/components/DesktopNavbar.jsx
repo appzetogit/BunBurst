@@ -58,9 +58,18 @@ export default function DesktopNavbar() {
 
   // Show area if available, otherwise show city
   // Priority: area > city > "Select"
-  const areaName = userLocation?.area && userLocation?.area.trim() ? userLocation.area.trim() : null
+  const rawAreaName = userLocation?.area && userLocation?.area.trim() ? userLocation.area.trim() : null
   const cityName = userLocation?.city || null
   const stateName = userLocation?.state || null
+
+  // Clean up odd "area" strings (e.g., Plus Codes like "PV6X+XP, ...") for a nicer desktop header.
+  const areaName = rawAreaName
+    ? rawAreaName
+      .replace(/^[A-Z0-9]{4}\+[A-Z0-9]{2}\s*,?\s*/i, "") // drop Plus Code prefix
+      .replace(/^\s*\d+\s*,\s*/i, "") // drop leading house/plot number like "214, "
+      .split(",")[0] // keep the first meaningful segment
+      .trim() || rawAreaName
+    : null
   // Main location name: Show area if available, otherwise show city, otherwise "Select"
   const mainLocationName = areaName || cityName || "Select"
   // Secondary location: Show only city when area is available (as per design image)
@@ -109,7 +118,7 @@ export default function DesktopNavbar() {
                 variant="ghost"
                 onClick={handleLocationClick}
                 disabled={locationLoading}
-                className="h-auto px-0 py-0 hover:bg-transparent transition-colors flex-shrink-0"
+                className="h-auto px-0 py-0 hover:bg-transparent transition-colors min-w-0"
               >
                 {locationLoading ? (
                   <span className="text-sm font-bold text-black">
@@ -117,18 +126,18 @@ export default function DesktopNavbar() {
                   </span>
                 ) : (
                   <div className="flex flex-col items-start min-w-0">
-                    <div className="flex items-center gap-1.5 lg:gap-2">
+                    <div className="flex items-center gap-1.5 lg:gap-2 min-w-0">
                       <FaLocationDot
                         className="h-5 w-5 lg:h-6 lg:w-6 text-[#e53935] flex-shrink-0"
                         strokeWidth={2.5}
                       />
-                      <span className="text-sm lg:text-base font-bold text-[#1E1E1E] whitespace-nowrap">
+                      <span className="text-sm lg:text-base font-bold text-[#1E1E1E] truncate max-w-[320px] lg:max-w-[420px]">
                         {mainLocationName}
                       </span>
                       <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5 text-[#1E1E1E]/60 flex-shrink-0" strokeWidth={2.5} />
                     </div>
                     {secondaryLocation && (
-                      <span className="text-[10px] lg:text-[11px] font-medium text-[#1E1E1E]/50 whitespace-nowrap">
+                      <span className="text-[10px] lg:text-[11px] font-medium text-[#1E1E1E]/50 truncate max-w-[360px] lg:max-w-[460px]">
                         {secondaryLocation}
                       </span>
                     )}
