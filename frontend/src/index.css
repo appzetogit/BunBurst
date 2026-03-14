@@ -229,6 +229,39 @@
 }
 
 /* ======================================================
+   DESKTOP-ONLY DARK MODE FOR CUSTOMER APP
+   ====================================================== */
+@media (min-width: 1024px) {
+  .user-desktop-dark {
+    --background: #0f1115;
+    --foreground: #f5f7fb;
+    --card: #151a21;
+    --card-foreground: #f5f7fb;
+    --popover: #151a21;
+    --popover-foreground: #f5f7fb;
+    --secondary: #1b222c;
+    --secondary-foreground: #e7e9ee;
+    --muted: #1b222c;
+    --muted-foreground: #9aa3b2;
+    --border: #232b36;
+    --input: #232b36;
+    --ring: #e53935;
+    --highlight: #ffc400;
+    --highlight-foreground: #141414;
+    --sidebar: #0f1115;
+    --sidebar-foreground: #f5f7fb;
+    --sidebar-border: #232b36;
+  }
+
+  .user-desktop-dark {
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(229, 57, 53, 0.15), transparent 60%),
+      radial-gradient(800px 500px at 90% 10%, rgba(255, 196, 0, 0.08), transparent 55%),
+      var(--background);
+  }
+}
+
+/* ======================================================
    UTILITIES
    ====================================================== */
 @layer utilities {

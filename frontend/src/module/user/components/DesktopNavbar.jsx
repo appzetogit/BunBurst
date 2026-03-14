@@ -121,7 +121,7 @@ export default function DesktopNavbar() {
                 className="h-auto px-0 py-0 hover:bg-transparent transition-colors min-w-0"
               >
                 {locationLoading ? (
-                  <span className="text-sm font-bold text-black">
+                  <span className="text-sm font-bold text-foreground">
                     Loading...
                   </span>
                 ) : (
@@ -131,13 +131,13 @@ export default function DesktopNavbar() {
                         className="h-5 w-5 lg:h-6 lg:w-6 text-[#e53935] flex-shrink-0"
                         strokeWidth={2.5}
                       />
-                      <span className="text-sm lg:text-base font-bold text-[#1E1E1E] truncate max-w-[320px] lg:max-w-[420px]">
+                      <span className="text-sm lg:text-base font-bold text-foreground truncate max-w-[320px] lg:max-w-[420px]">
                         {mainLocationName}
                       </span>
-                      <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5 text-[#1E1E1E]/60 flex-shrink-0" strokeWidth={2.5} />
+                      <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5 text-foreground/60 flex-shrink-0" strokeWidth={2.5} />
                     </div>
                     {secondaryLocation && (
-                      <span className="text-[10px] lg:text-[11px] font-medium text-[#1E1E1E]/50 truncate max-w-[360px] lg:max-w-[460px]">
+                      <span className="text-[10px] lg:text-[11px] font-medium text-foreground/50 truncate max-w-[360px] lg:max-w-[460px]">
                         {secondaryLocation}
                       </span>
                     )}
@@ -153,7 +153,7 @@ export default function DesktopNavbar() {
                 to="/user"
                 className={`px-4 lg:px-6 py-2.5 text-sm lg:text-base font-medium transition-all duration-200 relative ${isDelivery
                   ? "text-[#e53935]"
-                  : "text-[#1E1E1E]/60 hover:text-[#e53935] transition-colors"
+                  : "text-foreground/60 hover:text-[#e53935] transition-colors"
                   }`}
               >
                 <span className="relative z-10">Delivery</span>
@@ -163,14 +163,14 @@ export default function DesktopNavbar() {
               </Link>
 
               {/* Divider */}
-              <div className="h-6 w-px bg-[#F5F5F5]" />
+              <div className="h-6 w-px bg-border" />
 
               {/* Under 250 Tab */}
               <Link
                 to="/user/under-250"
                 className={`px-4 lg:px-6 py-2.5 text-sm lg:text-base font-medium transition-all duration-200 relative ${isUnder250
                   ? "text-[#e53935]"
-                  : "text-[#1E1E1E]/60 hover:text-[#e53935] transition-colors"
+                  : "text-foreground/60 hover:text-[#e53935] transition-colors"
                   }`}
               >
                 <span className="relative z-10">Under 250</span>
@@ -180,14 +180,14 @@ export default function DesktopNavbar() {
               </Link>
 
               {/* Divider */}
-              <div className="h-6 w-px bg-[#F5F5F5]" />
+              <div className="h-6 w-px bg-border" />
 
               {/* Dining Tab */}
               <Link
                 to="/user/dining"
                 className={`px-4 lg:px-6 py-2.5 text-sm lg:text-base font-medium transition-all duration-200 relative ${isDining
                   ? "text-[#e53935]"
-                  : "text-[#1E1E1E]/60 hover:text-[#e53935] transition-colors"
+                  : "text-foreground/60 hover:text-[#e53935] transition-colors"
                   }`}
               >
                 <span className="relative z-10">Dining</span>
@@ -197,14 +197,14 @@ export default function DesktopNavbar() {
               </Link>
 
               {/* Divider */}
-              <div className="h-6 w-px bg-[#F5F5F5]" />
+              <div className="h-6 w-px bg-border" />
 
               {/* Profile Tab */}
               <Link
                 to="/user/profile"
                 className={`px-4 lg:px-6 py-2.5 text-sm lg:text-base font-medium transition-all duration-200 relative ${isProfile
                   ? "text-[#e53935]"
-                  : "text-[#1E1E1E]/60 hover:text-[#e53935] transition-colors"
+                  : "text-foreground/60 hover:text-[#e53935] transition-colors"
                   }`}
               >
                 <span className="relative z-10">Profile</span>
@@ -221,10 +221,10 @@ export default function DesktopNavbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 lg:h-10 lg:w-10 rounded-full p-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="h-9 w-9 lg:h-10 lg:w-10 rounded-full p-0 hover:bg-muted transition-colors"
                   title="Wallet"
                 >
-                  <Wallet className="h-5 w-5 lg:h-6 lg:w-6 text-gray-700 dark:text-gray-300" strokeWidth={2} />
+                  <Wallet className="h-5 w-5 lg:h-6 lg:w-6 text-foreground/70" strokeWidth={2} />
                 </Button>
               </Link>
 
@@ -233,10 +233,10 @@ export default function DesktopNavbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative h-9 w-9 lg:h-10 lg:w-10 rounded-full p-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="relative h-9 w-9 lg:h-10 lg:w-10 rounded-full p-0 hover:bg-muted transition-colors"
                   title="Cart"
                 >
-                  <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6 text-gray-700 dark:text-gray-300" strokeWidth={2} />
+                  <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6 text-foreground/70" strokeWidth={2} />
                   {cartCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center ring-2 ring-card">
                       <span className="text-[10px] font-bold text-primary-foreground">{cartCount > 99 ? "99+" : cartCount}</span>
