@@ -975,16 +975,12 @@ export const deliveryAPI = {
       API_ENDPOINTS.DELIVERY.ORDER_REACHED_DROP.replace(":orderId", orderId),
     );
   },
-  completeDelivery: (orderId, rating = null, review = "") => {
+  completeDelivery: (orderId) => {
     return apiClient.patch(
       API_ENDPOINTS.DELIVERY.ORDER_COMPLETE_DELIVERY.replace(
         ":orderId",
         orderId,
       ),
-      {
-        rating,
-        review,
-      },
     );
   },
 

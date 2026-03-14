@@ -1378,8 +1378,6 @@ export const completeDelivery = asyncHandler(async (req, res) => {
   try {
     const delivery = req.delivery;
     const { orderId } = req.params;
-    const { rating, review } = req.body; // Optional rating and review from delivery boy
-
     if (!delivery || !delivery._id) {
       return errorResponse(res, 401, 'Delivery partner authentication required');
     }
@@ -1509,25 +1507,6 @@ export const completeDelivery = asyncHandler(async (req, res) => {
     const isCODOrder = orderPaymentMethod === 'cash' || orderPaymentMethod === 'cod';
     if (isCODOrder) {
       updateData['payment.status'] = 'completed';
-    }
-
-    // Add review and rating if provided
-    if (rating && rating >= 1 && rating <= 5) {
-      updateData['review.rating'] = rating;
-      updateData['review.submittedAt'] = new Date();
-      if (order.userId) {
-        updateData['review.reviewedBy'] = order.userId;
-      }
-    }
-
-    if (review && review.trim()) {
-      updateData['review.comment'] = review.trim();
-      if (!updateData['review.submittedAt']) {
-        updateData['review.submittedAt'] = new Date();
-      }
-      if (order.userId && !updateData['review.reviewedBy']) {
-        updateData['review.reviewedBy'] = order.userId;
-      }
     }
 
     // Update order to delivered

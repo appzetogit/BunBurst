@@ -631,14 +631,11 @@ export default function DeliveryHome() {
   const [showOrderIdConfirmationPopup, setShowOrderIdConfirmationPopup] = useState(false)
   const [showReachedDropPopup, setShowReachedDropPopup] = useState(false)
   const [showOrderDeliveredAnimation, setShowOrderDeliveredAnimation] = useState(false)
-  const [showCustomerReviewPopup, setShowCustomerReviewPopup] = useState(false)
   const [showPaymentPage, setShowPaymentPage] = useState(false)
   const [showDigitalBillPopup, setShowDigitalBillPopup] = useState(false)
   const [digitalBillData, setDigitalBillData] = useState(null)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
   const [isUploadingBill, setIsUploadingBill] = useState(false)
-  const [customerRating, setCustomerRating] = useState(0)
-  const [customerReviewText, setCustomerReviewText] = useState("")
   const [orderEarnings, setOrderEarnings] = useState(0) // Store earnings from completed order
   const [orderEarningsBreakdown, setOrderEarningsBreakdown] = useState(null)
   const [routePolyline, setRoutePolyline] = useState([])
@@ -935,7 +932,7 @@ export default function DeliveryHome() {
   }
 
   // Earnings Guarantee - Use active earning addon if available, otherwise show 0
-  // When no offer is active, show 0 of 0 and ₹0
+  // When no offer is active, show 0 of 0 and ?0
   const earningsGuaranteeTarget = activeEarningAddon?.earningAmount || 0
   const earningsGuaranteeOrdersTarget = activeEarningAddon?.requiredOrders || 0
   // Only show current orders/earnings if there's an active offer
@@ -1109,7 +1106,7 @@ export default function DeliveryHome() {
 
       // Verify sound file exists
       if (!soundFile) {
-        console.error('❌ Sound file is undefined!', { selectedSound, soundFile })
+        console.error('? Sound file is undefined!', { selectedSound, soundFile })
         return null
       }
 
@@ -1155,7 +1152,7 @@ export default function DeliveryHome() {
         }
         return audio
       } catch (playError) {
-        console.error('❌ Audio play error:', {
+        console.error('? Audio play error:', {
           error: playError,
           message: playError.message,
           name: playError.name,
@@ -1169,7 +1166,7 @@ export default function DeliveryHome() {
         if (!playError.message?.includes('user didn\'t interact') &&
           !playError.name?.includes('NotAllowedError') &&
           !playError.message?.includes('timeout')) {
-          console.error('❌ Could not play alert sound:', playError)
+          console.error('? Could not play alert sound:', playError)
         }
 
         // Try to load and play again
@@ -1185,13 +1182,13 @@ export default function DeliveryHome() {
           // Don't log autoplay policy errors
           if (!retryError.message?.includes('user didn\'t interact') &&
             !retryError.name?.includes('NotAllowedError')) {
-            console.error('❌ Could not play alert sound after retry:', retryError)
+            console.error('? Could not play alert sound after retry:', retryError)
           }
           return null
         }
       }
     } catch (error) {
-      console.error('❌ Could not create audio:', error)
+      console.error('? Could not create audio:', error)
       return null
     }
   }
@@ -1262,13 +1259,13 @@ export default function DeliveryHome() {
               if (showNewOrderPopup && alertAudioRef.current === audio) {
                 audio.currentTime = 0
                 audio.play().catch(err => {
-                  console.error('[NewOrder] ❌ Failed to restart audio:', err)
+                  console.error('[NewOrder] ? Failed to restart audio:', err)
                 })
               }
             })
 
             audio.addEventListener('error', (e) => {
-              console.error('[NewOrder] ❌ Audio error:', e)
+              console.error('[NewOrder] ? Audio error:', e)
             })
 
             // Double-check loop is enabled
@@ -1278,7 +1275,7 @@ export default function DeliveryHome() {
           } else {
           }
         } catch (error) {
-          console.error('[NewOrder] ⚠️ Audio failed to play:', error)
+          console.error('[NewOrder] ?? Audio failed to play:', error)
         }
       }
 
@@ -1393,7 +1390,7 @@ export default function DeliveryHome() {
     }
   }, []) // Only run on mount
 
-  // Get rider location - App open होते ही location fetch करें
+  // Get rider location - App open ???? ?? location fetch ????
   useEffect(() => {
     // First, check if we have saved location in localStorage (for refresh handling)
     const savedLocation = localStorage.getItem('deliveryBoyLastLocation')
@@ -1412,7 +1409,7 @@ export default function DeliveryHome() {
             const mightBeSwapped = (lat >= 68 && lat <= 98 && lng >= 8 && lng <= 38)
 
             if (mightBeSwapped) {
-              console.warn('⚠️ Saved coordinates might be swapped - correcting:', {
+              console.warn('?? Saved coordinates might be swapped - correcting:', {
                 original: [lat, lng],
                 corrected: [lng, lat],
                 note: 'Swapping lat/lng based on India coordinate ranges'
@@ -1436,16 +1433,16 @@ export default function DeliveryHome() {
               }]
             }
           } else {
-            console.warn('⚠️ Invalid saved coordinates in localStorage:', parsed)
+            console.warn('?? Invalid saved coordinates in localStorage:', parsed)
           }
         }
       } catch (e) {
-        console.warn('⚠️ Error parsing saved location:', e)
+        console.warn('?? Error parsing saved location:', e)
       }
     }
 
     if (navigator.geolocation) {
-      // Get current position first - App open होते ही location लें
+      // Get current position first - App open ???? ?? location ???
       navigator.geolocation.getCurrentPosition(
         (position) => {
           // Validate coordinates
@@ -1458,7 +1455,7 @@ export default function DeliveryHome() {
             isNaN(latitude) || isNaN(longitude) ||
             latitude < -90 || latitude > 90 ||
             longitude < -180 || longitude > 180) {
-            console.warn("⚠️ Invalid coordinates received:", { latitude, longitude })
+            console.warn("?? Invalid coordinates received:", { latitude, longitude })
             // Don't use default location - keep trying or use saved location
             // Retry after a delay
             setTimeout(() => {
@@ -1474,7 +1471,7 @@ export default function DeliveryHome() {
                       lastLocationRef.current = [lat, lng]
                     }
                   },
-                  (err) => console.warn("⚠️ Retry failed:", err),
+                  (err) => console.warn("?? Retry failed:", err),
                   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 )
               }
@@ -1485,7 +1482,7 @@ export default function DeliveryHome() {
           // Check for coordinate swap (common issue: lat/lng swapped)
           // India coordinates: lat ~8-37, lng ~68-97
           if ((latitude > 90 || latitude < -90) || (longitude > 180 || longitude < -180)) {
-            console.error("❌ Coordinates out of valid range - possible swap:", { latitude, longitude })
+            console.error("? Coordinates out of valid range - possible swap:", { latitude, longitude })
             // Don't use default location - retry
             setTimeout(() => {
               if (navigator.geolocation) {
@@ -1500,7 +1497,7 @@ export default function DeliveryHome() {
                       lastLocationRef.current = [lat, lng]
                     }
                   },
-                  (err) => console.warn("⚠️ Retry failed:", err),
+                  (err) => console.warn("?? Retry failed:", err),
                   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 )
               }
@@ -1509,10 +1506,10 @@ export default function DeliveryHome() {
           }
 
           // Validate coordinates are reasonable for India (basic sanity check)
-          // India: Latitude 8.4° to 37.6°, Longitude 68.7° to 97.25°
+          // India: Latitude 8.4� to 37.6�, Longitude 68.7� to 97.25�
           const isInIndiaRange = latitude >= 8 && latitude <= 38 && longitude >= 68 && longitude <= 98
           if (!isInIndiaRange) {
-            console.warn("⚠️ Coordinates outside India range - might be incorrect:", {
+            console.warn("?? Coordinates outside India range - might be incorrect:", {
               latitude,
               longitude,
               note: "India range: lat 8-38, lng 68-98"
@@ -1571,7 +1568,7 @@ export default function DeliveryHome() {
 
         },
         (error) => {
-          console.warn("⚠️ Error getting current location:", error)
+          console.warn("?? Error getting current location:", error)
           // Don't use default location - retry after delay
           // Check if we have saved location from localStorage
           const savedLoc = localStorage.getItem('deliveryBoyLastLocation')
@@ -1607,7 +1604,7 @@ export default function DeliveryHome() {
                     }
                   },
                   (err) => {
-                    console.warn("⚠️ Retry also failed:", err)
+                    console.warn("?? Retry also failed:", err)
                     // Show toast to user to enable location
                     toast.error('Location access required. Please enable location permissions.')
                   },
@@ -1625,7 +1622,7 @@ export default function DeliveryHome() {
       // This is handled in a separate useEffect that depends on isOnline
     } else {
       // Geolocation not available - show error
-      console.error('❌ Geolocation API not available in this browser')
+      console.error('? Geolocation API not available in this browser')
       toast.error('Location services not available. Please use a device with GPS.')
     }
   }, []) // Run only on mount - get initial location
@@ -1657,7 +1654,7 @@ export default function DeliveryHome() {
           isNaN(latitude) || isNaN(longitude) ||
           latitude < -90 || latitude > 90 ||
           longitude < -180 || longitude > 180) {
-          console.warn("⚠️ Invalid coordinates received:", { latitude, longitude })
+          console.warn("?? Invalid coordinates received:", { latitude, longitude })
           return
         }
 
@@ -1692,7 +1689,7 @@ export default function DeliveryHome() {
                   })
                   .catch(error => {
                     if (error.code !== 'ERR_NETWORK' && error.message !== 'Network Error') {
-                      console.error('❌ Error sending fallback location:', error);
+                      console.error('? Error sending fallback location:', error);
                     }
                   });
               }
@@ -1747,7 +1744,7 @@ export default function DeliveryHome() {
                   createOrUpdateBikeMarker(lat, lng, null, true)
                 }
               } else {
-                console.error('❌ Invalid coordinates for bike marker:', { lat, lng })
+                console.error('? Invalid coordinates for bike marker:', { lat, lng })
               }
             }
           }
@@ -1769,7 +1766,7 @@ export default function DeliveryHome() {
                   })
                   .catch(error => {
                     if (error.code !== 'ERR_NETWORK' && error.message !== 'Network Error') {
-                      console.error('❌ Error sending raw location to backend:', error);
+                      console.error('? Error sending raw location to backend:', error);
                     }
                   });
               }
@@ -1884,14 +1881,14 @@ export default function DeliveryHome() {
                 .catch(error => {
                   // Only log non-network errors (backend might be down, which is expected in dev)
                   if (error.code !== 'ERR_NETWORK' && error.message !== 'Network Error') {
-                    console.error('❌ Error sending location to backend:', error);
+                    console.error('? Error sending location to backend:', error);
                   } else {
                     // Silently handle network errors - backend might not be running
                     // Socket.IO will handle reconnection automatically
                   }
                 });
             } else {
-              console.error('❌ Invalid smoothed coordinates - not sending to backend:', {
+              console.error('? Invalid smoothed coordinates - not sending to backend:', {
                 smoothedLat,
                 smoothedLng,
                 raw: { latitude, longitude }
@@ -1901,7 +1898,7 @@ export default function DeliveryHome() {
         }
       },
       (error) => {
-        console.warn("⚠️ Error watching location:", error)
+        console.warn("?? Error watching location:", error)
       },
       {
         enableHighAccuracy: true,
@@ -1993,7 +1990,7 @@ export default function DeliveryHome() {
         const orderId = selectedCafe?.id || newOrder?.orderMongoId || newOrder?.orderId
 
         if (!orderId) {
-          console.error('❌ No order ID found to accept')
+          console.error('? No order ID found to accept')
           toast.error('Order ID not found. Please try again.')
           return
         }
@@ -2022,7 +2019,7 @@ export default function DeliveryHome() {
               })
               currentLocation = position
             } catch (geoError) {
-              console.error('❌ Could not get current location:', geoError)
+              console.error('? Could not get current location:', geoError)
               toast.error('Location not available. Please enable location services.')
               // Ensure currentLocation is set to null before returning
               currentLocation = null
@@ -2032,7 +2029,7 @@ export default function DeliveryHome() {
 
           // Validate currentLocation before proceeding
           if (!currentLocation || currentLocation.length !== 2) {
-            console.error('❌ No valid location available')
+            console.error('? No valid location available')
             toast.error('Location not available. Please enable location services.')
             return
           }
@@ -2129,7 +2126,7 @@ export default function DeliveryHome() {
               else if (hasValidCoordinates(cafeLat, cafeLng)) {
                 cafeAddress = `${cafeLat}, ${cafeLng}`
                 } else {
-                console.warn('⚠️ Cafe address not found in order, will try to fetch from cafe API')
+                console.warn('?? Cafe address not found in order, will try to fetch from cafe API')
                 // Try to fetch cafe address by ID if available
                 const cafeId = order.cafeId
                 if (cafeId) {
@@ -2173,13 +2170,13 @@ export default function DeliveryHome() {
                           }
                       }
                     } catch (cafeError) {
-                      console.error('❌ Error fetching cafe address:', cafeError)
+                      console.error('? Error fetching cafe address:', cafeError)
                     }
                   }
                 }
 
                 if (cafeAddress === 'Cafe Address') {
-                  console.warn('⚠️ Cafe address not found in any location, using default')
+                  console.warn('?? Cafe address not found in any location, using default')
                 }
               }
 
@@ -2198,12 +2195,12 @@ export default function DeliveryHome() {
               // Priority 3: Fallback to existing selectedCafe name
               else if (selectedCafe?.name) {
                 cafeName = selectedCafe.name
-                console.warn('⚠️ Cafe name not found in order, using selectedCafe.name:', cafeName)
+                console.warn('?? Cafe name not found in order, using selectedCafe.name:', cafeName)
               }
               // Final fallback
               else {
                 cafeName = 'Cafe'
-                console.error('❌ Cafe name not found anywhere, using default:', cafeName)
+                console.error('? Cafe name not found anywhere, using default:', cafeName)
               }
 
               // Extract earnings from backend response
@@ -2254,7 +2251,7 @@ export default function DeliveryHome() {
 
             // Ensure we have cafeInfo before proceeding
             if (!cafeInfo) {
-              console.error('❌ Cafe info not available, cannot proceed');
+              console.error('? Cafe info not available, cannot proceed');
               return;
             }
 
@@ -2301,7 +2298,7 @@ export default function DeliveryHome() {
                   directionsResponseRef.current = directionsResult; // Store in ref for callbacks
                   directionsResultForMap = directionsResult; // Store for use in setTimeout
 
-                  // Initialize live tracking polyline with full route (Delivery Boy → Cafe)
+                  // Initialize live tracking polyline with full route (Delivery Boy ? Cafe)
                   if (currentLocation) {
                     // Ensure map is ready before updating polyline
                     if (window.deliveryMapInstance) {
@@ -2339,7 +2336,7 @@ export default function DeliveryHome() {
 
                       }
                     } catch (osrmError) {
-                      console.error('❌ Error calculating route with OSRM:', osrmError);
+                      console.error('? Error calculating route with OSRM:', osrmError);
                       // Final fallback: straight line
                       routeCoordinates = [currentLocation, [cafeInfo.lat, cafeInfo.lng]];
                       setRoutePolyline(routeCoordinates);
@@ -2349,9 +2346,9 @@ export default function DeliveryHome() {
               } catch (directionsError) {
                 // Handle REQUEST_DENIED gracefully (billing/API key issue)
                 if (directionsError.message?.includes('REQUEST_DENIED') || directionsError.message?.includes('not available')) {
-                  console.warn('⚠️ Google Maps Directions API not available (billing/API key issue). Using fallback route.');
+                  console.warn('?? Google Maps Directions API not available (billing/API key issue). Using fallback route.');
                 } else {
-                  console.error('❌ Error calculating route with Directions API:', directionsError);
+                  console.error('? Error calculating route with Directions API:', directionsError);
                 }
 
                 // Fallback to OSRM or straight line
@@ -2373,7 +2370,7 @@ export default function DeliveryHome() {
 
                     }
                   } catch (osrmError) {
-                    console.warn('⚠️ OSRM fallback failed, using straight line');
+                    console.warn('?? OSRM fallback failed, using straight line');
                     // Final fallback: straight line
                     routeCoordinates = [currentLocation, [cafeInfo.lat, cafeInfo.lng]];
                     setRoutePolyline(routeCoordinates);
@@ -2381,7 +2378,7 @@ export default function DeliveryHome() {
                 }
               }
             } else {
-              console.error('❌ Cannot calculate route: missing cafe info or location', {
+              console.error('? Cannot calculate route: missing cafe info or location', {
                 cafeInfo: !!cafeInfo,
                 cafeLat: cafeInfo?.lat,
                 cafeLng: cafeInfo?.lng,
@@ -2461,13 +2458,13 @@ export default function DeliveryHome() {
                   try {
                     // Validate directionsResult is a valid DirectionsResult object
                     if (!directionsResult || typeof directionsResult !== 'object' || !directionsResult.routes || !Array.isArray(directionsResult.routes) || directionsResult.routes.length === 0) {
-                      console.error('❌ Invalid directionsResult:', directionsResult);
+                      console.error('? Invalid directionsResult:', directionsResult);
                       return;
                     }
 
                     // Validate it's a Google Maps DirectionsResult (has request and legs)
                     if (!directionsResult.request || !directionsResult.routes[0]?.legs || !Array.isArray(directionsResult.routes[0].legs)) {
-                      console.error('❌ directionsResult is not a valid Google Maps DirectionsResult');
+                      console.error('? directionsResult is not a valid Google Maps DirectionsResult');
                       return;
                     }
 
@@ -2486,7 +2483,7 @@ export default function DeliveryHome() {
                         directionsRendererRef.current.setMap(null);
                       }
                     } catch (e) {
-                      console.warn('⚠️ Error cleaning up polyline:', e);
+                      console.warn('?? Error cleaning up polyline:', e);
                     }
 
                     // Fit bounds to show entire route - but preserve zoom if user has zoomed in
@@ -2506,9 +2503,9 @@ export default function DeliveryHome() {
 
 
                   } catch (error) {
-                    console.error('❌ Error extracting route path:', error);
-                    console.error('❌ directionsResult type:', typeof directionsResult);
-                    console.error('❌ directionsResult:', directionsResult);
+                    console.error('? Error extracting route path:', error);
+                    console.error('? directionsResult type:', typeof directionsResult);
+                    console.error('? directionsResult:', directionsResult);
                   }
                 } else if (routeCoordinates && routeCoordinates.length > 0) {
                   // Fallback: Use polyline if Directions API result not available
@@ -2517,7 +2514,7 @@ export default function DeliveryHome() {
                   setRoutePolyline(routeCoordinates);
 
                 } else {
-                  console.warn('⚠️ No route data available to display (neither Directions API result nor coordinates)');
+                  console.warn('?? No route data available to display (neither Directions API result nor coordinates)');
                 }
 
                 // Add cafe marker to main map
@@ -2556,7 +2553,7 @@ export default function DeliveryHome() {
 
                 }
               } else {
-                console.warn('⚠️ Main map not ready, will show route when map loads');
+                console.warn('?? Main map not ready, will show route when map loads');
               }
 
               // Save accepted order to localStorage for refresh handling
@@ -2573,7 +2570,7 @@ export default function DeliveryHome() {
                 localStorage.setItem('deliveryActiveOrder', JSON.stringify(activeOrderData));
 
               } catch (storageError) {
-                console.error('❌ Error saving active order to localStorage:', storageError);
+                console.error('? Error saving active order to localStorage:', storageError);
               }
 
               // Don't show Reached Pickup popup here - it will be shown when order becomes ready via WebSocket
@@ -2581,7 +2578,7 @@ export default function DeliveryHome() {
             }, 300); // Wait for popup close animation
 
           } else {
-            console.error('❌ Failed to accept order:', response.data)
+            console.error('? Failed to accept order:', response.data)
             // Show error message to user
             toast.error(response.data?.message || 'Failed to accept order. Please try again.')
             // Still close popup
@@ -2590,8 +2587,8 @@ export default function DeliveryHome() {
             setNewOrderDragY(0) // Reset drag position
           }
         } catch (error) {
-          console.error('❌ Error accepting order:', error)
-          console.error('❌ Error details:', {
+          console.error('? Error accepting order:', error)
+          console.error('? Error details:', {
             message: error.message,
             response: error.response?.data,
             status: error.response?.status,
@@ -2603,7 +2600,7 @@ export default function DeliveryHome() {
 
           // Log full error response for debugging
           if (error.response?.data) {
-            console.error('❌ Backend error response:', JSON.stringify(error.response.data, null, 2))
+            console.error('? Backend error response:', JSON.stringify(error.response.data, null, 2))
           }
 
           // Show user-friendly error message
@@ -2614,7 +2611,7 @@ export default function DeliveryHome() {
             errorMessage = error.response.data.message
             // Also log the full error if available
             if (error.response.data.error) {
-              console.error('❌ Backend error details:', error.response.data.error)
+              console.error('? Backend error details:', error.response.data.error)
             }
           } else if (error.message) {
             errorMessage = error.message
@@ -2832,7 +2829,7 @@ export default function DeliveryHome() {
           deliveryStateStatus === 'delivered'
 
         if (isDelivered) {
-          console.warn('⚠️ Order is already delivered, skipping reached pickup confirmation')
+          console.warn('?? Order is already delivered, skipping reached pickup confirmation')
           toast.error('Order is already delivered. Cannot confirm reached pickup.')
           setShowreachedPickupPopup(false)
           return
@@ -2847,7 +2844,7 @@ export default function DeliveryHome() {
           deliveryPhase === 'at_pickup'
 
         if (isPastPickupPhase) {
-          console.warn('⚠️ Order is already past pickup phase, skipping reached pickup confirmation:', {
+          console.warn('?? Order is already past pickup phase, skipping reached pickup confirmation:', {
             orderStatus,
             deliveryPhase,
             deliveryStateStatus
@@ -2893,7 +2890,7 @@ export default function DeliveryHome() {
                 setShowOrderIdConfirmationPopup(true)
               }, 300) // 300ms delay for smooth transition
             } else {
-              console.error('❌ Failed to confirm reached pickup:', response.data)
+              console.error('? Failed to confirm reached pickup:', response.data)
               toast.error(response.data?.message || 'Failed to confirm reached pickup. Please try again.')
               // Ensure reached pickup popup is closed
               setShowreachedPickupPopup(false)
@@ -2903,8 +2900,8 @@ export default function DeliveryHome() {
               }, 300)
             }
           } catch (error) {
-            console.error('❌ Error confirming reached pickup:', error)
-            console.error('❌ Error details:', {
+            console.error('? Error confirming reached pickup:', error)
+            console.error('? Error details:', {
               message: error.message,
               response: error.response?.data,
               status: error.response?.status,
@@ -2925,7 +2922,7 @@ export default function DeliveryHome() {
             }, 300)
           }
         } else {
-          console.error('❌ No order ID found for reached pickup confirmation')
+          console.error('? No order ID found for reached pickup confirmation')
           toast.error('Order ID not found. Please refresh and try again.')
           // Ensure reached pickup popup is closed
           setShowreachedPickupPopup(false)
@@ -3037,7 +3034,7 @@ export default function DeliveryHome() {
 
               if (response.data?.success) {
               } else {
-                console.error('❌ Failed to confirm reached drop:', response.data)
+                console.error('? Failed to confirm reached drop:', response.data)
                 toast.error(response.data?.message || 'Failed to confirm reached drop. Please try again.')
               }
             } catch (error) {
@@ -3046,7 +3043,7 @@ export default function DeliveryHome() {
               // Handle 500 errors gracefully (server-side issue, popup already shown)
               if (status === 500) {
                 // For 500 errors, just log warning - popup is already shown, backend will sync later
-                console.warn('⚠️ Server error confirming reached drop (500), but popup is shown. Backend will sync status automatically.', {
+                console.warn('?? Server error confirming reached drop (500), but popup is shown. Backend will sync status automatically.', {
                   orderIdForApi: orderIdForApi || 'unknown',
                   message: error.response?.data?.message || error.message
                 })
@@ -3055,8 +3052,8 @@ export default function DeliveryHome() {
               }
 
               // For other errors, log and show error message
-              console.error('❌ Error confirming reached drop:', error)
-              console.error('❌ Error details:', {
+              console.error('? Error confirming reached drop:', error)
+              console.error('? Error details:', {
                 message: error.message,
                 response: error.response?.data,
                 status: status,
@@ -3184,14 +3181,14 @@ export default function DeliveryHome() {
               const blob = new Blob([byteArray], { type: mimeType })
               file = new File([blob], result.fileName || `bill-image-${Date.now()}.jpg`, { type: mimeType })
             } catch (base64Error) {
-              console.error('❌ Error converting base64 to File:', base64Error)
+              console.error('? Error converting base64 to File:', base64Error)
               toast.error('Failed to process image. Please try again.')
               return
             }
           } else if (result.filePath) {
             // If Flutter returns file path, we need to fetch it
             // This would require additional Flutter handler to read file
-            console.warn('⚠️ File path returned, but file reading not implemented')
+            console.warn('?? File path returned, but file reading not implemented')
             toast.error('File path handling not implemented. Please use base64 or File object.')
             return
           }
@@ -3200,7 +3197,7 @@ export default function DeliveryHome() {
             // Process the file the same way as handleBillImageSelect
             await processBillImageFile(file)
           } else {
-            console.error('❌ No file data in Flutter response:', result)
+            console.error('? No file data in Flutter response:', result)
             toast.error('Failed to get image from camera')
           }
         } else {
@@ -3212,7 +3209,7 @@ export default function DeliveryHome() {
         }
       }
     } catch (error) {
-      console.error('❌ Error opening camera:', error)
+      console.error('? Error opening camera:', error)
       toast.error('Failed to open camera. Please try again.')
 
       // Fallback to standard file input
@@ -3264,7 +3261,7 @@ export default function DeliveryHome() {
         throw new Error('Upload failed')
       }
     } catch (error) {
-      console.error('❌ Error uploading bill image:', error)
+      console.error('? Error uploading bill image:', error)
       toast.error('Failed to upload bill image. Please try again.')
       setBillImageUrl(null)
       setBillImageUploaded(false)
@@ -3326,7 +3323,7 @@ export default function DeliveryHome() {
           deliveryStateStatus === 'delivered'
 
         if (isDelivered) {
-          console.warn('⚠️ Order is already delivered, skipping order ID confirmation')
+          console.warn('?? Order is already delivered, skipping order ID confirmation')
           toast.error('Order is already delivered. Cannot confirm order ID.')
           setShowOrderIdConfirmationPopup(false)
           return
@@ -3340,7 +3337,7 @@ export default function DeliveryHome() {
           selectedCafe?.deliveryState?.orderIdConfirmedAt
 
         if (isOrderIdAlreadyConfirmed) {
-          console.warn('⚠️ Order ID is already confirmed, skipping confirmation:', {
+          console.warn('?? Order ID is already confirmed, skipping confirmation:', {
             orderStatus,
             deliveryPhase,
             deliveryStateStatus,
@@ -3364,7 +3361,7 @@ export default function DeliveryHome() {
         }
 
         if (!orderId) {
-          console.error('❌ No order ID found to confirm')
+          console.error('? No order ID found to confirm')
           toast.error('Order ID not found. Please try again.')
           return
         }
@@ -3386,7 +3383,7 @@ export default function DeliveryHome() {
             })
             currentLocation = position
           } catch (geoError) {
-            console.error('❌ Could not get current location:', geoError)
+            console.error('? Could not get current location:', geoError)
             toast.error('Location not available. Please enable location services.')
             return
           }
@@ -3477,7 +3474,7 @@ export default function DeliveryHome() {
                           directionsRendererRef.current.setMap(null);
                         }
                       } catch (e) {
-                        console.warn('⚠️ Error cleaning up polyline:', e);
+                        console.warn('?? Error cleaning up polyline:', e);
                       }
 
                       const bounds = directionsResult.routes?.[0]?.bounds
@@ -3502,7 +3499,7 @@ export default function DeliveryHome() {
                 } catch (routeError) {
                   if (routeError.message?.includes('REQUEST_DENIED') || routeError.message?.includes('not available')) {
                   } else {
-                    console.error('❌ Error calculating route to customer:', routeError)
+                    console.error('? Error calculating route to customer:', routeError)
                   }
                   if (routeData?.coordinates?.length > 0) {
                     setRoutePolyline(routeData.coordinates)
@@ -3541,13 +3538,13 @@ export default function DeliveryHome() {
             }, 100) // Small delay to ensure showOrderIdConfirmationPopup state is updated
 
           } else {
-            console.error('❌ Failed to confirm order ID:', response.data)
+            console.error('? Failed to confirm order ID:', response.data)
             toast.error(response.data?.message || 'Failed to confirm order ID. Please try again.')
           }
         } catch (error) {
           const status = error.response?.status
           const msg = error.response?.data?.message || error.message || ''
-          console.error('❌ Error confirming order ID:', { status, message: msg, data: error.response?.data })
+          console.error('? Error confirming order ID:', { status, message: msg, data: error.response?.data })
           toast.error(msg || 'Failed to confirm order ID. Please try again.')
         }
 
@@ -3679,6 +3676,40 @@ export default function DeliveryHome() {
     }
   }
 
+  const completeDeliveryAndShowCompletion = async () => {
+    const orderIdForApi = selectedCafe?.id ||
+      newOrder?.orderMongoId ||
+      newOrder?._id ||
+      selectedCafe?.orderId ||
+      newOrder?.orderId
+
+    if (!orderIdForApi) {
+      setShowPaymentPage(true)
+      return
+    }
+
+    try {
+      const response = await deliveryAPI.completeDelivery(orderIdForApi)
+
+      if (response.data?.success) {
+        const earnings = response.data.data?.earnings?.amount ||
+          response.data.data?.totalEarning ||
+          orderEarnings
+        setOrderEarnings(earnings)
+        setOrderEarningsBreakdown(response.data.data?.earnings?.breakdown || null)
+        window.dispatchEvent(new Event('deliveryWalletStateUpdated'))
+      } else {
+        console.error('? Failed to complete delivery:', response.data)
+        toast.error(response.data?.message || 'Failed to complete delivery. Please try again.')
+      }
+    } catch (error) {
+      console.error('? Error completing delivery:', error)
+      toast.error('Failed to complete delivery. Please try again.')
+    } finally {
+      setShowPaymentPage(true)
+    }
+  }
+
   const handleOrderDeliveredTouchEnd = (e) => {
     if (!orderDeliveredIsSwiping.current) {
       setOrderDeliveredButtonProgress(0)
@@ -3697,7 +3728,7 @@ export default function DeliveryHome() {
       setOrderDeliveredIsAnimatingToComplete(true)
       setOrderDeliveredButtonProgress(1)
 
-      // Close popup after animation and show customer review (delivery will be completed when review is submitted)
+      // Close popup after animation and complete delivery
       setTimeout(() => {
         setShowOrderDeliveredAnimation(false)
 
@@ -3706,8 +3737,8 @@ export default function DeliveryHome() {
         setShowreachedPickupPopup(false)
         setShowOrderIdConfirmationPopup(false)
 
-        // Show customer review popup instantly
-        setShowCustomerReviewPopup(true)
+        // Complete delivery and show completion screen
+        completeDeliveryAndShowCompletion()
 
         // Reset after animation
         setTimeout(() => {
@@ -3950,7 +3981,6 @@ export default function DeliveryHome() {
       const isCodOrder = orderPaymentMethod === 'cash'
 
       if (isCodOrder && availableCashLimit <= 0) {
-        toast.error('Cash limit reached. You cannot receive COD orders.')
         clearNewOrder()
         return
       }
@@ -4116,7 +4146,7 @@ export default function DeliveryHome() {
             }
           }
         } catch (error) {
-          console.error('❌ Error fetching cafe address:', error)
+          console.error('? Error fetching cafe address:', error)
         }
       }
 
@@ -4439,10 +4469,10 @@ export default function DeliveryHome() {
       } else {
       }
     } catch (error) {
-      console.error('❌ Error fetching assigned orders:', error)
+      console.error('? Error fetching assigned orders:', error)
       // Don't show error to user, just log it
     }
-    // Removed riderLocation from deps — using lastLocationRef.current instead
+    // Removed riderLocation from deps � using lastLocationRef.current instead
     // This prevents the callback from recreating on every GPS update, which was 
     // triggering the fallback polling and timeout effects into infinite loops.
   }, [isOnline, calculateTimeAway, showNewOrderPopup])
@@ -4626,7 +4656,7 @@ export default function DeliveryHome() {
           }
         }
       } catch (error) {
-        console.warn('⚠️ Error preserving map state:', error);
+        console.warn('?? Error preserving map state:', error);
         preservedState = null;
       }
 
@@ -4639,7 +4669,7 @@ export default function DeliveryHome() {
           existingPolyline.setMap(null);
         }
       } catch (error) {
-        console.warn('⚠️ Error removing markers from old map:', error);
+        console.warn('?? Error removing markers from old map:', error);
       }
 
       // Clear old map instance reference (will be re-created below)
@@ -4697,13 +4727,13 @@ export default function DeliveryHome() {
             window.__googleMapsLoading = false;
             await initializeGoogleMap();
           } else {
-            console.error('❌ No Google Maps API key found');
+            console.error('? No Google Maps API key found');
             window.__googleMapsLoading = false;
             setMapLoading(false);
             return;
           }
         } catch (error) {
-          console.error('❌ Error loading Google Maps:', error);
+          console.error('? Error loading Google Maps:', error);
           window.__googleMapsLoading = false;
           setMapLoading(false);
           return;
@@ -4721,7 +4751,7 @@ export default function DeliveryHome() {
 
           await initializeGoogleMap();
         } else {
-          console.error('❌ Google Maps failed to load');
+          console.error('? Google Maps failed to load');
           setMapLoading(false);
         }
       }
@@ -4743,12 +4773,12 @@ export default function DeliveryHome() {
       if (window.google && window.google.maps) {
         // MapTypeId might still not be available, but we have a fallback
         if (!window.google.maps.MapTypeId) {
-          console.warn('⚠️ MapTypeId not available, will use string fallback');
+          console.warn('?? MapTypeId not available, will use string fallback');
         }
         await initializeGoogleMap();
       } else {
-        console.error('❌ Google Maps API still not available or not fully loaded');
-        console.error('❌ API status:', {
+        console.error('? Google Maps API still not available or not fully loaded');
+        console.error('? API status:', {
           google: !!window.google,
           maps: !!window.google?.maps,
           MapTypeId: !!window.google?.maps?.MapTypeId
@@ -4773,14 +4803,14 @@ export default function DeliveryHome() {
           }
 
           if (!mapContainerRef.current) {
-            console.error('❌ Map container ref is still null after waiting');
+            console.error('? Map container ref is still null after waiting');
             setMapLoading(false);
             return;
           }
         }
 
         if (!window.google || !window.google.maps) {
-          console.error('❌ Google Maps API not available');
+          console.error('? Google Maps API not available');
           setMapLoading(false);
           return;
         }
@@ -4811,7 +4841,7 @@ export default function DeliveryHome() {
                 }
               }
             } catch (e) {
-              console.warn('⚠️ Error parsing saved location:', e);
+              console.warn('?? Error parsing saved location:', e);
             }
           }
         }
@@ -4852,8 +4882,8 @@ export default function DeliveryHome() {
             fullscreenControl: false
           });
         } catch (mapError) {
-          console.error('❌ Error creating Google Map:', mapError);
-          console.error('❌ Error details:', {
+          console.error('? Error creating Google Map:', mapError);
+          console.error('? Error details:', {
             message: mapError.message,
             name: mapError.name,
             stack: mapError.stack
@@ -4874,7 +4904,7 @@ export default function DeliveryHome() {
             });
           }
         } catch (eventError) {
-          console.warn('⚠️ Could not add map event listeners:', eventError);
+          console.warn('?? Could not add map event listeners:', eventError);
         }
 
         // Add error listener for map errors
@@ -4884,7 +4914,7 @@ export default function DeliveryHome() {
 
         // Handle map errors
         window.google.maps.event.addListener(map, 'error', (error) => {
-          console.error('❌ Google Map error:', error);
+          console.error('? Google Map error:', error);
         });
 
         // Track user panning to disable auto-center when user manually moves map
@@ -4999,7 +5029,7 @@ export default function DeliveryHome() {
                   }, 500);
                 }
               } catch (e) {
-                console.warn('⚠️ Error using saved location:', e);
+                console.warn('?? Error using saved location:', e);
               }
             }
           }
@@ -5044,7 +5074,7 @@ export default function DeliveryHome() {
 
 
       } catch (error) {
-        console.error('❌ Error initializing Google Map:', error);
+        console.error('? Error initializing Google Map:', error);
         setMapLoading(false);
       }
     }
@@ -5100,7 +5130,7 @@ export default function DeliveryHome() {
         createOrUpdateBikeMarker(riderLocation[0], riderLocation[1], null, true)
         setMapLoading(false)
       } catch (error) {
-        console.error('❌ Error initializing map with rider location:', error)
+        console.error('? Error initializing map with rider location:', error)
         setMapLoading(false)
       }
     }
@@ -5128,7 +5158,7 @@ export default function DeliveryHome() {
 
 
 
-      // Create or update bike marker IMMEDIATELY (blue dot की जगह bike icon)
+      // Create or update bike marker IMMEDIATELY (blue dot ?? ??? bike icon)
       createOrUpdateBikeMarker(riderLocation[0], riderLocation[1], heading, true);
 
       // Center map on bike location smoothly
@@ -5180,7 +5210,7 @@ export default function DeliveryHome() {
               const mightBeSwapped = (lat >= 68 && lat <= 98 && lng >= 8 && lng <= 38)
 
               if (mightBeSwapped) {
-                console.warn('⚠️ Saved coordinates might be swapped - correcting:', {
+                console.warn('?? Saved coordinates might be swapped - correcting:', {
                   original: [lat, lng],
                   corrected: [lng, lat]
                 })
@@ -5189,14 +5219,14 @@ export default function DeliveryHome() {
                 createOrUpdateBikeMarker(parsed[0], parsed[1], null, true)
               }
             } else {
-              console.warn('⚠️ Invalid saved coordinates:', parsed)
+              console.warn('?? Invalid saved coordinates:', parsed)
             }
           }
         } catch (e) {
-          console.warn('⚠️ Error using saved location:', e)
+          console.warn('?? Error using saved location:', e)
         }
       } else {
-        console.warn('⚠️ Cannot create bike marker - invalid rider location:', riderLocation);
+        console.warn('?? Cannot create bike marker - invalid rider location:', riderLocation);
       }
     }
   }, [isOnline, riderLocation, showHomeSections])
@@ -5213,12 +5243,12 @@ export default function DeliveryHome() {
         if (bikeMarkerRef.current) {
           const markerMap = bikeMarkerRef.current.getMap();
           if (markerMap === null) {
-            console.warn('⚠️ Bike marker lost map reference, re-adding...');
+            console.warn('?? Bike marker lost map reference, re-adding...');
             createOrUpdateBikeMarker(riderLocation[0], riderLocation[1], null, false);
           }
         } else {
           // Marker doesn't exist, create it
-          console.warn('⚠️ Bike marker missing, creating...');
+          console.warn('?? Bike marker missing, creating...');
           createOrUpdateBikeMarker(riderLocation[0], riderLocation[1], null, false);
         }
       }
@@ -5228,7 +5258,7 @@ export default function DeliveryHome() {
         if (cafeMarkerRef.current) {
           const markerMap = cafeMarkerRef.current.getMap();
           if (markerMap === null || markerMap !== window.deliveryMapInstance) {
-            console.warn('⚠️ Cafe marker lost map reference, re-adding...');
+            console.warn('?? Cafe marker lost map reference, re-adding...');
             const cafeLocation = {
               lat: selectedCafe.lat,
               lng: selectedCafe.lng
@@ -5239,7 +5269,7 @@ export default function DeliveryHome() {
           }
         } else {
           // Marker doesn't exist, create it
-          console.warn('⚠️ Cafe marker missing, creating...');
+          console.warn('?? Cafe marker missing, creating...');
           const cafeLocation = {
             lat: selectedCafe.lat,
             lng: selectedCafe.lng
@@ -5325,7 +5355,7 @@ export default function DeliveryHome() {
   // NOTE: Must be defined BEFORE the useEffect that uses it (Rules of Hooks)
   const calculateRouteWithDirectionsAPI = useCallback(async (origin, destination) => {
     if (!window.google || !window.google.maps || !window.google.maps.DirectionsService) {
-      console.warn('⚠️ Google Maps Directions API not available');
+      console.warn('?? Google Maps Directions API not available');
       return null;
     }
 
@@ -5362,10 +5392,10 @@ export default function DeliveryHome() {
                   // Just reject silently to trigger fallback
                   reject(new Error(`Directions API not available: ${status}`));
                 } else if (status === 'OVER_QUERY_LIMIT') {
-                  console.warn(`⚠️ Directions API quota exceeded (${modeName})`);
+                  console.warn(`?? Directions API quota exceeded (${modeName})`);
                   reject(new Error(`Directions request failed: ${status}`));
                 } else {
-                  console.warn(`⚠️ Directions API failed with ${modeName}: ${status}`);
+                  console.warn(`?? Directions API failed with ${modeName}: ${status}`);
                   reject(new Error(`Directions request failed: ${status}`));
                 }
               }
@@ -5388,9 +5418,9 @@ export default function DeliveryHome() {
     } catch (error) {
       // Handle REQUEST_DENIED and other errors gracefully
       if (error.message?.includes('REQUEST_DENIED') || error.message?.includes('not available')) {
-        console.warn('⚠️ Google Maps Directions API not available (billing/API key issue). Will use fallback route.');
+        console.warn('?? Google Maps Directions API not available (billing/API key issue). Will use fallback route.');
       } else {
-        console.error('❌ Error calculating route with Directions API:', error);
+        console.error('? Error calculating route with Directions API:', error);
       }
       return null; // Return null to trigger fallback
     }
@@ -5419,7 +5449,7 @@ export default function DeliveryHome() {
       const fullPolyline = extractPolylineFromDirections(directionsResult);
 
       if (fullPolyline.length < 2) {
-        console.warn('⚠️ Invalid polyline from directions result');
+        console.warn('?? Invalid polyline from directions result');
         return;
       }
 
@@ -5463,7 +5493,7 @@ export default function DeliveryHome() {
       } else {
         // Create new polyline with professional Zomato/Rapido styling
         if (!window.deliveryMapInstance) {
-          console.warn('⚠️ Cannot create polyline - map instance not ready');
+          console.warn('?? Cannot create polyline - map instance not ready');
           return;
         }
 
@@ -5502,7 +5532,7 @@ export default function DeliveryHome() {
 
 
     } catch (error) {
-      console.error('❌ Error updating live tracking polyline:', error);
+      console.error('? Error updating live tracking polyline:', error);
     }
   }, []);
 
@@ -5582,13 +5612,13 @@ export default function DeliveryHome() {
 
     const initializeDirectionsMap = async () => {
       if (!window.google || !window.google.maps) {
-        console.warn('⚠️ Google Maps API not loaded, waiting...');
+        console.warn('?? Google Maps API not loaded, waiting...');
         setTimeout(initializeDirectionsMap, 200);
         return;
       }
 
       if (!directionsMapContainerRef.current) {
-        console.warn('⚠️ Directions map container not ready');
+        console.warn('?? Directions map container not ready');
         return;
       }
 
@@ -5599,7 +5629,7 @@ export default function DeliveryHome() {
         // Use rider location or last known location, don't use default
         const currentLocation = riderLocation || lastLocationRef.current;
         if (!currentLocation) {
-          console.warn('⚠️ No location available for navigation')
+          console.warn('?? No location available for navigation')
           return
         }
 
@@ -5683,7 +5713,7 @@ export default function DeliveryHome() {
               directionsRendererRef.current.setMap(null);
             }
           } catch (e) {
-            console.warn('⚠️ Error cleaning up polyline:', e);
+            console.warn('?? Error cleaning up polyline:', e);
           }
 
           // Fit bounds to show entire route
@@ -5751,7 +5781,7 @@ export default function DeliveryHome() {
 
 
         } else {
-          console.warn('⚠️ Failed to calculate route, using fallback polyline');
+          console.warn('?? Failed to calculate route, using fallback polyline');
           // Fallback to simple polyline if Directions API fails
           if (routePolyline && routePolyline.length > 0) {
             updateRoutePolyline();
@@ -5760,8 +5790,8 @@ export default function DeliveryHome() {
 
         setDirectionsMapLoading(false);
       } catch (error) {
-        console.error('❌ Error initializing directions map:', error);
-        console.error('❌ Error stack:', error.stack);
+        console.error('? Error initializing directions map:', error);
+        console.error('? Error stack:', error.stack);
         setDirectionsMapLoading(false);
         // Don't crash - show error message instead
         try {
@@ -5770,7 +5800,7 @@ export default function DeliveryHome() {
             updateRoutePolyline();
           }
         } catch (fallbackError) {
-          console.error('❌ Fallback also failed:', fallbackError);
+          console.error('? Fallback also failed:', fallbackError);
         }
       }
     };
@@ -5794,7 +5824,7 @@ export default function DeliveryHome() {
           }
           directionsMapInstanceRef.current = null;
         } catch (cleanupError) {
-          console.error('❌ Error during cleanup:', cleanupError);
+          console.error('? Error during cleanup:', cleanupError);
         }
       }
     };
@@ -5870,7 +5900,7 @@ export default function DeliveryHome() {
                   }
                 }
               } catch (e) {
-                console.warn('⚠️ Could not create custom polyline:', e);
+                console.warn('?? Could not create custom polyline:', e);
               }
             }
           }).catch(err => {
@@ -5878,7 +5908,7 @@ export default function DeliveryHome() {
             if (err.message?.includes('REQUEST_DENIED') || err.message?.includes('not available')) {
 
             } else {
-              console.warn('⚠️ Route recalculation failed:', err);
+              console.warn('?? Route recalculation failed:', err);
             }
           });
         }
@@ -5924,7 +5954,7 @@ export default function DeliveryHome() {
     }
 
     if (!window.deliveryMapInstance || !window.google || !window.google.maps) {
-      console.warn('⚠️ Map not ready for directions display');
+      console.warn('?? Map not ready for directions display');
       return;
     }
 
@@ -5986,13 +6016,13 @@ export default function DeliveryHome() {
     try {
       // Validate directionsResponse is a valid DirectionsResult object
       if (!directionsResponse || typeof directionsResponse !== 'object' || !directionsResponse.routes || !Array.isArray(directionsResponse.routes) || directionsResponse.routes.length === 0) {
-        console.error('❌ Invalid directionsResponse:', directionsResponse);
+        console.error('? Invalid directionsResponse:', directionsResponse);
         return;
       }
 
       // Validate it's a Google Maps DirectionsResult (has status property)
       if (!directionsResponse.request || !directionsResponse.routes[0]?.legs) {
-        console.error('❌ directionsResponse is not a valid Google Maps DirectionsResult');
+        console.error('? directionsResponse is not a valid Google Maps DirectionsResult');
         return;
       }
 
@@ -6021,7 +6051,7 @@ export default function DeliveryHome() {
           }
         }
       } catch (e) {
-        console.warn('⚠️ Could not create custom polyline:', e);
+        console.warn('?? Could not create custom polyline:', e);
       }
 
       // Fit bounds to show entire route - but preserve zoom if user has zoomed in
@@ -6044,9 +6074,9 @@ export default function DeliveryHome() {
         directionsRendererRef.current.setMap(null);
       }
     } catch (error) {
-      console.error('❌ Error setting directions on renderer:', error);
-      console.error('❌ directionsResponse type:', typeof directionsResponse);
-      console.error('❌ directionsResponse:', directionsResponse);
+      console.error('? Error setting directions on renderer:', error);
+      console.error('? directionsResponse type:', typeof directionsResponse);
+      console.error('? directionsResponse:', directionsResponse);
     }
   }, [directionsResponse, selectedCafe])
 
@@ -6119,7 +6149,7 @@ export default function DeliveryHome() {
             return;
           }
           // For other errors (network, etc.), still try to restore but log warning
-          console.warn('⚠️ Could not verify order, but restoring anyway:', verifyError.message);
+          console.warn('?? Could not verify order, but restoring anyway:', verifyError.message);
         }
 
         // Check if order is still valid (not too old - e.g., within 24 hours)
@@ -6174,7 +6204,7 @@ export default function DeliveryHome() {
                   }
                 }
               }).catch(err => {
-                console.error('❌ Error recalculating route with Directions API:', err);
+                console.error('? Error recalculating route with Directions API:', err);
                 // Fallback to coordinates
                 if (activeOrderData.routeCoordinates && activeOrderData.routeCoordinates.length > 0) {
                   setRoutePolyline(activeOrderData.routeCoordinates);
@@ -6195,13 +6225,12 @@ export default function DeliveryHome() {
 
         waitForMap();
       } catch (error) {
-        console.error('❌ Error restoring active order:', error);
+        console.error('? Error restoring active order:', error);
         // Clear localStorage and state if there's an error
         localStorage.removeItem('deliveryActiveOrder');
         setSelectedCafe(null);
         setShowReachedDropPopup(false);
         setShowOrderDeliveredAnimation(false);
-        setShowCustomerReviewPopup(false);
         setShowPaymentPage(false);
       }
     };
@@ -6327,7 +6356,7 @@ export default function DeliveryHome() {
           }) : prev)
         }
       } catch (error) {
-        console.error('❌ [CUSTOMER CALL] Error fetching order details:', error)
+        console.error('? [CUSTOMER CALL] Error fetching order details:', error)
       }
     }
 
@@ -6346,7 +6375,6 @@ export default function DeliveryHome() {
     setSelectedCafe(null);
     setShowReachedDropPopup(false);
     setShowOrderDeliveredAnimation(false);
-    setShowCustomerReviewPopup(false);
     setShowPaymentPage(false);
     setShowNewOrderPopup(false);
     setShowreachedPickupPopup(false);
@@ -6401,8 +6429,7 @@ export default function DeliveryHome() {
           order.deliveryState?.currentPhase === 'completed' ||
           order.deliveryState?.status === 'delivered'
 
-        if (isOrderDelivered && !showPaymentPage && !showCustomerReviewPopup && !showOrderDeliveredAnimation) {
-
+        if (isOrderDelivered) {
           clearOrderData();
           return;
         }
@@ -6717,7 +6744,7 @@ export default function DeliveryHome() {
                     }))
                     return // Exit early since we got the data
                   } else {
-                    console.warn('⚠️ Could not extract address or phone from cafe data:', {
+                    console.warn('?? Could not extract address or phone from cafe data:', {
                       cafeKeys: Object.keys(cafe),
                       hasLocation: !!restLocation,
                       locationKeys: restLocation ? Object.keys(restLocation) : [],
@@ -6728,11 +6755,11 @@ export default function DeliveryHome() {
                   }
                 }
               } catch (cafeError) {
-                console.error('❌ Error fetching cafe details:', cafeError)
+                console.error('? Error fetching cafe details:', cafeError)
               }
             }
 
-            console.warn('⚠️ Could not extract cafe address from order or cafe API:', {
+            console.warn('?? Could not extract cafe address from order or cafe API:', {
               orderKeys: Object.keys(order),
               hasCafeId: !!order.cafeId,
               cafeIdType: typeof order.cafeId,
@@ -6741,7 +6768,7 @@ export default function DeliveryHome() {
           }
         }
       } catch (error) {
-        console.error('❌ Error fetching order details for cafe address:', error)
+        console.error('? Error fetching order details for cafe address:', error)
       }
     }
 
@@ -6758,7 +6785,6 @@ export default function DeliveryHome() {
       showOrderIdConfirmationPopup || // Don't show if order ID is already being confirmed
       showReachedDropPopup || // Don't show if already reached drop
       showOrderDeliveredAnimation || // Don't show if order is delivered
-      showCustomerReviewPopup || // Don't show if showing review popup
       showPaymentPage || // Don't show if showing payment page
       !selectedCafe?.lat ||
       !selectedCafe?.lng ||
@@ -6831,7 +6857,6 @@ export default function DeliveryHome() {
     Boolean(showreachedPickupPopup),
     Boolean(showReachedDropPopup),
     Boolean(showOrderDeliveredAnimation),
-    Boolean(showCustomerReviewPopup),
     Boolean(showPaymentPage),
     selectedCafe?.orderStatus,
     selectedCafe?.status,
@@ -6840,7 +6865,7 @@ export default function DeliveryHome() {
     calculateDistanceInMeters
   ])
 
-  // CRITICAL: Monitor order status and close all pickup/delivery popups when order is delivered
+    // CRITICAL: Monitor order status and close all pickup/delivery popups when order is delivered
   // Also clear selectedCafe if order is completed and payment page is closed
   useEffect(() => {
     const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || ''
@@ -6863,12 +6888,12 @@ export default function DeliveryHome() {
       if (showOrderIdConfirmationPopup) {
         setShowOrderIdConfirmationPopup(false)
       }
-      if (showReachedDropPopup && !showOrderDeliveredAnimation && !showCustomerReviewPopup) {
+      if (showReachedDropPopup && !showOrderDeliveredAnimation) {
         setShowReachedDropPopup(false)
       }
 
       // If payment page is closed and order is delivered, clear selectedCafe
-      if (!showPaymentPage && !showCustomerReviewPopup && !showOrderDeliveredAnimation && selectedCafe) {
+      if (!showPaymentPage && !showOrderDeliveredAnimation && selectedCafe) {
         setSelectedCafe(null)
         localStorage.removeItem('deliveryActiveOrder')
         localStorage.removeItem('activeOrder')
@@ -6897,7 +6922,6 @@ export default function DeliveryHome() {
     selectedCafe?.deliveryState?.status,
     showPaymentPage,
     showOrderDeliveredAnimation,
-    showCustomerReviewPopup,
     showreachedPickupPopup,
     showOrderIdConfirmationPopup,
     showReachedDropPopup,
@@ -6941,7 +6965,7 @@ export default function DeliveryHome() {
 
             // Show polyline for customer route - update live tracking polyline with new route
             if (riderLocation && window.deliveryMapInstance) {
-              // Update live tracking polyline with route to customer (Cafe → Customer)
+              // Update live tracking polyline with route to customer (Cafe ? Customer)
               updateLiveTrackingPolyline(directionsResult, riderLocation);
 
             } else {
@@ -6967,7 +6991,7 @@ export default function DeliveryHome() {
                   directionsRendererRef.current.setMap(null);
                 }
               } catch (e) {
-                console.warn('⚠️ Error cleaning up old polyline:', e);
+                console.warn('?? Error cleaning up old polyline:', e);
               }
 
               // Fit map bounds to show entire route
@@ -6986,7 +7010,7 @@ export default function DeliveryHome() {
             }
           }
         }).catch(error => {
-          console.warn('⚠️ Error calculating route to customer after pickup:', error);
+          console.warn('?? Error calculating route to customer after pickup:', error);
         });
       }
     }
@@ -7029,7 +7053,7 @@ export default function DeliveryHome() {
           }
       })
       .catch(err => {
-        console.warn('⚠️ Reached Drop: getOrderDetails failed for customer coords:', err?.response?.data?.message || err.message)
+        console.warn('?? Reached Drop: getOrderDetails failed for customer coords:', err?.response?.data?.message || err.message)
       })
   }, [selectedCafe?.orderStatus, selectedCafe?.deliveryPhase, selectedCafe?.deliveryState?.currentPhase, selectedCafe?.customerLat, selectedCafe?.customerLng, selectedCafe?.orderId, selectedCafe?.id])
 
@@ -7042,7 +7066,7 @@ export default function DeliveryHome() {
 
   useEffect(() => {
     // CRITICAL: If payment page is showing, delivery is completed - do NOT show reached drop popup
-    if (showPaymentPage || showCustomerReviewPopup || showOrderDeliveredAnimation) {
+    if (showPaymentPage) {
       if (showReachedDropPopup) setShowReachedDropPopup(false)
       return
     }
@@ -7143,7 +7167,6 @@ export default function DeliveryHome() {
     Boolean(showreachedPickupPopup),
     Boolean(showReachedDropPopup),
     Boolean(showOrderDeliveredAnimation),
-    Boolean(showCustomerReviewPopup),
     Boolean(showPaymentPage),
     calculateDistanceInMeters
   ])
@@ -7203,13 +7226,13 @@ export default function DeliveryHome() {
           rotatedIconCache.current.set(cacheKey, dataUrl);
           resolve(dataUrl);
         } catch (error) {
-          console.warn('⚠️ Error rotating bike icon:', error);
+          console.warn('?? Error rotating bike icon:', error);
           // Fallback to original image if rotation fails
           resolve(bikeLogo);
         }
       };
       img.onerror = () => {
-        console.warn('⚠️ Bike logo image failed to load:', bikeLogo);
+        console.warn('?? Bike logo image failed to load:', bikeLogo);
         // Fallback to original image if loading fails
         resolve(bikeLogo);
       };
@@ -7226,7 +7249,7 @@ export default function DeliveryHome() {
   // Google Maps marker functions - Zomato style exact location tracking
   const createOrUpdateBikeMarker = async (latitude, longitude, heading = null, shouldCenterMap = true) => {
     if (!window.google || !window.google.maps || !window.deliveryMapInstance) {
-      console.warn("⚠️ Google Maps not available");
+      console.warn("?? Google Maps not available");
       return;
     }
 
@@ -7276,7 +7299,7 @@ export default function DeliveryHome() {
       // ALWAYS ensure marker is on the map (prevent it from disappearing)
       const currentMap = bikeMarkerRef.current.getMap();
       if (currentMap === null || currentMap !== map) {
-        console.warn('⚠️ Bike marker not on correct map, re-adding...', {
+        console.warn('?? Bike marker not on correct map, re-adding...', {
           currentMap: currentMap,
           expectedMap: map
         });
@@ -7294,7 +7317,7 @@ export default function DeliveryHome() {
         bikeMarkerRef.current.setPosition(position);
 
       } else {
-        console.error('❌ Invalid coordinates for bike marker:', { latitude, longitude });
+        console.error('? Invalid coordinates for bike marker:', { latitude, longitude });
         return; // Don't update if coordinates are invalid
       }
 
@@ -7319,7 +7342,7 @@ export default function DeliveryHome() {
 
       // Double-check marker is still on map after update
       if (bikeMarkerRef.current.getMap() === null) {
-        console.warn('⚠️ Bike marker lost map reference after update, re-adding...');
+        console.warn('?? Bike marker lost map reference after update, re-adding...');
         bikeMarkerRef.current.setMap(map);
       }
     }
@@ -7348,7 +7371,7 @@ export default function DeliveryHome() {
     }
 
     if (!window.google || !window.google.maps || !window.deliveryMapInstance) {
-      console.warn('⚠️ Map not ready for polyline update');
+      console.warn('?? Map not ready for polyline update');
       return;
     }
 
@@ -7491,10 +7514,10 @@ export default function DeliveryHome() {
       const remaining = Math.max(0, target - current)
       slides.push({
         id: 'earning-offer',
-        title: `Earn ₹${target} guarantee!`,
+        title: `Earn ?${target} guarantee!`,
         subtitle: orders > 0
-          ? `Complete ${orders} orders to earn ₹${target}. ₹${remaining.toFixed(0)} remaining.`
-          : `Active earning bonus offer — valid till ${weekEndDate}`,
+          ? `Complete ${orders} orders to earn ?${target}. ?${remaining.toFixed(0)} remaining.`
+          : `Active earning bonus offer � valid till ${weekEndDate}`,
         icon: 'bag',
         buttonText: 'View',
         bgColor: 'bg-gray-700',
@@ -7510,8 +7533,8 @@ export default function DeliveryHome() {
       if (todayEarnings > 0 || todayTrips > 0) {
         slides.push({
           id: 'today-summary',
-          title: `Today: ₹${todayEarnings.toFixed(0)} earned`,
-          subtitle: `${todayTrips} ${todayTrips === 1 ? 'trip' : 'trips'} completed${todayHoursWorked > 0 ? ` · ${formatHours(todayHoursWorked)} hrs worked` : ''}`,
+          title: `Today: ?${todayEarnings.toFixed(0)} earned`,
+          subtitle: `${todayTrips} ${todayTrips === 1 ? 'trip' : 'trips'} completed${todayHoursWorked > 0 ? ` � ${formatHours(todayHoursWorked)} hrs worked` : ''}`,
           icon: 'bank',
           buttonText: 'Details',
           bgColor: 'bg-gray-700',
@@ -7525,61 +7548,6 @@ export default function DeliveryHome() {
     }
 
     // Slide 5: COD cash pending removed as per request
-
-    // Slide 3.5: Active order / en-route cafe info
-    const activeCafeName =
-      selectedCafe?.name ||
-      selectedCafe?.cafeName ||
-      newOrder?.cafeName ||
-      null
-
-    const activeCafeAddress = sliderCafeAddress
-
-    if (activeCafeName && activeCafeAddress) {
-      const orderStatus =
-        selectedCafe?.orderStatus ||
-        selectedCafe?.status ||
-        newOrder?.status ||
-        ''
-
-      const deliveryPhase =
-        selectedCafe?.deliveryPhase ||
-        selectedCafe?.deliveryState?.currentPhase ||
-        ''
-
-      // Only show while order is active (not delivered/completed)
-      const isDelivered =
-        orderStatus === 'delivered' ||
-        orderStatus === 'completed' ||
-        deliveryPhase === 'completed' ||
-        deliveryPhase === 'delivered'
-
-      if (!isDelivered) {
-        const phaseLabel =
-          deliveryPhase === 'en_route_to_pickup' ? 'Heading to pickup' :
-            deliveryPhase === 'at_pickup' ? 'At pickup point' :
-              deliveryPhase === 'en_route_to_delivery' || deliveryPhase === 'picked_up' ? 'Out for delivery' :
-                orderStatus === 'out_for_delivery' ? 'Out for delivery' :
-                  orderStatus === 'ready' ? 'Order ready — pick up now' :
-                    orderStatus === 'preparing' ? 'Order is being prepared' :
-                      'Active order'
-
-        slides.push({
-          id: 'active-order',
-          title: `${phaseLabel} · ${activeCafeName}`,
-          subtitle: activeCafeAddress,
-          icon: 'bag',
-          buttonText: 'Navigate',
-          bgColor: 'bg-gray-700',
-          titleColor: 'text-white',
-          subtitleColor: 'text-white/80',
-          buttonBgColor: 'bg-gray-600 text-white hover:bg-gray-500',
-          action: 'navigate',
-          path: '/delivery'
-        })
-      }
-    }
-
     return slides
   }, [
     availableCashLimit,
@@ -8361,7 +8329,7 @@ export default function DeliveryHome() {
                         isNaN(latitude) || isNaN(longitude) ||
                         latitude < -90 || latitude > 90 ||
                         longitude < -180 || longitude > 180) {
-                        console.warn("⚠️ Invalid coordinates received:", { latitude, longitude })
+                        console.warn("?? Invalid coordinates received:", { latitude, longitude })
                         setIsRefreshingLocation(false)
                         return
                       }
@@ -8394,7 +8362,7 @@ export default function DeliveryHome() {
                         }]
                       }
 
-                      // Update bike marker (only if online - blue dot नहीं, bike icon)
+                      // Update bike marker (only if online - blue dot ????, bike icon)
                       if (window.deliveryMapInstance) {
                         // Always show bike marker on map (both offline and online)
                         // Center map automatically (Zomato style) unless user is panning
@@ -9246,6 +9214,7 @@ export default function DeliveryHome() {
         )}
       </AnimatePresence>
 
+
       {/* Reached Pickup Popup - shown when order is ready (from order_ready socket) or when rider is within 500m */}
       {/* Don't show if Order ID confirmation popup is showing */}
       <BottomPopup
@@ -9365,28 +9334,28 @@ export default function DeliveryHome() {
                               }
                             }
                           } catch (cafeError) {
-                            console.error('❌ [CALL] Error fetching cafe by ID:', cafeError)
+                            console.error('? [CALL] Error fetching cafe by ID:', cafeError)
                           }
                         }
                       }
 
                       if (!cafePhone) {
-                        console.warn('⚠️ [CALL] Phone not found in order.cafeId object:', order.cafeId)
+                        console.warn('?? [CALL] Phone not found in order.cafeId object:', order.cafeId)
                       }
                     } else {
-                      console.warn('⚠️ [CALL] Order details API response format unexpected - order not found in response:', {
+                      console.warn('?? [CALL] Order details API response format unexpected - order not found in response:', {
                         responseKeys: Object.keys(response.data || {}),
                         responseData: response.data
                       })
                     }
                   } catch (error) {
-                    console.error('❌ [CALL] Error fetching order details for phone:', error)
-                    console.error('❌ [CALL] Error message:', error.message)
-                    console.error('❌ [CALL] Error response:', error.response?.data)
-                    console.error('❌ [CALL] Error status:', error.response?.status)
+                    console.error('? [CALL] Error fetching order details for phone:', error)
+                    console.error('? [CALL] Error message:', error.message)
+                    console.error('? [CALL] Error response:', error.response?.data)
+                    console.error('? [CALL] Error status:', error.response?.status)
                   }
                 } else if (!selectedCafe?.orderId) {
-                  console.warn('⚠️ [CALL] Cannot fetch phone - orderId not found in selectedCafe:', selectedCafe)
+                  console.warn('?? [CALL] Cannot fetch phone - orderId not found in selectedCafe:', selectedCafe)
                 }
 
                 if (cafePhone) {
@@ -9395,7 +9364,7 @@ export default function DeliveryHome() {
                   window.location.href = `tel:${cleanPhone}`
                 } else {
                   toast.error('Cafe phone number not available. Please contact support.')
-                  console.error('❌ Cafe phone not found in any path:', {
+                  console.error('? Cafe phone not found in any path:', {
                     selectedCafe,
                     hasPhone: !!selectedCafe?.phone,
                     hasCafeIdPhone: !!selectedCafe?.cafeId?.phone,
@@ -9453,7 +9422,7 @@ export default function DeliveryHome() {
 
                 if (!hasValidCoordinates(cafeLat, cafeLng)) {
                   toast.error('Cafe location not available')
-                  console.error('❌ Cafe coordinates not found:', {
+                  console.error('? Cafe coordinates not found:', {
                     lat: cafeLat,
                     lng: cafeLng,
                     selectedCafe
@@ -9474,7 +9443,7 @@ export default function DeliveryHome() {
                 // Open web URL directly to avoid handler errors in console.
                 if (isLocalDevHost) {
                   window.open(webUrl, '_blank')
-                  toast.success('Opening Google Maps navigation 🗺️', {
+                  toast.success('Opening Google Maps navigation ???', {
                     duration: 2000
                   })
                   return
@@ -9510,7 +9479,7 @@ export default function DeliveryHome() {
                 }
 
                 // Show success message
-                toast.success('Opening Google Maps navigation 🗺️', {
+                toast.success('Opening Google Maps navigation ???', {
                   duration: 2000
                 })
               }}
@@ -9704,7 +9673,7 @@ export default function DeliveryHome() {
 <body>
   <div class="container">
     <div class="header">
-      <h1>📄 Digital Invoice</h1>
+      <h1>?? Digital Invoice</h1>
       <p>Order #${orderData.orderId || 'N/A'}</p>
     </div>
     
@@ -9749,8 +9718,8 @@ export default function DeliveryHome() {
                   ` : ''}
                 </td>
                 <td class="text-right">${item.quantity || 1}</td>
-                <td class="text-right">₹${(item.price || 0).toFixed(2)}</td>
-                <td class="text-right font-semibold">₹${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+                <td class="text-right">?${(item.price || 0).toFixed(2)}</td>
+                <td class="text-right font-semibold">?${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
               </tr>
             `).join('') || '<tr><td colspan="4">No items</td></tr>'}
           </tbody>
@@ -9761,29 +9730,29 @@ export default function DeliveryHome() {
       <div class="section">
         <div class="pricing-row">
           <span>Subtotal</span>
-          <span class="font-semibold">₹${(orderData.pricing?.subtotal || orderData.pricing?.itemTotal || 0).toFixed(2)}</span>
+          <span class="font-semibold">?${(orderData.pricing?.subtotal || orderData.pricing?.itemTotal || 0).toFixed(2)}</span>
         </div>
         ${(orderData.pricing?.tax || 0) > 0 ? `
           <div class="pricing-row">
             <span>Tax & Fees</span>
-            <span class="font-semibold">₹${orderData.pricing.tax.toFixed(2)}</span>
+            <span class="font-semibold">?${orderData.pricing.tax.toFixed(2)}</span>
           </div>
         ` : ''}
         ${(orderData.pricing?.deliveryFee || 0) > 0 ? `
           <div class="pricing-row">
             <span>Delivery Fee</span>
-            <span class="font-semibold">₹${orderData.pricing.deliveryFee.toFixed(2)}</span>
+            <span class="font-semibold">?${orderData.pricing.deliveryFee.toFixed(2)}</span>
           </div>
         ` : ''}
         ${(orderData.pricing?.discount || 0) > 0 ? `
           <div class="pricing-row" style="color: #059669;">
             <span>Discount</span>
-            <span class="font-semibold">-₹${orderData.pricing.discount.toFixed(2)}</span>
+            <span class="font-semibold">-?${orderData.pricing.discount.toFixed(2)}</span>
           </div>
         ` : ''}
         <div class="pricing-row total">
           <span>Total Amount</span>
-          <span>₹${(orderData.pricing?.total || 0).toFixed(2)}</span>
+          <span>?${(orderData.pricing?.total || 0).toFixed(2)}</span>
         </div>
       </div>
 
@@ -9850,85 +9819,6 @@ export default function DeliveryHome() {
           </div>
         </div>
       </BottomPopup>
-
-      {/* Start Navigation Button Card - Show when order is out_for_delivery */}
-      {selectedCafe &&
-        (selectedCafe.orderStatus === 'out_for_delivery' ||
-          selectedCafe.deliveryPhase === 'en_route_to_delivery') &&
-        !showReachedDropPopup &&
-        !showOrderDeliveredAnimation &&
-        !showCustomerReviewPopup &&
-        !showPaymentPage && (
-          <div className="fixed bottom-24 left-0 right-0 px-4 z-50">
-            <motion.div
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="bg-white rounded-2xl shadow-2xl p-5 border border-[#F5F5F5]"
-            >
-              {/* Customer Info */}
-              <div className="mb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="text-teal-600"
-                    >
-                      <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-semibold text-[#1E1E1E]">
-                      Head to Customer Location
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-0.5">
-                      {selectedCafe?.customerName || 'Customer'}
-                    </p>
-                  </div>
-                </div>
-                {selectedCafe?.customerAddress && (
-                  <p className="text-xs text-gray-500 ml-13 truncate">
-                    {selectedCafe.customerAddress}
-                  </p>
-                )}
-              </div>
-
-              {/* Start Navigation Button */}
-              <button
-                type="button"
-                onClick={handleStartNavigation}
-                onTouchEnd={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  handleStartNavigation()
-                }}
-                className="w-full bg-[#e53935] hover:bg-[#c62828] text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-                </svg>
-                <span>START NAVIGATION</span>
-              </button>
-
-              <p className="text-center text-xs text-gray-500 mt-3">
-                Opens Google Maps in Bike Mode 🏍️
-              </p>
-            </motion.div>
-          </div>
-        )}
 
       {/* Reached Drop Popup - shown instantly after Order Picked Up confirmation */}
       <BottomPopup
@@ -10003,7 +9893,7 @@ export default function DeliveryHome() {
         isOpen={showOrderDeliveredAnimation}
         onClose={() => {
           setShowOrderDeliveredAnimation(false)
-          setShowCustomerReviewPopup(true)
+          completeDeliveryAndShowCompletion()
         }}
         showCloseButton={false}
         closeOnBackdropClick={false}
@@ -10022,7 +9912,7 @@ export default function DeliveryHome() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-[#1E1E1E] mb-2">
-              Great job! Delivery complete 👍
+              Great job! Delivery complete ??
             </h1>
           </div>
 
@@ -10039,7 +9929,7 @@ export default function DeliveryHome() {
                     ? (tripDistance >= 1000
                       ? `${(tripDistance / 1000).toFixed(1)} kms`
                       : `${tripDistance.toFixed(0)} m`)
-                    : (selectedCafe?.tripDistance || '—')}
+                    : (selectedCafe?.tripDistance || '�')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -10052,7 +9942,7 @@ export default function DeliveryHome() {
                     ? (tripTime >= 60
                       ? `${Math.round(tripTime / 60)} mins`
                       : `${tripTime} secs`)
-                    : (selectedCafe?.tripTime || '—')}
+                    : (selectedCafe?.tripTime || '�')}
                 </span>
               </div>
             </div>
@@ -10073,7 +9963,7 @@ export default function DeliveryHome() {
                     </span>
                   </div>
                   <span className={`text-lg font-bold ${isCod ? 'text-amber-700' : 'text-emerald-700'}`}>
-                    ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ?{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -10091,122 +9981,7 @@ export default function DeliveryHome() {
         </div>
       </BottomPopup>
 
-      {/* Customer Review Popup - shown after Order Delivered */}
-      <BottomPopup
-        isOpen={showCustomerReviewPopup}
-        onClose={() => setShowCustomerReviewPopup(false)}
-        showCloseButton={false}
-        closeOnBackdropClick={false}
-        maxHeight="80vh"
-        showHandle={true}
-        panelClassName={desktopBottomPopupPanelClass}
-      >
-        <div className="">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-[#1E1E1E] mb-2">
-              Rate Your Experience
-            </h2>
-            <p className="text-gray-600 text-sm mb-6">
-              How was your delivery experience?
-            </p>
-
-            {/* Star Rating */}
-            <div className="flex justify-center gap-2 mb-6">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setCustomerRating(star)}
-                  className="text-4xl transition-transform hover:scale-110"
-                >
-                  {star <= customerRating ? (
-                    <span className="text-[#FFC400]">★</span>
-                  ) : (
-                    <span className="text-gray-300">★</span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Optional Review Text */}
-            <div className="mb-6">
-              <label className="block text-left text-sm font-medium text-gray-700 mb-2">
-                Review (Optional)
-              </label>
-              <textarea
-                value={customerReviewText}
-                onChange={(e) => setCustomerReviewText(e.target.value)}
-                placeholder="Share your experience..."
-                className="w-full px-4 py-3 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935] focus:border-transparent resize-none"
-                rows={4}
-              />
-            </div>
-
-            {/* Submit Button */}
-            <button
-              onClick={async () => {
-                // Get order ID - use MongoDB _id for API call
-                const orderIdForApi = selectedCafe?.id ||
-                  newOrder?.orderMongoId ||
-                  newOrder?._id ||
-                  selectedCafe?.orderId ||
-                  newOrder?.orderId
-
-                // Save review by calling completeDelivery API with rating and review
-                if (orderIdForApi) {
-                  try {
-                    // Call completeDelivery API with rating and review
-                    const response = await deliveryAPI.completeDelivery(
-                      orderIdForApi,
-                      customerRating > 0 ? customerRating : null,
-                      customerReviewText.trim() || ''
-                    )
-
-                    if (response.data?.success) {
-                      // Get updated earnings from response
-                      // Note: completeDelivery API already adds earnings and COD cash collected to wallet
-                      const earnings = response.data.data?.earnings?.amount ||
-                        response.data.data?.totalEarning ||
-                        orderEarnings
-                      setOrderEarnings(earnings)
-                      setOrderEarningsBreakdown(response.data.data?.earnings?.breakdown || null)
-
-                      // Notify wallet listeners (Pocket balance, Pocket page) so cash collected updates
-                      window.dispatchEvent(new Event('deliveryWalletStateUpdated'))
-
-                      // Show success message
-                      if (earnings > 0) {
-                        toast.success(`₹${earnings.toFixed(2)} added to your wallet! 💰`)
-                      }
-
-                      // Close review popup and show payment page
-                      setShowCustomerReviewPopup(false)
-                      setShowPaymentPage(true)
-                    } else {
-                      console.error('❌ Failed to submit review:', response.data)
-                      toast.error(response.data?.message || 'Failed to submit review. Please try again.')
-                    }
-                  } catch (error) {
-                    console.error('❌ Error submitting review:', error)
-                    toast.error('Failed to submit review. Please try again.')
-                    // Still show payment page even if review fails
-                    setShowCustomerReviewPopup(false)
-                    setShowPaymentPage(true)
-                  }
-                } else {
-                  // If no order ID, just show payment page
-                  setShowCustomerReviewPopup(false)
-                  setShowPaymentPage(true)
-                }
-              }}
-              className="w-full bg-[#e53935] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#e53935] transition-colors shadow-lg"
-            >
-              Submit Review
-            </button>
-          </div>
-        </div>
-      </BottomPopup>
-
-      {/* Payment Page - shown after Customer Review is submitted */}
+      {/* Delivery Complete Page */}
       <AnimatePresence>
         {showPaymentPage && (
           <motion.div
@@ -10218,42 +9993,23 @@ export default function DeliveryHome() {
           >
             {/* Header */}
             <div className="bg-[#e53935] text-white px-6 py-6">
-              <h1 className="text-2xl font-bold mb-2">Payment</h1>
+              <h1 className="text-2xl font-bold mb-2">Delivery Complete</h1>
               <p className="text-white/90 text-sm">Order ID: {selectedCafe?.orderId || 'ORD1234567890'}</p>
-            </div>
-
-            {/* Payment Amount */}
-            <div className="px-6 py-8 text-center bg-gray-50">
-              <p className="text-gray-600 text-sm mb-2">Earnings from this order</p>
-              <p className="text-5xl font-bold text-[#1E1E1E]">
-                ₹{getTotalEarningsValue().toFixed(2)}
-              </p>
-              <p className="text-[#FFC400] text-sm mt-2">💰 Added to your wallet</p>
             </div>
 
             {/* Payment Details */}
             <div className="px-6 py-6 pb-6 h-full flex flex-col justify-between">
-              <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-5 mb-6">
-                <h3 className="text-lg font-bold text-[#1E1E1E] mb-4">Payment Details</h3>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-[#F5F5F5]">
-                    <span className="text-gray-600">Trip pay</span>
-                    <span className="text-[#1E1E1E] font-semibold">₹{getTripPay().toFixed(2)}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center py-2 border-b border-[#F5F5F5]">
-                    <span className="text-gray-600">Long distance return pay</span>
-                    <span className="text-[#1E1E1E] font-semibold">₹{getLongDistanceReturnPay().toFixed(2)}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-lg font-bold text-[#1E1E1E]">Total Earnings</span>
-                    <span className="text-lg font-bold text-[#1E1E1E]">₹{getTotalEarningsValue().toFixed(2)}</span>
-                  </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-[#F5F5F5] p-6 mb-6">
+                <div className="w-14 h-14 bg-[#e53935] rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
+                <h2 className="text-lg font-bold text-[#1E1E1E] mb-1">All done</h2>
+                <p className="text-sm text-gray-600">
+                  Your delivery has been completed successfully. You can now return to the main screen.
+                </p>
               </div>
-
 
               {/* Complete Button */}
               <button
@@ -10264,7 +10020,6 @@ export default function DeliveryHome() {
                   setShowOrderIdConfirmationPopup(false)
                   setShowReachedDropPopup(false)
                   setShowOrderDeliveredAnimation(false)
-                  setShowCustomerReviewPopup(false)
 
                   // Clear selected cafe/order to prevent showing popups for delivered order
                   setSelectedCafe(null)
@@ -10286,8 +10041,6 @@ export default function DeliveryHome() {
                   setTimeout(() => {
                     setReachedDropButtonProgress(0)
                     setReachedDropIsAnimatingToComplete(false)
-                    setCustomerRating(0)
-                    setCustomerReviewText("")
                   }, 500)
                 }}
                 className="w-full sticky bottom-4 bg-[#e53935] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#c62828] transition-colors shadow-lg "
@@ -10381,7 +10134,7 @@ export default function DeliveryHome() {
                             )}
                           </div>
                           <p className="text-sm font-semibold" style={{ color: '#1E1E1E' }}>
-                            ₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                            ?{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                           </p>
                         </div>
                       ))}
@@ -10393,14 +10146,14 @@ export default function DeliveryHome() {
                     <div className="flex justify-between items-center">
                       <p className="text-sm" style={{ color: '#555' }}>Subtotal</p>
                       <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
-                        ₹{(digitalBillData.pricing?.subtotal || digitalBillData.pricing?.itemTotal || 0).toFixed(2)}
+                        ?{(digitalBillData.pricing?.subtotal || digitalBillData.pricing?.itemTotal || 0).toFixed(2)}
                       </p>
                     </div>
                     {(digitalBillData.pricing?.tax || 0) > 0 && (
                       <div className="flex justify-between items-center">
                         <p className="text-sm" style={{ color: '#555' }}>Tax & Fees</p>
                         <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
-                          ₹{digitalBillData.pricing.tax.toFixed(2)}
+                          ?{digitalBillData.pricing.tax.toFixed(2)}
                         </p>
                       </div>
                     )}
@@ -10408,7 +10161,7 @@ export default function DeliveryHome() {
                       <div className="flex justify-between items-center">
                         <p className="text-sm" style={{ color: '#555' }}>Delivery Fee</p>
                         <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
-                          ₹{digitalBillData.pricing.deliveryFee.toFixed(2)}
+                          ?{digitalBillData.pricing.deliveryFee.toFixed(2)}
                         </p>
                       </div>
                     )}
@@ -10416,7 +10169,7 @@ export default function DeliveryHome() {
                       <div className="flex justify-between items-center">
                         <p className="text-sm" style={{ color: '#e53935' }}>Discount</p>
                         <p className="text-sm font-medium" style={{ color: '#e53935' }}>
-                          -₹{digitalBillData.pricing.discount.toFixed(2)}
+                          -?{digitalBillData.pricing.discount.toFixed(2)}
                         </p>
                       </div>
                     )}
@@ -10427,7 +10180,7 @@ export default function DeliveryHome() {
                     <div className="flex justify-between items-center">
                       <p className="text-base font-bold" style={{ color: '#1E1E1E' }}>Total Amount</p>
                       <p className="text-xl font-bold" style={{ color: '#FFC400' }}>
-                        ₹{(digitalBillData.pricing?.total || 0).toFixed(2)}
+                        ?{(digitalBillData.pricing?.total || 0).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -10507,6 +10260,28 @@ export default function DeliveryHome() {
     </div >
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

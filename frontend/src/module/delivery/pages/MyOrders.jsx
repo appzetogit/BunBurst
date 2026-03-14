@@ -6,7 +6,6 @@ import {
   Mic,
   MoreVertical,
   ChevronRight,
-  Star,
   RotateCcw,
   AlertCircle,
   Loader2,
@@ -256,8 +255,6 @@ export default function MyOrders() {
               const orderPrice = order.pricing?.total || order.total || 0
               const paymentFailed = isPaymentFailed(order)
               const isDelivered = order.status === 'delivered' || order.status === 'completed'
-              // Rating - check if available in order data (might be in deliveryState or separate field)
-              const rating = order.rating || order.deliveryState?.rating || null
 
               const orderKey = order.orderId || order._id || `order-${Math.random()}`
               
@@ -332,7 +329,7 @@ export default function MyOrders() {
 
                   {/* Card Footer: Actions */}
                   <div className="px-4 py-3 flex items-center justify-between">
-                    {/* Left Side: Rating or Error */}
+                    {/* Left Side: Status or Error */}
                     {paymentFailed ? (
                       <div className="flex items-center gap-2">
                         <div className="bg-red-100 p-1 rounded-full">
@@ -340,18 +337,6 @@ export default function MyOrders() {
                     </div>
                         <span className="text-xs font-semibold text-red-500">Payment failed</span>
                       </div>
-                    ) : isDelivered && rating ? (
-                      <div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm text-gray-800">You rated</span>
-                          <div className="flex bg-yellow-400 text-white px-1 rounded text-[10px] items-center gap-0.5 h-4">
-                            {rating}<Star className="w-2 h-2 fill-current" />
-                    </div>
-                  </div>
-                        <button className="text-xs text-red-500 font-medium mt-0.5 flex items-center hover:text-red-600">
-                          View your feedback <span className="ml-0.5">▸</span>
-                        </button>
-                </div>
                     ) : isDelivered ? (
                       <div>
                         <div className="flex items-center gap-1">

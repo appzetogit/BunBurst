@@ -11,7 +11,7 @@ import { useProfile } from "../../context/ProfileContext"
 import { useOrders } from "../../context/OrdersContext"
 import { useLocation as useUserLocation } from "../../hooks/useLocation"
 import { useZone } from "../../hooks/useZone"
-import { orderAPI, cafeAPI, adminAPI, userAPI, API_ENDPOINTS } from "@/lib/api"
+import { orderAPI, cafeAPI, adminAPI, userAPI, API_ENDPOINTS, zoneAPI } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
 import { initRazorpayPayment } from "@/lib/utils/razorpay"
 import { toast } from "sonner"
@@ -1176,6 +1176,30 @@ export default function Cart() {
         return;
       }
 
+      // Resolve zoneId from the delivery address to avoid stale/mismatched zone validation
+      let resolvedZoneId = zoneId;
+      const addressCoords = defaultAddress?.location?.coordinates;
+      if (Array.isArray(addressCoords) && addressCoords.length >= 2) {
+        const [addrLng, addrLat] = addressCoords;
+        if (addrLat && addrLng) {
+          try {
+            const zoneResponse = await zoneAPI.detectZone(addrLat, addrLng);
+            if (zoneResponse?.data?.success) {
+              const zoneData = zoneResponse.data.data;
+              if (zoneData?.status === 'IN_SERVICE' && zoneData.zoneId) {
+                resolvedZoneId = zoneData.zoneId;
+              } else if (zoneData?.status === 'OUT_OF_SERVICE') {
+                toast.error('Your delivery address is outside the service zone. Please select a location within the service area.');
+                setIsPlacingOrder(false);
+                return;
+              }
+            }
+          } catch (zoneError) {
+            console.warn('⚠️ Zone detection failed during order placement. Falling back to existing zoneId.', zoneError?.response?.data || zoneError?.message);
+          }
+        }
+      }
+
       const orderPayload = {
         items: orderItems,
         address: defaultAddress,
@@ -1185,7 +1209,7 @@ export default function Cart() {
         note: note || "",
         sendCutlery: sendCutlery !== false,
         paymentMethod: selectedPaymentMethod,
-        zoneId: zoneId // CRITICAL: Pass zoneId for strict zone validation
+        zoneId: resolvedZoneId // CRITICAL: Pass zoneId for strict zone validation
       };
       // Log final order details (including paymentMethod for COD debugging)
       console.log('?? FINAL: Sending order to backend with:', {
