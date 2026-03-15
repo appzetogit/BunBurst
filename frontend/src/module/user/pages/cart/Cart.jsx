@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Plus, Minus, ArrowLeft, ChevronRight, Clock, MapPin, Phone, FileText, Utensils, Tag, Percent, Truck, Share2, ChevronUp, ChevronDown, X, Check, Settings, CreditCard, Wallet, Building2, Sparkles, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -1525,17 +1525,13 @@ export default function Cart() {
                               {(item.selectedAddons || item.addons).map(a => a.name).join(", ")}
                             </p>
                           )}
-                          {resolvedCategoryId ? (
+                          {resolvedCategoryId && (
                             <button
                               onClick={() => handleOpenAddons(item, resolvedCategoryId)}
                               className="text-[10px] md:text-xs text-orange-600 font-bold flex items-center gap-1 mt-1.5 hover:text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 transition-all active:scale-95"
                             >
                               <Sparkles className="h-3 w-3" />
                               Customize
-                            </button>
-                          ) : (
-                            <button className="text-xs md:text-sm text-primary font-medium flex items-center gap-0.5 mt-0.5 opacity-50 cursor-not-allowed">
-                              Edit <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
                             </button>
                           )}
                         </div>

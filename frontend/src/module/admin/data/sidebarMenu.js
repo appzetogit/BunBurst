@@ -94,7 +94,7 @@ export const sidebarMenuData = [
     items: [
       {
         type: "link",
-        label: "Cafe Coupons & Offers",
+        label: "Manage Coupons",
         path: "/admin/coupons",
         icon: "Gift",
       },

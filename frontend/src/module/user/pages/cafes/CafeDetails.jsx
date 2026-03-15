@@ -2792,47 +2792,6 @@ export default function CafeDetails() {
                       </p>
                     )}
 
-                    {/* Add-ons Section */}
-                    {itemAddons.length > 0 && (
-                      <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-                            Add-ons
-                          </h3>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Optional
-                          </span>
-                        </div>
-                        <div className="space-y-3">
-                          {itemAddons.map((addon) => (
-                            <div
-                              key={addon._id}
-                              className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-900/30 transition-colors cursor-pointer group"
-                              onClick={() => toggleAddon(addon)}
-                            >
-                              <div className="flex items-center gap-3">
-                                <Checkbox
-                                  checked={selectedAddons.some(a => a._id === addon._id)}
-                                  onCheckedChange={() => toggleAddon(addon)}
-                                  id={`addon-${addon._id}`}
-                                  className="border-gray-300 dark:border-gray-600 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
-                                />
-                                <Label
-                                  htmlFor={`addon-${addon._id}`}
-                                  className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer group-hover:text-gray-900 dark:group-hover:text-white"
-                                >
-                                  {addon.name}
-                                </Label>
-                              </div>
-                              <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                +₹{addon.price}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     {loadingAddons && (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
@@ -2844,25 +2803,25 @@ export default function CafeDetails() {
                   <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4 bg-white dark:bg-[#1a1a1a]">
                     <div className="flex items-center gap-4">
                       {/* Quantity Selector */}
-                      <div className={`flex items-center gap-3 border-2 rounded-lg px-3 h-[44px] bg-white dark:bg-[#2a2a2a] ${shouldShowGrayscale
+                      <div className={`flex items-center gap-3 border-2 rounded-lg px-3 h-[44px] bg-white dark:bg-[#2a2a2a] ${shouldShowGrayscale || isItemOutOfStock(selectedItem)
                         ? 'border-gray-300 dark:border-gray-700 opacity-50'
                         : 'border-gray-300 dark:border-gray-700'
                         }`}>
                         <button
                           onClick={(e) => {
-                            if (!shouldShowGrayscale) {
+                            if (!shouldShowGrayscale && !isItemOutOfStock(selectedItem)) {
                               setItemDetailQuantity((prev) => Math.max(1, prev - 1))
                             }
                           }}
-                          disabled={itemDetailQuantity <= 1 || shouldShowGrayscale}
-                          className={`${shouldShowGrayscale
+                          disabled={itemDetailQuantity <= 1 || shouldShowGrayscale || isItemOutOfStock(selectedItem)}
+                          className={`${shouldShowGrayscale || isItemOutOfStock(selectedItem)
                             ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed'
                             }`}
                         >
                           <Minus className="h-5 w-5" />
                         </button>
-                        <span className={`text-lg font-semibold min-w-[2rem] text-center ${shouldShowGrayscale
+                        <span className={`text-lg font-semibold min-w-[2rem] text-center ${shouldShowGrayscale || isItemOutOfStock(selectedItem)
                           ? 'text-gray-400 dark:text-gray-600'
                           : 'text-gray-900 dark:text-white'
                           }`}>
@@ -2870,12 +2829,12 @@ export default function CafeDetails() {
                         </span>
                         <button
                           onClick={(e) => {
-                            if (!shouldShowGrayscale) {
+                            if (!shouldShowGrayscale && !isItemOutOfStock(selectedItem)) {
                               setItemDetailQuantity((prev) => prev + 1)
                             }
                           }}
-                          disabled={shouldShowGrayscale}
-                          className={shouldShowGrayscale
+                          disabled={shouldShowGrayscale || isItemOutOfStock(selectedItem)}
+                          className={shouldShowGrayscale || isItemOutOfStock(selectedItem)
                             ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                           }
@@ -2886,24 +2845,30 @@ export default function CafeDetails() {
 
                       {/* Add Item Button */}
                       <Button
-                        className={`flex-1 h-[44px] rounded-lg font-semibold flex items-center justify-center gap-2 ${shouldShowGrayscale
+                        className={`flex-1 h-[44px] rounded-lg font-semibold flex items-center justify-center gap-2 ${shouldShowGrayscale || isItemOutOfStock(selectedItem)
                           ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-600 cursor-not-allowed opacity-50'
                           : 'bg-red-500 hover:bg-red-600 text-white'
                           }`}
                         onClick={(e) => {
-                          if (!shouldShowGrayscale) {
+                          if (!shouldShowGrayscale && !isItemOutOfStock(selectedItem)) {
                             updateItemQuantity(selectedItem, itemDetailQuantity, e, selectedAddons)
                             setShowItemDetail(false)
                           }
                         }}
-                        disabled={shouldShowGrayscale}
+                        disabled={shouldShowGrayscale || isItemOutOfStock(selectedItem)}
                       >
-                        <span>Add item</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-base font-bold">
-                            ₹{Math.round(calculateTotalPrice())}
-                          </span>
-                        </div>
+                        {isItemOutOfStock(selectedItem) ? (
+                          <span>OUT OF STOCK</span>
+                        ) : (
+                          <>
+                            <span>Add item</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-base font-bold">
+                                ₹{Math.round(calculateTotalPrice())}
+                              </span>
+                            </div>
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>

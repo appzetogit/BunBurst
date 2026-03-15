@@ -13,10 +13,17 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { couponAPI } from "@/lib/api"
+import { toast } from "react-hot-toast"
+import { Ticket } from "lucide-react"
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const [paymentMethod, setPaymentMethod] = useState("card")
+  const [couponCode, setCouponCode] = useState("")
+  const [applyingCoupon, setApplyingCoupon] = useState(false)
+  const [appliedCoupon, setAppliedCoupon] = useState(null)
+  const [discountAmount, setDiscountAmount] = useState(0)
 
   // Get order data from localStorage (set by CartPage) or use default
   const getOrderData = () => {
@@ -60,7 +67,62 @@ export default function CheckoutPage() {
     }
   }
 
-  const orderSummary = getOrderData()
+  const [orderSummary, setOrderSummary] = useState(getOrderData())
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error("Please enter a coupon code")
+      return
+    }
+
+    try {
+      setApplyingCoupon(true)
+      const response = await couponAPI.applyCoupon(couponCode, orderSummary.subtotal)
+      if (response.data.success) {
+        const { discount, code } = response.data.data
+        setAppliedCoupon(code)
+        setDiscountAmount(discount)
+        
+        // Update order summary with discount
+        setOrderSummary(prev => {
+          const newTotal = prev.subtotal + prev.deliveryFee - discount
+          return {
+            ...prev,
+            discount: discount,
+            total: newTotal,
+            couponCode: code
+          }
+        })
+        toast.success(`Coupon "${code}" applied! You saved ₹${discount}`)
+      }
+    } catch (err) {
+      console.error("Error applying coupon:", err)
+      toast.error(err?.response?.data?.message || "Invalid coupon code")
+      setAppliedCoupon(null)
+      setDiscountAmount(0)
+      // Reset discount in summary
+      setOrderSummary(prev => ({
+        ...prev,
+        discount: 0,
+        total: prev.subtotal + prev.deliveryFee
+      }))
+    } finally {
+      setApplyingCoupon(false)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setDiscountAmount(0)
+    setCouponCode("")
+    setOrderSummary(prev => ({
+      ...prev,
+      discount: 0,
+      total: prev.subtotal + prev.deliveryFee,
+      couponCode: null
+    }))
+    toast.success("Coupon removed")
+  }
 
   // Save order data to localStorage before navigating to payment
   const handleProceedToPayment = () => {
@@ -117,7 +179,7 @@ export default function CheckoutPage() {
                   <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
                 </div>
                 <p className="text-sm font-bold text-gray-900">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  ₹{(item.price * item.quantity).toFixed(2)}
                 </p>
               </div>
             ))}
@@ -132,29 +194,81 @@ export default function CheckoutPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Subtotal</span>
-              <span className="text-gray-900 font-medium">${orderSummary.subtotal.toFixed(2)}</span>
+              <span className="text-gray-900 font-medium">₹{orderSummary.subtotal.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Delivery Fee</span>
-              <span className="text-gray-900 font-medium">${orderSummary.deliveryFee.toFixed(2)}</span>
+              <span className="text-gray-900 font-medium">₹{orderSummary.deliveryFee.toFixed(2)}</span>
             </div>
             {orderSummary.discount > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Discount</span>
-                <span className="text-[#ff8100] font-medium">-${orderSummary.discount.toFixed(2)}</span>
+                <span className="text-gray-600">Discount {appliedCoupon && `(${appliedCoupon})`}</span>
+                <span className="text-green-600 font-medium">-₹{orderSummary.discount.toFixed(2)}</span>
               </div>
             )}
             <div className="border-t border-gray-200 pt-2 mt-2">
               <div className="flex items-center justify-between">
                 <span className="text-base font-bold text-gray-900">Total</span>
-                <span className="text-xl font-bold text-[#ff8100]">${orderSummary.total.toFixed(2)}</span>
+                <span className="text-xl font-bold text-[#ff8100]">₹{orderSummary.total.toFixed(2)}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Coupon Section */}
+      <div className="px-4 mb-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <Ticket className="w-4 h-4 text-[#ff8100]" />
+            Apply Coupon
+          </h3>
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Input
+                type="text"
+                placeholder="Enter coupon code"
+                value={couponCode}
+                disabled={!!appliedCoupon || applyingCoupon}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                className="rounded-lg border-gray-200 focus:ring-[#ff8100] focus:border-[#ff8100]"
+              />
+              {appliedCoupon && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    APPLIED
+                  </span>
+                </div>
+              )}
+            </div>
+            {appliedCoupon ? (
+              <Button 
+                variant="outline"
+                onClick={handleRemoveCoupon}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold px-4 rounded-lg text-xs h-10"
+              >
+                Remove
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleApplyCoupon}
+                disabled={!couponCode || applyingCoupon}
+                className="bg-[#ff8100] hover:bg-[#e67300] text-white font-bold px-6 rounded-lg text-xs h-10"
+              >
+                {applyingCoupon ? "..." : "Apply"}
+              </Button>
+            )}
+          </div>
+          {appliedCoupon && (
+            <p className="text-[11px] text-green-600 mt-2 font-medium">
+              Coupon applied! You saved ₹{discountAmount.toFixed(2)} on this order.
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* Estimated Delivery Time */}
+
       <div className="px-4 mb-4">
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-3">

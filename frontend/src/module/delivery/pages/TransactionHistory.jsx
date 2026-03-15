@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { 
   fetchWalletTransactions
 } from "../utils/deliveryWalletState"
-import { formatCurrency } from "../../cafe/utils/currency"
+import { deliveryAPI } from "@/lib/api"
 
 export default function TransactionHistory() {
   const navigate = useNavigate()
@@ -17,81 +17,98 @@ export default function TransactionHistory() {
   const [activeTab, setActiveTab] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("All")
   const [showDropdown, setShowDropdown] = useState(false)
-  const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [fetchingMore, setFetchingMore] = useState(false)
   const dropdownRef = useRef(null)
 
-  // Load transactions from API based on active tab and selected status
-  useEffect(() => {
-    const loadTransactions = async () => {
-      try {
-        setLoading(true)
-        
-        // Build query params
-        const params = {
-          limit: 1000
-        }
-        
-        // Filter by type based on active tab
-        if (activeTab === "withdraw") {
-          params.type = "withdrawal"
-        } else if (activeTab === "payment") {
-          params.type = "payment"
-        } else if (activeTab === "bonus") {
-          params.type = "bonus"
-        }
-        // "all" tab - don't filter by type
-        
-        // Filter by status if not "All"
-        if (selectedStatus !== "All") {
-          params.status = selectedStatus
-        }
-        
-        const fetchedTransactions = await fetchWalletTransactions(params)
-        
-        // Format transactions for display
-        const formattedTransactions = fetchedTransactions.map(t => ({
-          id: t._id || t.id,
-          amount: t.amount || 0,
-          type: t.type,
-          status: t.status || 'Pending',
-          description: t.description || t.metadata?.reference || 'Transaction',
-          date: t.date || t.createdAt ? new Date(t.date || t.createdAt).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          }) : 'N/A'
-        }))
-        
-        // Sort by date (newest first)
-        formattedTransactions.sort((a, b) => {
-          const dateA = new Date(a.date)
-          const dateB = new Date(b.date)
-          return dateB - dateA
-        })
-        
-        setTransactions(formattedTransactions)
-      } catch (error) {
-        console.error('Error loading transactions:', error)
-        setTransactions([])
-      } finally {
-        setLoading(false)
+  const loadTransactions = async (pageNum = 1, append = false) => {
+    try {
+      if (!append) setLoading(true)
+      else setFetchingMore(true)
+      
+      // Build query params
+      const limit = 15
+      const params = {
+        page: pageNum,
+        limit
       }
+      
+      // Filter by type based on active tab
+      if (activeTab === "withdraw") {
+        params.type = "withdrawal"
+      } else if (activeTab === "payment") {
+        params.type = "payment"
+      } else if (activeTab === "bonus") {
+        params.type = "bonus"
+      }
+      // "all" tab - don't filter by type
+      
+      // Filter by status if not "All"
+      if (selectedStatus !== "All") {
+        params.status = selectedStatus
+      }
+      
+      const response = await deliveryAPI.getWalletTransactions(params)
+      const data = response?.data?.data || response?.data || {}
+      const fetchedTransactions = data.transactions || []
+      const pagination = data.pagination || {}
+      
+      // Format transactions for display
+      const formattedTransactions = fetchedTransactions.map(t => ({
+        id: t._id || t.id,
+        amount: t.amount || 0,
+        type: t.type,
+        status: t.status || 'Pending',
+        description: t.description || t.metadata?.reference || 'Transaction',
+        date: t.date || t.createdAt ? new Date(t.date || t.createdAt).toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'N/A'
+      }))
+      
+      if (append) {
+        setTransactions(prev => [...prev, ...formattedTransactions])
+      } else {
+        setTransactions(formattedTransactions)
+      }
+      
+      setPage(pageNum)
+      setTotalPages(pagination.pages || 1)
+    } catch (error) {
+      console.error('Error loading transactions:', error)
+      if (!append) setTransactions([])
+    } finally {
+      setLoading(false)
+      setFetchingMore(false)
     }
+  }
 
-    loadTransactions()
+  const handleLoadMore = () => {
+    if (page < totalPages && !fetchingMore) {
+      loadTransactions(page + 1, true)
+    }
+  }
+
+  useEffect(() => {
+
+    loadTransactions(1, false)
 
     // Listen for wallet state updates
     const handleWalletUpdate = () => {
-      loadTransactions()
+      loadTransactions(1, false)
     }
 
-    // Refresh transactions every 10 seconds
+    // Refresh transactions every 30 seconds (less frequent to avoid overriding pagination)
     const refreshInterval = setInterval(() => {
-      loadTransactions()
-    }, 10000)
+      if (page === 1) {
+        loadTransactions(1, false)
+      }
+    }, 30000)
 
     window.addEventListener('deliveryWalletStateUpdated', handleWalletUpdate)
     window.addEventListener('storage', handleWalletUpdate)
@@ -336,6 +353,19 @@ export default function TransactionHistory() {
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-900 text-base md:text-lg">No transactions found</p>
+            </div>
+          )}
+          
+          {page < totalPages && !loading && (
+            <div className="pt-2 text-center">
+              <Button
+                onClick={handleLoadMore}
+                disabled={fetchingMore}
+                variant="outline"
+                className="w-full py-6 md:py-4 text-[#ff8100] border-[#ff8100] hover:bg-[#ff8100]/10 rounded-xl"
+              >
+                {fetchingMore ? "Loading more..." : "Load More Transactions"}
+              </Button>
             </div>
           )}
         </div>

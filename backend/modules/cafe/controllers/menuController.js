@@ -1340,6 +1340,8 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
     };
   }) : [];
 
+  const normalizedAddons = addons;
+
   // Find or create menu (supports legacy "restaurant" field)
   let menu = await Menu.findOne({
     $or: [{ cafe: id }, { restaurant: id }],

@@ -12,7 +12,10 @@ import {
     Ticket
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { Loader2, Receipt } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 
 export default function DiningCafeDetails() {
     const { slug } = useParams()
@@ -83,13 +86,27 @@ export default function DiningCafeDetails() {
                     return
                 }
 
-                const match = bookings.find((booking) => {
-                    const bookingCafeId =
-                        booking?.cafeId ||
-                        booking?.cafe?._id ||
-                        booking?.cafe
-                    return String(bookingCafeId) === String(cafe._id)
-                })
+                const match = bookings
+                    .filter(b => {
+                        const bStatus = (b.bookingStatus || b.status || "").toLowerCase();
+                        // Filter out cancelled, rejected and past date bookings
+                        if (["cancelled", "rejected"].includes(bStatus)) return false;
+                        
+                        const bookingDate = new Date(b.date);
+                        bookingDate.setHours(0, 0, 0, 0);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        return bookingDate.getTime() >= today.getTime();
+                    })
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .find((booking) => {
+                        const bookingCafeId =
+                            booking?.cafeId ||
+                            booking?.cafe?._id ||
+                            booking?.cafe
+                        return String(bookingCafeId) === String(cafe._id)
+                    })
 
                 setLatestBooking(match || null)
             } catch (err) {
@@ -209,89 +226,131 @@ export default function DiningCafeDetails() {
                 </div>
             </div>
 
-            <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-5">
-                <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary/5 shadow-sm">
-                    <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute -right-10 -top-12 h-28 w-28 rounded-full bg-primary/10 blur-2xl" />
-                        <div className="absolute -left-10 -bottom-12 h-28 w-28 rounded-full bg-primary/5 blur-2xl" />
-                    </div>
-                    <div className="relative p-4 sm:p-5">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                                    <Ticket className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-base font-semibold text-foreground">Your Booking</h3>
-                                    <p className="text-xs text-muted-foreground">Latest reservation details</p>
-                                </div>
-                            </div>
-                            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
-                                Dining
-                            </span>
-                        </div>
+            <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8">
+                <AnimatePresence mode="wait">
                     {bookingLoading ? (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Loading booking...
+                        <div className="flex flex-col items-center justify-center p-12 rounded-3xl border border-dashed border-border bg-card/30 backdrop-blur-sm">
+                            <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+                            <p className="text-sm text-muted-foreground animate-pulse">Syncing your reservation...</p>
                         </div>
                     ) : latestBooking ? (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div className="rounded-xl border border-border bg-background/70 p-3">
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <CalendarDays className="w-4 h-4" />
-                                        Date
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-gradient-to-br from-card via-card to-primary/10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-xl"
+                        >
+                            {/* Premium Glow Elements */}
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-[80px]" />
+                                <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-highlight/10 blur-[80px]" />
+                            </div>
+
+                            <div className="relative p-7 sm:p-9">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-14 w-14 rounded-[1.25rem] bg-primary shadow-lg shadow-primary/30 text-primary-foreground flex items-center justify-center transform -rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                            <Receipt className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-foreground tracking-tight">Your Table is Ready</h3>
+                                            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-70">Active Reservation</p>
+                                        </div>
                                     </div>
-                                    <div className="text-sm font-semibold text-foreground mt-1">
-                                        {new Date(latestBooking.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                                    <Badge variant="outline" className="px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border-emerald-500/20 backdrop-blur-md">
+                                        CONFIRMED
+                                    </Badge>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+                                    <div className="group rounded-[1.5rem] border border-border/50 bg-background/40 hover:bg-background/60 p-5 transition-all duration-300 backdrop-blur-md border-b-4 border-r-2">
+                                        <div className="flex items-center gap-2.5 text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-3">
+                                            <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600">
+                                                <CalendarDays className="w-4 h-4" />
+                                            </div>
+                                            Arrival Date
+                                        </div>
+                                        <div className="text-xl font-black text-foreground">
+                                            {new Date(latestBooking.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                                        </div>
+                                    </div>
+
+                                    <div className="group rounded-[1.5rem] border border-border/50 bg-background/40 hover:bg-background/60 p-5 transition-all duration-300 backdrop-blur-md border-b-4 border-r-2">
+                                        <div className="flex items-center gap-2.5 text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-3">
+                                            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600">
+                                                <Clock className="w-4 h-4" />
+                                            </div>
+                                            Booked Slot
+                                        </div>
+                                        <div className="text-xl font-black text-foreground">
+                                            {latestBooking.timeSlot}
+                                        </div>
+                                    </div>
+
+                                    <div className="group rounded-[1.5rem] border border-border/50 bg-background/40 hover:bg-background/60 p-5 transition-all duration-300 backdrop-blur-md border-b-4 border-r-2">
+                                        <div className="flex items-center gap-2.5 text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-3">
+                                            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-600">
+                                                <Users className="w-4 h-4" />
+                                            </div>
+                                            Group Size
+                                        </div>
+                                        <div className="text-xl font-black text-foreground">
+                                            {latestBooking.guests} Guests
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="rounded-xl border border-border bg-background/70 p-3">
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <Clock className="w-4 h-4" />
-                                        Slot
+
+                                <div className="flex flex-wrap items-center justify-between gap-6 pt-7 border-t border-border/50">
+                                    <div className="flex items-center gap-4">
+                                        {latestBooking.table?.tableNumber || latestBooking.tableId?.tableNumber ? (
+                                            <div className="px-5 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-black border border-primary/20 shadow-sm shadow-primary/10">
+                                                TABLE {latestBooking.table?.tableNumber || latestBooking.tableId?.tableNumber}
+                                            </div>
+                                        ) : null}
+                                        <div className="flex items-center gap-3 px-5 py-2.5 rounded-xl bg-muted/50 text-muted-foreground text-[11px] font-black uppercase tracking-widest border border-border/20">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                            {(latestBooking.bookingStatus || latestBooking.status) === "pending"
+                                                ? "Waiting Approval"
+                                                : (latestBooking.bookingStatus || latestBooking.status)}
+                                        </div>
                                     </div>
-                                    <div className="text-sm font-semibold text-foreground mt-1">
-                                        {latestBooking.timeSlot}
-                                    </div>
-                                </div>
-                                <div className="rounded-xl border border-border bg-background/70 p-3">
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <Users className="w-4 h-4" />
-                                        Guests
-                                    </div>
-                                    <div className="text-sm font-semibold text-foreground mt-1">
-                                        {latestBooking.guests} Guests
-                                    </div>
+                                    
+                                    <Button 
+                                        onClick={() => navigate("/bookings")}
+                                        variant="link" 
+                                        className="text-primary font-black hover:no-underline flex items-center gap-2 px-0 py-0 h-auto group"
+                                    >
+                                        Manage Reservation 
+                                        <div className="p-1.5 rounded-full bg-primary/10 group-hover:translate-x-1 transition-transform">
+                                            <ArrowLeft className="w-4 h-4 rotate-180" />
+                                        </div>
+                                    </Button>
                                 </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                {latestBooking.table?.tableNumber || latestBooking.tableId?.tableNumber ? (
-                                    <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                                        Table {latestBooking.table?.tableNumber || latestBooking.tableId?.tableNumber}
-                                    </span>
-                                ) : null}
-                                <span className="px-3 py-1 rounded-full bg-muted/60 text-muted-foreground text-xs font-semibold">
-                                    {(latestBooking.bookingStatus || latestBooking.status) === "pending"
-                                        ? "Pending Approval"
-                                        : (latestBooking.bookingStatus || latestBooking.status)}
-                                </span>
-                            </div>
-                        </div>
+                        </motion.div>
                     ) : (
-                        <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-background/60 p-4">
-                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                                <CalendarDays className="w-5 h-5" />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex flex-col sm:flex-row items-center gap-6 rounded-[2.5rem] border-2 border-dashed border-border/60 bg-card/20 p-8 sm:p-10 text-center sm:text-left transition-colors hover:border-primary/30"
+                        >
+                            <div className="h-20 w-20 rounded-[1.5rem] bg-muted/50 flex items-center justify-center text-muted-foreground shadow-inner">
+                                <CalendarDays className="w-10 h-10" />
                             </div>
-                            <div>
-                                <p className="text-sm font-semibold text-foreground">No booking yet</p>
-                                <p className="text-xs text-muted-foreground">Reserve a table to see your details here.</p>
+                            <div className="flex-1">
+                                <h3 className="text-2xl font-black text-foreground mb-2 tracking-tight">No Active Reservation</h3>
+                                <p className="text-base text-muted-foreground font-medium max-w-sm">
+                                    Plan your perfect meal. Book a table now to secure your spot at <span className="text-primary">{cafe.name}</span>.
+                                </p>
                             </div>
-                        </div>
+                            <Button 
+                                onClick={() => setIsBookingOpen(true)}
+                                className="h-14 px-8 rounded-2xl bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-lg font-black"
+                            >
+                                Reserve Now
+                            </Button>
+                        </motion.div>
                     )}
-                    </div>
-                </div>
+                </AnimatePresence>
             </div>
 
             {(!cafe.diningSettings || cafe.diningSettings.isEnabled) ? (

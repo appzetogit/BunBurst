@@ -106,10 +106,6 @@ if (API_BASE_URL.includes("5173")) {
 // Log API base URL in both development and production for debugging
 
 
-
-
-
-
 // Warn if API_BASE_URL is localhost in production
 if (
   import.meta.env.MODE === "production" &&
@@ -248,6 +244,7 @@ export const API_ENDPOINTS = {
     ORDERS: "/delivery/orders",
     ORDER_BY_ID: "/delivery/orders/:orderId",
     ORDER_ACCEPT: "/delivery/orders/:orderId/accept",
+    ORDER_REJECT: "/delivery/orders/:orderId/reject",
     ORDER_REACHED_PICKUP: "/delivery/orders/:orderId/reached-pickup",
     ORDER_CONFIRM_ID: "/delivery/orders/:orderId/confirm-order-id",
     ORDER_REACHED_DROP: "/delivery/orders/:orderId/reached-drop",
@@ -393,6 +390,9 @@ export const API_ENDPOINTS = {
     DINING_BOOKING_REQUESTS: "/admin/dining/booking-requests",
     DINING_BOOKING_APPROVE: "/admin/dining/approve/:bookingId",
     DINING_BOOKING_REJECT: "/admin/dining/reject/:bookingId",
+    COUPONS: "/admin/coupons",
+    COUPON_BY_ID: "/admin/coupons/:id",
+    COUPON_TOGGLE: "/admin/coupons/:id/toggle",
   },
   // Order endpoints
   ORDER: {
@@ -404,6 +404,7 @@ export const API_ENDPOINTS = {
     VERIFY_PAYMENT: "/order/verify-payment",
     CALCULATE: "/order/calculate",
     CANCEL: "/order/:id/cancel",
+    BILL: "/order/:id/bill",
   },
   // Payment endpoints
   PAYMENT: {
@@ -468,6 +469,10 @@ export const API_ENDPOINTS = {
     BOOKING_STATUS: "/dining/bookings/:bookingId/status",
     BOOKING_STATUS_CAFE: "/dining/bookings/:bookingId/status/cafe",
     REVIEW_CREATE: "/dining/reviews",
+  },
+  COUPON: {
+    APPLY: "/coupons/apply",
+    LIST: "/coupons/active",
   },
 };
 

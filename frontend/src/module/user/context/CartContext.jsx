@@ -1,5 +1,6 @@
 // src/context/cart-context.jsx
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { toast } from "sonner"
 
 // Default cart context value to prevent errors during initial render
 const defaultCartContext = {
@@ -95,6 +96,19 @@ export function CartProvider({ children }) {
   }, [])
 
   const addToCart = (item, sourcePosition = null) => {
+    // Prevent adding out of stock items
+    const isItemOutOfStockInfo = (item) => {
+      if (!item) return false
+      if (item.isAvailable === false) return true
+      const stockValue = typeof item.stock === "string" ? item.stock.trim().toLowerCase() : item.stock
+      return stockValue === 0 || stockValue === "0" || stockValue === "out of stock"
+    }
+
+    if (isItemOutOfStockInfo(item)) {
+      toast.error("Sorry, this item is out of stock and cannot be added.");
+      return;
+    }
+
     setCart((prev) => {
       // CRITICAL: Validate cafe consistency
       // If cart already has items, ensure new item belongs to the same cafe
@@ -227,6 +241,20 @@ export function CartProvider({ children }) {
     // When quantity decreases (but not to 0), also trigger removal animation
     setCart((prev) => {
       const existingItem = prev.find((i) => i.id === itemId)
+      
+      if (existingItem && quantity > existingItem.quantity) {
+        const isItemOutOfStockInfo = (item) => {
+          if (!item) return false
+          if (item.isAvailable === false) return true
+          const stockValue = typeof item.stock === "string" ? item.stock.trim().toLowerCase() : item.stock
+          return stockValue === 0 || stockValue === "0" || stockValue === "out of stock"
+        }
+        if (isItemOutOfStockInfo(existingItem)) {
+          toast.error("Sorry, this item is out of stock.");
+          return prev; // Do not update quantity
+        }
+      }
+
       if (existingItem && quantity < existingItem.quantity && sourcePosition && productInfo) {
         // Set last remove event for animation when decreasing quantity
         setLastRemoveEvent({

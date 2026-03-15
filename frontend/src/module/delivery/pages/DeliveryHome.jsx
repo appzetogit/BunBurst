@@ -47,7 +47,7 @@ import {
 import { formatCurrency } from "../../cafe/utils/currency"
 import { getAllDeliveryOrders } from "../utils/deliveryOrderStatus"
 import { getUnreadDeliveryNotificationCount } from "../utils/deliveryNotifications"
-import { deliveryAPI, cafeAPI, uploadAPI } from "@/lib/api"
+import { deliveryAPI, cafeAPI, uploadAPI, API_BASE_URL } from "@/lib/api"
 import { useDeliveryNotifications } from "../hooks/useDeliveryNotifications"
 import { getGoogleMapsApiKey, MAP_APIS_ENABLED } from "@/lib/utils/googleMapsApiKey"
 import { useCompanyName } from "@/lib/hooks/useCompanyName"
@@ -1543,7 +1543,7 @@ export default function DeliveryHome() {
           }
 
           // Validate coordinates are reasonable for India (basic sanity check)
-          // India: Latitude 8.4° to 37.6°, Longitude 68.7° to 97.25°
+          // India: Latitude 8.4ï¿½ to 37.6ï¿½, Longitude 68.7ï¿½ to 97.25ï¿½
           const isInIndiaRange = latitude >= 8 && latitude <= 38 && longitude >= 68 && longitude <= 98
           if (!isInIndiaRange) {
             console.warn("?? Coordinates outside India range - might be incorrect:", {
@@ -2262,7 +2262,7 @@ export default function DeliveryHome() {
                 timeAway: selectedCafe?.timeAway || '0 mins',
                 dropDistance: selectedCafe?.dropDistance || '0 km',
                 pickupDistance: selectedCafe?.pickupDistance || '0 km',
-                estimatedEarnings: backendEarnings || selectedCafe?.estimatedEarnings || 0,
+                estimatedEarnings: earningsValue || selectedCafe?.estimatedEarnings || 0,
                 amount: earningsValue, // Also set amount for compatibility
                 customerName: order.userId?.name || selectedCafe?.customerName,
                 customerPhone: order.userId?.phone || selectedCafe?.customerPhone || null,
@@ -3736,11 +3736,14 @@ export default function DeliveryHome() {
       const response = await deliveryAPI.completeDelivery(orderIdForApi)
 
       if (response.data?.success) {
-        const earnings = response.data.data?.earnings?.amount ||
-          response.data.data?.totalEarning ||
-          orderEarnings
-        setOrderEarnings(earnings)
-        setOrderEarningsBreakdown(response.data.data?.earnings?.breakdown || null)
+        // Handle object results and prioritize totalEarning or amount
+        const earningsData = response.data.data?.earnings || response.data.data || {};
+        const earningsValue = typeof earningsData === 'object' 
+          ? (earningsData.totalEarning || earningsData.amount || 0)
+          : (typeof earningsData === 'number' ? earningsData : 0);
+          
+        setOrderEarnings(earningsValue)
+        setOrderEarningsBreakdown(response.data.data?.earnings?.breakdown || response.data.data?.breakdown || null)
         window.dispatchEvent(new Event('deliveryWalletStateUpdated'))
       } else {
         console.error('? Failed to complete delivery:', response.data)
@@ -4054,7 +4057,7 @@ export default function DeliveryHome() {
       }
 
       // Use calculated earnings if available, otherwise fallback to deliveryFee
-      const effectiveEarnings = earnedValue > 0 ? earned : (deliveryFee > 0 ? deliveryFee : 0);
+      const effectiveEarnings = earnedValue > 0 ? earnedValue : (deliveryFee > 0 ? deliveryFee : 0);
       const extractedCafeCoords = extractLatLng(newOrder.cafeLocation || newOrder.cafe?.location)
       const newOrderCafeCoords = {
         lat: extractedCafeCoords.lat ?? toFiniteCoordinate(newOrder.cafeLat),
@@ -4516,7 +4519,7 @@ export default function DeliveryHome() {
       console.error('? Error fetching assigned orders:', error)
       // Don't show error to user, just log it
     }
-    // Removed riderLocation from deps — using lastLocationRef.current instead
+    // Removed riderLocation from deps ï¿½ using lastLocationRef.current instead
     // This prevents the callback from recreating on every GPS update, which was 
     // triggering the fallback polling and timeout effects into infinite loops.
   }, [isOnline, calculateTimeAway, showNewOrderPopup])
@@ -7569,7 +7572,7 @@ export default function DeliveryHome() {
         title: `Earn ?${target} guarantee!`,
         subtitle: orders > 0
           ? `Complete ${orders} orders to earn ?${target}. ?${remaining.toFixed(0)} remaining.`
-          : `Active earning bonus offer — valid till ${weekEndDate}`,
+          : `Active earning bonus offer ï¿½ valid till ${weekEndDate}`,
         icon: 'bag',
         buttonText: 'View',
         bgColor: 'bg-gray-700',
@@ -7578,25 +7581,6 @@ export default function DeliveryHome() {
         buttonBgColor: 'bg-gray-600 text-white',
         action: 'none'
       })
-    }
-
-    // Slide 4: Today's earnings summary (always shown if > 0 or at least delivery is approved)
-    if (deliveryStatus === 'approved' || deliveryStatus === 'active') {
-      if (todayEarnings > 0 || todayTrips > 0) {
-        slides.push({
-          id: 'today-summary',
-          title: `Today: ?${todayEarnings.toFixed(0)} earned`,
-          subtitle: `${todayTrips} ${todayTrips === 1 ? 'trip' : 'trips'} completed${todayHoursWorked > 0 ? ` · ${formatHours(todayHoursWorked)} hrs worked` : ''}`,
-          icon: 'bank',
-          buttonText: 'Details',
-          bgColor: 'bg-gray-700',
-          titleColor: 'text-white',
-          subtitleColor: 'text-white/90',
-          buttonBgColor: 'bg-gray-600 text-white',
-          action: 'navigate',
-          path: '/delivery/my-orders'
-        })
-      }
     }
 
     // Slide 5: COD cash pending removed as per request
@@ -9141,21 +9125,7 @@ export default function DeliveryHome() {
               </div>
             </motion.div>
 
-            {/* Reject Button - Outside the popup, positioned below */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="fixed top-4 right-4 z-[115] lg:top-6 lg:right-6"
-            >
-              <button
-                onClick={handleRejectConfirm}
-                className="bg-[#e53935] border-2 border-white text-white text-bold px-5 p-2 rounded-full font-semibold text-sm hover:bg-[#c62828] transition-colors shadow-2xl"
-              >
-                Deny
-              </button>
-            </motion.div>
+            {/* Reject Button (Deny) was removed as per requirement */}
           </>
         )}
       </AnimatePresence>
@@ -9622,233 +9592,30 @@ export default function DeliveryHome() {
                 <button
                   onClick={async () => {
                     const orderId = selectedCafe?.orderId || selectedCafe?.id || newOrder?.orderId || newOrder?.orderMongoId;
+                    setIsLoadingBill(true);
+                    try {
+                      // Call backend to generate/get PDF bill
+                      const response = await deliveryAPI.getOrderBill(orderId);
+                      const billUrl = response.data?.data?.billUrl || response.data?.billUrl;
 
-                    // If we already have bill data, use it. Otherwise fetch it.
-                    let orderData = digitalBillData;
-                    if (!orderData) {
-                      setIsLoadingBill(true);
-                      try {
-                        const response = await deliveryAPI.getOrderDetails(orderId);
-                        orderData = response.data?.data?.order || response.data?.order || response.data?.data;
-                      } catch (error) {
-                        console.error('Error loading bill:', error);
-                        toast.error('Failed to download bill');
-                        setIsLoadingBill(false);
-                        return;
+                      if (billUrl) {
+                        // Construct absolute URL (remove /api from BASE_URL to get root)
+                        const rootUrl = API_BASE_URL.replace(/\/api\/?$/, '');
+                        const fullUrl = `${rootUrl}${billUrl}`;
+                        
+                        // For APK compatibility: best way is to open the direct link
+                        // Modern Android WebViews handle PDF links better than Blobs
+                        window.open(fullUrl, '_system');
+                        toast.success('Opening bill...');
+                      } else {
+                        toast.error('Bill URL not received');
                       }
+                    } catch (error) {
+                      console.error('Error downloading bill:', error);
+                      toast.error('Failed to download bill');
+                    } finally {
                       setIsLoadingBill(false);
                     }
-
-                    if (!orderData) {
-                      toast.error('No bill data available');
-                      return;
-                    }
-
-                    // Generate HTML bill
-                    const billHtml = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice #${orderData.orderId || 'N/A'}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #1f2937;
-      background: #f9fafb;
-      padding: 20px;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-    }
-    .header {
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      color: white;
-      padding: 32px;
-      text-align: center;
-    }
-    .header h1 { font-size: 32px; margin-bottom: 8px; }
-    .header p { font-size: 16px; opacity: 0.9; }
-    .content { padding: 32px; }
-    .section { margin-bottom: 32px; }
-    .section-title {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #6b7280;
-      margin-bottom: 12px;
-      font-weight: 600;
-    }
-    .info-box {
-      background: #f9fafb;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-    .info-box h3 { font-size: 18px; margin-bottom: 4px; }
-    .info-box p { color: #6b7280; font-size: 14px; }
-    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-    thead { background: #f3f4f6; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-    th { font-weight: 600; font-size: 12px; text-transform: uppercase; color: #6b7280; }
-    td { font-size: 14px; }
-    .text-right { text-align: right; }
-    .font-semibold { font-weight: 600; }
-    .pricing-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
-    .pricing-row.total {
-      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-      border-radius: 8px;
-      padding: 16px;
-      margin-top: 16px;
-      font-size: 18px;
-      font-weight: 700;
-      color: #1e40af;
-    }
-    .footer {
-      border-top: 2px solid #e5e7eb;
-      padding-top: 16px;
-      text-align: center;
-      color: #6b7280;
-      font-size: 12px;
-    }
-    .addons { font-size: 12px; color: #6b7280; margin-top: 4px; }
-    @media print {
-      body { padding: 0; background: white; }
-      .container { box-shadow: none; }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>?? Digital Invoice</h1>
-      <p>Order #${orderData.orderId || 'N/A'}</p>
-    </div>
-    
-    <div class="content">
-      <!-- Cafe Info -->
-      <div class="section">
-        <div class="section-title">From</div>
-        <div class="info-box">
-          <h3>${orderData.cafeId?.name || orderData.cafeName || 'Cafe'}</h3>
-          <p>${getCafeDisplayAddress(orderData) || 'Address'}</p>
-        </div>
-      </div>
-
-      <!-- Customer Info -->
-      <div class="section">
-        <div class="section-title">Bill To</div>
-        <div class="info-box">
-          <h3>${orderData.userId?.name || orderData.userName || 'Customer'}</h3>
-          <p>${getCustomerDisplayAddress(orderData) || 'Delivery Address'}</p>
-        </div>
-      </div>
-
-      <!-- Order Items -->
-      <div class="section">
-        <div class="section-title">Order Items</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th class="text-right">Qty</th>
-              <th class="text-right">Price</th>
-              <th class="text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${orderData.items?.map(item => `
-              <tr>
-                <td>
-                  <div class="font-semibold">${item.name || item.menuItemId?.name || 'Item'}</div>
-                  ${item.selectedAddons && item.selectedAddons.length > 0 ? `
-                    <div class="addons">Addons: ${item.selectedAddons.map(a => a.name).join(', ')}</div>
-                  ` : ''}
-                </td>
-                <td class="text-right">${item.quantity || 1}</td>
-                <td class="text-right">?${(item.price || 0).toFixed(2)}</td>
-                <td class="text-right font-semibold">?${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
-              </tr>
-            `).join('') || '<tr><td colspan="4">No items</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Pricing Summary -->
-      <div class="section">
-        <div class="pricing-row">
-          <span>Subtotal</span>
-          <span class="font-semibold">?${(orderData.pricing?.subtotal || orderData.pricing?.itemTotal || 0).toFixed(2)}</span>
-        </div>
-        ${(orderData.pricing?.tax || 0) > 0 ? `
-          <div class="pricing-row">
-            <span>Tax & Fees</span>
-            <span class="font-semibold">?${orderData.pricing.tax.toFixed(2)}</span>
-          </div>
-        ` : ''}
-        ${(orderData.pricing?.deliveryFee || 0) > 0 ? `
-          <div class="pricing-row">
-            <span>Delivery Fee</span>
-            <span class="font-semibold">?${orderData.pricing.deliveryFee.toFixed(2)}</span>
-          </div>
-        ` : ''}
-        ${(orderData.pricing?.discount || 0) > 0 ? `
-          <div class="pricing-row" style="color: #059669;">
-            <span>Discount</span>
-            <span class="font-semibold">-?${orderData.pricing.discount.toFixed(2)}</span>
-          </div>
-        ` : ''}
-        <div class="pricing-row total">
-          <span>Total Amount</span>
-          <span>?${(orderData.pricing?.total || 0).toFixed(2)}</span>
-        </div>
-      </div>
-
-      <!-- Payment Info -->
-      <div class="section">
-        <div class="pricing-row">
-          <span>Payment Method</span>
-          <span class="font-semibold">${orderData.payment?.method === 'cash' ? 'Cash on Delivery' : 'Online Payment'}</span>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="footer">
-        <p>Bill generated on ${new Date(orderData.createdAt).toLocaleString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}</p>
-        <p style="margin-top: 8px;">Thank you for your order!</p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-                    `.trim();
-
-                    // Create and download the HTML file
-                    const blob = new Blob([billHtml], { type: 'text/html' });
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `Invoice-${orderId}.html`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-
-                    toast.success('Bill downloaded successfully!');
                   }}
                   disabled={isLoadingBill}
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white text-[#1E1E1E] border border-[#F5F5F5] rounded-lg text-sm font-medium hover:bg-[#fff8f7] transition-colors disabled:opacity-50"
@@ -9968,7 +9735,7 @@ export default function DeliveryHome() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-[#1E1E1E] mb-2">
-              Great job! Delivery complete ??
+              Great job! Delivery complete ðŸŽ‰
             </h1>
           </div>
 
@@ -9985,7 +9752,7 @@ export default function DeliveryHome() {
                     ? (tripDistance >= 1000
                       ? `${(tripDistance / 1000).toFixed(1)} kms`
                       : `${tripDistance.toFixed(0)} m`)
-                    : (selectedCafe?.tripDistance || '—')}
+                    : (selectedCafe?.tripDistance || 'ï¿½')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -9998,7 +9765,7 @@ export default function DeliveryHome() {
                     ? (tripTime >= 60
                       ? `${Math.round(tripTime / 60)} mins`
                       : `${tripTime} secs`)
-                    : (selectedCafe?.tripTime || '—')}
+                    : (selectedCafe?.tripTime || 'ï¿½')}
                 </span>
               </div>
             </div>
@@ -10019,7 +9786,7 @@ export default function DeliveryHome() {
                     </span>
                   </div>
                   <span className={`text-lg font-bold ${isCod ? 'text-amber-700' : 'text-emerald-700'}`}>
-                    ?{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    â‚¹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -10041,68 +9808,113 @@ export default function DeliveryHome() {
       <AnimatePresence>
         {showPaymentPage && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[200] bg-white overflow-y-auto"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.4, type: "spring", bounce: 0.2 }}
+            className="fixed inset-0 z-[200] bg-[#FAFAFA] flex flex-col overflow-y-auto"
           >
-            {/* Header */}
-            <div className="bg-[#e53935] text-white px-6 py-6">
-              <h1 className="text-2xl font-bold mb-2">Delivery Complete</h1>
-              <p className="text-white/90 text-sm">Order ID: {selectedCafe?.orderId || 'ORD1234567890'}</p>
-            </div>
-
-            {/* Payment Details */}
-            <div className="px-6 py-6 pb-6 h-full flex flex-col justify-between">
-              <div className="bg-white rounded-2xl shadow-sm border border-[#F5F5F5] p-6 mb-6">
-                <div className="w-14 h-14 bg-[#e53935] rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h2 className="text-lg font-bold text-[#1E1E1E] mb-1">All done</h2>
-                <p className="text-sm text-gray-600">
-                  Your delivery has been completed successfully. You can now return to the main screen.
-                </p>
+            {/* Top Red Splash Area */}
+            <div className="w-full bg-gradient-to-br from-[#e53935] to-[#d32f2f] pt-16 pb-24 px-6 rounded-b-[40px] shadow-lg relative overflow-hidden flex flex-col items-center text-center">
+              {/* Subtle background glow elements */}
+              <div className="absolute inset-0 pointer-events-none opacity-20">
+                <div className="absolute top-4 left-8 w-24 h-24 rounded-full bg-white blur-3xl"></div>
+                <div className="absolute top-1/2 right-4 w-32 h-32 rounded-full bg-white blur-3xl"></div>
+                <div className="absolute -bottom-8 left-1/3 w-40 h-40 rounded-full bg-white blur-[50px]"></div>
               </div>
 
-              {/* Complete Button */}
-              <button
-                onClick={() => {
-                  setShowPaymentPage(false)
-                  // CRITICAL: Clear all order-related popups and states when completing
-                  setShowreachedPickupPopup(false)
-                  setShowOrderIdConfirmationPopup(false)
-                  setShowReachedDropPopup(false)
-                  setShowOrderDeliveredAnimation(false)
-
-                  // Clear selected cafe/order to prevent showing popups for delivered order
-                  setSelectedCafe(null)
-
-                  // CRITICAL: Clear active order from localStorage to prevent it from showing again
-                  localStorage.removeItem('deliveryActiveOrder')
-                  localStorage.removeItem('activeOrder')
-
-                  // Clear newOrder from notifications hook (if available)
-                  if (typeof clearNewOrder === 'function') {
-                    clearNewOrder()
-                  }
-
-                  // Clear accepted orders list when order is completed
-                  acceptedOrderIdsRef.current.clear();
-
-                  navigate("/delivery")
-                  // Reset states
-                  setTimeout(() => {
-                    setReachedDropButtonProgress(0)
-                    setReachedDropIsAnimatingToComplete(false)
-                  }, 500)
-                }}
-                className="w-full sticky bottom-4 bg-[#e53935] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#c62828] transition-colors shadow-lg "
+              {/* Animated Checkmark Circle */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", bounce: 0.5, delay: 0.1, duration: 0.8 }}
+                className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center p-2 mb-6 backdrop-blur-sm relative border border-white/20"
               >
-                Complete
-              </button>
+                <div className="absolute inset-0 bg-white rounded-full animate-ping opacity-25"></div>
+                <div className="w-full h-full rounded-full bg-white flex items-center justify-center shadow-inner">
+                  <CheckCircle className="w-10 h-10 text-[#e53935]" strokeWidth={3} />
+                </div>
+              </motion.div>
+
+              <motion.h1 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-3xl font-extrabold text-white mb-2 tracking-tight"
+              >
+                Delivery Complete!
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="text-white/80 text-sm font-medium tracking-wide"
+              >
+                Order ID: {selectedCafe?.orderId || 'ORD1234567890'}
+              </motion.p>
+            </div>
+
+            {/* Content Card (Overlapping) */}
+            <div className="w-full max-w-md mx-auto px-6 -mt-12 flex-1 flex flex-col relative z-10 pb-8">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+                className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100 p-6 flex flex-col items-center mb-auto"
+              >
+                <h2 className="text-xl font-bold text-[#1E1E1E] mb-2">Awesome Job!</h2>
+                <p className="text-gray-500 text-sm text-center leading-relaxed">
+                  Your delivery has been completed successfully. You can now return to the main screen to receive more orders.
+                </p>
+
+
+              </motion.div>
+
+              {/* Complete Button bottom-attached */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="pt-6 w-full"
+              >
+                <button
+                  onClick={() => {
+                    setShowPaymentPage(false)
+                    // CRITICAL: Clear all order-related popups and states when completing
+                    setShowreachedPickupPopup(false)
+                    setShowOrderIdConfirmationPopup(false)
+                    setShowReachedDropPopup(false)
+                    setShowOrderDeliveredAnimation(false)
+
+                    // Clear selected cafe/order to prevent showing popups for delivered order
+                    setSelectedCafe(null)
+
+                    // CRITICAL: Clear active order from localStorage to prevent it from showing again
+                    localStorage.removeItem('deliveryActiveOrder')
+                    localStorage.removeItem('activeOrder')
+
+                    // Clear newOrder from notifications hook (if available)
+                    if (typeof clearNewOrder === 'function') {
+                      clearNewOrder()
+                    }
+
+                    // Clear accepted orders list when order is completed
+                    acceptedOrderIdsRef.current.clear();
+
+                    navigate("/delivery")
+                    // Reset states
+                    setTimeout(() => {
+                      setReachedDropButtonProgress(0)
+                      setReachedDropIsAnimatingToComplete(false)
+                    }, 500)
+                  }}
+                  className="w-full relative overflow-hidden group bg-[#e53935] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#c62828] active:scale-[0.98] transition-all shadow-lg shadow-[#e53935]/20 flex items-center justify-center gap-2"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    Back to Home <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </button>
+              </motion.div>
             </div>
           </motion.div>
         )}
@@ -10190,7 +10002,7 @@ export default function DeliveryHome() {
                             )}
                           </div>
                           <p className="text-sm font-semibold" style={{ color: '#1E1E1E' }}>
-                            ?{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                            â‚¹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                           </p>
                         </div>
                       ))}
@@ -10202,14 +10014,14 @@ export default function DeliveryHome() {
                     <div className="flex justify-between items-center">
                       <p className="text-sm" style={{ color: '#555' }}>Subtotal</p>
                       <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
-                        ?{(digitalBillData.pricing?.subtotal || digitalBillData.pricing?.itemTotal || 0).toFixed(2)}
+                        â‚¹{(digitalBillData.pricing?.subtotal || digitalBillData.pricing?.itemTotal || 0).toFixed(2)}
                       </p>
                     </div>
                     {(digitalBillData.pricing?.tax || 0) > 0 && (
                       <div className="flex justify-between items-center">
                         <p className="text-sm" style={{ color: '#555' }}>Tax & Fees</p>
                         <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
-                          ?{digitalBillData.pricing.tax.toFixed(2)}
+                          â‚¹{digitalBillData.pricing.tax.toFixed(2)}
                         </p>
                       </div>
                     )}
@@ -10217,7 +10029,7 @@ export default function DeliveryHome() {
                       <div className="flex justify-between items-center">
                         <p className="text-sm" style={{ color: '#555' }}>Delivery Fee</p>
                         <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
-                          ?{digitalBillData.pricing.deliveryFee.toFixed(2)}
+                          â‚¹{digitalBillData.pricing.deliveryFee.toFixed(2)}
                         </p>
                       </div>
                     )}
@@ -10225,7 +10037,7 @@ export default function DeliveryHome() {
                       <div className="flex justify-between items-center">
                         <p className="text-sm" style={{ color: '#e53935' }}>Discount</p>
                         <p className="text-sm font-medium" style={{ color: '#e53935' }}>
-                          -?{digitalBillData.pricing.discount.toFixed(2)}
+                          -â‚¹{digitalBillData.pricing.discount.toFixed(2)}
                         </p>
                       </div>
                     )}
@@ -10236,7 +10048,7 @@ export default function DeliveryHome() {
                     <div className="flex justify-between items-center">
                       <p className="text-base font-bold" style={{ color: '#1E1E1E' }}>Total Amount</p>
                       <p className="text-xl font-bold" style={{ color: '#FFC400' }}>
-                        ?{(digitalBillData.pricing?.total || 0).toFixed(2)}
+                        â‚¹{(digitalBillData.pricing?.total || 0).toFixed(2)}
                       </p>
                     </div>
                   </div>

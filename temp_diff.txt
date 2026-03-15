@@ -1,0 +1,624 @@
+﻿diff --git a/frontend/src/module/delivery/pages/DeliveryHome.jsx b/frontend/src/module/delivery/pages/DeliveryHome.jsx
+index 6047f4c..6ef22d2 100644
+--- a/frontend/src/module/delivery/pages/DeliveryHome.jsx
++++ b/frontend/src/module/delivery/pages/DeliveryHome.jsx
+@@ -1382,18 +1382,47 @@ export default function DeliveryHome() {
+     setShowRejectPopup(true)
+   }
+ 
+-  const handleRejectConfirm = () => {
+-    if (alertAudioRef.current) {
+-      alertAudioRef.current.pause()
+-      alertAudioRef.current.currentTime = 0
++  const handleRejectConfirm = async () => {
++    try {
++      if (alertAudioRef.current) {
++        alertAudioRef.current.pause()
++        alertAudioRef.current.currentTime = 0
++      }
++
++      const cafeInfo = newOrder || selectedCafe
++      if (!cafeInfo) {
++        toast.error('Order information is missing')
++        return
++      }
++
++      const orderId = cafeInfo.id || cafeInfo.orderId || cafeInfo.orderMongoId
++      if (!orderId) {
++        toast.error('Order ID is missing')
++        return
++      }
++
++      const response = await deliveryAPI.rejectOrder(orderId, rejectReason);
++      
++      if (response.data && response.data.success) {
++        toast.success(response.data.message || 'Order rejected successfully');
++      }
++
++      setShowRejectPopup(false)
++      setShowNewOrderPopup(false)
++      setIsNewOrderPopupMinimized(false) // Reset minimized state
++      setNewOrderDragY(0) // Reset drag position
++      setRejectReason("")
++      setCountdownSeconds(300)
++      
++      // Clear order data
++      clearNewOrder()
++      setSelectedCafe(null)
++    } catch (error) {
++      console.error('Error rejecting order:', error);
++      toast.error(error.response?.data?.message || 'Failed to reject order');
++      setShowRejectPopup(false)
++      setRejectReason("")
+     }
+-    setShowRejectPopup(false)
+-    setShowNewOrderPopup(false)
+-    setIsNewOrderPopupMinimized(false) // Reset minimized state
+-    setNewOrderDragY(0) // Reset drag position
+-    setRejectReason("")
+-    setCountdownSeconds(300)
+-    // Here you would typically send the rejection to your backend
+   }
+ 
+   const handleRejectCancel = () => {
+@@ -1543,7 +1572,7 @@ export default function DeliveryHome() {
+           }
+ 
+           // Validate coordinates are reasonable for India (basic sanity check)
+-          // India: Latitude 8.4░ to 37.6░, Longitude 68.7░ to 97.25░
++          // India: Latitude 8.4┬░ to 37.6┬░, Longitude 68.7┬░ to 97.25┬░
+           const isInIndiaRange = latitude >= 8 && latitude <= 38 && longitude >= 68 && longitude <= 98
+           if (!isInIndiaRange) {
+             console.warn("?? Coordinates outside India range - might be incorrect:", {
+@@ -2115,15 +2144,15 @@ export default function DeliveryHome() {
+               // Priority 1: Direct address fields on cafeId
+               if (order.cafeId?.address) {
+                 cafeAddress = order.cafeId.address
+-                }
++              }
+               // Priority 2: formattedAddress from location
+               else if (cafeLocation?.formattedAddress) {
+                 cafeAddress = cafeLocation.formattedAddress
+-                }
++              }
+               // Priority 3: address from location
+               else if (cafeLocation?.address) {
+                 cafeAddress = cafeLocation.address
+-                }
++              }
+               // Priority 4: Build from addressLine1 (with zone and pin code)
+               else if (cafeLocation?.addressLine1) {
+                 const addressParts = [
+@@ -2135,7 +2164,7 @@ export default function DeliveryHome() {
+                   cafeLocation.pincode || cafeLocation.zipCode || cafeLocation.postalCode
+                 ].filter(Boolean)
+                 cafeAddress = addressParts.join(', ')
+-                }
++              }
+               // Priority 5: Build from street components (with zone and pin code)
+               else if (cafeLocation?.street) {
+                 const addressParts = [
+@@ -2146,7 +2175,7 @@ export default function DeliveryHome() {
+                   cafeLocation.pincode || cafeLocation.zipCode || cafeLocation.postalCode
+                 ].filter(Boolean)
+                 cafeAddress = addressParts.join(', ')
+-                }
++              }
+               // Priority 6: Check cafeId directly for address fields
+               else if (order.cafeId?.street || order.cafeId?.city) {
+                 const addressParts = [
+@@ -2157,15 +2186,15 @@ export default function DeliveryHome() {
+                   order.cafeId.zipCode || order.cafeId.pincode || order.cafeId.postalCode
+                 ].filter(Boolean)
+                 cafeAddress = addressParts.join(', ')
+-                }
++              }
+               // Priority 7: Check order.cafeAddress (if exists)
+               else if (order.cafeAddress) {
+                 cafeAddress = order.cafeAddress
+-                }
++              }
+               // Priority 8: Use coordinates if address not available
+               else if (hasValidCoordinates(cafeLat, cafeLng)) {
+                 cafeAddress = `${cafeLat}, ${cafeLng}`
+-                } else {
++              } else {
+                 console.warn('?? Cafe address not found in order, will try to fetch from cafe API')
+                 // Try to fetch cafe address by ID if available
+                 const cafeId = order.cafeId
+@@ -2184,11 +2213,11 @@ export default function DeliveryHome() {
+                         // Priority: location.formattedAddress (this is what user wants)
+                         if (restLocation?.formattedAddress) {
+                           cafeAddress = restLocation.formattedAddress
+-                          } else if (cafe.address) {
++                        } else if (cafe.address) {
+                           cafeAddress = cafe.address
+-                          } else if (restLocation?.address) {
++                        } else if (restLocation?.address) {
+                           cafeAddress = restLocation.address
+-                          } else if (restLocation?.addressLine1) {
++                        } else if (restLocation?.addressLine1) {
+                           const addressParts = [
+                             restLocation.addressLine1,
+                             restLocation.addressLine2,
+@@ -2198,7 +2227,7 @@ export default function DeliveryHome() {
+                             restLocation.pincode || restLocation.zipCode || restLocation.postalCode
+                           ].filter(Boolean)
+                           cafeAddress = addressParts.join(', ')
+-                          } else if (restLocation?.street) {
++                        } else if (restLocation?.street) {
+                           const addressParts = [
+                             restLocation.street,
+                             restLocation.area, // Zone
+@@ -2207,7 +2236,7 @@ export default function DeliveryHome() {
+                             restLocation.pincode || restLocation.zipCode || restLocation.postalCode
+                           ].filter(Boolean)
+                           cafeAddress = addressParts.join(', ')
+-                          }
++                        }
+                       }
+                     } catch (cafeError) {
+                       console.error('? Error fetching cafe address:', cafeError)
+@@ -2227,11 +2256,11 @@ export default function DeliveryHome() {
+               // Priority 1: Direct cafeName field from order (stored in Order model)
+               if (order.cafeName && typeof order.cafeName === 'string' && order.cafeName.trim()) {
+                 cafeName = order.cafeName.trim()
+-                }
++              }
+               // Priority 2: Name from populated cafeId object
+               else if (order.cafeId && typeof order.cafeId === 'object' && order.cafeId.name) {
+                 cafeName = order.cafeId.name.trim()
+-                }
++              }
+               // Priority 3: Fallback to existing selectedCafe name
+               else if (selectedCafe?.name) {
+                 cafeName = selectedCafe.name
+@@ -2310,9 +2339,9 @@ export default function DeliveryHome() {
+             // Use LIVE location from delivery boy to cafe
+             // Use cafeInfo directly (not selectedCafe) since state update is async
+             if (cafeInfo && hasValidCoordinates(cafeInfo?.lat, cafeInfo?.lng) && currentLocation) {
+-              
+-              
+-              
++
++
++
+ 
+               try {
+                 // Calculate route immediately with current live location
+@@ -4516,7 +4545,7 @@ export default function DeliveryHome() {
+       console.error('? Error fetching assigned orders:', error)
+       // Don't show error to user, just log it
+     }
+-    // Removed riderLocation from deps ù using lastLocationRef.current instead
++    // Removed riderLocation from deps ΓÇö using lastLocationRef.current instead
+     // This prevents the callback from recreating on every GPS update, which was 
+     // triggering the fallback polling and timeout effects into infinite loops.
+   }, [isOnline, calculateTimeAway, showNewOrderPopup])
+@@ -5090,7 +5119,7 @@ export default function DeliveryHome() {
+           if (selectedCafe && selectedCafe.lat && selectedCafe.lng) {
+             setTimeout(() => {
+               if (!cafeMarkerRef.current || cafeMarkerRef.current.getMap() === null) {
+-                
++
+                 const cafeLocation = {
+                   lat: selectedCafe.lat,
+                   lng: selectedCafe.lng
+@@ -5928,7 +5957,7 @@ export default function DeliveryHome() {
+         // Only recalculate if moved >50 meters AND last recalculation was >30 seconds ago
+         const timeSinceLastRecalc = Date.now() - (lastRouteRecalculationRef.current || 0);
+         if (distance > 50 && timeSinceLastRecalc > 30000 && selectedCafe) {
+-          
++
+           lastRouteRecalculationRef.current = Date.now();
+           calculateRouteWithDirectionsAPI(
+             [newPosition.lat, newPosition.lng],
+@@ -6183,7 +6212,7 @@ export default function DeliveryHome() {
+ 
+             // Update activeOrderData with fresh info (e.g., digitalBillHtml)
+             if (remoteOrder.digitalBillHtml && activeOrderData.cafeInfo) {
+-              
++
+               activeOrderData.cafeInfo.digitalBillHtml = remoteOrder.digitalBillHtml;
+               // Also update localStorage to persist this
+               localStorage.setItem('deliveryActiveOrder', JSON.stringify(activeOrderData));
+@@ -6217,7 +6246,7 @@ export default function DeliveryHome() {
+         // Restore selectedCafe state
+         if (activeOrderData.cafeInfo) {
+           setSelectedCafe(activeOrderData.cafeInfo);
+-          
++
+         }
+ 
+         // Wait for map to be ready
+@@ -6327,7 +6356,7 @@ export default function DeliveryHome() {
+   useEffect(() => {
+     // Clear immediately on mount if no active order
+     if (!selectedCafe && window.deliveryMapInstance) {
+-      
++
+       // Clear route polyline
+       if (routePolylineRef.current) {
+         routePolylineRef.current.setMap(null);
+@@ -6354,7 +6383,7 @@ export default function DeliveryHome() {
+     // Wait a bit for restoreActiveOrder to complete, then check again
+     const timer = setTimeout(() => {
+       if (!selectedCafe && window.deliveryMapInstance) {
+-        
++
+         // Clear route polyline
+         if (routePolylineRef.current) {
+           routePolylineRef.current.setMap(null);
+@@ -6615,7 +6644,7 @@ export default function DeliveryHome() {
+         orderStatus: 'ready'
+       }
+       setSelectedCafe(cafeInfo)
+-      } else if (selectedCafe) {
++    } else if (selectedCafe) {
+       // Always set orderStatus to 'ready' so location monitor shows Reached Pickup when rider is within 500m
+       setSelectedCafe(prev => ({ ...prev, orderStatus: 'ready' }))
+     }
+@@ -6680,11 +6709,11 @@ export default function DeliveryHome() {
+ 
+           if (order.cafeId?.address) {
+             cafeAddress = order.cafeId.address
+-            } else if (cafeLocation?.formattedAddress) {
++          } else if (cafeLocation?.formattedAddress) {
+             cafeAddress = cafeLocation.formattedAddress
+-            } else if (cafeLocation?.address) {
++          } else if (cafeLocation?.address) {
+             cafeAddress = cafeLocation.address
+-            } else if (cafeLocation?.street) {
++          } else if (cafeLocation?.street) {
+             const addressParts = [
+               cafeLocation.street,
+               cafeLocation.area,
+@@ -6693,7 +6722,7 @@ export default function DeliveryHome() {
+               cafeLocation.zipCode || cafeLocation.pincode || cafeLocation.postalCode
+             ].filter(Boolean)
+             cafeAddress = addressParts.join(', ')
+-            } else if (cafeLocation?.addressLine1) {
++          } else if (cafeLocation?.addressLine1) {
+             const addressParts = [
+               cafeLocation.addressLine1,
+               cafeLocation.addressLine2,
+@@ -6701,7 +6730,7 @@ export default function DeliveryHome() {
+               cafeLocation.state
+             ].filter(Boolean)
+             cafeAddress = addressParts.join(', ')
+-            } else if (order.cafeId?.street || order.cafeId?.city) {
++          } else if (order.cafeId?.street || order.cafeId?.city) {
+             const addressParts = [
+               order.cafeId.street,
+               order.cafeId.area,
+@@ -6710,15 +6739,15 @@ export default function DeliveryHome() {
+               order.cafeId.zipCode || order.cafeId.pincode || order.cafeId.postalCode
+             ].filter(Boolean)
+             cafeAddress = addressParts.join(', ')
+-            } else if (order.cafeAddress) {
++          } else if (order.cafeAddress) {
+             cafeAddress = order.cafeAddress
+-            } else if (order.cafe?.address) {
++          } else if (order.cafe?.address) {
+             cafeAddress = order.cafe.address
+-            } else if (order.cafe?.location?.formattedAddress) {
++          } else if (order.cafe?.location?.formattedAddress) {
+             cafeAddress = order.cafe.location.formattedAddress
+-            } else if (order.cafe?.location?.address) {
++          } else if (order.cafe?.location?.address) {
+             cafeAddress = order.cafe.location.address
+-            }
++          }
+ 
+           // Update selectedCafe with fetched address
+           if (cafeAddress && cafeAddress !== 'Cafe Address') {
+@@ -6744,9 +6773,9 @@ export default function DeliveryHome() {
+ 
+                   if (restLocation?.formattedAddress) {
+                     fetchedAddress = restLocation.formattedAddress
+-                    } else if (cafe.address) {
++                  } else if (cafe.address) {
+                     fetchedAddress = cafe.address
+-                    } else if (restLocation?.address) {
++                  } else if (restLocation?.address) {
+                     fetchedAddress = restLocation.address
+                   } else if (restLocation?.street) {
+                     const addressParts = [
+@@ -6765,7 +6794,7 @@ export default function DeliveryHome() {
+                       restLocation.state
+                     ].filter(Boolean)
+                     fetchedAddress = addressParts.join(', ')
+-                    } else if (cafe.street || cafe.city) {
++                  } else if (cafe.street || cafe.city) {
+                     const addressParts = [
+                       cafe.street,
+                       cafe.area,
+@@ -6787,7 +6816,7 @@ export default function DeliveryHome() {
+                   if (cafePhone) {
+                     updates.phone = cafePhone
+                     updates.ownerPhone = cafe.ownerPhone || cafePhone
+-                    }
++                  }
+ 
+                   if (Object.keys(updates).length > 0) {
+                     setSelectedCafe(prev => ({
+@@ -6917,7 +6946,7 @@ export default function DeliveryHome() {
+     calculateDistanceInMeters
+   ])
+ 
+-    // CRITICAL: Monitor order status and close all pickup/delivery popups when order is delivered
++  // CRITICAL: Monitor order status and close all pickup/delivery popups when order is delivered
+   // Also clear selectedCafe if order is completed and payment page is closed
+   useEffect(() => {
+     const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || ''
+@@ -7102,7 +7131,7 @@ export default function DeliveryHome() {
+         const lng = coords?.[0]
+         if (lat != null && lng != null && !(lat === 0 && lng === 0) && selectedCafe) {
+           setSelectedCafe(prev => prev ? { ...prev, customerLat: lat, customerLng: lng } : null)
+-          }
++        }
+       })
+       .catch(err => {
+         console.warn('?? Reached Drop: getOrderDetails failed for customer coords:', err?.response?.data?.message || err.message)
+@@ -7566,10 +7595,10 @@ export default function DeliveryHome() {
+       const remaining = Math.max(0, target - current)
+       slides.push({
+         id: 'earning-offer',
+-        title: `Earn ?${target} guarantee!`,
++        title: `Earn Γé╣${target} guarantee!`,
+         subtitle: orders > 0
+-          ? `Complete ${orders} orders to earn ?${target}. ?${remaining.toFixed(0)} remaining.`
+-          : `Active earning bonus offer ù valid till ${weekEndDate}`,
++          ? `Complete ${orders} orders to earn Γé╣${target}. Γé╣${remaining.toFixed(0)} remaining.`
++          : `Active earning bonus offer ΓÇö valid till ${weekEndDate}`,
+         icon: 'bag',
+         buttonText: 'View',
+         bgColor: 'bg-gray-700',
+@@ -7586,7 +7615,7 @@ export default function DeliveryHome() {
+         slides.push({
+           id: 'today-summary',
+           title: `Today: ?${todayEarnings.toFixed(0)} earned`,
+-          subtitle: `${todayTrips} ${todayTrips === 1 ? 'trip' : 'trips'} completed${todayHoursWorked > 0 ? ` ╖ ${formatHours(todayHoursWorked)} hrs worked` : ''}`,
++          subtitle: `${todayTrips} ${todayTrips === 1 ? 'trip' : 'trips'} completed${todayHoursWorked > 0 ? ` ┬╖ ${formatHours(todayHoursWorked)} hrs worked` : ''}`,
+           icon: 'bank',
+           buttonText: 'Details',
+           bgColor: 'bg-gray-700',
+@@ -9141,103 +9170,7 @@ export default function DeliveryHome() {
+               </div>
+             </motion.div>
+ 
+-            {/* Reject Button - Outside the popup, positioned below */}
+-            <motion.div
+-              initial={{ opacity: 0, y: 20 }}
+-              animate={{ opacity: 1, y: 0 }}
+-              exit={{ opacity: 0, y: 20 }}
+-              transition={{ duration: 0.3, delay: 0.1 }}
+-              className="fixed top-4 right-4 z-[115] lg:top-6 lg:right-6"
+-            >
+-              <button
+-                onClick={handleRejectConfirm}
+-                className="bg-[#e53935] border-2 border-white text-white text-bold px-5 p-2 rounded-full font-semibold text-sm hover:bg-[#c62828] transition-colors shadow-2xl"
+-              >
+-                Deny
+-              </button>
+-            </motion.div>
+-          </>
+-        )}
+-      </AnimatePresence>
+-
+-      {/* Reject Order Popup */}
+-      <AnimatePresence>
+-        {showRejectPopup && (
+-          <>
+-            <motion.div
+-              className="fixed inset-0 z-[120] bg-black/60 flex items-center justify-center p-4"
+-              initial={{ opacity: 0 }}
+-              animate={{ opacity: 1 }}
+-              exit={{ opacity: 0 }}
+-              onClick={handleRejectCancel}
+-            >
+-              <motion.div
+-                className="w-[90%] max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+-                initial={{ scale: 0.9, opacity: 0 }}
+-                animate={{ scale: 1, opacity: 1 }}
+-                exit={{ scale: 0.9, opacity: 0 }}
+-                onClick={(e) => e.stopPropagation()}
+-              >
+-                {/* Header */}
+-                <div className="px-4 py-4 border-b border-[#F5F5F5]">
+-                  <h3 className="text-lg font-bold text-[#1E1E1E]">Can't Accept Order</h3>
+-                  <p className="text-sm text-gray-500 mt-1">Please select a reason for not accepting this order</p>
+-                </div>
+-
+-                {/* Content */}
+-                <div className="px-4 py-4 max-h-[60vh] overflow-y-auto">
+-                  <div className="space-y-2">
+-                    {rejectReasons.map((reason) => (
+-                      <button
+-                        key={reason}
+-                        onClick={() => setRejectReason(reason)}
+-                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${rejectReason === reason
+-                          ? "border-[#e53935] bg-[#fff8f7]"
+-                          : "border-[#F5F5F5] bg-white hover:border-[#F5F5F5]"
+-                          }`}
+-                      >
+-                        <div className="flex items-center justify-between">
+-                          <span className={`text-sm font-medium ${rejectReason === reason ? "text-[#1E1E1E]" : "text-[#1E1E1E]"
+-                            }`}>
+-                            {reason}
+-                          </span>
+-                          {rejectReason === reason && (
+-                            <div className="w-5 h-5 rounded-full bg-[#e53935] flex items-center justify-center">
+-                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+-                              </svg>
+-                            </div>
+-                          )}
+-                        </div>
+-                      </button>
+-                    ))}
+-                  </div>
+-                </div>
+ 
+-                {/* Footer */}
+-                <div className="px-4 py-4 bg-gray-50 border-t border-[#F5F5F5] flex gap-3">
+-                  <button
+-                    onClick={handleRejectCancel}
+-                    className="flex-1 bg-white border-2 border-[#F5F5F5] text-gray-700 py-3 rounded-lg font-semibold text-sm hover:bg-[#fff8f7] transition-colors"
+-                  >
+-                    Cancel
+-                  </button>
+-                  <button
+-                    onClick={handleRejectConfirm}
+-                    disabled={!rejectReason}
+-                    className={`flex-1 py-3 rounded-lg font-semibold text-sm transition-colors ${rejectReason
+-                      ? "!bg-[#e53935] !text-white"
+-                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+-                      }`}
+-                  >
+-                    Confirm
+-                  </button>
+-                </div>
+-              </motion.div>
+-            </motion.div>
+-          </>
+-        )}
+-      </AnimatePresence>
+ 
+       {/* Directions Map View */}
+       <AnimatePresence>
+@@ -9774,8 +9707,8 @@ export default function DeliveryHome() {
+                   ` : ''}
+                 </td>
+                 <td class="text-right">${item.quantity || 1}</td>
+-                <td class="text-right">?${(item.price || 0).toFixed(2)}</td>
+-                <td class="text-right font-semibold">?${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
++                <td class="text-right">Γé╣${(item.price || 0).toFixed(2)}</td>
++                <td class="text-right font-semibold">Γé╣${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+               </tr>
+             `).join('') || '<tr><td colspan="4">No items</td></tr>'}
+           </tbody>
+@@ -9786,29 +9719,29 @@ export default function DeliveryHome() {
+       <div class="section">
+         <div class="pricing-row">
+           <span>Subtotal</span>
+-          <span class="font-semibold">?${(orderData.pricing?.subtotal || orderData.pricing?.itemTotal || 0).toFixed(2)}</span>
++          <span class="font-semibold">Γé╣${(orderData.pricing?.subtotal || orderData.pricing?.itemTotal || 0).toFixed(2)}</span>
+         </div>
+         ${(orderData.pricing?.tax || 0) > 0 ? `
+           <div class="pricing-row">
+             <span>Tax & Fees</span>
+-            <span class="font-semibold">?${orderData.pricing.tax.toFixed(2)}</span>
++            <span class="font-semibold">Γé╣${orderData.pricing.tax.toFixed(2)}</span>
+           </div>
+         ` : ''}
+         ${(orderData.pricing?.deliveryFee || 0) > 0 ? `
+           <div class="pricing-row">
+             <span>Delivery Fee</span>
+-            <span class="font-semibold">?${orderData.pricing.deliveryFee.toFixed(2)}</span>
++            <span class="font-semibold">Γé╣${orderData.pricing.deliveryFee.toFixed(2)}</span>
+           </div>
+         ` : ''}
+         ${(orderData.pricing?.discount || 0) > 0 ? `
+           <div class="pricing-row" style="color: #059669;">
+             <span>Discount</span>
+-            <span class="font-semibold">-?${orderData.pricing.discount.toFixed(2)}</span>
++            <span class="font-semibold">-Γé╣${orderData.pricing.discount.toFixed(2)}</span>
+           </div>
+         ` : ''}
+         <div class="pricing-row total">
+           <span>Total Amount</span>
+-          <span>?${(orderData.pricing?.total || 0).toFixed(2)}</span>
++          <span>Γé╣${(orderData.pricing?.total || 0).toFixed(2)}</span>
+         </div>
+       </div>
+ 
+@@ -9968,7 +9901,7 @@ export default function DeliveryHome() {
+               </svg>
+             </div>
+             <h1 className="text-2xl font-bold text-[#1E1E1E] mb-2">
+-              Great job! Delivery complete ??
++              Great job! Delivery complete ≡ƒÄë
+             </h1>
+           </div>
+ 
+@@ -9985,7 +9918,7 @@ export default function DeliveryHome() {
+                     ? (tripDistance >= 1000
+                       ? `${(tripDistance / 1000).toFixed(1)} kms`
+                       : `${tripDistance.toFixed(0)} m`)
+-                    : (selectedCafe?.tripDistance || 'ù')}
++                    : (selectedCafe?.tripDistance || 'ΓÇö')}
+                 </span>
+               </div>
+               <div className="flex items-center justify-between">
+@@ -9998,7 +9931,7 @@ export default function DeliveryHome() {
+                     ? (tripTime >= 60
+                       ? `${Math.round(tripTime / 60)} mins`
+                       : `${tripTime} secs`)
+-                    : (selectedCafe?.tripTime || 'ù')}
++                    : (selectedCafe?.tripTime || 'ΓÇö')}
+                 </span>
+               </div>
+             </div>
+@@ -10019,7 +9952,7 @@ export default function DeliveryHome() {
+                     </span>
+                   </div>
+                   <span className={`text-lg font-bold ${isCod ? 'text-amber-700' : 'text-emerald-700'}`}>
+-                    ?{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
++                    Γé╣{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                   </span>
+                 </div>
+               </div>
+@@ -10190,7 +10123,7 @@ export default function DeliveryHome() {
+                             )}
+                           </div>
+                           <p className="text-sm font-semibold" style={{ color: '#1E1E1E' }}>
+-                            ?{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
++                            Γé╣{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                           </p>
+                         </div>
+                       ))}
+@@ -10202,14 +10135,14 @@ export default function DeliveryHome() {
+                     <div className="flex justify-between items-center">
+                       <p className="text-sm" style={{ color: '#555' }}>Subtotal</p>
+                       <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
+-                        ?{(digitalBillData.pricing?.subtotal || digitalBillData.pricing?.itemTotal || 0).toFixed(2)}
++                        Γé╣{(digitalBillData.pricing?.subtotal || digitalBillData.pricing?.itemTotal || 0).toFixed(2)}
+                       </p>
+                     </div>
+                     {(digitalBillData.pricing?.tax || 0) > 0 && (
+                       <div className="flex justify-between items-center">
+                         <p className="text-sm" style={{ color: '#555' }}>Tax & Fees</p>
+                         <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
+-                          ?{digitalBillData.pricing.tax.toFixed(2)}
++                          Γé╣{digitalBillData.pricing.tax.toFixed(2)}
+                         </p>
+                       </div>
+                     )}
+@@ -10217,7 +10150,7 @@ export default function DeliveryHome() {
+                       <div className="flex justify-between items-center">
+                         <p className="text-sm" style={{ color: '#555' }}>Delivery Fee</p>
+                         <p className="text-sm font-medium" style={{ color: '#1E1E1E' }}>
+-                          ?{digitalBillData.pricing.deliveryFee.toFixed(2)}
++                          Γé╣{digitalBillData.pricing.deliveryFee.toFixed(2)}
+                         </p>
+                       </div>
+                     )}
+@@ -10225,7 +10158,7 @@ export default function DeliveryHome() {
+                       <div className="flex justify-between items-center">
+                         <p className="text-sm" style={{ color: '#e53935' }}>Discount</p>
+                         <p className="text-sm font-medium" style={{ color: '#e53935' }}>
+-                          -?{digitalBillData.pricing.discount.toFixed(2)}
++                          -Γé╣{digitalBillData.pricing.discount.toFixed(2)}
+                         </p>
+                       </div>
+                     )}
+@@ -10236,7 +10169,7 @@ export default function DeliveryHome() {
+                     <div className="flex justify-between items-center">
+                       <p className="text-base font-bold" style={{ color: '#1E1E1E' }}>Total Amount</p>
+                       <p className="text-xl font-bold" style={{ color: '#FFC400' }}>
+-                        ?{(digitalBillData.pricing?.total || 0).toFixed(2)}
++                        Γé╣{(digitalBillData.pricing?.total || 0).toFixed(2)}
+                       </p>
+                     </div>
+                   </div>

@@ -24,8 +24,8 @@ import { API_ENDPOINTS } from "./config.js";
 // Export the configured axios instance
 export default apiClient;
 
-// Export API endpoints for convenience
-export { API_ENDPOINTS };
+// Export API endpoints and base URL for convenience
+export { API_ENDPOINTS, API_BASE_URL } from "./config.js";
 
 // Export helper functions for common operations
 export const api = {
@@ -938,6 +938,9 @@ export const deliveryAPI = {
       API_ENDPOINTS.DELIVERY.ORDER_BY_ID.replace(":orderId", orderId),
     );
   },
+  getOrderBill: (orderId) => {
+    return apiClient.get(API_ENDPOINTS.ORDER.BILL.replace(":id", orderId));
+  },
   acceptOrder: (orderId, currentLocation = {}) => {
     const payload = {};
     if (currentLocation.lat !== undefined && currentLocation.lat !== null) {
@@ -949,6 +952,12 @@ export const deliveryAPI = {
     return apiClient.patch(
       API_ENDPOINTS.DELIVERY.ORDER_ACCEPT.replace(":orderId", orderId),
       payload,
+    );
+  },
+  rejectOrder: (orderId, reason) => {
+    return apiClient.patch(
+      API_ENDPOINTS.DELIVERY.ORDER_REJECT.replace(":orderId", orderId),
+      { reason }
     );
   },
   confirmReachedPickup: (orderId) => {
@@ -1989,6 +1998,11 @@ export const orderAPI = {
     return apiClient.patch(API_ENDPOINTS.ORDER.CANCEL.replace(":id", orderId), {
       reason,
     });
+  },
+
+  // Get order bill PDF
+  getOrderBill: (orderId) => {
+    return apiClient.get(API_ENDPOINTS.ORDER.BILL.replace(":id", orderId));
   },
 };
 
