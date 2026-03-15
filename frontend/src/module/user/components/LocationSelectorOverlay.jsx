@@ -1542,7 +1542,8 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
           lng: roundedLng.toFixed(8)
         })
 
-        // Use Google Maps Geocoding API + Places API for complete address details
+        // Use backend reverse geocoding only.
+        // This keeps Google Places/Geocoding out of normal runtime flows.
         let formattedAddress = ""
         let city = ""
         let state = ""
@@ -1552,107 +1553,16 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         let postalCode = ""
         let pointOfInterest = ""
         let premise = ""
+        const response = await locationAPI.reverseGeocode(roundedLat, roundedLng)
+        const backendData = response?.data?.data
+        const result = backendData?.results?.[0] || backendData?.result?.[0] || null
 
-        if (GOOGLE_MAPS_API_KEY) {
-          try {
-            // Step 1: Use Google Geocoding API for address components
-            // Get API key dynamically from backend
-            const { getGoogleMapsApiKey } = await import('@/lib/utils/googleMapsApiKey.js');
-            const apiKey = await getGoogleMapsApiKey() || GOOGLE_MAPS_API_KEY;
-            const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${roundedLat},${roundedLng}&key=${apiKey}&language=en&region=in&result_type=street_address|premise|point_of_interest|establishment`
-            const geocodeResponse = await fetch(geocodeUrl).then(res => res.json())
-
-            if (geocodeResponse.status === "OK" && geocodeResponse.results && geocodeResponse.results.length > 0) {
-              // Find result with POI/premise for most accurate address
-              let bestResult = geocodeResponse.results[0]
-              for (const result of geocodeResponse.results.slice(0, 5)) {
-                const hasPOI = result.address_components?.some(c => c.types.includes("point_of_interest"))
-                const hasPremise = result.address_components?.some(c => c.types.includes("premise"))
-                if (hasPOI || hasPremise) {
-                  bestResult = result
-                  break
-                }
-              }
-
-              formattedAddress = bestResult.formatted_address || ""
-              const addressComponents = bestResult.address_components || []
-
-              // Extract all address components
-              for (const component of addressComponents) {
-                const types = component.types || []
-                if (types.includes("point_of_interest") && !pointOfInterest) {
-                  pointOfInterest = component.long_name
-                }
-                if (types.includes("premise") && !premise) {
-                  premise = component.long_name
-                }
-                if (types.includes("street_number") && !streetNumber) {
-                  streetNumber = component.long_name
-                }
-                if (types.includes("route") && !street) {
-                  street = component.long_name
-                }
-                if (types.includes("sublocality_level_1") && !area) {
-                  area = component.long_name
-                }
-                if (types.includes("locality") && !city) {
-                  city = component.long_name
-                }
-                if (types.includes("administrative_area_level_1") && !state) {
-                  state = component.long_name
-                }
-                if (types.includes("postal_code") && !postalCode) {
-                  postalCode = component.long_name
-                }
-              }
-
-              // COST OPTIMIZATION: Places API calls removed (Nearby Search $32/1000 + Details $17/1000)
-              // Geocoding API alone provides all needed address data for the location selector.
-
-              console.log("✅ Google Maps Geocoding - Address Details:", {
-                formattedAddress,
-                pointOfInterest,
-                premise,
-                street,
-                streetNumber,
-                area,
-                city,
-                state,
-                postalCode
-              })
-            }
-          } catch (googleError) {
-            console.warn("⚠️ Google Maps API error, trying backend fallback:", googleError.message)
-            // Fallback to backend API
-            try {
-              const response = await locationAPI.reverseGeocode(roundedLat, roundedLng)
-              const backendData = response?.data?.data
-              const result = backendData?.results?.[0] || backendData?.result?.[0] || null
-
-              if (result) {
-                formattedAddress = result.formatted_address || result.formattedAddress || ""
-                const addressComponents = result.address_components || {}
-                city = addressComponents.city || ""
-                state = addressComponents.state || ""
-                area = addressComponents.area || ""
-              }
-            } catch (backendError) {
-              console.error("❌ Backend fallback also failed:", backendError)
-            }
-          }
-        } else {
-          // No Google API key, use backend
-          const response = await locationAPI.reverseGeocode(roundedLat, roundedLng)
-          const backendData = response?.data?.data
-          const result = backendData?.results?.[0] || backendData?.result?.[0] || null
-
-          if (result) {
-            formattedAddress = result.formatted_address || result.formattedAddress || ""
-            const addressComponents = result.address_components || {}
-            city = addressComponents.city || ""
-            state = addressComponents.state || ""
-            area = addressComponents.area || ""
-          }
+        if (result) {
+          formattedAddress = result.formatted_address || result.formattedAddress || ""
+          const addressComponents = result.address_components || {}
+          city = addressComponents.city || ""
+          state = addressComponents.state || ""
+          area = addressComponents.area || ""
         }
 
         if (formattedAddress || city || state) {

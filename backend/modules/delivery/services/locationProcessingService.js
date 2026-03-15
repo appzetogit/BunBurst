@@ -179,94 +179,123 @@ export async function snapToRoad(points, riderId = null) {
   }
 }
 
+function interpolateSegment(from, to, stepMeters = 60) {
+  const segmentDistance = calculateDistance(from, to);
+  const steps = Math.max(1, Math.ceil(segmentDistance / stepMeters));
+  const points = [];
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    points.push({
+      lat: from.lat + (to.lat - from.lat) * t,
+      lng: from.lng + (to.lng - from.lng) * t
+    });
+  }
+
+  return points;
+}
+
+function buildPolylinePoints(start, waypoint, end) {
+  const points = [];
+  const pushUnique = (segmentPoints) => {
+    for (const point of segmentPoints) {
+      const last = points[points.length - 1];
+      if (!last || last.lat !== point.lat || last.lng !== point.lng) {
+        points.push(point);
+      }
+    }
+  };
+
+  if (waypoint) {
+    pushUnique(interpolateSegment(start, waypoint));
+    pushUnique(interpolateSegment(waypoint, end));
+  } else {
+    pushUnique(interpolateSegment(start, end));
+  }
+
+  return points;
+}
+
+function encodePolyline(points) {
+  let lastLat = 0;
+  let lastLng = 0;
+  let result = '';
+
+  const encodeCoordinate = (coordinate) => {
+    let value = coordinate < 0 ? ~(coordinate << 1) : (coordinate << 1);
+    let encoded = '';
+    while (value >= 0x20) {
+      encoded += String.fromCharCode((0x20 | (value & 0x1f)) + 63);
+      value >>= 5;
+    }
+    encoded += String.fromCharCode(value + 63);
+    return encoded;
+  };
+
+  for (const point of points) {
+    const lat = Math.round(point.lat * 1e5);
+    const lng = Math.round(point.lng * 1e5);
+    const deltaLat = lat - lastLat;
+    const deltaLng = lng - lastLng;
+    lastLat = lat;
+    lastLng = lng;
+    result += encodeCoordinate(deltaLat);
+    result += encodeCoordinate(deltaLng);
+  }
+
+  return result;
+}
+
 /**
- * Generate route polyline using Google Directions API
- * OPTIMIZED: Added caching to avoid repeated API calls for same routes
- * @param {Object} start - {lat, lng}
- * @param {Object} waypoint - {lat, lng} (cafe)
- * @param {Object} end - {lat, lng} (customer)
- * @returns {Promise<Object>} {points: Array, totalDistance: number}
+ * Generate route polyline locally using interpolated path + haversine distance
+ * (No Google Directions calls)
  */
 export async function generateRoutePolyline(start, waypoint, end) {
   try {
-    const apiKey = await getGoogleMapsApiKey();
-    if (!apiKey) {
-      console.warn('⚠️ Google Maps API key not found, cannot generate route');
-      return null;
-    }
-    
-    // Round coordinates to 4 decimal places (~11 meters precision) for cache key
-    // This allows caching similar routes
     const roundCoord = (coord) => Math.round(coord * 10000) / 10000;
     const origin = `${roundCoord(start.lat)},${roundCoord(start.lng)}`;
     const destination = `${roundCoord(end.lat)},${roundCoord(end.lng)}`;
     const waypoints = waypoint ? `via:${roundCoord(waypoint.lat)},${roundCoord(waypoint.lng)}` : '';
-    
-    // Create cache key
     const cacheKey = `${origin}|${destination}|${waypoints}`;
-    
-    // Check cache first
+
     const cached = directionsCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp) < DIRECTIONS_CACHE_TTL_MS) {
-      console.log('✅ Using cached route polyline');
       return cached.route;
     }
-    
-    const response = await axios.get(
-      `https://maps.googleapis.com/maps/api/directions/json`,
-      {
-        params: {
-          origin,
-          destination,
-          waypoints: waypoints || undefined,
-          key: apiKey,
-          alternatives: false,
-          optimize: false
-        },
-        timeout: 10000 // 10 second timeout
-      }
-    );
-    
-    if (response.data?.routes?.[0]) {
-      const route = response.data.routes[0];
-      const polyline = route.overview_polyline.points;
-      
-      // Decode polyline to get all points
-      const points = decodePolyline(polyline);
-      
-      // Calculate total distance
-      let totalDistance = 0;
-      for (let i = 1; i < points.length; i++) {
-        totalDistance += calculateDistance(points[i-1], points[i]);
-      }
-      
-      const routeData = {
-        points,
-        totalDistance,
-        polyline,
-        duration: route.legs.reduce((sum, leg) => sum + leg.duration.value, 0)
-      };
-      
-      // Cache the result
-      directionsCache.set(cacheKey, {
-        route: routeData,
-        timestamp: Date.now()
-      });
-      
-      // Clean old cache entries (older than cache TTL)
-      const now = Date.now();
-      for (const [key, value] of directionsCache.entries()) {
-        if ((now - value.timestamp) > DIRECTIONS_CACHE_TTL_MS) {
-          directionsCache.delete(key);
-        }
-      }
-      
-      return routeData;
+
+    const points = buildPolylinePoints(start, waypoint, end);
+    if (points.length < 2) return null;
+
+    let totalDistance = 0;
+    for (let i = 1; i < points.length; i++) {
+      totalDistance += calculateDistance(points[i - 1], points[i]);
     }
-    
-    return null;
+
+    const durationSeconds = Math.max(60, Math.round((totalDistance / 1000) / 22 * 3600));
+    const polyline = encodePolyline(points);
+
+    const routeData = {
+      points,
+      totalDistance,
+      polyline,
+      duration: durationSeconds
+    };
+
+    directionsCache.set(cacheKey, {
+      route: routeData,
+      timestamp: Date.now()
+    });
+
+    const now = Date.now();
+    for (const [key, value] of directionsCache.entries()) {
+      if ((now - value.timestamp) > DIRECTIONS_CACHE_TTL_MS) {
+        directionsCache.delete(key);
+      }
+    }
+
+    return routeData;
   } catch (error) {
-    console.error('❌ Error generating route:', error.message);
+    console.error('Error generating local route polyline:', error.message);
     return null;
   }
 }
@@ -573,4 +602,5 @@ export function clearLocationHistory(riderId) {
 export function clearRouteCache(orderId) {
   routePolylines.delete(orderId);
 }
+
 

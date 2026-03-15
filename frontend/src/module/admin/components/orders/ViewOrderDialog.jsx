@@ -198,22 +198,13 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
       return parts.length ? parts.join(", ") : null
     }
 
-    // Self-contained: reverse geocode via Google Maps REST API
+    // Cost-safe fallback: avoid external geocoding requests in admin dialog.
     const reverseGeocode = async (lat, lng) => {
       try {
-        const { getGoogleMapsApiKey } = await import('@/lib/utils/googleMapsApiKey.js')
-        const apiKey = await getGoogleMapsApiKey()
-        if (!apiKey) {
-          console.warn('⚠️ Invoice: No Google Maps API key — cannot reverse geocode cafe location')
-          return null
-        }
-        const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`)
-        if (!res.ok) return null
-        const data = await res.json()
-        if (data.status === 'OK' && data.results?.length > 0) {
-          return data.results[0].formatted_address || null
-        }
-        return null
+        const latNum = Number(lat)
+        const lngNum = Number(lng)
+        if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return null
+        return `${latNum.toFixed(6)}, ${lngNum.toFixed(6)}`
       } catch (e) {
         console.warn('Invoice reverse geocode error:', e.message)
         return null

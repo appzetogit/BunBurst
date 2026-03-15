@@ -324,6 +324,7 @@ function hasValidCoordinates(lat, lng) {
 
 export default function DeliveryHome() {
   const companyName = useCompanyName()
+  const LOCATION_PUSH_INTERVAL_MS = 3000
   const navigate = useNavigate()
   const location = useLocation()
   const [animationKey, setAnimationKey] = useState(0)
@@ -1506,7 +1507,7 @@ export default function DeliveryHome() {
           }
 
           // Validate coordinates are reasonable for India (basic sanity check)
-          // India: Latitude 8.4° to 37.6°, Longitude 68.7° to 97.25°
+          // India: Latitude 8.4Â° to 37.6Â°, Longitude 68.7Â° to 97.25Â°
           const isInIndiaRange = latitude >= 8 && latitude <= 38 && longitude >= 68 && longitude <= 98
           if (!isInIndiaRange) {
             console.warn("?? Coordinates outside India range - might be incorrect:", {
@@ -1756,8 +1757,8 @@ export default function DeliveryHome() {
             const lastSentTime = window.lastLocationSentTime || 0;
             const timeSinceLastSend = now - lastSentTime;
 
-            // Send location every 5 seconds even if not smoothed
-            if (timeSinceLastSend >= 5000) {
+            // Send location every 3 seconds even if not smoothed
+            if (timeSinceLastSend >= LOCATION_PUSH_INTERVAL_MS) {
               if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
                 deliveryAPI.updateLocation(lat, lng, true)
                   .then(() => {
@@ -1838,7 +1839,7 @@ export default function DeliveryHome() {
         // Update route polyline
         updateRoutePolyline()
 
-        // Send SMOOTHED location to backend if user is online (throttle to every 5 seconds)
+        // Send SMOOTHED location to backend if user is online (throttle to every 3 seconds)
         if (isOnlineRef.current && smoothedLocation) {
           const now = Date.now();
           const lastSentTime = window.lastLocationSentTime || 0;
@@ -1861,8 +1862,8 @@ export default function DeliveryHome() {
           // Get last sent location for distance check
           const lastSentLocation = window.lastSentLocation || null;
 
-          // Send location every 5 seconds OR if location changed significantly (>50m)
-          const shouldSend = timeSinceLastSend >= 5000 ||
+          // Send location every 3 seconds OR if location changed significantly (>50m)
+          const shouldSend = timeSinceLastSend >= LOCATION_PUSH_INTERVAL_MS ||
             (lastSentLocation &&
               calculateDistance(lastSentLocation[0], lastSentLocation[1], smoothedLat, smoothedLng) > 0.05);
 
@@ -2438,18 +2439,7 @@ export default function DeliveryHome() {
                   // We'll extract route path and use custom polyline instead
                   if (!directionsRendererRef.current) {
                     // Create DirectionsRenderer but don't set it on map (only for extracting route data)
-                    directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-                      suppressMarkers: true,
-                      suppressInfoWindows: false,
-                      polylineOptions: {
-                        strokeColor: '#4285F4',
-                        strokeWeight: 0,
-                        strokeOpacity: 0,
-                        zIndex: -1,
-                        icons: []
-                      },
-                      preserveViewport: true
-                    });
+                    directionsRendererRef.current = null;
                     // Explicitly don't set map - we use custom polyline instead
 
                   }
@@ -3454,22 +3444,11 @@ export default function DeliveryHome() {
                     updateLiveTrackingPolyline(directionsResult, currentLocation)
                     // Show route polyline on main Feed map
                     if (window.deliveryMapInstance && window.google?.maps) {
-                      if (!directionsRendererRef.current) {
-                        directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-                          suppressMarkers: true,
-                          polylineOptions: { strokeColor: '#4285F4', strokeWeight: 0, strokeOpacity: 0, icons: [], zIndex: -1 },
-                          preserveViewport: true
-                        })
-                      }
-                      // Don't create main route polyline - only live tracking polyline will be shown
-                      // Remove old custom polyline if exists (cleanup)
                       try {
                         if (routePolylineRef.current) {
                           routePolylineRef.current.setMap(null);
                           routePolylineRef.current = null;
                         }
-
-                        // Remove DirectionsRenderer from map
                         if (directionsRendererRef.current) {
                           directionsRendererRef.current.setMap(null);
                         }
@@ -3481,7 +3460,6 @@ export default function DeliveryHome() {
                       if (bounds) {
                         const currentZoomBeforeFit = window.deliveryMapInstance.getZoom();
                         window.deliveryMapInstance.fitBounds(bounds, { padding: 100 });
-                        // Preserve zoom if user had zoomed in
                         setTimeout(() => {
                           const newZoom = window.deliveryMapInstance.getZoom();
                           if (currentZoomBeforeFit > newZoom && currentZoomBeforeFit >= 18) {
@@ -4472,7 +4450,7 @@ export default function DeliveryHome() {
       console.error('? Error fetching assigned orders:', error)
       // Don't show error to user, just log it
     }
-    // Removed riderLocation from deps — using lastLocationRef.current instead
+    // Removed riderLocation from deps â€” using lastLocationRef.current instead
     // This prevents the callback from recreating on every GPS update, which was 
     // triggering the fallback polling and timeout effects into infinite loops.
   }, [isOnline, calculateTimeAway, showNewOrderPopup])
@@ -4601,6 +4579,9 @@ export default function DeliveryHome() {
       return;
     }
 
+    // Keep map available on /delivery even when there is no active order.
+    // Route/directions logic is still guarded by active-order checks.
+
     if (!mapContainerRef.current) {
 
       if (mapInitRetry < 10) {
@@ -4719,7 +4700,7 @@ export default function DeliveryHome() {
             const loader = new Loader({
               apiKey: apiKey,
               version: "weekly",
-              libraries: ["places", "geometry", "drawing"]
+              libraries: []
             });
             await loader.load();
 
@@ -5093,7 +5074,7 @@ export default function DeliveryHome() {
         // Don't set to null - preserve reference for re-attachment
       }
     }
-  }, [showHomeSections, mapInitRetry]) // Re-run when showHomeSections or container retry
+  }, [showHomeSections, mapInitRetry, selectedCafe]) // Re-run when showHomeSections or container retry
 
   // Initialize map when riderLocation becomes available (if map not already initialized)
   useEffect(() => {
@@ -5136,7 +5117,7 @@ export default function DeliveryHome() {
     }
 
     initializeMap()
-  }, [riderLocation, showHomeSections]) // Initialize when location is available
+  }, [riderLocation, showHomeSections, selectedCafe]) // Initialize when location is available
 
   // Update bike marker when going online - ensure bike appears immediately
   useEffect(() => {
@@ -5350,79 +5331,87 @@ export default function DeliveryHome() {
     }
   }, [selectedCafe?.lat, selectedCafe?.lng, selectedCafe?.name])
 
-  // Calculate route using Google Maps Directions API (Zomato-style road-based routing)
-  // Optimized for TWO_WHEELER mode with DRIVING fallback
+  // Calculate route locally using interpolated polyline + haversine (no Google Directions API)
   // NOTE: Must be defined BEFORE the useEffect that uses it (Rules of Hooks)
   const calculateRouteWithDirectionsAPI = useCallback(async (origin, destination) => {
-    if (!window.google || !window.google.maps || !window.google.maps.DirectionsService) {
-      console.warn('?? Google Maps Directions API not available');
-      return null;
-    }
-
     try {
-      // Initialize Directions Service if not already created
-      if (!directionsServiceRef.current) {
-        directionsServiceRef.current = new window.google.maps.DirectionsService();
+      if (!origin || !Array.isArray(origin) || origin.length < 2 || !destination) {
+        return null;
       }
 
-      // Try TWO_WHEELER first (optimized for bike/delivery), fallback to DRIVING
-      const tryRoute = (travelMode, modeName) => {
-        return new Promise((resolve, reject) => {
-          directionsServiceRef.current.route(
-            {
-              origin: { lat: origin[0], lng: origin[1] },
-              destination: { lat: destination.lat, lng: destination.lng },
-              travelMode: travelMode,
-              provideRouteAlternatives: false, // Save API cost - don't get alternatives
-              avoidHighways: false,
-              avoidTolls: false,
-              optimizeWaypoints: false
-            },
-            (result, status) => {
-              if (status === window.google.maps.DirectionsStatus.OK) {
+      const start = { lat: Number(origin[0]), lng: Number(origin[1]) };
+      const end = { lat: Number(destination.lat), lng: Number(destination.lng) };
+      if (!Number.isFinite(start.lat) || !Number.isFinite(start.lng) || !Number.isFinite(end.lat) || !Number.isFinite(end.lng)) {
+        return null;
+      }
 
-
-                setDirectionsResponse(result);
-                directionsResponseRef.current = result; // Store in ref for callbacks
-                resolve(result);
-              } else {
-                // Handle specific error cases - suppress console errors for REQUEST_DENIED
-                if (status === 'REQUEST_DENIED') {
-                  // Don't log as error - this is expected when billing is not enabled
-                  // Just reject silently to trigger fallback
-                  reject(new Error(`Directions API not available: ${status}`));
-                } else if (status === 'OVER_QUERY_LIMIT') {
-                  console.warn(`?? Directions API quota exceeded (${modeName})`);
-                  reject(new Error(`Directions request failed: ${status}`));
-                } else {
-                  console.warn(`?? Directions API failed with ${modeName}: ${status}`);
-                  reject(new Error(`Directions request failed: ${status}`));
-                }
-              }
-            }
-          );
-        });
+      const interpolateSegment = (from, to, stepMeters = 60) => {
+        const segmentDistance = calculateDistance(from.lat, from.lng, to.lat, to.lng);
+        const steps = Math.max(1, Math.ceil(segmentDistance / stepMeters));
+        const points = [];
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          points.push({
+            lat: from.lat + (to.lat - from.lat) * t,
+            lng: from.lng + (to.lng - from.lng) * t
+          });
+        }
+        return points;
       };
 
-      // Try TWO_WHEELER first (if available in region)
-      try {
-        if (window.google.maps.TravelMode.TWO_WHEELER) {
-          return await tryRoute(window.google.maps.TravelMode.TWO_WHEELER, 'TWO_WHEELER');
-        }
-      } catch (twoWheelerError) {
-
+      const routePoints = interpolateSegment(start, end);
+      let totalDistanceMeters = 0;
+      for (let i = 1; i < routePoints.length; i++) {
+        const prev = routePoints[i - 1];
+        const curr = routePoints[i];
+        totalDistanceMeters += calculateDistance(prev.lat, prev.lng, curr.lat, curr.lng);
       }
 
-      // Fallback to DRIVING mode
-      return await tryRoute(window.google.maps.TravelMode.DRIVING, 'DRIVING');
+      const durationSeconds = Math.max(60, Math.round((totalDistanceMeters / 1000) / 22 * 3600));
+      const bounds = window.google?.maps?.LatLngBounds ? new window.google.maps.LatLngBounds() : null;
+      if (bounds) {
+        bounds.extend(start);
+        bounds.extend(end);
+      }
+
+      const result = {
+        request: {
+          origin: start,
+          destination: end,
+          travelMode: 'DRIVING',
+          source: 'haversine_polyline'
+        },
+        routes: [
+          {
+            bounds,
+            overview_path: routePoints,
+            polylinePoints: routePoints,
+            legs: [
+              {
+                start_location: start,
+                end_location: end,
+                distance: {
+                  value: Math.round(totalDistanceMeters),
+                  text: totalDistanceMeters < 1000
+                    ? `${Math.round(totalDistanceMeters)} m`
+                    : `${(totalDistanceMeters / 1000).toFixed(2)} km`
+                },
+                duration: {
+                  value: durationSeconds,
+                  text: `${Math.ceil(durationSeconds / 60)} mins`
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      setDirectionsResponse(result);
+      directionsResponseRef.current = result;
+      return result;
     } catch (error) {
-      // Handle REQUEST_DENIED and other errors gracefully
-      if (error.message?.includes('REQUEST_DENIED') || error.message?.includes('not available')) {
-        console.warn('?? Google Maps Directions API not available (billing/API key issue). Will use fallback route.');
-      } else {
-        console.error('? Error calculating route with Directions API:', error);
-      }
-      return null; // Return null to trigger fallback
+      console.error('Error calculating local route:', error);
+      return null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -5672,24 +5661,14 @@ export default function DeliveryHome() {
 
         // Initialize Directions Service
         if (!directionsServiceRef.current) {
-          directionsServiceRef.current = new window.google.maps.DirectionsService();
+          directionsServiceRef.current = null;
         }
 
         // Initialize Directions Renderer
         if (!directionsRendererRef.current) {
           // Don't create DirectionsRenderer with map - it adds dots
           // We'll extract route path and use custom polyline instead
-          directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-            suppressMarkers: true,
-            polylineOptions: {
-              strokeColor: '#4285F4',
-              strokeWeight: 0,
-              strokeOpacity: 0,
-              zIndex: -1,
-              icons: []
-            },
-            preserveViewport: true
-          });
+          directionsRendererRef.current = null;
           // Explicitly don't set map - we use custom polyline instead
         } else {
           // Don't set map - we use custom polyline instead
@@ -5965,52 +5944,8 @@ export default function DeliveryHome() {
       routePolylineRef.current.setMap(null);
     }
 
-    // Initialize DirectionsRenderer for main map if not exists
-    if (!directionsRendererRef.current) {
-
-      // Don't create DirectionsRenderer with map - it adds dots
-      // We'll extract route path and use custom polyline instead
-      directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-        suppressMarkers: true,
-        suppressInfoWindows: false,
-        polylineOptions: {
-          strokeColor: '#4285F4',
-          strokeWeight: 0,
-          strokeOpacity: 0,
-          zIndex: -1,
-          icons: []
-        },
-        markerOptions: {
-          visible: false
-        },
-        preserveViewport: true
-      });
-      // Explicitly don't set map - we use custom polyline instead
-
-
-      // Ensure it's visible by explicitly setting map
-      directionsRendererRef.current.setMap(window.deliveryMapInstance);
-    } else {
-      // Ensure renderer is attached to main map
-      directionsRendererRef.current.setMap(window.deliveryMapInstance);
-      // Update polyline options to ensure visibility and suppress markers
-      directionsRendererRef.current.setOptions({
-        suppressMarkers: true, // Hide default markers including car icon
-        suppressInfoWindows: false,
-        polylineOptions: {
-          strokeColor: '#4285F4', // Bright blue like Zomato
-          strokeWeight: 0, // Completely hide DirectionsRenderer polyline (has dots)
-          strokeOpacity: 0, // Hide completely
-          zIndex: -1, // Put behind everything
-          icons: [] // No custom icons
-        },
-        markerOptions: {
-          visible: false // Explicitly hide all markers
-        },
-        preserveViewport: true
-      });
-
-    }
+    // We do not initialize DirectionsRenderer anymore.
+    directionsRendererRef.current = null;
 
     // Set directions response to renderer
     try {
@@ -7517,7 +7452,7 @@ export default function DeliveryHome() {
         title: `Earn ?${target} guarantee!`,
         subtitle: orders > 0
           ? `Complete ${orders} orders to earn ?${target}. ?${remaining.toFixed(0)} remaining.`
-          : `Active earning bonus offer — valid till ${weekEndDate}`,
+          : `Active earning bonus offer â€” valid till ${weekEndDate}`,
         icon: 'bag',
         buttonText: 'View',
         bgColor: 'bg-gray-700',
@@ -7534,7 +7469,7 @@ export default function DeliveryHome() {
         slides.push({
           id: 'today-summary',
           title: `Today: ?${todayEarnings.toFixed(0)} earned`,
-          subtitle: `${todayTrips} ${todayTrips === 1 ? 'trip' : 'trips'} completed${todayHoursWorked > 0 ? ` · ${formatHours(todayHoursWorked)} hrs worked` : ''}`,
+          subtitle: `${todayTrips} ${todayTrips === 1 ? 'trip' : 'trips'} completed${todayHoursWorked > 0 ? ` Â· ${formatHours(todayHoursWorked)} hrs worked` : ''}`,
           icon: 'bank',
           buttonText: 'Details',
           bgColor: 'bg-gray-700',
@@ -9929,7 +9864,7 @@ export default function DeliveryHome() {
                     ? (tripDistance >= 1000
                       ? `${(tripDistance / 1000).toFixed(1)} kms`
                       : `${tripDistance.toFixed(0)} m`)
-                    : (selectedCafe?.tripDistance || '—')}
+                    : (selectedCafe?.tripDistance || 'â€”')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -9942,7 +9877,7 @@ export default function DeliveryHome() {
                     ? (tripTime >= 60
                       ? `${Math.round(tripTime / 60)} mins`
                       : `${tripTime} secs`)
-                    : (selectedCafe?.tripTime || '—')}
+                    : (selectedCafe?.tripTime || 'â€”')}
                 </span>
               </div>
             </div>
@@ -10260,6 +10195,10 @@ export default function DeliveryHome() {
     </div >
   )
 }
+
+
+
+
 
 
 
