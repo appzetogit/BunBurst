@@ -312,19 +312,38 @@ export const useDeliveryNotifications = () => {
       }
     });
 
-    socketRef.current.on('new_order', (orderData) => {
-      
+    const handleIncomingOrderEvent = (orderData) => {
       setNewOrder(orderData);
+      // Let DeliveryHome trigger an immediate assigned-orders sync.
+      try {
+        window.dispatchEvent(new CustomEvent('deliveryAssignmentUpdated', {
+          detail: {
+            orderId: orderData?.orderId || orderData?.orderMongoId || orderData?._id || null
+          }
+        }));
+      } catch {
+        // no-op
+      }
       playNotificationSound();
-    });
+    };
+
+    socketRef.current.on('new_order', handleIncomingOrderEvent);
 
     // Listen for priority-based order notifications (new_order_available)
     socketRef.current.on('new_order_available', (orderData) => {
-      
-      
       // Treat it the same as new_order for now - delivery boy can accept it
-      setNewOrder(orderData);
-      playNotificationSound();
+      handleIncomingOrderEvent(orderData);
+    });
+
+    // Backward/alternate event names from different assignment flows.
+    socketRef.current.on('new_order_assigned', (orderData) => {
+      handleIncomingOrderEvent(orderData);
+    });
+    socketRef.current.on('order_assigned', (orderData) => {
+      handleIncomingOrderEvent(orderData);
+    });
+    socketRef.current.on('assignment_updated', (orderData) => {
+      handleIncomingOrderEvent(orderData);
     });
 
     socketRef.current.on('play_notification_sound', (data) => {

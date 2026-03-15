@@ -322,9 +322,59 @@ function hasValidCoordinates(lat, lng) {
   return toFiniteCoordinate(lat) !== null && toFiniteCoordinate(lng) !== null
 }
 
+async function getGoogleMapConstructor() {
+  if (!window.google?.maps) return null
+
+  if (typeof window.google.maps.Map === 'function') {
+    return window.google.maps.Map
+  }
+
+  if (typeof window.google.maps.importLibrary === 'function') {
+    try {
+      const mapsLib = await window.google.maps.importLibrary('maps')
+      if (typeof mapsLib?.Map === 'function') {
+        return mapsLib.Map
+      }
+    } catch (error) {
+      console.warn('Could not load maps library via importLibrary:', error)
+    }
+  }
+
+  return null
+}
+
+function getDestinationMarkerIcon(type = 'cafe') {
+  if (!window.google?.maps) return undefined
+
+  const svg = type === 'customer'
+    ? `
+      <svg xmlns="http://www.w3.org/2000/svg" width="52" height="58" viewBox="0 0 52 58">
+        <path d="M26 2C14.4 2 5 11.4 5 23c0 14.2 15.2 28.2 19 31.5 1.2 1 2.8 1 4 0C31.8 51.2 47 37.2 47 23 47 11.4 37.6 2 26 2z" fill="#2563EB"/>
+        <circle cx="26" cy="23" r="10" fill="#FFFFFF"/>
+        <circle cx="26" cy="23" r="5" fill="#2563EB"/>
+      </svg>
+    `
+    : `
+      <svg xmlns="http://www.w3.org/2000/svg" width="52" height="58" viewBox="0 0 52 58">
+        <path d="M26 2C14.4 2 5 11.4 5 23c0 14.2 15.2 28.2 19 31.5 1.2 1 2.8 1 4 0C31.8 51.2 47 37.2 47 23 47 11.4 37.6 2 26 2z" fill="#e53935"/>
+        <circle cx="26" cy="23" r="12" fill="#FFFFFF"/>
+        <path d="M19.5 23.2h9.8a3.4 3.4 0 010 6.8h-.8a3.2 3.2 0 01-3.2 3.2h-5.8v-10z" fill="#e53935"/>
+        <path d="M30 24.8h2.6a2.2 2.2 0 010 4.4H30" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M22 20.5c0-1 0.8-1.8 1.8-1.8M25.2 20.5c0-1 0.8-1.8 1.8-1.8" fill="none" stroke="#e53935" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    `
+
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new window.google.maps.Size(52, 58),
+    anchor: new window.google.maps.Point(26, 56)
+  }
+}
+
 export default function DeliveryHome() {
   const companyName = useCompanyName()
   const LOCATION_PUSH_INTERVAL_MS = 3000
+  const PENDING_NEW_ORDER_KEY = 'deliveryPendingNewOrderPopup'
   const navigate = useNavigate()
   const location = useLocation()
   const [animationKey, setAnimationKey] = useState(0)
@@ -610,6 +660,7 @@ export default function DeliveryHome() {
   const [showNewOrderPopup, setShowNewOrderPopup] = useState(false)
   const [countdownSeconds, setCountdownSeconds] = useState(300)
   const countdownTimerRef = useRef(null)
+  const pendingNewOrderExpiresAtRef = useRef(null)
   const [showRejectPopup, setShowRejectPopup] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
   const alertAudioRef = useRef(null)
@@ -695,6 +746,46 @@ export default function DeliveryHome() {
   }
   const acceptButtonIsSwiping = useRef(false)
   const autoShowTimerRef = useRef(null)
+
+  const clearPendingNewOrderPopup = useCallback(() => {
+    pendingNewOrderExpiresAtRef.current = null
+    try {
+      localStorage.removeItem(PENDING_NEW_ORDER_KEY)
+    } catch (error) {
+      console.warn('Could not clear pending new-order popup cache:', error)
+    }
+  }, [PENDING_NEW_ORDER_KEY])
+
+  const persistPendingNewOrderPopup = useCallback((cafeData, expiresAt, minimized = false) => {
+    if (!cafeData || !Number.isFinite(expiresAt)) return
+    try {
+      localStorage.setItem(PENDING_NEW_ORDER_KEY, JSON.stringify({
+        cafeData,
+        expiresAt,
+        minimized
+      }))
+    } catch (error) {
+      console.warn('Could not persist pending new-order popup state:', error)
+    }
+  }, [PENDING_NEW_ORDER_KEY])
+
+  const openPendingNewOrderPopup = useCallback((cafeData, seconds = 300, options = {}) => {
+    if (!cafeData || typeof cafeData !== 'object') return
+
+    const normalizedSeconds = Math.max(1, Math.floor(Number(seconds) || 300))
+    const expiresAt = Number.isFinite(options.expiresAt)
+      ? options.expiresAt
+      : Date.now() + (normalizedSeconds * 1000)
+
+    pendingNewOrderExpiresAtRef.current = expiresAt
+    persistPendingNewOrderPopup(cafeData, expiresAt, Boolean(options.minimized))
+
+    setSelectedCafe(cafeData)
+    setIsNewOrderPopupMinimized(Boolean(options.minimized))
+    setNewOrderDragY(Boolean(options.minimized) ? (newOrderPopupRef.current?.offsetHeight || 600) : 0)
+    setShowNewOrderPopup(true)
+    setCountdownSeconds(normalizedSeconds)
+  }, [persistPendingNewOrderPopup])
 
   const {
     bookedGigs,
@@ -1211,6 +1302,7 @@ export default function DeliveryHome() {
             }
             // Auto-close when countdown reaches 0
             setShowNewOrderPopup(false)
+            clearPendingNewOrderPopup()
             return 0
           }
           return prev - 1
@@ -1231,7 +1323,7 @@ export default function DeliveryHome() {
         countdownTimerRef.current = null
       }
     }
-  }, [showNewOrderPopup, countdownSeconds])
+  }, [showNewOrderPopup, countdownSeconds, clearPendingNewOrderPopup])
 
   // Play audio when New Order popup appears (only for real orders from Socket.IO)
   useEffect(() => {
@@ -1305,6 +1397,20 @@ export default function DeliveryHome() {
     }
   }, [showNewOrderPopup])
 
+  // Keep pending popup cache in sync while it's visible.
+  useEffect(() => {
+    if (!showNewOrderPopup || !selectedCafe) return
+    const expiresAt = pendingNewOrderExpiresAtRef.current || (Date.now() + countdownSeconds * 1000)
+    pendingNewOrderExpiresAtRef.current = expiresAt
+    persistPendingNewOrderPopup(selectedCafe, expiresAt, isNewOrderPopupMinimized)
+  }, [
+    showNewOrderPopup,
+    selectedCafe,
+    countdownSeconds,
+    isNewOrderPopupMinimized,
+    persistPendingNewOrderPopup
+  ])
+
   // Simulate audio playback for Earnings Guarantee
   useEffect(() => {
     if (earningsGuaranteeIsPlaying) {
@@ -1357,6 +1463,7 @@ export default function DeliveryHome() {
     setNewOrderDragY(0) // Reset drag position
     setRejectReason("")
     setCountdownSeconds(300)
+    clearPendingNewOrderPopup()
     // Here you would typically send the rejection to your backend
   }
 
@@ -1365,13 +1472,9 @@ export default function DeliveryHome() {
     setRejectReason("")
   }
 
-  // Reset popup state on page load/refresh - ensure no popup shows on refresh
+  // Restore pending new-order popup on refresh when still valid.
   useEffect(() => {
-    // Clear any popup state on mount
-    setShowNewOrderPopup(false)
-    setSelectedCafe(null)
     setHasAutoShown(false)
-    setCountdownSeconds(300)
 
     // Clear any timers
     if (autoShowTimerRef.current) {
@@ -1389,7 +1492,40 @@ export default function DeliveryHome() {
       alertAudioRef.current.currentTime = 0
       alertAudioRef.current = null
     }
-  }, []) // Only run on mount
+
+    // If an active order is already restored via deliveryActiveOrder, don't restore pending popup.
+    const hasActiveOrder = Boolean(localStorage.getItem('deliveryActiveOrder'))
+    if (hasActiveOrder) {
+      clearPendingNewOrderPopup()
+      return
+    }
+
+    try {
+      const cached = localStorage.getItem(PENDING_NEW_ORDER_KEY)
+      if (!cached) return
+
+      const parsed = JSON.parse(cached)
+      const expiresAt = Number(parsed?.expiresAt)
+      const cafeData = parsed?.cafeData
+      const minimized = Boolean(parsed?.minimized)
+
+      if (!cafeData || !Number.isFinite(expiresAt)) {
+        clearPendingNewOrderPopup()
+        return
+      }
+
+      const remainingSeconds = Math.ceil((expiresAt - Date.now()) / 1000)
+      if (remainingSeconds <= 0) {
+        clearPendingNewOrderPopup()
+        return
+      }
+
+      openPendingNewOrderPopup(cafeData, remainingSeconds, { expiresAt, minimized })
+    } catch (error) {
+      console.warn('Failed to restore pending new-order popup:', error)
+      clearPendingNewOrderPopup()
+    }
+  }, [PENDING_NEW_ORDER_KEY, openPendingNewOrderPopup, clearPendingNewOrderPopup])
 
   // Get rider location - App open ???? ?? location fetch ????
   useEffect(() => {
@@ -2389,6 +2525,7 @@ export default function DeliveryHome() {
 
             // Close popup and show route on main map (not full-screen directions map)
             setShowNewOrderPopup(false);
+            clearPendingNewOrderPopup();
             // CRITICAL: Clear newOrder notification immediately to prevent duplicate notifications
             const acceptedOrderId = cafeInfo.id || cafeInfo.orderId || newOrder?.orderMongoId || newOrder?.orderId;
             if (acceptedOrderId) {
@@ -2523,19 +2660,8 @@ export default function DeliveryHome() {
                   cafeMarkerRef.current = new window.google.maps.Marker({
                     position: cafeLocation,
                     map: window.deliveryMapInstance,
-                    icon: {
-                      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
-                          <circle cx="12" cy="12" r="11" fill="#e53935" stroke="#FFFFFF" stroke-width="2"/>
-                          <path d="M8 10c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v6H8v-6z" fill="#FFFFFF"/>
-                          <path d="M7 16h10M10 12h4M9 14h6" stroke="#e53935" stroke-width="1.5" stroke-linecap="round"/>
-                          <path d="M10 8h4v2h-4z" fill="#FFFFFF" opacity="0.7"/>
-                        </svg>
-                      `),
-                      scaledSize: new window.google.maps.Size(48, 48),
-                      anchor: new window.google.maps.Point(24, 48)
-                    },
-                    title: cafeInfo.name || 'Kitchen',
+                    icon: getDestinationMarkerIcon('cafe'),
+                    title: cafeInfo.name || 'Cafe',
                     animation: window.google.maps.Animation.DROP,
                     zIndex: 10
                   });
@@ -2573,6 +2699,7 @@ export default function DeliveryHome() {
             toast.error(response.data?.message || 'Failed to accept order. Please try again.')
             // Still close popup
             setShowNewOrderPopup(false)
+            clearPendingNewOrderPopup()
             setIsNewOrderPopupMinimized(false) // Reset minimized state
             setNewOrderDragY(0) // Reset drag position
           }
@@ -2611,6 +2738,7 @@ export default function DeliveryHome() {
 
           // Close popup even on error
           setShowNewOrderPopup(false)
+          clearPendingNewOrderPopup()
           setIsNewOrderPopupMinimized(false) // Reset minimized state
           setNewOrderDragY(0) // Reset drag position
         } finally {
@@ -3925,6 +4053,25 @@ export default function DeliveryHome() {
     return `${minutes} mins`
   }, [])
 
+  // Resolve full cafe name from any payload shape (socket/API/local fallback)
+  const resolveCafeDisplayName = (data) => {
+    const candidates = [
+      data?.cafeName,
+      data?.name,
+      data?.cafe?.name,
+      data?.cafeId?.name,
+      data?.restaurantName,
+      data?.vendorName,
+      data?.cafeLocation?.name
+    ]
+    for (const candidate of candidates) {
+      if (typeof candidate !== 'string') continue
+      const cleaned = candidate.trim().replace(/\s+/g, ' ')
+      if (cleaned) return cleaned
+    }
+    return 'Cafe'
+  }
+
   // Show new order popup when order is received from Socket.IO
   useEffect(() => {
     if (newOrder) {
@@ -3933,6 +4080,7 @@ export default function DeliveryHome() {
       // Check if this order has already been accepted
       if (acceptedOrderIdsRef.current.has(orderId)) {
 
+        clearPendingNewOrderPopup();
         clearNewOrder();
         return;
       }
@@ -3946,6 +4094,7 @@ export default function DeliveryHome() {
           if (activeOrderId === orderId) {
 
             acceptedOrderIdsRef.current.add(orderId);
+            clearPendingNewOrderPopup();
             clearNewOrder();
             return;
           }
@@ -3959,6 +4108,7 @@ export default function DeliveryHome() {
       const isCodOrder = orderPaymentMethod === 'cash'
 
       if (isCodOrder && availableCashLimit <= 0) {
+        clearPendingNewOrderPopup()
         clearNewOrder()
         return
       }
@@ -4037,7 +4187,7 @@ export default function DeliveryHome() {
       const cafeData = {
         id: newOrder.orderMongoId || newOrder.orderId,
         orderId: newOrder.orderId,
-        name: newOrder.cafeName,
+        name: resolveCafeDisplayName(newOrder),
         address: cafeAddress,
         lat: newOrderCafeCoords.lat,
         lng: newOrderCafeCoords.lng,
@@ -4060,11 +4210,9 @@ export default function DeliveryHome() {
         total: newOrder.total || 0
       }
 
-      setSelectedCafe(cafeData)
-      setShowNewOrderPopup(true)
-      setCountdownSeconds(300) // Reset countdown to 5 minutes
+      openPendingNewOrderPopup(cafeData, 300)
     }
-  }, [newOrder, calculateTimeAway, riderLocation])
+  }, [newOrder, calculateTimeAway, riderLocation, openPendingNewOrderPopup, clearPendingNewOrderPopup])
 
   // Recalculate distance when rider location becomes available
   useEffect(() => {
@@ -4414,7 +4562,7 @@ export default function DeliveryHome() {
           const cafeData = {
             id: firstOrder._id?.toString() || firstOrder.orderId,
             orderId: firstOrder.orderId,
-            name: firstOrder.cafeId?.name || 'Cafe',
+            name: resolveCafeDisplayName(firstOrder),
             address: cafeAddress,
             lat: assignedCafeCoords.lat,
             lng: assignedCafeCoords.lng,
@@ -4439,9 +4587,7 @@ export default function DeliveryHome() {
             amount: firstOrder.pricing?.total || 0
           }
 
-          setSelectedCafe(cafeData)
-          setShowNewOrderPopup(true)
-          setCountdownSeconds(300) // Reset countdown to 5 minutes
+          openPendingNewOrderPopup(cafeData, 300)
         } else {
         }
       } else {
@@ -4453,7 +4599,7 @@ export default function DeliveryHome() {
     // Removed riderLocation from deps — using lastLocationRef.current instead
     // This prevents the callback from recreating on every GPS update, which was 
     // triggering the fallback polling and timeout effects into infinite loops.
-  }, [isOnline, calculateTimeAway, showNewOrderPopup])
+  }, [isOnline, calculateTimeAway, showNewOrderPopup, openPendingNewOrderPopup])
 
   // Fetch assigned orders when delivery person goes online
   useEffect(() => {
@@ -4471,10 +4617,10 @@ export default function DeliveryHome() {
   useEffect(() => {
     if (!isOnline) return undefined
 
-    // 30 seconds is plenty for fallback (sockets and push notifications handle real-time)
+    // Keep fallback reasonably fast in case a socket packet is missed.
     const intervalId = setInterval(() => {
       fetchAssignedOrders()
-    }, 30000)
+    }, 10000)
 
     return () => clearInterval(intervalId)
   }, [isOnline, fetchAssignedOrders])
@@ -4484,6 +4630,33 @@ export default function DeliveryHome() {
     if (!isOnline || !isConnected) return
     fetchAssignedOrders()
   }, [isOnline, isConnected, fetchAssignedOrders])
+
+  // Instant sync when assignment socket events are received.
+  useEffect(() => {
+    const handleAssignmentUpdated = () => {
+      if (!isOnline) return
+      fetchAssignedOrders()
+    }
+    window.addEventListener('deliveryAssignmentUpdated', handleAssignmentUpdated)
+    return () => {
+      window.removeEventListener('deliveryAssignmentUpdated', handleAssignmentUpdated)
+    }
+  }, [isOnline, fetchAssignedOrders])
+
+  // Sync when app/tab becomes visible again (covers backgrounded tabs).
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && isOnline) {
+        fetchAssignedOrders()
+      }
+    }
+    window.addEventListener('focus', handleVisibility)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.removeEventListener('focus', handleVisibility)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [isOnline, fetchAssignedOrders])
 
   // Also fetch orders on initial page load if already online
   useEffect(() => {
@@ -4845,10 +5018,17 @@ export default function DeliveryHome() {
 
 
 
+        const MapCtor = await getGoogleMapConstructor();
+        if (!MapCtor) {
+          console.error('? Google Maps Map constructor is unavailable');
+          setMapLoading(false);
+          return;
+        }
+
         // Wrap map initialization in try-catch to handle any Google Maps internal errors
         let map;
         try {
-          map = new window.google.maps.Map(mapContainerRef.current, {
+          map = new MapCtor(mapContainerRef.current, {
             center: initialCenter,
             zoom: 18,
             minZoom: 10, // Minimum zoom level (city/area view)
@@ -5028,18 +5208,7 @@ export default function DeliveryHome() {
                 cafeMarkerRef.current = new window.google.maps.Marker({
                   position: cafeLocation,
                   map: window.deliveryMapInstance,
-                  icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="11" fill="#e53935" stroke="#FFFFFF" stroke-width="2"/>
-                        <path d="M8 10c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v6H8v-6z" fill="#FFFFFF"/>
-                        <path d="M7 16h10M10 12h4M9 14h6" stroke="#e53935" stroke-width="1.5" stroke-linecap="round"/>
-                        <path d="M10 8h4v2h-4z" fill="#FFFFFF" opacity="0.7"/>
-                      </svg>
-                    `),
-                    scaledSize: new window.google.maps.Size(48, 48),
-                    anchor: new window.google.maps.Point(24, 48)
-                  },
+                  icon: getDestinationMarkerIcon('cafe'),
                   title: selectedCafe.name || 'Cafe',
                   zIndex: 10
                 });
@@ -5090,8 +5259,14 @@ export default function DeliveryHome() {
       try {
         const initialCenter = { lat: riderLocation[0], lng: riderLocation[1] }
         if (!window.google || !window.google.maps) return
+        const MapCtor = await getGoogleMapConstructor()
+        if (!MapCtor) {
+          console.error('? Google Maps Map constructor unavailable for rider initialization')
+          setMapLoading(false)
+          return
+        }
 
-        const map = new window.google.maps.Map(mapContainerRef.current, {
+        const map = new MapCtor(mapContainerRef.current, {
           center: initialCenter,
           zoom: 18,
           minZoom: 10,
@@ -5247,6 +5422,8 @@ export default function DeliveryHome() {
 
             cafeMarkerRef.current.setMap(window.deliveryMapInstance);
             cafeMarkerRef.current.setPosition(cafeLocation);
+            cafeMarkerRef.current.setIcon(getDestinationMarkerIcon('cafe'));
+            cafeMarkerRef.current.setTitle(selectedCafe.name || 'Cafe');
           }
         } else {
           // Marker doesn't exist, create it
@@ -5259,18 +5436,7 @@ export default function DeliveryHome() {
           cafeMarkerRef.current = new window.google.maps.Marker({
             position: cafeLocation,
             map: window.deliveryMapInstance,
-            icon: {
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="11" fill="#e53935" stroke="#FFFFFF" stroke-width="2"/>
-                  <path d="M8 10c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v6H8v-6z" fill="#FFFFFF"/>
-                  <path d="M7 16h10M10 12h4M9 14h6" stroke="#e53935" stroke-width="1.5" stroke-linecap="round"/>
-                  <path d="M10 8h4v2h-4z" fill="#FFFFFF" opacity="0.7"/>
-                </svg>
-              `),
-              scaledSize: new window.google.maps.Size(48, 48),
-              anchor: new window.google.maps.Point(24, 48)
-            },
+            icon: getDestinationMarkerIcon('cafe'),
             title: selectedCafe.name || 'Cafe',
             zIndex: 10
           });
@@ -5303,18 +5469,7 @@ export default function DeliveryHome() {
       cafeMarkerRef.current = new window.google.maps.Marker({
         position: cafeLocation,
         map: window.deliveryMapInstance,
-        icon: {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="11" fill="#e53935" stroke="#FFFFFF" stroke-width="2"/>
-              <path d="M8 10c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v6H8v-6z" fill="#FFFFFF"/>
-              <path d="M7 16h10M10 12h4M9 14h6" stroke="#e53935" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M10 8h4v2h-4z" fill="#FFFFFF" opacity="0.7"/>
-            </svg>
-          `),
-          scaledSize: new window.google.maps.Size(48, 48),
-          anchor: new window.google.maps.Point(24, 48)
-        },
+        icon: getDestinationMarkerIcon('cafe'),
         title: selectedCafe.name || 'Cafe',
         animation: window.google.maps.Animation.DROP,
         zIndex: 10
@@ -5613,6 +5768,12 @@ export default function DeliveryHome() {
 
       try {
         setDirectionsMapLoading(true);
+        const MapCtor = await getGoogleMapConstructor();
+        if (!MapCtor) {
+          console.error('? Google Maps Map constructor unavailable for directions map');
+          setDirectionsMapLoading(false);
+          return;
+        }
 
         // Get current LIVE location (delivery boy) - prioritize riderLocation which is updated in real-time
         // Use rider location or last known location, don't use default
@@ -5644,12 +5805,12 @@ export default function DeliveryHome() {
 
 
         // Create map instance
-        const map = new window.google.maps.Map(directionsMapContainerRef.current, {
+        const map = new MapCtor(directionsMapContainerRef.current, {
           center: { lat: currentLocation[0], lng: currentLocation[1] },
           zoom: 18,
           minZoom: 10, // Minimum zoom level (city/area view)
           maxZoom: 21, // Maximum zoom level - allow full zoom
-          mapTypeId: window.google.maps.MapTypeId.ROADMAP || 'roadmap',
+          mapTypeId: window.google.maps.MapTypeId?.ROADMAP || 'roadmap',
           disableDefaultUI: false,
           zoomControl: true,
           mapTypeControl: false,
@@ -5702,40 +5863,21 @@ export default function DeliveryHome() {
           }
 
           // Add custom Destination Marker (Cafe or Customer)
-          const markerIcon = navigationMode === 'customer'
-            ? `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#e53935">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/>
-                  <circle cx="12" cy="9" r="3" fill="#FFFFFF"/>
-                </svg>
-              `)}`
-            : `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#e53935">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/>
-                  <circle cx="12" cy="9" r="3" fill="#FFFFFF"/>
-                  <path d="M8 16h2v6H8zm6 0h2v6h-2z" fill="#FFFFFF"/>
-                </svg>
-              `)}`;
+          const destinationMarkerIcon = getDestinationMarkerIcon(
+            navigationMode === 'customer' ? 'customer' : 'cafe'
+          );
 
           if (!cafeMarkerRef.current) {
             cafeMarkerRef.current = new window.google.maps.Marker({
               position: destinationLocation,
               map: map,
-              icon: {
-                url: markerIcon,
-                scaledSize: new window.google.maps.Size(48, 48),
-                anchor: new window.google.maps.Point(24, 48)
-              },
+              icon: destinationMarkerIcon,
               title: destinationName,
               animation: window.google.maps.Animation.DROP
             });
           } else {
             cafeMarkerRef.current.setPosition(destinationLocation);
-            cafeMarkerRef.current.setIcon({
-              url: markerIcon,
-              scaledSize: new window.google.maps.Size(48, 48),
-              anchor: new window.google.maps.Point(24, 48)
-            });
+            cafeMarkerRef.current.setIcon(destinationMarkerIcon);
             cafeMarkerRef.current.setTitle(destinationName);
             cafeMarkerRef.current.setMap(map);
           }
@@ -6312,6 +6454,7 @@ export default function DeliveryHome() {
     setShowOrderDeliveredAnimation(false);
     setShowPaymentPage(false);
     setShowNewOrderPopup(false);
+    clearPendingNewOrderPopup();
     setShowreachedPickupPopup(false);
     setShowOrderIdConfirmationPopup(false);
     clearNewOrder();
@@ -6329,7 +6472,7 @@ export default function DeliveryHome() {
     directionsResponseRef.current = null;
     setRoutePolyline([]);
     setShowRoutePath(false);
-  }, [clearNewOrder, clearOrderReady])
+  }, [clearNewOrder, clearOrderReady, clearPendingNewOrderPopup])
 
   // Periodically verify order still exists (every 30 seconds) to catch deletions
   useEffect(() => {
@@ -7324,16 +7467,29 @@ export default function DeliveryHome() {
         return null;
       }).filter(coord => coord !== null);
 
-      if (path.length > 0) {
-        // Don't create main route polyline - only live tracking polyline will be shown
-        // Remove old custom polyline if exists (cleanup)
-        if (routePolylineRef.current) {
-          routePolylineRef.current.setMap(null);
-          routePolylineRef.current = null;
-        }
+        if (path.length > 0) {
+          // Draw fallback rider->destination polyline (used when trimmed live route
+          // is not yet available or while map is settling).
+          if (routePolylineRef.current) {
+            routePolylineRef.current.setPath(path);
+            if (routePolylineRef.current.getMap() === null) {
+              routePolylineRef.current.setMap(map);
+            }
+          } else {
+            routePolylineRef.current = new window.google.maps.Polyline({
+              path,
+              geodesic: true,
+              strokeColor: '#1E88E5',
+              strokeOpacity: 0.8,
+              strokeWeight: 5,
+              zIndex: 995,
+              icons: [],
+              map
+            });
+          }
 
-        // Fit map bounds to show entire route - but preserve zoom if user has zoomed in
-        if (path.length > 1) {
+          // Fit map bounds to show entire route - but preserve zoom if user has zoomed in
+          if (path.length > 1) {
           const bounds = new window.google.maps.LatLngBounds();
           path.forEach(point => bounds.extend(point));
           // Add padding to bounds for better visibility
@@ -8977,7 +9133,7 @@ export default function DeliveryHome() {
                     </div>
 
                     <h3 className="text-lg font-bold text-[#1E1E1E] mb-1">
-                      {newOrder?.cafeName || selectedCafe?.name || 'Cafe'}
+                      {selectedCafe?.name || resolveCafeDisplayName(newOrder)}
                     </h3>
                     <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                       {sliderCafeAddress || 'Address'}

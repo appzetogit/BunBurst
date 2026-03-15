@@ -112,9 +112,6 @@ export function distanceToLineSegment(point, lineStart, lineEnd) {
     yy = lineStart.lng + param * D;
   }
 
-  const dx = point.lat - xx;
-  const dy = point.lng - yy;
-  
   // Convert to meters using Haversine
   return calculateDistance(point.lat, point.lng, xx, yy);
 }
@@ -269,10 +266,21 @@ export function extractPolylineFromDirections(directionsResult) {
 
   // Method 3: Use overview_path if available (already decoded)
   if (route.overview_path && route.overview_path.length > 0) {
-    return route.overview_path.map(point => ({
-      lat: point.lat(),
-      lng: point.lng()
-    }));
+    return route.overview_path
+      .map((point) => {
+        // Google LatLng object shape
+        if (point && typeof point.lat === 'function' && typeof point.lng === 'function') {
+          return { lat: point.lat(), lng: point.lng() };
+        }
+        // Plain object shape: { lat, lng } (used by local/haversine route fallback)
+        const lat = Number(point?.lat);
+        const lng = Number(point?.lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          return { lat, lng };
+        }
+        return null;
+      })
+      .filter(Boolean);
   }
 
   return polylinePoints;

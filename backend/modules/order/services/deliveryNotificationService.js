@@ -120,13 +120,23 @@ export async function notifyDeliveryBoyNewOrder(order, deliveryPartnerId) {
       }
 
       const deliveryPartner = await Delivery.findById(deliveryPartnerId).lean();
-      let cafe = await Cafe.findById(order.cafeId).lean();
+      const cafeRef = order?.cafeId?._id || order?.cafeId;
+      let cafe = null;
+      if (cafeRef && mongoose.Types.ObjectId.isValid(cafeRef.toString())) {
+        cafe = await Cafe.findById(cafeRef).lean();
+      }
+
+      const resolvedCafeName = [
+        order?.cafeName,
+        order?.cafeId?.name,
+        cafe?.name,
+      ].find((value) => typeof value === 'string' && value.trim()) || 'Cafe';
 
       const orderNotification = {
         orderId: order.orderId,
         orderMongoId: order._id.toString(),
         cafeId: order.cafeId,
-        cafeName: order.cafeName,
+        cafeName: resolvedCafeName,
         cafeLocation: cafe?.location ? {
           latitude: cafe.location.coordinates[1],
           longitude: cafe.location.coordinates[0],
