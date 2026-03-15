@@ -4,6 +4,8 @@ import Lenis from "lenis"
 import { ArrowLeft, ChevronDown } from "lucide-react"
 import BottomPopup from "@/module/delivery/components/BottomPopup"
 import { cafeAPI } from "@/lib/api"
+import { MAP_APIS_ENABLED } from "@/lib/utils/googleMapsApiKey"
+import { writeCafeLocation } from "@/lib/firebaseRealtime"
 
 const ADDRESS_STORAGE_KEY = "cafe_address"
 
@@ -15,6 +17,7 @@ export default function EditCafeAddress() {
   const navigate = useNavigate()
   const [address, setAddress] = useState("")
   const [cafeName, setCafeName] = useState("")
+  const [cafeId, setCafeId] = useState(null)
   const [location, setLocation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showSelectOptionDialog, setShowSelectOptionDialog] = useState(false)
@@ -47,6 +50,7 @@ export default function EditCafeAddress() {
         const response = await cafeAPI.getCurrentCafe()
         const data = response?.data?.data?.cafe || response?.data?.cafe
         if (data) {
+          setCafeId(data._id || data.id || null)
           setCafeName(data.name || "")
           if (data.location) {
             setLocation(data.location)
@@ -126,6 +130,10 @@ export default function EditCafeAddress() {
 
   // Handle opening Google Maps app
   const handleViewOnMap = () => {
+    if (!MAP_APIS_ENABLED) {
+      alert("Maps are disabled to reduce costs. Please use the GPS coordinates instead.")
+      return
+    }
     // Create Google Maps URL for the cafe location
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
     
@@ -192,6 +200,19 @@ export default function EditCafeAddress() {
             setLocation(updatedLocation)
             // Dispatch event to notify other components
             window.dispatchEvent(new Event("addressUpdated"))
+            if (cafeId) {
+              writeCafeLocation({
+                cafeId,
+                lat,
+                lng,
+                address: updatedLocation.address || updatedLocation.formattedAddress || "",
+                formattedAddress: updatedLocation.formattedAddress || updatedLocation.address || "",
+                area: updatedLocation.area || "",
+                city: updatedLocation.city || "",
+                state: updatedLocation.state || "",
+                source: "address",
+              })
+            }
             setShowSelectOptionDialog(false)
             navigate(-1)
           } else {

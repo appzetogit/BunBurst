@@ -66,7 +66,7 @@ export default function Footer() {
   }
 
   return (
-    <footer className="hidden md:block bg-zinc-900 text-white mt-auto">
+    <footer className="hidden md:block sticky bottom-0 bg-zinc-900 text-white mt-auto">
       <div className="max-w-[1100px] mx-auto px-0 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-8">
           {/* Brand Section */}

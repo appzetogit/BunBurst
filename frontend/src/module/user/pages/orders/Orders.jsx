@@ -627,7 +627,7 @@ Order again from this cafe in the ${companyName} app.`
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10 font-sans">
+    <div className="min-h-screen bg-background text-foreground pb-10 font-sans orders-page">
       {/* Header */}
       <div className="bg-white p-4 shadow-sm sticky top-0 z-10">
         <div className="w-full lg:max-w-[1100px] mx-auto flex items-center">

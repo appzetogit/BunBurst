@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { motion } from "framer-motion"
 import {
@@ -13,6 +13,7 @@ import {
 import Toast from "../components/Toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { cafeAPI } from "@/lib/api"
 
 export default function CategoryFoodsPage() {
   const navigate = useNavigate()
@@ -24,6 +25,9 @@ export default function CategoryFoodsPage() {
     return saved ? JSON.parse(saved) : []
   })
   const [toast, setToast] = useState({ show: false, message: '' })
+  const [foods, setFoods] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
 
   // Show toast notification
   const showToast = (message) => {
@@ -79,75 +83,131 @@ export default function CategoryFoodsPage() {
   // Filter tabs
   const filters = ["Nearby", "Popular", "Cuisines"]
 
-  // Mock food items for the category
-  const categoryFoods = [
-    {
-      id: 1,
-      name: "Woke Ramen - Chan...",
-      image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop",
-      discount: "10% OFF",
-      deliveryTime: "50 mins",
-      rating: 4.5,
-      cuisine: "Chinese",
-      price: 2.10,
-      originalPrice: 6.10
-    },
-    {
-      id: 2,
-      name: "Good Taste Mala H...",
-      image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop",
-      discount: "50% OFF",
-      deliveryTime: "35 mins",
-      rating: 4.2,
-      cuisine: "Local & Malaysian",
-      price: 5.80,
-      originalPrice: 8.80
-    },
-    {
-      id: 3,
-      name: "Singa Cafe - UE Bizh...",
-      image: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400&h=300&fit=crop",
-      discount: "10% OFF",
-      deliveryTime: "40 mins",
-      rating: 4.2,
-      cuisine: "Western",
-      price: 4.00,
-      originalPrice: 7.00
-    },
-    {
-      id: 4,
-      name: "Toko Burgers at Al M...",
-      image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop",
-      discount: "10% OFF",
-      deliveryTime: "40 mins",
-      rating: 4.5,
-      cuisine: "Western",
-      price: 5.30,
-      originalPrice: 8.30
-    },
-    {
-      id: 5,
-      name: "Spicy Noodles House",
-      image: "https://images.unsplash.com/photo-1525755662778-989d0524087e?w=400&h=300&fit=crop",
-      discount: "15% OFF",
-      deliveryTime: "30 mins",
-      rating: 4.7,
-      cuisine: "Chinese",
-      price: 3.50,
-      originalPrice: 6.50
-    },
-    {
-      id: 6,
-      name: "Thai Delight Cafe",
-      image: "https://images.unsplash.com/photo-1559314809-0d155b1c5b8e?w=400&h=300&fit=crop",
-      discount: "20% OFF",
-      deliveryTime: "45 mins",
-      rating: 4.6,
-      cuisine: "Thai",
-      price: 4.20,
-      originalPrice: 7.20
-    },
-  ]
+  const normalizedCategory = useMemo(() => {
+    if (!categoryName) return ""
+    try {
+      return decodeURIComponent(categoryName).trim()
+    } catch (err) {
+      return String(categoryName).trim()
+    }
+  }, [categoryName])
+
+  const isAllCategory = !normalizedCategory || normalizedCategory.toLowerCase() === "all"
+
+  const extractMenuItems = (menu, cafe) => {
+    if (!menu || !Array.isArray(menu.sections)) return []
+
+    const cuisine = Array.isArray(cafe?.cuisines)
+      ? cafe.cuisines.join(", ")
+      : (cafe?.cuisines || "")
+    const deliveryTime = cafe?.estimatedDeliveryTime || cafe?.deliveryTime || cafe?.eta || ""
+
+    const flattenItems = []
+    menu.sections.forEach((section) => {
+      const sectionItems = Array.isArray(section.items) ? section.items : []
+      const subsectionItems = Array.isArray(section.subsections)
+        ? section.subsections.flatMap((subsection) => (Array.isArray(subsection.items) ? subsection.items : []))
+        : []
+
+      [...sectionItems, ...subsectionItems].forEach((item) => {
+        const itemPrice = typeof item.price === "number" ? item.price : Number(item.price) || 0
+        const originalPrice = item.originalPrice !== null && item.originalPrice !== undefined
+          ? Number(item.originalPrice) || 0
+          : itemPrice
+
+        let discountLabel = null
+        if (item.discountType === "Percent" && item.discountAmount > 0) {
+          discountLabel = `${item.discountAmount}% OFF`
+        } else if (item.discountType === "Fixed" && item.discountAmount > 0) {
+          discountLabel = `${item.discountAmount} OFF`
+        } else if (originalPrice > itemPrice && originalPrice > 0) {
+          const percent = Math.round(((originalPrice - itemPrice) / originalPrice) * 100)
+          discountLabel = percent > 0 ? `${percent}% OFF` : null
+        }
+
+        flattenItems.push({
+          id: item.id,
+          name: item.name,
+          image: (Array.isArray(item.images) && item.images.length > 0)
+            ? item.images[0]
+            : (item.image || ""),
+          discount: discountLabel,
+          deliveryTime,
+          rating: item.rating || 0,
+          cuisine,
+          price: itemPrice,
+          originalPrice,
+          cafeId: cafe?.cafeId || cafe?._id || null,
+          cafeName: cafe?.name || "Cafe",
+        })
+      })
+    })
+
+    return flattenItems
+  }
+
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchCategoryFoods = async () => {
+      try {
+        setIsLoading(true)
+        setError("")
+
+        const cafesResponse = await cafeAPI.getCafes()
+        const cafes = cafesResponse?.data?.data?.cafes || []
+
+        if (!cafes.length) {
+          if (isMounted) {
+            setFoods([])
+          }
+          return
+        }
+
+        const menuPromises = cafes.map(async (cafe) => {
+          const cafeId = cafe.cafeId || cafe._id
+          if (!cafeId) return []
+
+          try {
+            const params = isAllCategory ? {} : { category: normalizedCategory }
+            const menuResponse = await cafeAPI.getMenuByCafeId(cafeId, params)
+            const menu = menuResponse?.data?.data?.menu
+            return extractMenuItems(menu, cafe)
+          } catch (err) {
+            return []
+          }
+        })
+
+        const menuResults = await Promise.all(menuPromises)
+        const allItems = menuResults.flat()
+
+        if (isMounted) {
+          setFoods(allItems)
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError("Failed to load dishes. Please try again.")
+          setFoods([])
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchCategoryFoods()
+
+    return () => {
+      isMounted = false
+    }
+  }, [normalizedCategory, isAllCategory])
+
+  const filteredFoods = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return foods
+    return foods.filter((food) => (food.name || "").toLowerCase().includes(query))
+  }, [foods, searchQuery])
 
   return (
     <div className="min-h-screen bg-[#f6e9dc] pb-20">
@@ -220,9 +280,24 @@ export default function CategoryFoodsPage() {
 
       {/* Food Items List */}
       <div className="px-4 py-4 space-y-4">
-        {categoryFoods.map((food) => (
+        {isLoading && (
+          <div className="text-center text-sm text-gray-500 py-12">
+            Loading dishes...
+          </div>
+        )}
+        {!isLoading && error && (
+          <div className="text-center text-sm text-red-600 py-12">
+            {error}
+          </div>
+        )}
+        {!isLoading && !error && filteredFoods.length === 0 && (
+          <div className="text-center text-sm text-gray-500 py-12">
+            No dishes found for {normalizedCategory || "this category"}.
+          </div>
+        )}
+        {!isLoading && !error && filteredFoods.map((food) => (
           <div
-            key={food.id}
+            key={`${food.cafeId || 'cafe'}-${food.id}`}
             className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => navigate(`/usermain/food/${food.id}`)}
           >
@@ -256,29 +331,33 @@ export default function CategoryFoodsPage() {
                 <div className="flex items-start justify-between mb-1">
                   <h3 className="text-sm font-bold text-gray-900 flex-1 truncate">{food.name}</h3>
                   {/* Discount Tag */}
-                  <div className="bg-[#ff8100] text-white text-xs font-bold px-2 py-0.5 rounded ml-2 flex-shrink-0">
-                    {food.discount}
-                  </div>
+                  {food.discount && (
+                    <div className="bg-[#ff8100] text-white text-xs font-bold px-2 py-0.5 rounded ml-2 flex-shrink-0">
+                      {food.discount}
+                    </div>
+                  )}
                 </div>
 
                 {/* Delivery Time */}
                 <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
                   <Clock className="w-3 h-3" />
-                  <span>{food.deliveryTime}</span>
+                  {food.deliveryTime && <span>{food.deliveryTime}</span>}
                 </div>
 
                 {/* Rating and Cuisine */}
                 <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                   <span>{food.rating}</span>
-                  <span className="ml-1">{food.cuisine}</span>
+                  {food.cuisine && <span className="ml-1">{food.cuisine}</span>}
                 </div>
 
                 {/* Price and Add Button */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-base font-bold text-gray-900">${food.price.toFixed(2)}</span>
-                    <span className="text-xs text-gray-400 line-through">${food.originalPrice.toFixed(2)}</span>
+                    <span className="text-base font-bold text-gray-900">${Number(food.price || 0).toFixed(2)}</span>
+                    {food.originalPrice > food.price && (
+                      <span className="text-xs text-gray-400 line-through">${Number(food.originalPrice || 0).toFixed(2)}</span>
+                    )}
                   </div>
 
                   {/* Add Button */}

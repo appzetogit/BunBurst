@@ -6,6 +6,7 @@ import AdminNavbar from "./AdminNavbar"
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [adminTheme, setAdminTheme] = useState("light")
 
   // Get initial collapsed state from localStorage to set initial margin
   useEffect(() => {
@@ -19,12 +20,33 @@ export default function AdminLayout() {
     }
   }, [])
 
+  useEffect(() => {
+    const readTheme = () => {
+      try {
+        const saved = localStorage.getItem("admin_theme")
+        setAdminTheme(saved === "dark" ? "dark" : "light")
+      } catch {
+        setAdminTheme("light")
+      }
+    }
+
+    readTheme()
+
+    const handleStorage = (event) => {
+      if (event.key !== "admin_theme") return
+      readTheme()
+    }
+
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
+  }, [])
+
   const handleCollapseChange = (collapsed) => {
     setIsSidebarCollapsed(collapsed)
   }
 
   return (
-    <div className="min-h-screen bg-neutral-200 flex">
+    <div className={`min-h-screen bg-neutral-200 flex ${adminTheme === "dark" ? "dark" : ""}`}>
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div

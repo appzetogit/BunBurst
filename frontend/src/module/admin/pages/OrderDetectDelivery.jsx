@@ -6,6 +6,7 @@ import OrdersTopbar from "../components/orders/OrdersTopbar"
 import OrderDetectDeliveryTable from "../components/orders/OrderDetectDeliveryTable"
 import ViewOrderDetectDeliveryDialog from "../components/orders/ViewOrderDetectDeliveryDialog"
 import SettingsDialog from "../components/orders/SettingsDialog"
+import OrderDetectDeliveryFilterPanel from "../components/orders/OrderDetectDeliveryFilterPanel"
 import { useGenericTableManagement } from "../components/orders/useGenericTableManagement"
 
 // Function to map backend order status to frontend display status
@@ -285,7 +286,6 @@ export default function OrderDetectDelivery() {
     handleExport,
     handleViewOrder,
     handlePrintOrder,
-    toggleColumn,
   } = useGenericTableManagement(
     orders,
     "Order Detect Delivery",
@@ -307,6 +307,10 @@ export default function OrderDetectDelivery() {
     return { total, ordered, cafeAccepted, rejected, deliveryBoyAssigned, reachedPickup, orderIdAccepted, reachedDrop, delivered }
   }, [filteredData, orders.length])
 
+  const cafes = useMemo(() => {
+    return [...new Set(orders.map(order => order.cafeName).filter(Boolean))]
+  }, [orders])
+
   const resetColumns = () => {
     setVisibleColumns({
       si: true,
@@ -317,6 +321,13 @@ export default function OrderDetectDelivery() {
       status: true,
       actions: true,
     })
+  }
+
+  const toggleColumnLocal = (columnKey) => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [columnKey]: !prev[columnKey]
+    }))
   }
 
   // Loading state
@@ -472,7 +483,7 @@ export default function OrderDetectDelivery() {
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         visibleColumns={visibleColumns}
-        toggleColumn={toggleColumn}
+        toggleColumn={toggleColumnLocal}
         resetColumns={resetColumns}
         columnsConfig={{
           si: "Serial Number",
@@ -483,6 +494,15 @@ export default function OrderDetectDelivery() {
           status: "Status",
           actions: "Actions",
         }}
+      />
+      <OrderDetectDeliveryFilterPanel
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        filters={filters}
+        setFilters={setFilters}
+        onApply={handleApplyFilters}
+        onReset={handleResetFilters}
+        cafes={cafes}
       />
       <ViewOrderDetectDeliveryDialog
         isOpen={isViewOrderOpen}

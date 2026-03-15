@@ -8,6 +8,10 @@ import {
   saveDeliveryFcmToken,
   saveCafeFcmToken,
   sendAdminPushNotification,
+  getAdminNotifications,
+  updateAdminNotification,
+  updateAdminNotificationStatus,
+  deleteAdminNotification,
   sendTestPushNotification,
   removeUserFcmToken,
   removeDeliveryFcmToken,
@@ -24,6 +28,10 @@ router.post('/user/token', authenticate, saveUserFcmToken);
 router.post('/delivery/token', authenticateDelivery, saveDeliveryFcmToken);
 router.post('/cafe/token', authenticateCafe, saveCafeFcmToken);
 router.post('/admin/send', authenticateAdmin, sendAdminPushNotification);
+router.get('/admin', authenticateAdmin, getAdminNotifications);
+router.patch('/admin/:id', authenticateAdmin, updateAdminNotification);
+router.patch('/admin/:id/status', authenticateAdmin, updateAdminNotificationStatus);
+router.delete('/admin/:id', authenticateAdmin, deleteAdminNotification);
 router.post('/test-notification', sendTestPushNotification);
 
 router.delete('/user/token', authenticate, removeUserFcmToken);

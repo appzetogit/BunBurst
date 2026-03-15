@@ -44,6 +44,17 @@ export default function SearchResults() {
   const [loadingCategories, setLoadingCategories] = useState(true)
   const [categoryKeywords, setCategoryKeywords] = useState({})
 
+  const normalizeRestaurantType = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z]/g, "")
+
+  const isCafeAllowedByVegMode = (cafe) => {
+    if (!vegMode) return true
+    const type = normalizeRestaurantType(cafe?.restaurantType)
+    return type !== "nonveg"
+  }
+
   // Fetch categories from admin API
   useEffect(() => {
     const fetchCategories = async () => {
@@ -218,14 +229,9 @@ export default function SearchResults() {
           // Filter out cafes with only default/mock data
           const cafesWithIds = cafesArray
             .filter((cafe) => {
-              // Only include cafes with real data (not just defaults)
-              // At minimum, cafe should have a name and either images or menu
+              // Only require a valid name to allow search by cafe name
               const hasName = cafe.name && cafe.name.trim().length > 0
-              const hasRealImage = cafe.profileImage?.url ||
-                (cafe.coverImages && cafe.coverImages.length > 0) ||
-                (cafe.menuImages && cafe.menuImages.length > 0)
-
-              return hasName && hasRealImage
+              return hasName
             })
             .map((cafe) => {
               // Use backend data directly - filter out default values
@@ -292,6 +298,7 @@ export default function SearchResults() {
                 cafeId: cafeId,
                 hasPaneer: false, // Will be updated after menu fetch
                 category: 'all',
+                restaurantType: cafe.restaurantType || cafe.restaurant_type || null,
               }
             })
 
@@ -446,6 +453,10 @@ export default function SearchResults() {
     const sourceData = cafesData.length > 0 ? cafesData : []
     let filtered = [...sourceData]
 
+    if (vegMode) {
+      filtered = filtered.filter(isCafeAllowedByVegMode)
+    }
+
     // Filter by search query
     if (query.trim()) {
       const lowerQuery = query.toLowerCase()
@@ -526,12 +537,16 @@ export default function SearchResults() {
     }
 
     return filtered
-  }, [query, selectedCategory, activeFilters, cafesData, categoryKeywords, loadingCategories])
+  }, [query, selectedCategory, activeFilters, cafesData, categoryKeywords, loadingCategories, vegMode])
 
   const filteredAllCafes = useMemo(() => {
     // Use ONLY backend data - no hardcoded fallback
     const sourceData = cafesData.length > 0 ? cafesData : []
     let filtered = [...sourceData]
+
+    if (vegMode) {
+      filtered = filtered.filter(isCafeAllowedByVegMode)
+    }
 
     // Filter by search query - Search in name, cuisine, featured dish
     if (query.trim()) {
@@ -634,7 +649,7 @@ export default function SearchResults() {
     }
 
     return filtered
-  }, [query, selectedCategory, activeFilters, cafesData, categoryKeywords, loadingCategories])
+  }, [query, selectedCategory, activeFilters, cafesData, categoryKeywords, loadingCategories, vegMode])
 
   // Check if should show grayscale (user out of service)
   const shouldShowGrayscale = isOutOfService

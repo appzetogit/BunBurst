@@ -18,6 +18,7 @@ function getFirebaseConfig() {
     projectId: envFromRuntimeOrBuild('VITE_FIREBASE_PROJECT_ID'),
     appId: envFromRuntimeOrBuild('VITE_FIREBASE_APP_ID'),
     messagingSenderId: envFromRuntimeOrBuild('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+    databaseURL: envFromRuntimeOrBuild('VITE_FIREBASE_DATABASE_URL'),
     storageBucket: envFromRuntimeOrBuild('VITE_FIREBASE_STORAGE_BUCKET'),
     measurementId: envFromRuntimeOrBuild('VITE_FIREBASE_MEASUREMENT_ID')
   };

@@ -203,12 +203,10 @@ export const sidebarMenuData = [
         icon: "FileText",
       },
       {
-        type: "expandable",
+        type: "link",
         label: "Cafe Report",
+        path: "/admin/cafe-report",
         icon: "FileText",
-        subItems: [
-          { label: "Cafe Report", path: "/admin/cafe-report" },
-        ],
       },
       {
         type: "expandable",
@@ -220,18 +218,6 @@ export const sidebarMenuData = [
             path: "/admin/customer-report/feedback-experience",
           },
         ],
-      },
-    ],
-  },
-  {
-    type: "section",
-    label: "TRANSACTION MANAGEMENT",
-    items: [
-      {
-        type: "link",
-        label: "Cafe Withdraws",
-        path: "/admin/cafe-withdraws",
-        icon: "CreditCard",
       },
     ],
   },

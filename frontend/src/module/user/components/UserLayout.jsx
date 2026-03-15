@@ -4,6 +4,7 @@ import { ProfileProvider } from "../context/ProfileContext"
 import LocationPrompt from "./LocationPrompt"
 import { CartProvider } from "../context/CartContext"
 import { OrdersProvider } from "../context/OrdersContext"
+import { CustomerThemeProvider, useCustomerTheme } from "../context/CustomerThemeContext"
 // Lazy load overlays to reduce initial bundle size
 const SearchOverlay = lazy(() => import("./SearchOverlay"))
 const LocationSelectorOverlay = lazy(() => import("./LocationSelectorOverlay"))
@@ -142,8 +143,25 @@ function LocationSelectorProvider({ children }) {
 
 import { LocationProvider } from "../context/LocationContext"
 
-export default function UserLayout() {
+function UserLayoutContent() {
+  const { theme } = useCustomerTheme()
   const location = useLocation()
+
+  useEffect(() => {
+    const viewportMeta = document.querySelector('meta[name="viewport"]')
+    if (!viewportMeta) return
+
+    const originalContent = viewportMeta.getAttribute("content") || ""
+    const lockedContent = "width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+
+    if (originalContent !== lockedContent) {
+      viewportMeta.setAttribute("content", lockedContent)
+    }
+
+    return () => {
+      viewportMeta.setAttribute("content", originalContent)
+    }
+  }, [])
 
   useEffect(() => {
     // Reset scroll to top whenever location changes (pathname, search, or hash)
@@ -165,7 +183,9 @@ export default function UserLayout() {
     location.pathname.startsWith("/user/profile")
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-200 user-desktop-dark">
+    <div
+      className={`min-h-screen bg-background transition-colors duration-200 ${theme === "dark" ? "dark user-desktop-dark" : ""}`}
+    >
       <CartProvider>
         <ProfileProvider>
           <OrdersProvider>
@@ -186,5 +206,13 @@ export default function UserLayout() {
         </ProfileProvider>
       </CartProvider>
     </div>
+  )
+}
+
+export default function UserLayout() {
+  return (
+    <CustomerThemeProvider>
+      <UserLayoutContent />
+    </CustomerThemeProvider>
   )
 }

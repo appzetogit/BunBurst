@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils"
 // Import shared food images - prevents duplication
 import { foodImages } from "@/constants/images"
 import VoiceSearchOverlay from "./VoiceSearchOverlay"
-import { adminAPI } from "@/lib/api"
+import { adminAPI, cafeAPI } from "@/lib/api"
+import { useProfile } from "../context/ProfileContext"
 
 // Local storage key for recent searches
 const RECENT_SEARCHES_KEY = 'bun_burst_recent_searches';
@@ -17,11 +18,26 @@ const RECENT_SEARCHES_KEY = 'bun_burst_recent_searches';
 export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchChange, autoStartVoice }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { vegMode } = useProfile()
   const inputRef = useRef(null)
   const [categories, setCategories] = useState([])
   const [filteredFoods, setFilteredFoods] = useState([])
+  const [cafes, setCafes] = useState([])
+  const [filteredCafes, setFilteredCafes] = useState([])
   const [recentSuggestions, setRecentSuggestions] = useState([])
   const [loading, setLoading] = useState(false)
+  const [loadingCafes, setLoadingCafes] = useState(false)
+
+  const normalizeRestaurantType = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z]/g, "")
+
+  const isCafeAllowedByVegMode = (cafe) => {
+    if (!vegMode) return true
+    const type = normalizeRestaurantType(cafe?.restaurantType)
+    return type !== "nonveg"
+  }
   const [isListening, setIsListening] = useState(false)
   const [showVoiceModal, setShowVoiceModal] = useState(false)
   const recognitionRef = useRef(null)
@@ -167,6 +183,55 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
         }
       }
 
+      const fetchCafes = async () => {
+        try {
+          setLoadingCafes(true)
+          const params = {}
+          const cachedZoneId = localStorage.getItem("userZoneId")
+          if (cachedZoneId) {
+            params.zoneId = cachedZoneId
+          }
+
+          const response = await cafeAPI.getCafes(params)
+          if (response.data?.success && response.data?.data?.cafes) {
+            const cafesArray = response.data.data.cafes
+            const transformed = cafesArray
+              .filter((cafe) => cafe?.name && cafe.name.trim().length > 0)
+              .map((cafe) => {
+                const coverImages = cafe.coverImages && cafe.coverImages.length > 0
+                  ? cafe.coverImages.map(img => img.url || img).filter(Boolean)
+                  : []
+
+                const fallbackImages = cafe.menuImages && cafe.menuImages.length > 0
+                  ? cafe.menuImages.map(img => img.url || img).filter(Boolean)
+                  : []
+
+                const allImages = coverImages.length > 0
+                  ? coverImages
+                  : (fallbackImages.length > 0
+                    ? fallbackImages
+                    : (cafe.profileImage?.url ? [cafe.profileImage.url] : []))
+
+                return {
+                  id: cafe.cafeId || cafe._id,
+                  name: cafe.name,
+                  slug: cafe.slug || cafe.name?.toLowerCase().replace(/\s+/g, '-'),
+                  image: allImages[0] || null,
+                  restaurantType: cafe.restaurantType || cafe.restaurant_type || null,
+                }
+              })
+
+            const vegFiltered = vegMode ? transformed.filter(isCafeAllowedByVegMode) : transformed
+            setCafes(vegFiltered)
+            setFilteredCafes(vegFiltered)
+          }
+        } catch (error) {
+          console.error("Error fetching cafes for search:", error)
+        } finally {
+          setLoadingCafes(false)
+        }
+      }
+
       // Load recent searches from localStorage
       const loadRecentSearches = () => {
         const saved = localStorage.getItem(RECENT_SEARCHES_KEY)
@@ -183,6 +248,7 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
       }
 
       fetchCategories()
+      fetchCafes()
       loadRecentSearches()
     }
 
@@ -193,18 +259,25 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
         recognitionRef.current.stop()
       }
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, vegMode])
 
   useEffect(() => {
+    const baseCafes = vegMode ? cafes.filter(isCafeAllowedByVegMode) : cafes
     if (searchValue.trim() === "") {
       setFilteredFoods(categories)
+      setFilteredCafes(baseCafes)
     } else {
       const filtered = categories.filter((food) =>
         food.name.toLowerCase().includes(searchValue.toLowerCase())
       )
       setFilteredFoods(filtered)
+
+      const filteredCafeList = baseCafes.filter((cafe) =>
+        cafe.name?.toLowerCase().includes(searchValue.toLowerCase())
+      )
+      setFilteredCafes(filteredCafeList)
     }
-  }, [searchValue, categories])
+  }, [searchValue, categories, cafes, vegMode])
 
   const handleSuggestionClick = (suggestion) => {
     onSearchChange(suggestion)
@@ -244,6 +317,20 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
     onClose()
     onSearchChange("")
   }
+
+  const handleCafeClick = (cafe) => {
+    addToRecentSearches(cafe.name)
+    navigate(`/user/cafes/${cafe.slug || cafe.name.toLowerCase().replace(/\s+/g, '-')}`)
+    onClose()
+    onSearchChange("")
+  }
+
+  const showNoResults =
+    searchValue.trim() &&
+    !loading &&
+    !loadingCafes &&
+    filteredFoods.length === 0 &&
+    filteredCafes.length === 0
 
   if (!isOpen) return null
 
@@ -313,6 +400,59 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
           </div>
         </div>
 
+        {/* Cafes */}
+        {searchValue.trim() && (
+          <div
+            className="mb-8"
+            style={{
+              animation: 'fadeInUp 0.3s ease-out 0.15s both'
+            }}
+          >
+            <h3 className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+              <Search className="h-4 w-4 text-primary-orange" />
+              Cafes
+            </h3>
+
+            {loadingCafes ? (
+              <div className="flex flex-col items-center justify-center py-8 gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary-orange" />
+                <p className="text-sm text-gray-500">Loading cafes...</p>
+              </div>
+            ) : filteredCafes.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {filteredCafes.slice(0, 12).map((cafe, index) => (
+                  <button
+                    key={cafe.id || index}
+                    onClick={() => handleCafeClick(cafe)}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#141414] hover:border-primary-orange/40 hover:shadow-md transition-all duration-200 text-left"
+                    style={{
+                      animation: `fadeInUp 0.3s ease-out ${0.2 + index * 0.04}s both`
+                    }}
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      {cafe.image ? (
+                        <img
+                          src={cafe.image}
+                          alt={cafe.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-lg">🍽️</div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">
+                        {cafe.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">View cafe</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        )}
+
         {/* Food Grid */}
         <div
           style={{
@@ -353,13 +493,13 @@ export default function SearchOverlay({ isOpen, onClose, searchValue, onSearchCh
                 </button>
               ))}
             </div>
-          ) : (
+          ) : showNoResults ? (
             <div className="text-center py-12 sm:py-16">
               <Search className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg font-semibold">No results found for "{searchValue}"</p>
               <p className="text-sm sm:text-base text-gray-500 dark:text-gray-500 mt-2">Try a different search term</p>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
       <style>{`

@@ -75,6 +75,25 @@ export default function Coupons() {
     fetchCafes()
   }, [])
 
+  useEffect(() => {
+    const shouldLockScroll = isAddOpen || isEditOpen
+    const originalOverflow = document.body.style.overflow
+    const originalPaddingRight = document.body.style.paddingRight
+
+    if (shouldLockScroll) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+      document.body.style.overflow = "hidden"
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`
+      }
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+      document.body.style.paddingRight = originalPaddingRight
+    }
+  }, [isAddOpen, isEditOpen])
+
   // Filter offers based on search query
   const filteredOffers = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -252,8 +271,8 @@ export default function Coupons() {
 
       {/* Add Offer Modal */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
-          <div className="w-full max-w-2xl rounded-2xl border border-[#F5F5F5] bg-white shadow-[0_20px_60px_rgba(17,17,17,0.18)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-y-auto" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <div className="w-full max-w-2xl rounded-2xl border border-[#F5F5F5] bg-white shadow-[0_20px_60px_rgba(17,17,17,0.18)] max-h-[90vh] overflow-y-auto overscroll-contain">
             <div className="p-5 border-b border-[#F5F5F5] flex items-center justify-between">
               <h3 className="text-lg font-bold text-[#1E1E1E]">Add Offer</h3>
               <button
@@ -479,8 +498,8 @@ export default function Coupons() {
 
       {/* Edit Offer Modal */}
       {isEditOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
-          <div className="w-full max-w-2xl rounded-2xl border border-[#F5F5F5] bg-white shadow-[0_20px_60px_rgba(17,17,17,0.18)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-y-auto" style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <div className="w-full max-w-2xl rounded-2xl border border-[#F5F5F5] bg-white shadow-[0_20px_60px_rgba(17,17,17,0.18)] max-h-[90vh] overflow-y-auto overscroll-contain">
             <div className="p-5 border-b border-[#F5F5F5] flex items-center justify-between">
               <h3 className="text-lg font-bold text-[#1E1E1E]">Edit Offer</h3>
               <button
@@ -508,8 +527,8 @@ export default function Coupons() {
                 <input
                   type="text"
                   value={editForm.dishName}
-                  readOnly
-                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white text-sm"
+                  onChange={(e) => setEditForm(prev => ({ ...prev, dishName: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-[#F5F5F5] rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#e53935]/20"
                 />
               </div>
 
@@ -615,9 +634,14 @@ export default function Coupons() {
                     alert("Offer item is missing. Please refresh and try again.")
                     return
                   }
+                  if (!editForm.dishName.trim()) {
+                    alert("Please enter a valid dish/item name")
+                    return
+                  }
 
                   const payload = {
                     itemIndex: editForm.itemIndex,
+                    itemName: editForm.dishName.trim(),
                     discountType: editForm.discountType,
                     couponCode: editForm.couponCode.trim(),
                     originalPrice: Number(editForm.originalPrice),
@@ -633,7 +657,29 @@ export default function Coupons() {
 
                   setIsUpdating(true)
                   try {
-                    await adminAPI.updateOfferItem(editForm.offerId, payload)
+                    const updateResponse = await adminAPI.updateOfferItem(editForm.offerId, payload)
+                    const updatedItem = updateResponse?.data?.data?.item || null
+                    const updatedItemName = updatedItem?.itemName || payload.itemName || editForm.dishName
+
+                    setOffers((prev) => {
+                      if (!Array.isArray(prev)) return prev
+                      return prev.map((offer) => {
+                        if (offer.offerId !== editForm.offerId) return offer
+                        if (offer.itemIndex !== editForm.itemIndex) return offer
+                        return {
+                          ...offer,
+                          dishName: updatedItemName,
+                          couponCode: payload.couponCode,
+                          originalPrice: payload.originalPrice,
+                          discountPercentage: payload.discountPercentage ?? offer.discountPercentage,
+                          discountedPrice: payload.discountedPrice ?? offer.discountedPrice,
+                          discountType: payload.discountType,
+                          endDate: payload.endDate || null,
+                          status: payload.status || offer.status,
+                        }
+                      })
+                    })
+
                     setIsEditOpen(false)
                     fetchOffers()
                   } catch (err) {

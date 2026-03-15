@@ -380,6 +380,17 @@ export default function AddCafe() {
     { key: "es", label: "Spanish - español(ES)" },
   ]
 
+  const normalizeIndianPhone = (value) => {
+    if (value === null || value === undefined) return ""
+    const digits = String(value).replace(/\D/g, "")
+    if (!digits) return ""
+    if (digits.startsWith("91") && digits.length > 10) {
+      const withoutCode = digits.slice(2)
+      return withoutCode.length > 10 ? withoutCode.slice(-10) : withoutCode
+    }
+    return digits
+  }
+
   useEffect(() => {
     if (isEditMode) return
     const storedStep = localStorage.getItem(draftStepKey)
@@ -450,8 +461,8 @@ export default function AddCafe() {
               cafeName: data.name || "",
               ownerName: data.ownerName || "",
               ownerEmail: data.ownerEmail || "",
-              ownerPhone: data.ownerPhone || "",
-              primaryContactNumber: data.primaryContactNumber || "",
+              ownerPhone: normalizeIndianPhone(data.ownerPhone || data.phone || ""),
+              primaryContactNumber: normalizeIndianPhone(data.primaryContactNumber || ""),
               location: {
                 addressLine1:
                   data.location?.addressLine1 ||
@@ -986,6 +997,9 @@ export default function AddCafe() {
     const formattedPanName = formatFullName(step3.nameOnPan)
     if (!formattedPanName) errors.push("Name on PAN is required")
     if (!step3.panImage) errors.push("PAN image is required")
+    if (isEditMode && !(step3.panImage instanceof File)) {
+      errors.push("Please re-upload PAN image")
+    }
     if (!step3.fssaiNumber?.trim()) errors.push("FSSAI number is required")
     if (step3.fssaiNumber && step3.fssaiNumber.length !== 14) errors.push("FSSAI number must be 14 digits")
     if (!step3.fssaiExpiry?.trim()) errors.push("FSSAI expiry date is required")
@@ -994,6 +1008,9 @@ export default function AddCafe() {
       if (step3.fssaiExpiry < todayIso) errors.push("FSSAI expiry date cannot be in the past")
     }
     if (!step3.fssaiImage) errors.push("FSSAI image is required")
+    if (isEditMode && !(step3.fssaiImage instanceof File)) {
+      errors.push("Please re-upload FSSAI image")
+    }
     if (step3.gstRegistered) {
       const formattedGst = formatGstNumber(step3.gstNumber)
       if (!formattedGst) errors.push("GST number is required when GST registered")
@@ -1003,6 +1020,9 @@ export default function AddCafe() {
       const formattedGstAddress = formatAddressLive(step3.gstAddress).trim()
       if (!formattedGstAddress) errors.push("GST registered address is required when GST registered")
       if (!step3.gstImage) errors.push("GST image is required when GST registered")
+      if (isEditMode && step3.gstImage && !(step3.gstImage instanceof File)) {
+        errors.push("Please re-upload GST image")
+      }
     }
     if (!step3.accountNumber?.trim()) errors.push("Account number is required")
     if (step3.accountNumber && !isValidAccountNumber(step3.accountNumber)) {

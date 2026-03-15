@@ -350,6 +350,9 @@ export default function UserOrderDetails() {
     }
   }
 
+  const normalizedStatus = (order?.status || "").toString().toLowerCase()
+  const isComplaintDisabled = normalizedStatus === "confirmed"
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans relative">
       {/* Header */}
@@ -639,6 +642,7 @@ export default function UserOrderDetails() {
           <button
             type="button"
             onClick={() => {
+              if (isComplaintDisabled) return
               // Use MongoDB _id (ObjectId) for the API call - backend complaint controller expects ObjectId
               // Priority: order._id (MongoDB ObjectId) > orderId from route params
               const orderMongoId = order._id || orderId
@@ -660,7 +664,13 @@ export default function UserOrderDetails() {
               console.log("Navigating to complaint page with orderId:", orderIdString)
               navigate(`/user/complaints/submit/${encodeURIComponent(orderIdString)}`)
             }}
-            className="w-full bg-orange-50 border border-orange-200 text-orange-700 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-orange-100 transition-colors"
+            disabled={isComplaintDisabled}
+            title={isComplaintDisabled ? "Cafe complaint is available after delivery" : "Raise a cafe complaint"}
+            className={`w-full border py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${
+              isComplaintDisabled
+                ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+            }`}
           >
             <FileText className="w-4 h-4" />
             Cafe Complaint

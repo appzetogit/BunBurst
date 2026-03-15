@@ -19,14 +19,6 @@ window.__mapApisDisabled = true;
 window.__googleMapsLoading = false;
 window.__googleMapsLoaded = false;
 
-// Apply theme on app initialization
-const savedTheme = localStorage.getItem('appTheme') || 'light'
-if (savedTheme === 'dark') {
-  document.documentElement.classList.add('dark')
-} else {
-  document.documentElement.classList.remove('dark')
-}
-
 // Suppress browser extension errors
 const originalError = console.error
 console.error = (...args) => {

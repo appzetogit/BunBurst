@@ -4,6 +4,7 @@ import { API_BASE_URL } from '@/lib/api/config';
 import bikeLogo from '@/assets/bikelogo.png';
 import { RouteBasedAnimationController } from '@/module/user/utils/routeBasedAnimation';
 import { extractPolylineFromDirections, findNearestPointOnPolyline } from '@/module/delivery/utils/liveTrackingPolyline';
+import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey';
 import './DeliveryTrackingMap.css';
 
 // Helper function to calculate Haversine distance
@@ -55,6 +56,7 @@ const DeliveryTrackingMap = ({
 
   // Load Google Maps API key from backend
   useEffect(() => {
+    if (!MAP_APIS_ENABLED) return
     import('@/lib/utils/googleMapsApiKey.js').then(({ getGoogleMapsApiKey }) => {
       getGoogleMapsApiKey().then(key => {
         setGOOGLE_MAPS_API_KEY(key)
@@ -731,6 +733,7 @@ const DeliveryTrackingMap = ({
 
   // Initialize Google Map (only once - prevent re-initialization)
   useEffect(() => {
+    if (!MAP_APIS_ENABLED) return;
     if (!mapRef.current || !cafeCoords || !customerCoords || mapInitializedRef.current) return;
 
     const loadGoogleMapsIfNeeded = async () => {
@@ -1438,6 +1441,14 @@ const DeliveryTrackingMap = ({
       }
     };
   }, []);
+
+  if (!MAP_APIS_ENABLED) {
+    return (
+      <div className="w-full rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900">
+        Maps are disabled to reduce costs. Live tracking will continue via GPS updates only.
+      </div>
+    )
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

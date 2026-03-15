@@ -49,9 +49,10 @@ import { getAllDeliveryOrders } from "../utils/deliveryOrderStatus"
 import { getUnreadDeliveryNotificationCount } from "../utils/deliveryNotifications"
 import { deliveryAPI, cafeAPI, uploadAPI } from "@/lib/api"
 import { useDeliveryNotifications } from "../hooks/useDeliveryNotifications"
-import { getGoogleMapsApiKey } from "@/lib/utils/googleMapsApiKey"
+import { getGoogleMapsApiKey, MAP_APIS_ENABLED } from "@/lib/utils/googleMapsApiKey"
 import { useCompanyName } from "@/lib/hooks/useCompanyName"
 import { Loader } from "@googlemaps/js-api-loader"
+import { writeDeliveryLocation } from "@/lib/firebaseRealtime"
 import {
   decodePolyline,
   extractPolylineFromDirections,
@@ -431,6 +432,9 @@ export default function DeliveryHome() {
   const routePolylineRef = useRef(null) // Store route polyline instance (legacy - for fallback)
   const routeHistoryRef = useRef([]) // Store route history for traveled path
   const isOnlineRef = useRef(false) // Store online status for use in callbacks
+  const deliveryPartnerIdRef = useRef(null) // Delivery partner id for RTDB writes
+  const lastRealtimeSentAtRef = useRef(0)
+  const lastRealtimeLocationRef = useRef(null)
 
   // Stable tracking system - Rapido/Uber style
   const locationHistoryRef = useRef([]) // Store last 5 valid GPS points for smoothing
@@ -469,6 +473,39 @@ export default function DeliveryHome() {
     }, 2000)
     return () => clearTimeout(timer)
   }, [mapLoading])
+
+  const pushRealtimeLocation = (payload) => {
+    if (!payload || !deliveryPartnerIdRef.current) return
+    const { lat, lng } = payload
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return
+
+    const now = Date.now()
+    const lastSentAt = lastRealtimeSentAtRef.current || 0
+    const lastLocation = lastRealtimeLocationRef.current
+    const timeSinceLast = now - lastSentAt
+
+    let movedEnough = true
+    if (lastLocation && Number.isFinite(lastLocation.lat) && Number.isFinite(lastLocation.lng)) {
+      const distanceMeters = calculateDistance(lastLocation.lat, lastLocation.lng, lat, lng)
+      movedEnough = distanceMeters >= 50
+    }
+
+    if (timeSinceLast < 5000 && !movedEnough) return
+
+    lastRealtimeSentAtRef.current = now
+    lastRealtimeLocationRef.current = { lat, lng }
+
+    const trail = Array.isArray(routeHistoryRef.current)
+      ? routeHistoryRef.current.slice(-20)
+      : []
+
+    writeDeliveryLocation({
+      deliveryPartnerId: deliveryPartnerIdRef.current,
+      ...payload,
+      isOnline: isOnlineRef.current,
+      trail
+    })
+  }
 
   // Seeded random number generator for consistent hotspots
   const createSeededRandom = (seed) => {
@@ -1682,6 +1719,7 @@ export default function DeliveryHome() {
               const [lat, lng] = lastValidLocationRef.current;
               if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
 
+                pushRealtimeLocation({ lat, lng, accuracy, heading: position.coords.heading ?? null, speed: position.coords.speed ?? null, source: "gps" })
                 deliveryAPI.updateLocation(lat, lng, true)
                   .then(() => {
                     window.lastLocationSentTime = now;
@@ -1759,6 +1797,7 @@ export default function DeliveryHome() {
             // Send location every 5 seconds even if not smoothed
             if (timeSinceLastSend >= 5000) {
               if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                pushRealtimeLocation({ lat, lng, accuracy, heading: position.coords.heading ?? null, speed: position.coords.speed ?? null, source: "gps" })
                 deliveryAPI.updateLocation(lat, lng, true)
                   .then(() => {
                     window.lastLocationSentTime = now;
@@ -1872,6 +1911,7 @@ export default function DeliveryHome() {
             if (smoothedLat >= -90 && smoothedLat <= 90 && smoothedLng >= -180 && smoothedLng <= 180) {
 
 
+              pushRealtimeLocation({ lat: smoothedLat, lng: smoothedLng, accuracy, heading, speed: position.coords.speed ?? null, source: "gps-smoothed" })
               deliveryAPI.updateLocation(smoothedLat, smoothedLng, true)
                 .then(() => {
                   window.lastLocationSentTime = now;
@@ -3576,6 +3616,10 @@ export default function DeliveryHome() {
 
   // Handle Start Navigation Button - Opens Google Maps app in navigation mode
   const handleStartNavigation = async () => {
+    if (!MAP_APIS_ENABLED) {
+      toast.error('Maps are disabled to reduce costs. Use GPS/location details instead.')
+      return
+    }
     let customerLat = toFiniteCoordinate(selectedCafe?.customerLat)
     let customerLng = toFiniteCoordinate(selectedCafe?.customerLng)
 
@@ -4531,6 +4575,10 @@ export default function DeliveryHome() {
         const response = await deliveryAPI.getProfile()
         if (response?.data?.success && response?.data?.data?.profile) {
           const profile = response.data.data.profile
+          const profileId = profile?._id || profile?.id || profile?.deliveryPartnerId
+          if (profileId) {
+            deliveryPartnerIdRef.current = String(profileId)
+          }
 
           // Store delivery partner status first
           if (profile?.status) {
@@ -4681,6 +4729,10 @@ export default function DeliveryHome() {
 
     // Load Google Maps if not already loaded
     const loadGoogleMapsIfNeeded = async () => {
+      if (!MAP_APIS_ENABLED) {
+        setMapLoading(false)
+        return
+      }
       // Check if already loaded
       if (window.google && window.google.maps) {
 
@@ -9380,6 +9432,10 @@ export default function DeliveryHome() {
             </button>
             <button
               onClick={() => {
+                if (!MAP_APIS_ENABLED) {
+                  toast.error('Maps are disabled to reduce costs. Use GPS/location details instead.')
+                  return
+                }
                 // Get cafe coordinates with robust fallbacks
                 const locationCandidates = [
                   selectedCafe?.cafe?.location,

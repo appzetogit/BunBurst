@@ -26,6 +26,7 @@ export const getMenu = asyncHandler(async (req, res) => {
   return successResponse(res, 200, 'Menu retrieved successfully', {
     menu: {
       sections: menu.sections || [],
+      addons: menu.addons || [],
       isActive: menu.isActive,
     },
   });
@@ -100,7 +101,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
           reviews: item.reviews ?? 0,
           price: item.price || 0,
           categoryId: item.categoryId || null,
-          stock: item.stock || "Unlimited",
+          stock: item.stock !== undefined && item.stock !== null ? item.stock : "Unlimited",
           discount: item.discount || null,
           originalPrice: item.originalPrice || null,
           foodType: item.foodType || "Non-Veg",
@@ -115,7 +116,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
             id: String(v.id || Date.now() + Math.random()),
             name: v.name || "",
             price: v.price || 0,
-            stock: v.stock || "Unlimited",
+            stock: v.stock !== undefined && v.stock !== null ? v.stock : "Unlimited",
           })) : [],
           tags: Array.isArray(item.tags) ? item.tags : [],
           nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
@@ -190,7 +191,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
               reviews: item.reviews ?? 0,
               price: item.price || 0,
               categoryId: item.categoryId || null,
-              stock: item.stock || "Unlimited",
+              stock: item.stock !== undefined && item.stock !== null ? item.stock : "Unlimited",
               discount: item.discount || null,
               originalPrice: item.originalPrice || null,
               foodType: item.foodType || "Non-Veg",
@@ -205,7 +206,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
                 id: String(v.id || Date.now() + Math.random()),
                 name: v.name || "",
                 price: v.price || 0,
-                stock: v.stock || "Unlimited",
+                stock: v.stock !== undefined && v.stock !== null ? v.stock : "Unlimited",
               })) : [],
               tags: Array.isArray(item.tags) ? item.tags : [],
               nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
@@ -250,6 +251,30 @@ export const updateMenu = asyncHandler(async (req, res) => {
     };
   }) : [];
 
+
+  const normalizedAddons = Array.isArray(addons) ? addons.map((addon, index) => {
+    const existingAddon = existingMenu?.addons?.find(a => String(a.id) === String(addon.id));
+    const normalizedImages = Array.isArray(addon.images) && addon.images.length > 0
+      ? addon.images.filter(img => img && typeof img === 'string' && img.trim() !== '')
+      : (addon.image && addon.image.trim() !== '' ? [addon.image] : []);
+
+    return {
+      id: String(addon.id || `addon-${Date.now()}-${index}`),
+      name: addon.name || "Unnamed Add-on",
+      description: addon.description || "",
+      price: addon.price !== undefined && addon.price !== null ? Number(addon.price) || 0 : 0,
+      image: normalizedImages.length > 0 ? normalizedImages[0] : (addon.image || ""),
+      images: normalizedImages,
+      isAvailable: addon.isAvailable !== undefined ? addon.isAvailable : true,
+      approvalStatus: existingAddon?.approvalStatus || addon.approvalStatus || 'pending',
+      rejectionReason: existingAddon?.rejectionReason || addon.rejectionReason || '',
+      requestedAt: existingAddon?.requestedAt || addon.requestedAt || (addon.approvalStatus === 'pending' ? new Date() : undefined),
+      approvedAt: existingAddon?.approvedAt || addon.approvedAt,
+      approvedBy: existingAddon?.approvedBy || addon.approvedBy,
+      rejectedAt: existingAddon?.rejectedAt || addon.rejectedAt,
+    };
+  }) : null;
+
   // Find or create menu
   let menu = await Menu.findOne({ cafe: cafeId });
 
@@ -267,6 +292,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
     menu = new Menu({
       cafe: cafeId,
       sections: normalizedSections,
+      addons: normalizedAddons || [],
       isActive: true,
     });
     console.log('[UPDATE MENU] Creating new menu');
@@ -274,6 +300,10 @@ export const updateMenu = asyncHandler(async (req, res) => {
     console.log('[UPDATE MENU] Updating existing menu');
     // Use set method to ensure Mongoose properly tracks changes
     menu.set('sections', normalizedSections);
+    if (normalizedAddons) {
+      menu.set('addons', normalizedAddons);
+      menu.markModified('addons');
+    }
     // Mark sections as modified to ensure Mongoose saves nested arrays properly
     // This is CRITICAL for nested arrays in Mongoose
     menu.markModified('sections');
@@ -309,6 +339,7 @@ export const updateMenu = asyncHandler(async (req, res) => {
   return successResponse(res, 200, 'Menu updated successfully', {
     menu: {
       sections: menu.sections,
+      addons: menu.addons,
       isActive: menu.isActive,
     },
   });
@@ -402,7 +433,7 @@ export const addItemToSection = asyncHandler(async (req, res) => {
     reviews: item.reviews ?? 0,
     price: Number(item.price) || 0,
     categoryId: item.categoryId || null,
-    stock: item.stock || "Unlimited",
+    stock: item.stock !== undefined && item.stock !== null ? item.stock : "Unlimited",
     discount: item.discount || null,
     originalPrice: item.originalPrice || null,
     foodType: item.foodType || "Non-Veg",
@@ -417,7 +448,7 @@ export const addItemToSection = asyncHandler(async (req, res) => {
       id: String(v.id || Date.now() + Math.random()),
       name: v.name || "",
       price: Number(v.price) || 0,
-      stock: v.stock || "Unlimited",
+      stock: v.stock !== undefined && v.stock !== null ? v.stock : "Unlimited",
     })) : [],
     tags: Array.isArray(item.tags) ? item.tags : [],
     nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
@@ -445,6 +476,7 @@ export const addItemToSection = asyncHandler(async (req, res) => {
     item: newItem,
     menu: {
       sections: menu.sections,
+      addons: menu.addons,
       isActive: menu.isActive,
     },
   });
@@ -547,7 +579,7 @@ export const addItemToSubsection = asyncHandler(async (req, res) => {
     reviews: item.reviews ?? 0,
     price: Number(item.price) || 0,
     categoryId: item.categoryId || null,
-    stock: item.stock || "Unlimited",
+    stock: item.stock !== undefined && item.stock !== null ? item.stock : "Unlimited",
     discount: item.discount || null,
     originalPrice: item.originalPrice || null,
     foodType: item.foodType || "Non-Veg",
@@ -562,7 +594,7 @@ export const addItemToSubsection = asyncHandler(async (req, res) => {
       id: String(v.id || Date.now() + Math.random()),
       name: v.name || "",
       price: Number(v.price) || 0,
-      stock: v.stock || "Unlimited",
+      stock: v.stock !== undefined && v.stock !== null ? v.stock : "Unlimited",
     })) : [],
     tags: Array.isArray(item.tags) ? item.tags : [],
     nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
@@ -593,7 +625,7 @@ export const addItemToSubsection = asyncHandler(async (req, res) => {
 export const getMenuByCafeId = async (req, res) => {
   try {
     const { id } = req.params;
-    const { dietary } = req.query; // 'pure-veg', 'veg', 'non-veg'
+    const { dietary, category } = req.query; // dietary: 'pure-veg', 'veg', 'non-veg'
 
     // Find cafe by ID, slug, or cafeId
     const cafe = await Cafe.findOne({
@@ -637,6 +669,59 @@ export const getMenuByCafeId = async (req, res) => {
       categoryNameMap.set(cat.name.toLowerCase().trim(), cat._id);
     });
 
+    // Category keyword filtering (works like keyword search)
+    const rawCategory = typeof category === 'string' ? category.trim() : '';
+    const normalizedCategory = rawCategory.toLowerCase();
+    const isCategoryFilterActive = normalizedCategory && normalizedCategory !== 'all';
+
+    let categoryIdFromQuery = null;
+    let categoryKeywords = [];
+
+    if (isCategoryFilterActive) {
+      const baseKeywords = normalizedCategory
+        .split(/[\s-]+/)
+        .map(word => word.trim())
+        .filter(Boolean);
+      categoryKeywords = [normalizedCategory, ...baseKeywords];
+
+      const matchedCategory = adminCategories.find(cat => {
+        const name = (cat.name || '').toLowerCase().trim();
+        const slug = name.replace(/\s+/g, '-');
+        return String(cat._id) === normalizedCategory || name === normalizedCategory || slug === normalizedCategory;
+      });
+
+      if (matchedCategory) {
+        categoryIdFromQuery = String(matchedCategory._id);
+        const name = (matchedCategory.name || '').toLowerCase().trim();
+        const nameParts = name.split(/[\s-]+/).filter(Boolean);
+        categoryKeywords = Array.from(new Set([...categoryKeywords, name, ...nameParts]));
+      }
+    }
+
+    const matchesCategoryFilter = (item, sectionName, sectionCategoryId) => {
+      if (!isCategoryFilterActive) return true;
+
+      const itemCategoryId = item?.categoryId ? String(item.categoryId) : null;
+      if (categoryIdFromQuery) {
+        if (itemCategoryId === categoryIdFromQuery) return true;
+        if (sectionCategoryId && String(sectionCategoryId) === categoryIdFromQuery) return true;
+      }
+
+      const haystack = [
+        item?.name,
+        item?.category,
+        item?.subCategory,
+        sectionName,
+        ...(Array.isArray(item?.tags) ? item.tags : []),
+      ]
+        .filter(Boolean)
+        .map(value => String(value).toLowerCase());
+
+      return categoryKeywords.some(keyword =>
+        haystack.some(value => value.includes(keyword))
+      );
+    };
+
     // Filter menu for user side: only show enabled sections and available items
     const toPlainObject = (doc) => (
       doc && typeof doc.toObject === 'function' ? doc.toObject() : doc
@@ -675,7 +760,8 @@ export const getMenuByCafeId = async (req, res) => {
             passesDietary = (item.foodType === 'Non-Veg' || item.foodType === 'Egg' || item.dishType === 'nonVeg');
           }
 
-          const shouldShow = isAvailable && isApproved && passesDietary;
+          const passesCategory = matchesCategoryFilter(item, sectionData.name, sectionCategoryId);
+          const shouldShow = isAvailable && isApproved && passesDietary && passesCategory;
 
           // Debug logging for filtered items
           if (!shouldShow) {
@@ -712,7 +798,8 @@ export const getMenuByCafeId = async (req, res) => {
                 passesDietary = (item.foodType === 'Non-Veg' || item.foodType === 'Egg' || item.dishType === 'nonVeg');
               }
 
-              const shouldShow = isAvailable && isApproved && passesDietary;
+              const passesCategory = matchesCategoryFilter(item, sectionData.name, sectionCategoryId);
+              const shouldShow = isAvailable && isApproved && passesDietary && passesCategory;
 
               return shouldShow;
             }).map(item => {
@@ -1081,6 +1168,7 @@ export const getMenuByAdmin = asyncHandler(async (req, res) => {
   return successResponse(res, 200, 'Menu retrieved successfully', {
     menu: {
       sections: menu.sections || [],
+      addons: menu.addons || [],
       isActive: menu.isActive,
     },
   });
@@ -1089,7 +1177,7 @@ export const getMenuByAdmin = asyncHandler(async (req, res) => {
 // Update menu by cafe ID (for admin)
 export const updateMenuByAdmin = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { sections } = req.body;
+  const { sections, addons } = req.body;
   const adminId = req.user._id;
   const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value));
   const toObjectIdOrNull = (value) => {
@@ -1147,7 +1235,7 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
           reviews: item.reviews ?? 0,
           price: item.price || 0,
           categoryId,
-          stock: item.stock || "Unlimited",
+          stock: item.stock !== undefined && item.stock !== null ? item.stock : "Unlimited",
           discount: item.discount || null,
           originalPrice: item.originalPrice || null,
           foodType: item.foodType || "Non-Veg",
@@ -1162,7 +1250,7 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
             id: String(v.id || Date.now() + Math.random()),
             name: v.name || "",
             price: v.price || 0,
-            stock: v.stock || "Unlimited",
+            stock: v.stock !== undefined && v.stock !== null ? v.stock : "Unlimited",
           })) : [],
           tags: Array.isArray(item.tags) ? item.tags : [],
           nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
@@ -1207,7 +1295,7 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
               reviews: item.reviews ?? 0,
               price: item.price || 0,
               categoryId,
-              stock: item.stock || "Unlimited",
+              stock: item.stock !== undefined && item.stock !== null ? item.stock : "Unlimited",
               discount: item.discount || null,
               originalPrice: item.originalPrice || null,
               foodType: item.foodType || "Non-Veg",
@@ -1222,7 +1310,7 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
                 id: String(v.id || Date.now() + Math.random()),
                 name: v.name || "",
                 price: v.price || 0,
-                stock: v.stock || "Unlimited",
+                stock: v.stock !== undefined && v.stock !== null ? v.stock : "Unlimited",
               })) : [],
               tags: Array.isArray(item.tags) ? item.tags : [],
               nutrition: Array.isArray(item.nutrition) ? item.nutrition : [],
@@ -1261,6 +1349,7 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
     menu = new Menu({
       cafe: id,
       sections: normalizedSections,
+      addons: normalizedAddons || [],
       isActive: true,
     });
     menu.set("restaurant", id, { strict: false });
@@ -1269,6 +1358,10 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
       menu.set("cafe", id);
     }
     menu.set('sections', normalizedSections);
+    if (normalizedAddons) {
+      menu.set('addons', normalizedAddons);
+      menu.markModified('addons');
+    }
     menu.markModified('sections');
     menu.isNew = false;
   }
@@ -1278,7 +1371,9 @@ export const updateMenuByAdmin = asyncHandler(async (req, res) => {
   return successResponse(res, 200, 'Menu updated successfully by admin', {
     menu: {
       sections: menu.sections,
+      addons: menu.addons,
       isActive: menu.isActive,
     },
   });
 });
+

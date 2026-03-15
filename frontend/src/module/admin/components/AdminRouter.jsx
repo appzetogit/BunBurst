@@ -81,7 +81,6 @@ const FeedbackExperienceReport = lazy(() => import("../pages/reports/FeedbackExp
 const TaxReport = lazy(() => import("../pages/reports/TaxReport"));
 const CafeVATReport = lazy(() => import("../pages/reports/CafeVATReport"));
 // Transaction Management
-const CafeWithdraws = lazy(() => import("../pages/transactions/CafeWithdraws"));
 const WithdrawMethod = lazy(() => import("../pages/transactions/WithdrawMethod"));
 // Employee Management
 const EmployeeRole = lazy(() => import("../pages/employees/EmployeeRole"));
@@ -260,7 +259,6 @@ export default function AdminRouter() {
           <Route path="cafe-vat-report" element={<CafeVATReport />} />
 
           {/* TRANSACTION MANAGEMENT */}
-          <Route path="cafe-withdraws" element={<CafeWithdraws />} />
           <Route path="withdraw-method" element={<WithdrawMethod />} />
 
           {/* EMPLOYEE MANAGEMENT */}

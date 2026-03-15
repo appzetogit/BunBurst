@@ -435,6 +435,10 @@ export const API_ENDPOINTS = {
   // Notification endpoints
   NOTIFICATION: {
     ADMIN_SEND: "/notification/admin/send",
+    ADMIN_LIST: "/notification/admin",
+    ADMIN_UPDATE: "/notification/admin/:id",
+    ADMIN_STATUS: "/notification/admin/:id/status",
+    ADMIN_DELETE: "/notification/admin/:id",
     USER_FCM_TOKEN: "/notification/user/token",
     DELIVERY_FCM_TOKEN: "/notification/delivery/token",
     CAFE_FCM_TOKEN: "/notification/cafe/token",

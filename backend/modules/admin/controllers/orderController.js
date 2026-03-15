@@ -127,10 +127,12 @@ export const getOrders = asyncHandler(async (req, res) => {
       }
     }
 
-    // Search filter (orderId, customer name, customer phone)
+    // Search filter (orderId, customer name/phone, cafe)
     if (search) {
+      const searchRegex = { $regex: search, $options: 'i' };
       query.$or = [
-        { orderId: { $regex: search, $options: 'i' } }
+        { orderId: searchRegex },
+        { cafeName: searchRegex }
       ];
 
       // If search looks like a phone number, search in customer data
@@ -152,12 +154,27 @@ export const getOrders = asyncHandler(async (req, res) => {
       // Also search by customer name
       const User = (await import('../../auth/models/User.js')).default;
       const usersByName = await User.find({
-        name: { $regex: search, $options: 'i' }
+        name: searchRegex
       }).select('_id').lean();
       const userIdsByName = usersByName.map(u => u._id);
       if (userIdsByName.length > 0) {
         if (!query.$or) query.$or = [];
         query.$or.push({ userId: { $in: userIdsByName } });
+      }
+
+      // Also search by cafe name -> cafeId
+      const Cafe = (await import('../../cafe/models/Cafe.js')).default;
+      const cafeDocBySearch = await Cafe.findOne({
+        name: searchRegex
+      }).select('_id cafeId').lean();
+
+      if (cafeDocBySearch) {
+        if (cafeDocBySearch._id) {
+          query.$or.push({ cafeId: cafeDocBySearch._id });
+        }
+        if (cafeDocBySearch.cafeId) {
+          query.$or.push({ cafeId: cafeDocBySearch.cafeId });
+        }
       }
 
       // Ensure $or array is not empty
@@ -927,9 +944,30 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
       }
     }
 
-    // Search filter (orderId)
+    // Search filter (orderId / cafe / cafeId)
     if (search) {
-      query.orderId = { $regex: search, $options: 'i' };
+      const searchRegex = { $regex: search, $options: 'i' };
+      const searchConditions = [
+        { orderId: searchRegex },
+        { cafeName: searchRegex },
+      ];
+
+      // Try matching cafe by name and include cafeId matches
+      const Cafe = (await import('../../cafe/models/Cafe.js')).default;
+      const cafeDocBySearch = await Cafe.findOne({
+        name: searchRegex
+      }).select('_id cafeId').lean();
+
+      if (cafeDocBySearch) {
+        if (cafeDocBySearch._id) {
+          searchConditions.push({ cafeId: cafeDocBySearch._id });
+        }
+        if (cafeDocBySearch.cafeId) {
+          searchConditions.push({ cafeId: cafeDocBySearch.cafeId });
+        }
+      }
+
+      query.$or = searchConditions;
     }
 
     // Calculate pagination
@@ -1082,7 +1120,9 @@ export const getCafeReport = asyncHandler(async (req, res) => {
       all,
       type,
       time,
-      search
+      search,
+      page = 1,
+      limit = 20
     } = req.query;
 
     console.log('📋 Query params:', { zone, all, type, time, search });
@@ -1254,13 +1294,20 @@ export const getCafeReport = asyncHandler(async (req, res) => {
     filteredReports.sort((a, b) => a.cafeName.localeCompare(b.cafeName));
     filteredReports = filteredReports.map((report, index) => ({ ...report, sl: index + 1 }));
 
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const parsedLimit = Math.max(parseInt(limit, 10) || 20, 1);
+    const total = filteredReports.length;
+    const pages = Math.ceil(total / parsedLimit);
+    const start = (parsedPage - 1) * parsedLimit;
+    const paginatedReports = filteredReports.slice(start, start + parsedLimit);
+
     return successResponse(res, 200, 'Cafe report retrieved successfully', {
-      cafes: filteredReports,
+      cafes: paginatedReports,
       pagination: {
-        page: 1,
-        limit: 1000,
-        total: filteredReports.length,
-        pages: 1
+        page: parsedPage,
+        limit: parsedLimit,
+        total,
+        pages
       }
     });
   } catch (error) {

@@ -475,12 +475,13 @@ export const cafeAPI = {
       item,
     });
   },
-  getMenuByCafeId: (cafeId) => {
+  getMenuByCafeId: (cafeId, params = {}) => {
     return apiClient.get(
       API_ENDPOINTS.CAFE.MENU_BY_CAFE_ID.replace(
         ":id",
         cafeId,
       ),
+      { params },
     );
   },
 
@@ -663,12 +664,13 @@ export const cafeAPI = {
     );
   },
 
-  getMenuByCafeId: (cafeId) => {
+  getMenuByCafeId: (cafeId, params = {}) => {
     return apiClient.get(
       API_ENDPOINTS.CAFE.MENU_BY_CAFE_ID.replace(
         ":id",
         cafeId,
       ),
+      { params },
     );
   },
 
@@ -1108,6 +1110,26 @@ export const adminAPI = {
   // Send push notification
   sendPushNotification: (payload) => {
     return apiClient.post(API_ENDPOINTS.NOTIFICATION.ADMIN_SEND, payload);
+  },
+
+  // Get admin notifications
+  getAdminNotifications: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.NOTIFICATION.ADMIN_LIST, { params });
+  },
+
+  // Update admin notification status
+  updateAdminNotificationStatus: (id, status) => {
+    return apiClient.patch(API_ENDPOINTS.NOTIFICATION.ADMIN_STATUS.replace(":id", id), { status });
+  },
+
+  // Update admin notification
+  updateAdminNotification: (id, payload) => {
+    return apiClient.patch(API_ENDPOINTS.NOTIFICATION.ADMIN_UPDATE.replace(":id", id), payload);
+  },
+
+  // Delete admin notification
+  deleteAdminNotification: (id) => {
+    return apiClient.delete(API_ENDPOINTS.NOTIFICATION.ADMIN_DELETE.replace(":id", id));
   },
 
   // Get users

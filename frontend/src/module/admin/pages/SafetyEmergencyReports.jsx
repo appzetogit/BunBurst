@@ -352,27 +352,35 @@ export default function SafetyEmergencyReports() {
                             <Settings className="w-4 h-4" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewReport(report)}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
+                        <DropdownMenuContent
+                          align="end"
+                          className="min-w-[240px] rounded-md border border-slate-200 bg-white p-1 shadow-lg flex flex-col z-50"
+                        >
+                          <DropdownMenuItem
+                            onClick={() => handleViewReport(report)}
+                            className="flex items-center gap-2 whitespace-nowrap"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>View Details</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleUpdateStatus(report._id, report.status === 'unread' ? 'read' : 'unread')}
+                            className="flex items-center gap-2 whitespace-nowrap"
                           >
-                            Mark as {report.status === 'unread' ? 'Read' : 'Unread'}
+                            <span>Mark as {report.status === 'unread' ? 'Read' : 'Unread'}</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleUpdatePriority(report._id, report.priority === 'critical' ? 'high' : 'critical')}
+                            className="flex items-center gap-2 whitespace-nowrap"
                           >
-                            Set Priority: {report.priority === 'critical' ? 'High' : 'Critical'}
+                            <span>Set Priority: {report.priority === 'critical' ? 'High' : 'Critical'}</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDelete(report._id)}
-                            className="text-red-600"
+                            className="flex items-center gap-2 text-red-600 whitespace-nowrap"
                           >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
+                            <Trash2 className="w-4 h-4" />
+                            <span>Delete</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

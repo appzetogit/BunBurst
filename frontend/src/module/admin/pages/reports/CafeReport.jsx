@@ -1,23 +1,30 @@
 import { useState, useMemo, useEffect } from "react"
-import { Search, Download, ChevronDown, Filter, Briefcase, RefreshCw, Settings, ArrowUpDown, FileText, FileSpreadsheet, Code, Loader2 } from "lucide-react"
+import { Search, Download, ChevronDown, Filter, Briefcase, RefreshCw, ArrowUpDown, FileText, FileSpreadsheet, Code, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { exportReportsToCSV, exportReportsToExcel, exportReportsToPDF, exportReportsToJSON } from "../../components/reports/reportsExportUtils"
 import { adminAPI } from "@/lib/api"
 import { toast } from "sonner"
 
 export default function CafeReport() {
+  const [searchInput, setSearchInput] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [cafes, setCafes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [totalCafes, setTotalCafes] = useState(0)
   const [filters, setFilters] = useState({
     zone: "All Zones",
     all: "All",
-    type: "All types",
+    time: "All Time",
+  })
+  const [pendingFilters, setPendingFilters] = useState({
+    zone: "All Zones",
+    all: "All",
     time: "All Time",
   })
   const [zones, setZones] = useState([])
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const PAGE_SIZE = 20
 
   // Fetch zones for filter dropdown
   useEffect(() => {
@@ -34,6 +41,16 @@ export default function CafeReport() {
     fetchZones()
   }, [])
 
+  // Debounce search input to prevent refetch on every keystroke
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(searchInput.trim())
+      setCurrentPage(1)
+    }, 400)
+
+    return () => clearTimeout(handler)
+  }, [searchInput])
+
   // Fetch cafe report data
   useEffect(() => {
     const fetchCafeReport = async () => {
@@ -43,17 +60,22 @@ export default function CafeReport() {
         const params = {
           zone: filters.zone !== "All Zones" ? filters.zone : undefined,
           all: filters.all !== "All" ? filters.all : undefined,
-          type: filters.type !== "All types" ? filters.type : undefined,
           time: filters.time !== "All Time" ? filters.time : undefined,
-          search: searchQuery || undefined
+          search: searchQuery || undefined,
+          page: currentPage,
+          limit: PAGE_SIZE
         }
 
         const response = await adminAPI.getCafeReport(params)
 
         if (response?.data?.success && response.data.data) {
           setCafes(response.data.data.cafes || [])
+          setTotalPages(response.data.data.pagination?.pages || 1)
+          setTotalCafes(response.data.data.pagination?.total || response.data.data.cafes?.length || 0)
         } else {
           setCafes([])
+          setTotalPages(1)
+          setTotalCafes(0)
           if (response?.data?.message) {
             toast.error(response.data.message)
           }
@@ -62,28 +84,31 @@ export default function CafeReport() {
         console.error("Error fetching cafe report:", error)
         toast.error("Failed to fetch cafe report")
         setCafes([])
+        setTotalPages(1)
+        setTotalCafes(0)
       } finally {
         setLoading(false)
       }
     }
 
     fetchCafeReport()
-  }, [filters, searchQuery])
+  }, [filters, searchQuery, currentPage])
 
-  const filteredCafes = useMemo(() => {
-    return cafes // Backend already filters, so just return cafes
-  }, [cafes])
+  const filteredCafes = useMemo(() => cafes, [cafes])
 
-  const totalCafes = filteredCafes.length
+  const totalCafesLabel = totalCafes || filteredCafes.length
 
   const handleReset = () => {
-    setFilters({
+    const reset = {
       zone: "All Zones",
       all: "All",
-      type: "All types",
       time: "All Time",
-    })
+    }
+    setPendingFilters(reset)
+    setFilters(reset)
+    setSearchInput("")
     setSearchQuery("")
+    setCurrentPage(1)
   }
 
   const handleExport = (format) => {
@@ -111,10 +136,11 @@ export default function CafeReport() {
   }
 
   const handleFilterApply = () => {
-    // Filters are already applied via useMemo
+    setFilters(pendingFilters)
+    setCurrentPage(1)
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.all !== "All" ? 1 : 0) + (filters.type !== "All types" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (pendingFilters.zone !== "All Zones" ? 1 : 0) + (pendingFilters.all !== "All" ? 1 : 0) + (pendingFilters.time !== "All Time" ? 1 : 0)
 
   const renderStars = (rating, reviews) => {
     if (rating === 0) {
@@ -153,14 +179,14 @@ export default function CafeReport() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">Search Data</h3>
           <div className="flex flex-col lg:flex-row lg:items-end gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
               <div className="relative">
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Zone
                 </label>
                 <select
-                  value={filters.zone}
-                  onChange={(e) => setFilters(prev => ({ ...prev, zone: e.target.value }))}
+                  value={pendingFilters.zone}
+                  onChange={(e) => setPendingFilters(prev => ({ ...prev, zone: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="All Zones">All Zones</option>
@@ -176,8 +202,8 @@ export default function CafeReport() {
                   All
                 </label>
                 <select
-                  value={filters.all}
-                  onChange={(e) => setFilters(prev => ({ ...prev, all: e.target.value }))}
+                  value={pendingFilters.all}
+                  onChange={(e) => setPendingFilters(prev => ({ ...prev, all: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="All">All</option>
@@ -189,27 +215,11 @@ export default function CafeReport() {
 
               <div className="relative">
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Type
-                </label>
-                <select
-                  value={filters.type}
-                  onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="All types">All types</option>
-                  <option value="Commission">Commission</option>
-                  <option value="Subscription">Subscription</option>
-                </select>
-                <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />
-              </div>
-
-              <div className="relative">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
                   Time
                 </label>
                 <select
-                  value={filters.time}
-                  onChange={(e) => setFilters(prev => ({ ...prev, time: e.target.value }))}
+                  value={pendingFilters.time}
+                  onChange={(e) => setPendingFilters(prev => ({ ...prev, time: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="All Time">All Time</option>
@@ -251,15 +261,15 @@ export default function CafeReport() {
         {/* Cafe Report Table Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Cafe Report Table {totalCafes}</h2>
+            <h2 className="text-xl font-bold text-slate-900">Cafe Report Table {totalCafesLabel}</h2>
 
             <div className="flex items-center gap-3">
               <div className="relative flex-1 sm:flex-initial min-w-[250px]">
                 <input
                   type="text"
-                  placeholder="Ex: search cafe nam"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="search by name"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-4 pr-10 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -294,12 +304,6 @@ export default function CafeReport() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <button 
-                onClick={() => setIsSettingsOpen(true)}
-                className="p-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-all"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
             </div>
           </div>
 
@@ -434,33 +438,32 @@ export default function CafeReport() {
               </tbody>
             </table>
           </div>
+
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+              <div className="text-sm text-slate-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Settings Dialog */}
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-md bg-white p-0 opacity-0 data-[state=open]:opacity-100 data-[state=closed]:opacity-0 transition-opacity duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:scale-100 data-[state=closed]:scale-100">
-          <DialogHeader className="px-6 pt-6 pb-4">
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Report Settings
-            </DialogTitle>
-          </DialogHeader>
-          <div className="px-6 pb-6">
-            <p className="text-sm text-slate-700">
-              Cafe report settings and preferences will be available here.
-            </p>
-          </div>
-          <div className="px-6 pb-6 flex items-center justify-end">
-            <button
-              onClick={() => setIsSettingsOpen(false)}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-all shadow-md"
-            >
-              Close
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
