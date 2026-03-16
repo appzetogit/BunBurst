@@ -1,10 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react"
-<<<<<<< HEAD
-import { locationAPI, userAPI } from "@/lib/api"
-import { writeUserLocation } from "@/lib/firebaseRealtime"
-=======
 import { userAPI } from "@/lib/api"
->>>>>>> 3d4d1981f9a2cd76a1aa47f2cc28266f25c41ab6
 
 const LocationContext = createContext(null)
 
