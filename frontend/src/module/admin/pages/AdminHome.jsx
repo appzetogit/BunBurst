@@ -184,7 +184,7 @@ export default function AdminHome() {
               icon={<Truck className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
               isLoading={isLoading}
-              onClick={() => navigate("/admin/delivery-partners")}
+              onClick={() => navigate("/admin/fee-settings")}
             />
             <MetricCard
               title="GST"

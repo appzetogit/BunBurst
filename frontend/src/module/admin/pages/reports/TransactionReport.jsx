@@ -267,41 +267,6 @@ export default function TransactionReport() {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          {/* Completed Transaction - Green */}
-          <div className="rounded-lg shadow-sm border border-slate-200 p-4" style={{ backgroundColor: '#f1f5f9' }}>
-            <div className="relative mb-3 flex justify-center">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                <img src={completedIcon} alt="Completed" className="w-12 h-12" />
-              </div>
-              <div className="absolute top-0 right-0 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                <Info className="w-3 h-3 text-white" />
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-xl font-bold text-green-600 mb-1">{formatCurrency(summary.completedTransaction)}</p>
-              <p className="text-sm text-slate-600 leading-tight">Completed Transaction</p>
-            </div>
-          </div>
-
-          {/* Refunded Transaction - Red */}
-          <div className="rounded-lg shadow-sm border border-slate-200 p-4" style={{ backgroundColor: '#f1f5f9' }}>
-            <div className="relative mb-3 flex justify-center">
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                <img src={refundedIcon} alt="Refunded" className="w-12 h-12" />
-              </div>
-              <div className="absolute top-0 right-0 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
-                <Info className="w-3 h-3 text-white" />
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-xl font-bold text-red-600 mb-1">{formatFullCurrency(summary.refundedTransaction)}</p>
-              <p className="text-sm text-slate-600 leading-tight">Refunded Transaction</p>
-            </div>
-          </div>
-        </div>
-
         {/* Order Transactions Section */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
