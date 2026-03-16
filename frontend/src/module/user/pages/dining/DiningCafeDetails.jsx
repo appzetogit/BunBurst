@@ -29,6 +29,7 @@ export default function DiningCafeDetails() {
     const [selectedGuests, setSelectedGuests] = useState(2)
     const [bookingLoading, setBookingLoading] = useState(false)
     const [latestBooking, setLatestBooking] = useState(null)
+    const [upcomingBookings, setUpcomingBookings] = useState([])
 
     useEffect(() => {
         const fetchCafe = async () => {
@@ -86,7 +87,7 @@ export default function DiningCafeDetails() {
                     return
                 }
 
-                const match = bookings
+                const filtered = bookings
                     .filter(b => {
                         const bStatus = (b.bookingStatus || b.status || "").toLowerCase();
                         // Filter out cancelled, rejected and past date bookings
@@ -99,19 +100,31 @@ export default function DiningCafeDetails() {
                         
                         return bookingDate.getTime() >= today.getTime();
                     })
-                    .sort((a, b) => new Date(b.date) - new Date(a.date))
-                    .find((booking) => {
+                    .filter((booking) => {
                         const bookingCafeId =
                             booking?.cafeId ||
                             booking?.cafe?._id ||
                             booking?.cafe
                         return String(bookingCafeId) === String(cafe._id)
                     })
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
 
-                setLatestBooking(match || null)
+                const unique = []
+                const seen = new Set()
+                for (const booking of filtered) {
+                    const key = booking._id ||
+                        `${booking.date}-${booking.timeSlot}-${booking.guests}-${booking.tableId?.tableNumber || booking.table?.tableNumber || ""}`
+                    if (seen.has(key)) continue
+                    seen.add(key)
+                    unique.push(booking)
+                }
+
+                setUpcomingBookings(unique)
+                setLatestBooking(unique[0] || null)
             } catch (err) {
                 console.error("Failed to load bookings", err)
                 setLatestBooking(null)
+                setUpcomingBookings([])
             } finally {
                 setBookingLoading(false)
             }
@@ -233,11 +246,11 @@ export default function DiningCafeDetails() {
                             <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
                             <p className="text-sm text-muted-foreground animate-pulse">Syncing your reservation...</p>
                         </div>
-                    ) : latestBooking ? (
+                    ) : upcomingBookings.length ? (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-gradient-to-br from-card via-card to-primary/10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-xl"
+                            className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-gradient-to-br from-card via-card to-primary/10 shadow-[0_16px_40px_rgba(0,0,0,0.08)] backdrop-blur-xl"
                         >
                             {/* Premium Glow Elements */}
                             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -245,84 +258,72 @@ export default function DiningCafeDetails() {
                                 <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-highlight/10 blur-[80px]" />
                             </div>
 
-                            <div className="relative p-7 sm:p-9">
-                                <div className="flex items-center justify-between mb-8">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-14 w-14 rounded-[1.25rem] bg-primary shadow-lg shadow-primary/30 text-primary-foreground flex items-center justify-center transform -rotate-3 group-hover:rotate-0 transition-transform duration-500">
-                                            <Receipt className="w-8 h-8" />
+                            <div className="relative p-5 sm:p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-11 w-11 rounded-[1rem] bg-primary shadow-lg shadow-primary/30 text-primary-foreground flex items-center justify-center transform -rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                            <Receipt className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-black text-foreground tracking-tight">Your Table is Ready</h3>
-                                            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest opacity-70">Active Reservation</p>
-                                        </div>
-                                    </div>
-                                    <Badge variant="outline" className="px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border-emerald-500/20 backdrop-blur-md">
-                                        CONFIRMED
-                                    </Badge>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
-                                    <div className="group rounded-[1.5rem] border border-border/50 bg-background/40 hover:bg-background/60 p-5 transition-all duration-300 backdrop-blur-md border-b-4 border-r-2">
-                                        <div className="flex items-center gap-2.5 text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-3">
-                                            <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600">
-                                                <CalendarDays className="w-4 h-4" />
-                                            </div>
-                                            Arrival Date
-                                        </div>
-                                        <div className="text-xl font-black text-foreground">
-                                            {new Date(latestBooking.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                                        </div>
-                                    </div>
-
-                                    <div className="group rounded-[1.5rem] border border-border/50 bg-background/40 hover:bg-background/60 p-5 transition-all duration-300 backdrop-blur-md border-b-4 border-r-2">
-                                        <div className="flex items-center gap-2.5 text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-3">
-                                            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600">
-                                                <Clock className="w-4 h-4" />
-                                            </div>
-                                            Booked Slot
-                                        </div>
-                                        <div className="text-xl font-black text-foreground">
-                                            {latestBooking.timeSlot}
-                                        </div>
-                                    </div>
-
-                                    <div className="group rounded-[1.5rem] border border-border/50 bg-background/40 hover:bg-background/60 p-5 transition-all duration-300 backdrop-blur-md border-b-4 border-r-2">
-                                        <div className="flex items-center gap-2.5 text-[10px] font-black text-muted-foreground uppercase tracking-wider mb-3">
-                                            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-600">
-                                                <Users className="w-4 h-4" />
-                                            </div>
-                                            Group Size
-                                        </div>
-                                        <div className="text-xl font-black text-foreground">
-                                            {latestBooking.guests} Guests
+                                            <h3 className="text-xl font-black text-foreground tracking-tight">
+                                                {(latestBooking.bookingStatus || latestBooking.status)?.toLowerCase() === "pending" ? "Reservation Pending" : "Your Table is Ready"}
+                                            </h3>
+                                            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-widest opacity-70">Active Reservation</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap items-center justify-between gap-6 pt-7 border-t border-border/50">
-                                    <div className="flex items-center gap-4">
-                                        {latestBooking.table?.tableNumber || latestBooking.tableId?.tableNumber ? (
-                                            <div className="px-5 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-black border border-primary/20 shadow-sm shadow-primary/10">
-                                                TABLE {latestBooking.table?.tableNumber || latestBooking.tableId?.tableNumber}
-                                            </div>
-                                        ) : null}
-                                        <div className="flex items-center gap-3 px-5 py-2.5 rounded-xl bg-muted/50 text-muted-foreground text-[11px] font-black uppercase tracking-widest border border-border/20">
-                                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                            {(latestBooking.bookingStatus || latestBooking.status) === "pending"
-                                                ? "Waiting Approval"
-                                                : (latestBooking.bookingStatus || latestBooking.status)}
+                                <div className="mb-6" />
+
+                                {upcomingBookings.length > 1 ? (
+                                    <div className="mt-6 w-full">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-sm font-black text-foreground">Upcoming Reservations</h4>
+                                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                                                {upcomingBookings.length} Total
+                                            </span>
+                                        </div>
+                                        <div className="grid gap-3">
+                                            {upcomingBookings.map((booking) => (
+                                                <div
+                                                    key={booking._id || `${booking.date}-${booking.timeSlot}-${booking.guests}`}
+                                                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/40 bg-background/30 px-4 py-3 backdrop-blur-md"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                                                            <CalendarDays className="w-4 h-4" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[12px] font-black text-foreground">
+                                                                {new Date(booking.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
+                                                            </div>
+                                                            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                                                                {booking.timeSlot || "Slot"}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                                            <Users className="w-3 h-3 text-[#e53935]" />
+                                                            {booking.guests} Guests
+                                                        </div>
+                                                        <div className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-border/40 bg-muted/40 text-muted-foreground">
+                                                            {booking.bookingStatus || booking.status || "Confirmed"}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                    
+                                ) : null}
+
+                                <div className="flex flex-wrap items-center justify-center gap-4 pt-5 border-t border-border/50 mt-6">
                                     <Button 
                                         onClick={() => navigate("/bookings")}
-                                        variant="link" 
-                                        className="text-primary font-black hover:no-underline flex items-center gap-2 px-0 py-0 h-auto group"
+                                        className="bg-[#e53935] hover:bg-[#d32f2f] text-white font-black rounded-lg px-4 h-10 flex items-center gap-2 group shadow-md shadow-red-100 transition-all active:scale-95 text-sm"
                                     >
                                         Manage Reservation 
-                                        <div className="p-1.5 rounded-full bg-primary/10 group-hover:translate-x-1 transition-transform">
-                                            <ArrowLeft className="w-4 h-4 rotate-180" />
-                                        </div>
+                                        <ArrowLeft className="w-4 h-4 rotate-180 group-hover:translate-x-1 transition-transform" />
                                     </Button>
                                 </div>
                             </div>

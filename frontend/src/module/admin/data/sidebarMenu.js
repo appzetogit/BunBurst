@@ -160,7 +160,6 @@ export const sidebarMenuData = [
             label: "Salary Setup",
             path: "/admin/delivery-partners/salary-setup",
           },
-          { label: "Deliveryman Reviews", path: "/admin/delivery-partners/reviews" },
           { label: "Cash Settlements", path: "/admin/delivery-boy-wallet" },
         ],
       },

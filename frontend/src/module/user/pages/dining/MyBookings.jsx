@@ -195,13 +195,13 @@ export default function MyBookings() {
                                         transition={{ delay: index * 0.1 }}
                                         className="bg-card rounded-3xl p-5 shadow-sm border border-border group hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5 flex flex-col sm:flex-row items-start gap-6"
                                     >
-                                        <div className="w-full sm:w-28 h-40 sm:h-28 rounded-2xl overflow-hidden flex-shrink-0 bg-muted relative">
+                                        <div className="w-full sm:w-24 h-32 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 bg-muted relative">
                                             <img
                                                 src={booking.cafe?.image || booking.cafe?.profileImage?.url || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=200&q=80"}
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                                 alt={booking.cafe?.name}
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent sm:hidden" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent sm:hidden" />
                                         </div>
 
                                         <div className="flex-1 min-w-0 w-full">
@@ -260,10 +260,12 @@ export default function MyBookings() {
                                                 {(booking.bookingStatus === "confirmed" || booking.status === "confirmed") && !booking.checkInStatus && (
                                                     <Button
                                                         onClick={() => handleCheckIn(booking._id)}
-                                                        disabled={checkInLoadingId === booking._id}
-                                                        className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                                                        disabled={checkInLoadingId === booking._id || new Date(booking.date).setHours(0,0,0,0) > new Date().setHours(0,0,0,0)}
+                                                        className="flex-1 h-11 bg-[#e53935] hover:bg-[#d32f2f] text-white font-black rounded-xl shadow-lg shadow-red-100 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale-[0.5] disabled:cursor-not-allowed"
+                                                        title={new Date(booking.date).setHours(0,0,0,0) > new Date().setHours(0,0,0,0) ? "Check-in becomes active on the day of your booking" : ""}
                                                     >
-                                                        {checkInLoadingId === booking._id ? "Checking In..." : "PROCEED TO CHECK-IN"}
+                                                        {checkInLoadingId === booking._id ? "Checking In..." : 
+                                                         new Date(booking.date).setHours(0,0,0,0) > new Date().setHours(0,0,0,0) ? "UPCOMING BOOKING" : "PROCEED TO CHECK-IN"}
                                                     </Button>
                                                 )}
 

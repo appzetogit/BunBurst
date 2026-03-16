@@ -9,10 +9,40 @@ export default function DeliverySalarySetup() {
     const [deliverymen, setDeliverymen] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [summary, setSummary] = useState({
+        totalSalariedStaff: 0,
+        totalMonthlyLiability: 0,
+        activeStaff: 0
+    })
 
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [editFormData, setEditFormData] = useState(null)
     const [processing, setProcessing] = useState(false)
+
+    const getSalaryAmount = (d) => {
+        const amount =
+            d.fullData?.salary?.amount ??
+            d.fullData?.salary ??
+            d.salary?.amount ??
+            d.salary ??
+            d.monthlySalary ??
+            0
+        const parsed = Number(amount)
+        return Number.isFinite(parsed) ? parsed : 0
+    }
+
+    const isFixedSalary = (d) => {
+        const type = d.fullData?.salary?.type ?? d.salary?.type
+        return !type || String(type).toLowerCase() === "fixed"
+    }
+
+    const computeSummary = (list = []) => {
+        const totalSalariedStaff = list.filter(d => isFixedSalary(d) && getSalaryAmount(d) > 0).length
+        const totalMonthlyLiability = list.reduce((sum, d) => sum + getSalaryAmount(d), 0)
+        const activeStaff = list.filter(d => d.isActive).length
+
+        return { totalSalariedStaff, totalMonthlyLiability, activeStaff }
+    }
 
     // Fetch delivery partners
     const fetchDeliverymen = async () => {
@@ -29,7 +59,11 @@ export default function DeliverySalarySetup() {
             const response = await adminAPI.getDeliveryPartners(params)
 
             if (response.data && response.data.success) {
-                setDeliverymen(response.data.data.deliveryPartners || [])
+                const list = response.data.data.deliveryPartners || []
+                setDeliverymen(list)
+                if (!searchQuery.trim()) {
+                    setSummary(computeSummary(list))
+                }
             } else {
                 setDeliverymen([])
             }
@@ -41,9 +75,21 @@ export default function DeliverySalarySetup() {
         }
     }
 
+    const fetchSummary = async () => {
+        try {
+            const response = await adminAPI.getDeliveryPartners({ page: 1, limit: 1000 })
+            if (response.data && response.data.success) {
+                setSummary(computeSummary(response.data.data.deliveryPartners || []))
+            }
+        } catch (err) {
+            console.error("Error fetching delivery partners summary:", err)
+        }
+    }
+
     // Initial fetch
     useEffect(() => {
         fetchDeliverymen()
+        fetchSummary()
     }, [])
 
     // Debounced search
@@ -60,7 +106,7 @@ export default function DeliverySalarySetup() {
             name: deliveryman.name,
             email: deliveryman.email,
             phone: deliveryman.phone,
-            salary: deliveryman.fullData?.salary?.amount || 0,
+            salary: getSalaryAmount(deliveryman),
             joiningDate: deliveryman.fullData?.joiningDate ?
                 new Date(deliveryman.fullData.joiningDate).toISOString().split('T')[0] :
                 new Date().toISOString().split('T')[0]
@@ -125,7 +171,10 @@ export default function DeliverySalarySetup() {
                             </div>
 
                             <button
-                                onClick={fetchDeliverymen}
+                                onClick={() => {
+                                    fetchDeliverymen()
+                                    fetchSummary()
+                                }}
                                 className="p-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-all"
                                 title="Refresh"
                             >
@@ -139,19 +188,19 @@ export default function DeliverySalarySetup() {
                         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
                             <h3 className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Total Salaried Staff</h3>
                             <p className="text-2xl font-bold text-blue-900 mt-1">
-                                {deliverymen.filter(d => d.fullData?.salary?.type === 'fixed' && d.fullData?.salary?.amount > 0).length}
+                                {summary.totalSalariedStaff}
                             </p>
                         </div>
                         <div className="bg-green-50 border border-green-100 rounded-lg p-4">
                             <h3 className="text-xs font-semibold text-green-600 uppercase tracking-wide">Total Monthly Liability</h3>
                             <p className="text-2xl font-bold text-green-900 mt-1">
-                                ₹{deliverymen.reduce((sum, d) => sum + (d.fullData?.salary?.amount || 0), 0).toLocaleString()}
+                                ₹{summary.totalMonthlyLiability.toLocaleString()}
                             </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                             <h3 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Active Staff</h3>
                             <p className="text-2xl font-bold text-slate-900 mt-1">
-                                {deliverymen.filter(d => d.isActive).length}
+                                {summary.activeStaff}
                             </p>
                         </div>
                     </div>
@@ -186,7 +235,7 @@ export default function DeliverySalarySetup() {
                                             </tr>
                                         ) : (
                                             deliverymen.map((dm, index) => {
-                                                const salary = dm.fullData?.salary?.amount || 0;
+                                                const salary = getSalaryAmount(dm);
                                                 const hasSalary = salary > 0;
 
                                                 return (
