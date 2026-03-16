@@ -11,7 +11,7 @@ import { useProfile } from "../../context/ProfileContext"
 import { useOrders } from "../../context/OrdersContext"
 import { useLocation as useUserLocation } from "../../hooks/useLocation"
 import { useZone } from "../../hooks/useZone"
-import { orderAPI, cafeAPI, adminAPI, userAPI, API_ENDPOINTS, zoneAPI } from "@/lib/api"
+import { orderAPI, cafeAPI, adminAPI, userAPI, API_ENDPOINTS, zoneAPI, couponAPI } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
 import { initRazorpayPayment } from "@/lib/utils/razorpay"
 import { toast } from "sonner"
@@ -451,6 +451,22 @@ export default function Cart() {
     [cart]
   )
 
+  // Use backend pricing if available, otherwise fallback to database settings
+  const subtotal = pricing?.subtotal || cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0)
+  const deliveryFee = pricing?.deliveryFee ?? (subtotal >= feeSettings.freeDeliveryThreshold || appliedCoupon?.freeDelivery ? 0 : feeSettings.deliveryFee)
+  const platformFee = pricing?.platformFee || feeSettings.platformFee
+  const gstCharges = pricing?.tax || Math.round(subtotal * (feeSettings.gstRate / 100))
+  const discount = pricing?.discount || (appliedCoupon ? Math.min(appliedCoupon.discount, subtotal * 0.5) : 0)
+  
+  // Calculate original price (crossed-out amount) using GST on full subtotal
+  // This ensures the crossed-out price (e.g. 622) doesn't change when a coupon reduces the tax (e.g. to 619)
+  const originalGst = Math.round(subtotal * (feeSettings.gstRate / 100))
+  const originalDeliveryFee = subtotal >= feeSettings.freeDeliveryThreshold ? 0 : feeSettings.deliveryFee
+  const totalBeforeDiscount = subtotal + originalDeliveryFee + platformFee + originalGst
+  
+  const total = pricing?.total || (totalBeforeDiscount - discount)
+  const savings = pricing?.savings || discount
+
 
 
   // ── Share cart via native OS share sheet (WhatsApp, Instagram, etc.) ──
@@ -708,8 +724,6 @@ export default function Cart() {
     fetchCategoryMatchedAddons()
     // Use stable cartCategoryIds string to avoid re-fires on reference changes
   }, [cartCategoryIds.join(',')])
-
-  // Fetch coupons for items in cart
   useEffect(() => {
     const fetchCouponsForCartItems = async () => {
       if (cart.length === 0 || !cafeId) {
@@ -723,7 +737,45 @@ export default function Cart() {
       const allCoupons = []
       const uniqueCouponCodes = new Set()
 
-      // Fetch coupons for each item in cart
+      // 1. Fetch Global Coupons
+      try {
+        const globalResponse = await couponAPI.getActiveCoupons()
+        if (globalResponse?.data?.success && globalResponse?.data?.data) {
+          globalResponse.data.data.forEach(coupon => {
+            if (!uniqueCouponCodes.has(coupon.code)) {
+              uniqueCouponCodes.add(coupon.code)
+              
+              let discountVal = 0;
+              let description = "";
+              
+              if (coupon.discountType === 'flat') {
+                discountVal = coupon.discountValue;
+                description = `Save ₹${formatAmount(coupon.discountValue)} with '${coupon.code}'`;
+              } else {
+                discountVal = (subtotal * coupon.discountValue) / 100;
+                if (coupon.maxDiscount && discountVal > coupon.maxDiscount) {
+                  discountVal = coupon.maxDiscount;
+                }
+                description = `Get ${coupon.discountValue}% OFF with '${coupon.code}'`;
+              }
+
+              allCoupons.push({
+                code: coupon.code,
+                discount: discountVal,
+                discountPercentage: coupon.discountType === 'percentage' ? coupon.discountValue : null,
+                minOrder: coupon.minOrderAmount || 0,
+                description: description,
+                isGlobal: true,
+                maxDiscount: coupon.maxDiscount
+              })
+            }
+          })
+        }
+      } catch (err) {
+        console.error("Error fetching global coupons:", err)
+      }
+
+      // 2. Fetch coupons for each item in cart
       for (const cartItem of cart) {
         if (!cartItem.id) {
           console.log(`[CART-COUPONS] Skipping item without id:`, cartItem)
@@ -748,7 +800,7 @@ export default function Cart() {
                   discount: coupon.originalPrice - coupon.discountedPrice,
                   discountPercentage: coupon.discountPercentage,
                   minOrder: coupon.minOrderValue || 0,
-                  description: `Save ?${formatAmount(coupon.originalPrice - coupon.discountedPrice)} with '${coupon.couponCode}'`,
+                  description: `Save ₹${formatAmount(coupon.originalPrice - coupon.discountedPrice)} with '${coupon.couponCode}'`,
                   originalPrice: coupon.originalPrice,
                   discountedPrice: coupon.discountedPrice,
                   itemId: cartItem.id,
@@ -769,8 +821,8 @@ export default function Cart() {
 
     fetchCouponsForCartItems()
     // Use cartKey (stable fingerprint) + cafeId so we only refetch when
-    // cart contents or the cafe actually change � not on every re-render.
-  }, [cartKey, cafeId])
+    // cart contents or the cafe actually change – not on every re-render.
+  }, [cartKey, cafeId, subtotal])
 
   // Calculate pricing from backend whenever cart, address, or coupon changes.
   // Uses a 400ms debounce so rapid quantity taps don't fire a request per tap.
@@ -884,15 +936,7 @@ export default function Cart() {
     fetchFeeSettings()
   }, [])
 
-  // Use backend pricing if available, otherwise fallback to database settings
-  const subtotal = pricing?.subtotal || cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0)
-  const deliveryFee = pricing?.deliveryFee ?? (subtotal >= feeSettings.freeDeliveryThreshold || appliedCoupon?.freeDelivery ? 0 : feeSettings.deliveryFee)
-  const platformFee = pricing?.platformFee || feeSettings.platformFee
-  const gstCharges = pricing?.tax || Math.round(subtotal * (feeSettings.gstRate / 100))
-  const discount = pricing?.discount || (appliedCoupon ? Math.min(appliedCoupon.discount, subtotal * 0.5) : 0)
-  const totalBeforeDiscount = subtotal + deliveryFee + platformFee + gstCharges
-  const total = pricing?.total || (totalBeforeDiscount - discount)
-  const savings = pricing?.savings || (discount + (subtotal > 500 ? 32 : 0))
+
 
   // Cafe name from data or cart
   const cafeName = cafeData?.name || cart[0]?.cafe || "Cafe"
@@ -1492,7 +1536,7 @@ export default function Cart() {
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-24 md:pb-32">
         {/* Savings Banner */}
-        {savings > 0 && (
+        {((appliedCoupon || pricing?.appliedCoupon) && savings > 0) && (
           <div className="bg-primary/10 px-4 md:px-6 py-2 md:py-3 flex-shrink-0">
             <div className="w-full lg:max-w-[1100px] mx-auto">
               <p className="text-sm md:text-base font-medium text-primary">
@@ -1852,9 +1896,11 @@ export default function Cart() {
                     <div className="text-left">
                       <div className="flex items-center gap-2 md:gap-3 flex-wrap">
                         <span className="text-sm md:text-base text-foreground">Total Bill</span>
-                        <span className="text-sm md:text-base text-muted-foreground line-through">₹{formatAmount(totalBeforeDiscount)}</span>
+                        {discount > 0 && (
+                          <span className="text-sm md:text-base text-muted-foreground line-through">₹{formatAmount(totalBeforeDiscount)}</span>
+                        )}
                         <span className="text-sm md:text-base font-semibold text-foreground">₹{formatAmount(total)}</span>
-                        {savings > 0 && (
+                        {(appliedCoupon || pricing?.appliedCoupon) && savings > 0 && (
                           <span className="text-xs md:text-sm bg-primary/10 text-primary px-1.5 md:px-2 py-0.5 rounded font-medium">You saved ₹{formatAmount(savings)}</span>
                         )}
                       </div>

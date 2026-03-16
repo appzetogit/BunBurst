@@ -2,14 +2,9 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import io from 'socket.io-client';
 import { API_BASE_URL } from '@/lib/api/config';
 import bikeLogo from '@/assets/bikelogo.png';
-<<<<<<< HEAD
-import { RouteBasedAnimationController } from '@/module/user/utils/routeBasedAnimation';
+import { RouteBasedAnimationController, setMarkerRotation } from '@/module/user/utils/routeBasedAnimation';
 import { extractPolylineFromDirections, findNearestPointOnPolyline } from '@/module/delivery/utils/liveTrackingPolyline';
 import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey';
-=======
-import { RouteBasedAnimationController, setMarkerRotation } from '@/module/user/utils/routeBasedAnimation';
-import { findNearestPointOnPolyline } from '@/module/delivery/utils/liveTrackingPolyline';
->>>>>>> 3d4d1981f9a2cd76a1aa47f2cc28266f25c41ab6
 import './DeliveryTrackingMap.css';
 
 // Helper function to calculate Haversine distance

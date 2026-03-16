@@ -1,6 +1,8 @@
 import Admin from "../models/Admin.js";
 import Order from "../../order/models/Order.js";
 import Cafe from "../../cafe/models/Cafe.js";
+import Delivery from "../../delivery/models/Delivery.js";
+import User from "../../auth/models/User.js";
 import Offer from "../../cafe/models/Offer.js";
 import OrderSettlement from "../../order/models/OrderSettlement.js";
 import AdminWallet from "../models/AdminWallet.js";
@@ -268,10 +270,8 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     const activeCafes = await Cafe.countDocuments({
       isActive: true,
     });
-    // Note: Delivery partners are stored in User model
-    const User = (await import("../../auth/models/User.js")).default;
-    const activeDeliveryPartners = await User.countDocuments({
-      role: "delivery",
+    const activeDeliveryPartners = await Delivery.countDocuments({
+      status: { $in: ["approved", "active"] },
       isActive: true,
     });
     const activePartners = activeCafes + activeDeliveryPartners;
@@ -315,14 +315,14 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
       pendingCafeRequestsQuery,
     );
 
-    // Total delivery boys (all delivery users)
-    const totalDeliveryBoys = await User.countDocuments({ role: "delivery" });
+    // Total delivery boys (only approved/active to match the deliveryman list)
+    const totalDeliveryBoys = await Delivery.countDocuments({
+      status: { $in: ["approved", "active"] },
+    });
 
-    // Delivery boy requests pending (delivery users with isActive: false or verification pending)
-    // Assuming deliveryStatus field exists, if not we'll use isActive: false
-    const pendingDeliveryBoyRequests = await User.countDocuments({
-      role: "delivery",
-      $or: [{ isActive: false }, { deliveryStatus: "pending" }],
+    // Delivery boy requests pending (status = 'pending', awaiting admin approval)
+    const pendingDeliveryBoyRequests = await Delivery.countDocuments({
+      status: "pending",
     });
 
     // Total foods (Menu items) - Count all individual menu items from active menus

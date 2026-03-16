@@ -76,6 +76,20 @@ export const updateCoupon = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
+    // If code is being updated, check if it already exists on another coupon
+    if (updateData.code) {
+      const existingCoupon = await Coupon.findOne({ 
+        code: updateData.code.toUpperCase(), 
+        _id: { $ne: id } 
+      });
+      if (existingCoupon) {
+        return res.status(400).json({
+          success: false,
+          message: 'Coupon code already exists'
+        });
+      }
+    }
+
     const coupon = await Coupon.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
 
     if (!coupon) {

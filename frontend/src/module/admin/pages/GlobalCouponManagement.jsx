@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Plus, Search, Edit2, Trash2, Power, PowerOff, Check, X, Calendar, Gift } from "lucide-react"
 import { adminAPI } from "@/lib/api"
 import { format } from "date-fns"
+import { toast } from "sonner"
 
 export default function GlobalCouponManagement() {
   const [coupons, setCoupons] = useState([])
@@ -82,6 +83,23 @@ export default function GlobalCouponManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Client-side uniqueness check for new coupons
+    if (!isEditing) {
+      const exists = coupons.some(c => c.code === form.code.toUpperCase())
+      if (exists) {
+        toast.error("Coupon code already exists")
+        return
+      }
+    } else {
+      // Check if code changed to something that exists on another coupon
+      const exists = coupons.some(c => c._id !== selectedId && c.code === form.code.toUpperCase())
+      if (exists) {
+        toast.error("Coupon code already exists on another coupon")
+        return
+      }
+    }
+
     setSubmitting(true)
     try {
       const payload = { ...form }
@@ -89,13 +107,16 @@ export default function GlobalCouponManagement() {
       
       if (isEditing) {
         await adminAPI.updateGlobalCoupon(selectedId, payload)
+        toast.success("Coupon updated successfully")
       } else {
         await adminAPI.createGlobalCoupon(payload)
+        toast.success("Coupon created successfully")
       }
       setIsModalOpen(false)
       fetchCoupons()
     } catch (err) {
-      alert(err?.response?.data?.message || "Something went wrong")
+      const msg = err?.response?.data?.message || "Something went wrong"
+      toast.error(msg)
     } finally {
       setSubmitting(false)
     }
@@ -104,9 +125,10 @@ export default function GlobalCouponManagement() {
   const handleToggle = async (id) => {
     try {
       await adminAPI.toggleGlobalCoupon(id)
+      toast.success("Status updated")
       fetchCoupons()
     } catch (err) {
-      alert(err?.response?.data?.message || "Failed to toggle status")
+      toast.error(err?.response?.data?.message || "Failed to toggle status")
     }
   }
 
@@ -114,9 +136,10 @@ export default function GlobalCouponManagement() {
     if (!window.confirm("Are you sure you want to delete this coupon?")) return
     try {
       await adminAPI.deleteGlobalCoupon(id)
+      toast.success("Coupon deleted successfully")
       fetchCoupons()
     } catch (err) {
-      alert(err?.response?.data?.message || "Failed to delete coupon")
+      toast.error(err?.response?.data?.message || "Failed to delete coupon")
     }
   }
 
@@ -286,9 +309,16 @@ export default function GlobalCouponManagement() {
                     type="text"
                     value={form.code}
                     onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                    className="w-full rounded-xl border border-[#F5F5F5] bg-[#fafafa] p-3 text-sm focus:border-[#e53935] focus:outline-none"
+                    className={`w-full rounded-xl border ${
+                      !isEditing && coupons.some(c => c.code === form.code.toUpperCase()) 
+                        ? 'border-red-400 focus:border-red-500' 
+                        : 'border-[#F5F5F5] focus:border-[#e53935]'
+                    } bg-[#fafafa] p-3 text-sm focus:outline-none`}
                     placeholder="e.g. WELCOME100"
                   />
+                  {!isEditing && coupons.some(c => c.code === form.code.toUpperCase()) && (
+                    <p className="mt-1 text-xs text-red-500 font-medium italic">This code already exists</p>
+                  )}
                 </div>
 
                 <div>

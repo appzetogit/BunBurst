@@ -1922,6 +1922,31 @@ export const adminAPI = {
       API_ENDPOINTS.ADMIN.FEEDBACK_EXPERIENCE_BY_ID.replace(":id", id),
     );
   },
+
+  // Global Coupons
+  // Global Coupon Management Methods
+  getGlobalCoupons: () => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.COUPONS);
+  },
+  createGlobalCoupon: (data) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.COUPONS, data);
+  },
+  updateGlobalCoupon: (id, data) => {
+    return apiClient.put(
+      API_ENDPOINTS.ADMIN.COUPON_BY_ID.replace(":id", id),
+      data,
+    );
+  },
+  toggleGlobalCoupon: (id) => {
+    return apiClient.patch(
+      API_ENDPOINTS.ADMIN.COUPON_TOGGLE.replace(":id", id),
+    );
+  },
+  deleteGlobalCoupon: (id) => {
+    return apiClient.delete(
+      API_ENDPOINTS.ADMIN.COUPON_BY_ID.replace(":id", id),
+    );
+  },
 };
 
 // Upload / media helper functions
@@ -2125,4 +2150,16 @@ export const heroBannerAPI = {
   getGourmetCafes: () => {
     return apiClient.get(API_ENDPOINTS.HERO_BANNER.GOURMET_PUBLIC);
   },
+};
+
+// Export user coupon API helper functions
+export const couponAPI = {
+  // Apply coupon
+  apply: (couponCode, cartTotal) => {
+    return apiClient.post(API_ENDPOINTS.COUPON.APPLY, { couponCode, cartTotal });
+  },
+  // Get active coupons for user
+  getActiveCoupons: () => {
+    return apiClient.get(API_ENDPOINTS.COUPON.LIST);
+  }
 };
