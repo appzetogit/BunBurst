@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect, useState } from 'react'
-import { GoogleMap, Marker } from '@react-google-maps/api'
+import { GoogleMap, Marker, Polyline } from '@react-google-maps/api'
 import { motion } from 'framer-motion'
 import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey'
 
@@ -33,18 +33,45 @@ import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey'
 
 // Use direct public path which is more reliable in this setup
 const getDeliveryIconUrl = () => {
-  try {
-    // Try to use delivery icon from public assets
-    return '/assets/deliveryboy/deliveryIcon.png'
-  } catch {
-    // Fallback to bikelogo if delivery icon not found
-    return '/src/assets/bikelogo.png'
-  }
+  return '/assets/deliveryboy/deliveryIcon.png'
 }
 
 const mapContainerStyle = {
   width: '100%',
   height: '22rem'
+}
+
+
+const haversineDistanceMeters = (a, b) => {
+  const R = 6371000
+  const dLat = (b.lat - a.lat) * Math.PI / 180
+  const dLng = (b.lng - a.lng) * Math.PI / 180
+  const lat1 = a.lat * Math.PI / 180
+  const lat2 = b.lat * Math.PI / 180
+  const hav = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.atan2(Math.sqrt(hav), Math.sqrt(1 - hav))
+}
+
+const buildInterpolatedPolyline = (points, stepMeters = 80) => {
+  const cleanPoints = points.filter((p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lng))
+  if (cleanPoints.length < 2) return cleanPoints
+
+  const path = [cleanPoints[0]]
+  for (let i = 1; i < cleanPoints.length; i++) {
+    const from = cleanPoints[i - 1]
+    const to = cleanPoints[i]
+    const segmentDistance = haversineDistanceMeters(from, to)
+    const segments = Math.max(1, Math.ceil(segmentDistance / stepMeters))
+
+    for (let step = 1; step <= segments; step++) {
+      const t = step / segments
+      path.push({
+        lat: from.lat + (to.lat - from.lat) * t,
+        lng: from.lng + (to.lng - from.lng) * t
+      })
+    }
+  }
+  return path
 }
 
 export default function GoogleMapsTracking({
@@ -62,8 +89,6 @@ export default function GoogleMapsTracking({
   lastUpdate
 }) {
   const mapRef = useRef(null)
-  const directionsServiceRef = useRef(null)
-  const directionsRendererRef = useRef(null)
   const lastRouteCalcRef = useRef({ time: 0, origin: { lat: 0, lng: 0 } })
   const hasInitialBoundsFitted = useRef(false)
   const [userHasInteracted, setUserHasInteracted] = useState(false)
@@ -71,6 +96,7 @@ export default function GoogleMapsTracking({
   const [routeInfo, setRouteInfo] = useState(null)
   const [routeError, setRouteError] = useState(null)
   const [isGPSWeak, setIsGPSWeak] = useState(false)
+  const [routePath, setRoutePath] = useState([])
 
   // Check for weak GPS signal (no updates for > 45 seconds)
   useEffect(() => {
@@ -104,11 +130,17 @@ export default function GoogleMapsTracking({
     lng: (allSellers[0].lng + customerLocation.lng) / 2
   } : customerLocation)
 
-  const path = [
-    ...allSellers,
-    ...(deliveryLocation ? [deliveryLocation] : []),
-    customerLocation
-  ].filter(loc => loc && (loc.lat !== 0 || loc.lng !== 0))
+  // Helper function to limit zoom level when polyline is shown or during live tracking
+  const limitZoomIfNeeded = useCallback((map) => {
+    if (!map) return;
+    const currentZoom = map.getZoom();
+    const MAX_ZOOM = 16; // Maximum zoom when polyline is shown or during live tracking
+
+    // Limit zoom if polyline is shown or during live tracking
+    if ((showRoute || isTracking) && currentZoom > MAX_ZOOM) {
+      map.setZoom(MAX_ZOOM);
+    }
+  }, [showRoute, isTracking]);
 
   // Auto-center and fit bounds when location or route changes
   useEffect(() => {
@@ -216,18 +248,6 @@ export default function GoogleMapsTracking({
     hasInitialBoundsFitted.current = false;
   };
 
-  // Helper function to limit zoom level when polyline is shown or during live tracking
-  const limitZoomIfNeeded = useCallback((map) => {
-    if (!map) return;
-    const currentZoom = map.getZoom();
-    const MAX_ZOOM = 16; // Maximum zoom when polyline is shown or during live tracking
-    
-    // Limit zoom if polyline is shown or during live tracking
-    if ((showRoute || isTracking) && currentZoom > MAX_ZOOM) {
-      map.setZoom(MAX_ZOOM);
-    }
-  }, [showRoute, isTracking]);
-
   const onLoad = useCallback((map) => {
     mapRef.current = map
     // Track user interaction with the map (pan, zoom, drag)
@@ -256,144 +276,61 @@ export default function GoogleMapsTracking({
     };
   }, [limitZoomIfNeeded])
 
-  // Calculate and display route using Google Directions Service
+    // Calculate and display route locally with haversine + interpolated polyline
   const calculateAndDisplayRoute = useCallback((origin, destination, waypoints = []) => {
     if (!isLoaded || !mapRef.current || !window.google?.maps) {
       return
     }
 
-    // Validate origin and destination
     if (!origin || !destination || !origin.lat || !origin.lng || !destination.lat || !destination.lng) {
       return
     }
 
-    // Optimization: Throttle route calculation (min 5 seconds between calls)
-    // unless origin has moved significantly (> 50m)
     const now = Date.now()
     const lastCalc = lastRouteCalcRef.current
     const timeDiff = now - lastCalc.time
     if (timeDiff < 5000) {
-      // Check if origin moved significantly
       const latDiff = Math.abs(origin.lat - lastCalc.origin.lat)
       const lngDiff = Math.abs(origin.lng - lastCalc.origin.lng)
-      // Rough approximation: 0.0005 degrees is ~50m
       if (latDiff < 0.0005 && lngDiff < 0.0005) {
-        return // Skip calculation
+        return
       }
     }
     lastRouteCalcRef.current = { time: now, origin: { ...origin } }
 
-    // Initialize DirectionsService if not already initialized
-    if (!directionsServiceRef.current) {
-      directionsServiceRef.current = new window.google.maps.DirectionsService()
+    const points = [origin, ...waypoints, destination]
+    const interpolatedPath = buildInterpolatedPolyline(points)
+    setRoutePath(interpolatedPath)
+    setRouteError(null)
+
+    let totalDistance = 0
+    for (let i = 1; i < points.length; i++) {
+      totalDistance += haversineDistanceMeters(points[i - 1], points[i])
     }
 
-    // Initialize or reuse DirectionsRenderer
-    if (!directionsRendererRef.current) {
-      directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-        map: mapRef.current,
-        suppressMarkers: true, // We'll use custom markers
-        preserveViewport: true, // Preserve viewport - we'll center manually
-                      polylineOptions: {
-                        strokeColor: '#3b82f6', // Bright blue like Zomato/Swiggy
-                        strokeWeight: 6,
-                        strokeOpacity: 1.0, // Fully visible - plain solid line
-                        icons: [], // No icons/dots - plain solid line only
-                      },
-      })
-    } else {
-      // Ensure preserveViewport is true so route updates don't change viewport
-      directionsRendererRef.current.setOptions({ preserveViewport: true })
+    const baseDurationSeconds = (totalDistance / 1000) / 22 * 3600
+    const totalDurationSeconds = Math.max(60, Math.round(baseDurationSeconds + 120))
+
+    const formatDuration = (seconds) => {
+      if (seconds < 60) return `${Math.ceil(seconds)} sec`
+      const mins = Math.ceil(seconds / 60)
+      if (mins < 60) return `${mins} mins`
+      const hours = Math.floor(mins / 60)
+      const remainingMins = mins % 60
+      return `${hours}h ${remainingMins}m`
     }
 
-    // Prepare waypoints
-    const googleWaypoints = waypoints.map(wp => ({
-      location: new window.google.maps.LatLng(wp.lat, wp.lng),
-      stopover: true
-    }));
+    const formatDistance = (meters) => {
+      if (meters < 1000) return `${Math.round(meters)}m`
+      return `${(meters / 1000).toFixed(1)} km`
+    }
 
-    // Calculate route with DRIVING mode
-    directionsServiceRef.current.route(
-      {
-        origin: origin,
-        destination: destination,
-        waypoints: googleWaypoints,
-        travelMode: window.google.maps.TravelMode.DRIVING, // DRIVING mode as requested
-        drivingOptions: {
-          departureTime: new Date(),
-          trafficModel: 'bestguess'
-        },
-        optimizeWaypoints: true,
-      },
-      (result, status) => {
-        if (status === 'OK' && result.routes && result.routes[0]) {
-          setRouteError(null)
-          // Extract route information
-          const route = result.routes[0]
-          if (route.legs && route.legs.length > 0) {
-            let totalDistance = 0
-            let totalDurationSeconds = 0
-            route.legs.forEach((leg) => {
-              totalDistance += leg.distance?.value || 0
-              totalDurationSeconds += leg.duration?.value || 0
-            })
-
-            // Add 2-minute buffer (120 seconds) as requested
-            totalDurationSeconds += 120
-
-            const formatDuration = (seconds) => {
-              if (seconds < 60) return `${Math.ceil(seconds)} sec`
-              const mins = Math.ceil(seconds / 60)
-              if (mins < 60) return `${mins} mins`
-              const hours = Math.floor(mins / 60)
-              const remainingMins = mins % 60
-              return `${hours}h ${remainingMins}m`
-            }
-
-            const formatDistance = (meters) => {
-              if (meters < 1000) return `${meters}m`
-              return `${(meters / 1000).toFixed(1)} km`
-            }
-
-            setRouteInfo({
-              distance: formatDistance(totalDistance),
-              duration: formatDuration(totalDurationSeconds),
-              durationValue: totalDurationSeconds,
-              distanceValue: totalDistance,
-            })
-          }
-          directionsRendererRef.current.setDirections(result);
-          
-          // Force remove any default icons/dots from polyline after directions are set
-          // Try multiple times to ensure icons are removed
-          [100, 300, 500, 700].forEach(delay => {
-            setTimeout(() => {
-              if (directionsRendererRef.current) {
-                directionsRendererRef.current.setOptions({
-                  polylineOptions: {
-                    strokeColor: '#3b82f6',
-                    strokeWeight: 6,
-                    strokeOpacity: 1.0,
-                    icons: [] // Explicitly remove all icons/dots - plain solid line only
-                  }
-                });
-              }
-            }, delay);
-          });
-        } else {
-          console.error('❌ Directions request failed:', status, { origin, destination })
-          setRouteInfo(null)
-          // Fallback to straight line if route fails
-          if (status === 'ZERO_RESULTS') {
-            setRouteError('No road route found. Showing straight line.')
-          } else if (status === 'OVER_QUERY_LIMIT') {
-            setRouteError('Map service busy. Showing straight line.')
-          } else {
-            setRouteError('Navigation error. Showing straight line.')
-          }
-        }
-      }
-    )
+    setRouteInfo({
+      distance: formatDistance(totalDistance),
+      duration: formatDuration(totalDurationSeconds),
+      durationValue: totalDurationSeconds,
+      distanceValue: totalDistance,
+    })
   }, [isLoaded])
 
   // Handle route calculation when routeOrigin and routeDestination are provided
@@ -401,11 +338,9 @@ export default function GoogleMapsTracking({
     if (showRoute && routeOrigin && routeDestination && isLoaded && mapRef.current) {
       // Recalculate route when origin, destination or waypoints change
       calculateAndDisplayRoute(routeOrigin, routeDestination, routeWaypoints)
-    } else if (!showRoute && directionsRendererRef.current) {
-      // Clear route if showRoute is false
-      directionsRendererRef.current.setMap(null)
-      directionsRendererRef.current = null
+    } else if (!showRoute) {
       setRouteInfo(null)
+      setRoutePath([])
     }
   }, [showRoute, routeOrigin, routeDestination, routeWaypoints, isLoaded, calculateAndDisplayRoute])
 
@@ -639,10 +574,24 @@ export default function GoogleMapsTracking({
           />
         )}
 
-        {/* Polyline removed - no longer showing route line */}
+        {showRoute && routePath.length > 1 && (
+          <Polyline
+            path={routePath}
+            options={{
+              strokeColor: '#3b82f6',
+              strokeOpacity: 1,
+              strokeWeight: 6,
+              geodesic: true
+            }}
+          />
+        )}
       </GoogleMap>
     </div>
   )
 }
+
+
+
+
 
 

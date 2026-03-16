@@ -9,7 +9,11 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cron from 'node-cron';
 import mongoose from 'mongoose';
-import { initializeFirebaseRealtime, syncActiveOrderLocation } from './config/firebaseRealtime.js';
+import {
+  initializeFirebaseRealtime,
+  syncActiveOrderLocation,
+  getActiveOrderLocationRealtime
+} from './config/firebaseRealtime.js';
 
 // Load environment variables
 dotenv.config();
@@ -588,6 +592,22 @@ io.on('connection', (socket) => {
 
       // Send current location immediately when customer joins
       try {
+        const activeOrderRealtime = await getActiveOrderLocationRealtime(orderId);
+        if (
+          activeOrderRealtime &&
+          typeof activeOrderRealtime.boy_lat === 'number' &&
+          typeof activeOrderRealtime.boy_lng === 'number'
+        ) {
+          socket.emit(`current-location-${orderId}`, {
+            orderId,
+            lat: activeOrderRealtime.boy_lat,
+            lng: activeOrderRealtime.boy_lng,
+            heading: 0,
+            timestamp: activeOrderRealtime.last_updated || Date.now()
+          });
+          return;
+        }
+
         // Dynamic import to avoid circular dependencies
         const { default: Order } = await import('./modules/order/models/Order.js');
 
@@ -631,6 +651,22 @@ io.on('connection', (socket) => {
     if (!orderId) return;
 
     try {
+      const activeOrderRealtime = await getActiveOrderLocationRealtime(orderId);
+      if (
+        activeOrderRealtime &&
+        typeof activeOrderRealtime.boy_lat === 'number' &&
+        typeof activeOrderRealtime.boy_lng === 'number'
+      ) {
+        socket.emit(`current-location-${orderId}`, {
+          orderId,
+          lat: activeOrderRealtime.boy_lat,
+          lng: activeOrderRealtime.boy_lng,
+          heading: 0,
+          timestamp: activeOrderRealtime.last_updated || Date.now()
+        });
+        return;
+      }
+
       // Dynamic import to avoid circular dependencies
       const { default: Order } = await import('./modules/order/models/Order.js');
 

@@ -7,6 +7,7 @@ import { uploadToCloudinary, deleteFromCloudinary } from '../../../shared/utils/
 import { initializeCloudinary } from '../../../config/cloudinary.js';
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
 import mongoose from 'mongoose';
+import { syncCafeLocationRealtime } from '../../../config/firebaseRealtime.js';
 
 /**
  * Check if a point is within a zone polygon using ray casting algorithm
@@ -630,6 +631,26 @@ export const updateCafeProfile = asyncHandler(async (req, res) => {
     // Update cafe
     Object.assign(cafe, updateData);
     await cafe.save();
+
+    // Keep Firebase cafes/{cafeId} coordinates synced for delivery/user tracking consumers.
+    if (cafe.location) {
+      const lat = Number(cafe.location.latitude ?? cafe.location.coordinates?.[1]);
+      const lng = Number(cafe.location.longitude ?? cafe.location.coordinates?.[0]);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        syncCafeLocationRealtime({
+          cafeId: String(cafe._id),
+          latitude: lat,
+          longitude: lng,
+          address: cafe.location.address,
+          area: cafe.location.area,
+          city: cafe.location.city,
+          state: cafe.location.state,
+          formattedAddress: cafe.location.formattedAddress
+        }).catch((syncError) => {
+          console.warn(`Firebase cafe location sync skipped: ${syncError.message}`);
+        });
+      }
+    }
 
     return successResponse(res, 200, 'Cafe profile updated successfully', {
       cafe: {

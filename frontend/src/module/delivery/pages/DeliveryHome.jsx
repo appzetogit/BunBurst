@@ -323,8 +323,59 @@ function hasValidCoordinates(lat, lng) {
   return toFiniteCoordinate(lat) !== null && toFiniteCoordinate(lng) !== null
 }
 
+async function getGoogleMapConstructor() {
+  if (!window.google?.maps) return null
+
+  if (typeof window.google.maps.Map === 'function') {
+    return window.google.maps.Map
+  }
+
+  if (typeof window.google.maps.importLibrary === 'function') {
+    try {
+      const mapsLib = await window.google.maps.importLibrary('maps')
+      if (typeof mapsLib?.Map === 'function') {
+        return mapsLib.Map
+      }
+    } catch (error) {
+      console.warn('Could not load maps library via importLibrary:', error)
+    }
+  }
+
+  return null
+}
+
+function getDestinationMarkerIcon(type = 'cafe') {
+  if (!window.google?.maps) return undefined
+
+  const svg = type === 'customer'
+    ? `
+      <svg xmlns="http://www.w3.org/2000/svg" width="52" height="58" viewBox="0 0 52 58">
+        <path d="M26 2C14.4 2 5 11.4 5 23c0 14.2 15.2 28.2 19 31.5 1.2 1 2.8 1 4 0C31.8 51.2 47 37.2 47 23 47 11.4 37.6 2 26 2z" fill="#2563EB"/>
+        <circle cx="26" cy="23" r="10" fill="#FFFFFF"/>
+        <circle cx="26" cy="23" r="5" fill="#2563EB"/>
+      </svg>
+    `
+    : `
+      <svg xmlns="http://www.w3.org/2000/svg" width="52" height="58" viewBox="0 0 52 58">
+        <path d="M26 2C14.4 2 5 11.4 5 23c0 14.2 15.2 28.2 19 31.5 1.2 1 2.8 1 4 0C31.8 51.2 47 37.2 47 23 47 11.4 37.6 2 26 2z" fill="#e53935"/>
+        <circle cx="26" cy="23" r="12" fill="#FFFFFF"/>
+        <path d="M19.5 23.2h9.8a3.4 3.4 0 010 6.8h-.8a3.2 3.2 0 01-3.2 3.2h-5.8v-10z" fill="#e53935"/>
+        <path d="M30 24.8h2.6a2.2 2.2 0 010 4.4H30" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M22 20.5c0-1 0.8-1.8 1.8-1.8M25.2 20.5c0-1 0.8-1.8 1.8-1.8" fill="none" stroke="#e53935" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    `
+
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new window.google.maps.Size(52, 58),
+    anchor: new window.google.maps.Point(26, 56)
+  }
+}
+
 export default function DeliveryHome() {
   const companyName = useCompanyName()
+  const LOCATION_PUSH_INTERVAL_MS = 3000
+  const PENDING_NEW_ORDER_KEY = 'deliveryPendingNewOrderPopup'
   const navigate = useNavigate()
   const location = useLocation()
   const [animationKey, setAnimationKey] = useState(0)
@@ -646,6 +697,7 @@ export default function DeliveryHome() {
   const [showNewOrderPopup, setShowNewOrderPopup] = useState(false)
   const [countdownSeconds, setCountdownSeconds] = useState(300)
   const countdownTimerRef = useRef(null)
+  const pendingNewOrderExpiresAtRef = useRef(null)
   const [showRejectPopup, setShowRejectPopup] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
   const alertAudioRef = useRef(null)
@@ -731,6 +783,46 @@ export default function DeliveryHome() {
   }
   const acceptButtonIsSwiping = useRef(false)
   const autoShowTimerRef = useRef(null)
+
+  const clearPendingNewOrderPopup = useCallback(() => {
+    pendingNewOrderExpiresAtRef.current = null
+    try {
+      localStorage.removeItem(PENDING_NEW_ORDER_KEY)
+    } catch (error) {
+      console.warn('Could not clear pending new-order popup cache:', error)
+    }
+  }, [PENDING_NEW_ORDER_KEY])
+
+  const persistPendingNewOrderPopup = useCallback((cafeData, expiresAt, minimized = false) => {
+    if (!cafeData || !Number.isFinite(expiresAt)) return
+    try {
+      localStorage.setItem(PENDING_NEW_ORDER_KEY, JSON.stringify({
+        cafeData,
+        expiresAt,
+        minimized
+      }))
+    } catch (error) {
+      console.warn('Could not persist pending new-order popup state:', error)
+    }
+  }, [PENDING_NEW_ORDER_KEY])
+
+  const openPendingNewOrderPopup = useCallback((cafeData, seconds = 300, options = {}) => {
+    if (!cafeData || typeof cafeData !== 'object') return
+
+    const normalizedSeconds = Math.max(1, Math.floor(Number(seconds) || 300))
+    const expiresAt = Number.isFinite(options.expiresAt)
+      ? options.expiresAt
+      : Date.now() + (normalizedSeconds * 1000)
+
+    pendingNewOrderExpiresAtRef.current = expiresAt
+    persistPendingNewOrderPopup(cafeData, expiresAt, Boolean(options.minimized))
+
+    setSelectedCafe(cafeData)
+    setIsNewOrderPopupMinimized(Boolean(options.minimized))
+    setNewOrderDragY(Boolean(options.minimized) ? (newOrderPopupRef.current?.offsetHeight || 600) : 0)
+    setShowNewOrderPopup(true)
+    setCountdownSeconds(normalizedSeconds)
+  }, [persistPendingNewOrderPopup])
 
   const {
     bookedGigs,
@@ -1247,6 +1339,7 @@ export default function DeliveryHome() {
             }
             // Auto-close when countdown reaches 0
             setShowNewOrderPopup(false)
+            clearPendingNewOrderPopup()
             return 0
           }
           return prev - 1
@@ -1267,7 +1360,7 @@ export default function DeliveryHome() {
         countdownTimerRef.current = null
       }
     }
-  }, [showNewOrderPopup, countdownSeconds])
+  }, [showNewOrderPopup, countdownSeconds, clearPendingNewOrderPopup])
 
   // Play audio when New Order popup appears (only for real orders from Socket.IO)
   useEffect(() => {
@@ -1341,6 +1434,20 @@ export default function DeliveryHome() {
     }
   }, [showNewOrderPopup])
 
+  // Keep pending popup cache in sync while it's visible.
+  useEffect(() => {
+    if (!showNewOrderPopup || !selectedCafe) return
+    const expiresAt = pendingNewOrderExpiresAtRef.current || (Date.now() + countdownSeconds * 1000)
+    pendingNewOrderExpiresAtRef.current = expiresAt
+    persistPendingNewOrderPopup(selectedCafe, expiresAt, isNewOrderPopupMinimized)
+  }, [
+    showNewOrderPopup,
+    selectedCafe,
+    countdownSeconds,
+    isNewOrderPopupMinimized,
+    persistPendingNewOrderPopup
+  ])
+
   // Simulate audio playback for Earnings Guarantee
   useEffect(() => {
     if (earningsGuaranteeIsPlaying) {
@@ -1393,6 +1500,7 @@ export default function DeliveryHome() {
     setNewOrderDragY(0) // Reset drag position
     setRejectReason("")
     setCountdownSeconds(300)
+    clearPendingNewOrderPopup()
     // Here you would typically send the rejection to your backend
   }
 
@@ -1401,13 +1509,9 @@ export default function DeliveryHome() {
     setRejectReason("")
   }
 
-  // Reset popup state on page load/refresh - ensure no popup shows on refresh
+  // Restore pending new-order popup on refresh when still valid.
   useEffect(() => {
-    // Clear any popup state on mount
-    setShowNewOrderPopup(false)
-    setSelectedCafe(null)
     setHasAutoShown(false)
-    setCountdownSeconds(300)
 
     // Clear any timers
     if (autoShowTimerRef.current) {
@@ -1425,7 +1529,40 @@ export default function DeliveryHome() {
       alertAudioRef.current.currentTime = 0
       alertAudioRef.current = null
     }
-  }, []) // Only run on mount
+
+    // If an active order is already restored via deliveryActiveOrder, don't restore pending popup.
+    const hasActiveOrder = Boolean(localStorage.getItem('deliveryActiveOrder'))
+    if (hasActiveOrder) {
+      clearPendingNewOrderPopup()
+      return
+    }
+
+    try {
+      const cached = localStorage.getItem(PENDING_NEW_ORDER_KEY)
+      if (!cached) return
+
+      const parsed = JSON.parse(cached)
+      const expiresAt = Number(parsed?.expiresAt)
+      const cafeData = parsed?.cafeData
+      const minimized = Boolean(parsed?.minimized)
+
+      if (!cafeData || !Number.isFinite(expiresAt)) {
+        clearPendingNewOrderPopup()
+        return
+      }
+
+      const remainingSeconds = Math.ceil((expiresAt - Date.now()) / 1000)
+      if (remainingSeconds <= 0) {
+        clearPendingNewOrderPopup()
+        return
+      }
+
+      openPendingNewOrderPopup(cafeData, remainingSeconds, { expiresAt, minimized })
+    } catch (error) {
+      console.warn('Failed to restore pending new-order popup:', error)
+      clearPendingNewOrderPopup()
+    }
+  }, [PENDING_NEW_ORDER_KEY, openPendingNewOrderPopup, clearPendingNewOrderPopup])
 
   // Get rider location - App open ???? ?? location fetch ????
   useEffect(() => {
@@ -1543,7 +1680,7 @@ export default function DeliveryHome() {
           }
 
           // Validate coordinates are reasonable for India (basic sanity check)
-          // India: Latitude 8.4� to 37.6�, Longitude 68.7� to 97.25�
+          // India: Latitude 8.4° to 37.6°, Longitude 68.7° to 97.25°
           const isInIndiaRange = latitude >= 8 && latitude <= 38 && longitude >= 68 && longitude <= 98
           if (!isInIndiaRange) {
             console.warn("?? Coordinates outside India range - might be incorrect:", {
@@ -1794,8 +1931,8 @@ export default function DeliveryHome() {
             const lastSentTime = window.lastLocationSentTime || 0;
             const timeSinceLastSend = now - lastSentTime;
 
-            // Send location every 5 seconds even if not smoothed
-            if (timeSinceLastSend >= 5000) {
+            // Send location every 3 seconds even if not smoothed
+            if (timeSinceLastSend >= LOCATION_PUSH_INTERVAL_MS) {
               if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
                 pushRealtimeLocation({ lat, lng, accuracy, heading: position.coords.heading ?? null, speed: position.coords.speed ?? null, source: "gps" })
                 deliveryAPI.updateLocation(lat, lng, true)
@@ -1877,7 +2014,7 @@ export default function DeliveryHome() {
         // Update route polyline
         updateRoutePolyline()
 
-        // Send SMOOTHED location to backend if user is online (throttle to every 5 seconds)
+        // Send SMOOTHED location to backend if user is online (throttle to every 3 seconds)
         if (isOnlineRef.current && smoothedLocation) {
           const now = Date.now();
           const lastSentTime = window.lastLocationSentTime || 0;
@@ -1900,8 +2037,8 @@ export default function DeliveryHome() {
           // Get last sent location for distance check
           const lastSentLocation = window.lastSentLocation || null;
 
-          // Send location every 5 seconds OR if location changed significantly (>50m)
-          const shouldSend = timeSinceLastSend >= 5000 ||
+          // Send location every 3 seconds OR if location changed significantly (>50m)
+          const shouldSend = timeSinceLastSend >= LOCATION_PUSH_INTERVAL_MS ||
             (lastSentLocation &&
               calculateDistance(lastSentLocation[0], lastSentLocation[1], smoothedLat, smoothedLng) > 0.05);
 
@@ -2115,15 +2252,15 @@ export default function DeliveryHome() {
               // Priority 1: Direct address fields on cafeId
               if (order.cafeId?.address) {
                 cafeAddress = order.cafeId.address
-                }
+              }
               // Priority 2: formattedAddress from location
               else if (cafeLocation?.formattedAddress) {
                 cafeAddress = cafeLocation.formattedAddress
-                }
+              }
               // Priority 3: address from location
               else if (cafeLocation?.address) {
                 cafeAddress = cafeLocation.address
-                }
+              }
               // Priority 4: Build from addressLine1 (with zone and pin code)
               else if (cafeLocation?.addressLine1) {
                 const addressParts = [
@@ -2135,7 +2272,7 @@ export default function DeliveryHome() {
                   cafeLocation.pincode || cafeLocation.zipCode || cafeLocation.postalCode
                 ].filter(Boolean)
                 cafeAddress = addressParts.join(', ')
-                }
+              }
               // Priority 5: Build from street components (with zone and pin code)
               else if (cafeLocation?.street) {
                 const addressParts = [
@@ -2146,7 +2283,7 @@ export default function DeliveryHome() {
                   cafeLocation.pincode || cafeLocation.zipCode || cafeLocation.postalCode
                 ].filter(Boolean)
                 cafeAddress = addressParts.join(', ')
-                }
+              }
               // Priority 6: Check cafeId directly for address fields
               else if (order.cafeId?.street || order.cafeId?.city) {
                 const addressParts = [
@@ -2157,15 +2294,15 @@ export default function DeliveryHome() {
                   order.cafeId.zipCode || order.cafeId.pincode || order.cafeId.postalCode
                 ].filter(Boolean)
                 cafeAddress = addressParts.join(', ')
-                }
+              }
               // Priority 7: Check order.cafeAddress (if exists)
               else if (order.cafeAddress) {
                 cafeAddress = order.cafeAddress
-                }
+              }
               // Priority 8: Use coordinates if address not available
               else if (hasValidCoordinates(cafeLat, cafeLng)) {
                 cafeAddress = `${cafeLat}, ${cafeLng}`
-                } else {
+              } else {
                 console.warn('?? Cafe address not found in order, will try to fetch from cafe API')
                 // Try to fetch cafe address by ID if available
                 const cafeId = order.cafeId
@@ -2184,11 +2321,11 @@ export default function DeliveryHome() {
                         // Priority: location.formattedAddress (this is what user wants)
                         if (restLocation?.formattedAddress) {
                           cafeAddress = restLocation.formattedAddress
-                          } else if (cafe.address) {
+                        } else if (cafe.address) {
                           cafeAddress = cafe.address
-                          } else if (restLocation?.address) {
+                        } else if (restLocation?.address) {
                           cafeAddress = restLocation.address
-                          } else if (restLocation?.addressLine1) {
+                        } else if (restLocation?.addressLine1) {
                           const addressParts = [
                             restLocation.addressLine1,
                             restLocation.addressLine2,
@@ -2198,7 +2335,7 @@ export default function DeliveryHome() {
                             restLocation.pincode || restLocation.zipCode || restLocation.postalCode
                           ].filter(Boolean)
                           cafeAddress = addressParts.join(', ')
-                          } else if (restLocation?.street) {
+                        } else if (restLocation?.street) {
                           const addressParts = [
                             restLocation.street,
                             restLocation.area, // Zone
@@ -2207,7 +2344,7 @@ export default function DeliveryHome() {
                             restLocation.pincode || restLocation.zipCode || restLocation.postalCode
                           ].filter(Boolean)
                           cafeAddress = addressParts.join(', ')
-                          }
+                        }
                       }
                     } catch (cafeError) {
                       console.error('? Error fetching cafe address:', cafeError)
@@ -2227,11 +2364,11 @@ export default function DeliveryHome() {
               // Priority 1: Direct cafeName field from order (stored in Order model)
               if (order.cafeName && typeof order.cafeName === 'string' && order.cafeName.trim()) {
                 cafeName = order.cafeName.trim()
-                }
+              }
               // Priority 2: Name from populated cafeId object
               else if (order.cafeId && typeof order.cafeId === 'object' && order.cafeId.name) {
                 cafeName = order.cafeId.name.trim()
-                }
+              }
               // Priority 3: Fallback to existing selectedCafe name
               else if (selectedCafe?.name) {
                 cafeName = selectedCafe.name
@@ -2310,9 +2447,9 @@ export default function DeliveryHome() {
             // Use LIVE location from delivery boy to cafe
             // Use cafeInfo directly (not selectedCafe) since state update is async
             if (cafeInfo && hasValidCoordinates(cafeInfo?.lat, cafeInfo?.lng) && currentLocation) {
-              
-              
-              
+
+
+
 
               try {
                 // Calculate route immediately with current live location
@@ -2428,6 +2565,7 @@ export default function DeliveryHome() {
 
             // Close popup and show route on main map (not full-screen directions map)
             setShowNewOrderPopup(false);
+            clearPendingNewOrderPopup();
             // CRITICAL: Clear newOrder notification immediately to prevent duplicate notifications
             const acceptedOrderId = cafeInfo.id || cafeInfo.orderId || newOrder?.orderMongoId || newOrder?.orderId;
             if (acceptedOrderId) {
@@ -2478,18 +2616,7 @@ export default function DeliveryHome() {
                   // We'll extract route path and use custom polyline instead
                   if (!directionsRendererRef.current) {
                     // Create DirectionsRenderer but don't set it on map (only for extracting route data)
-                    directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-                      suppressMarkers: true,
-                      suppressInfoWindows: false,
-                      polylineOptions: {
-                        strokeColor: '#4285F4',
-                        strokeWeight: 0,
-                        strokeOpacity: 0,
-                        zIndex: -1,
-                        icons: []
-                      },
-                      preserveViewport: true
-                    });
+                    directionsRendererRef.current = null;
                     // Explicitly don't set map - we use custom polyline instead
 
                   }
@@ -2573,19 +2700,8 @@ export default function DeliveryHome() {
                   cafeMarkerRef.current = new window.google.maps.Marker({
                     position: cafeLocation,
                     map: window.deliveryMapInstance,
-                    icon: {
-                      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
-                          <circle cx="12" cy="12" r="11" fill="#e53935" stroke="#FFFFFF" stroke-width="2"/>
-                          <path d="M8 10c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v6H8v-6z" fill="#FFFFFF"/>
-                          <path d="M7 16h10M10 12h4M9 14h6" stroke="#e53935" stroke-width="1.5" stroke-linecap="round"/>
-                          <path d="M10 8h4v2h-4z" fill="#FFFFFF" opacity="0.7"/>
-                        </svg>
-                      `),
-                      scaledSize: new window.google.maps.Size(48, 48),
-                      anchor: new window.google.maps.Point(24, 48)
-                    },
-                    title: cafeInfo.name || 'Kitchen',
+                    icon: getDestinationMarkerIcon('cafe'),
+                    title: cafeInfo.name || 'Cafe',
                     animation: window.google.maps.Animation.DROP,
                     zIndex: 10
                   });
@@ -2623,6 +2739,7 @@ export default function DeliveryHome() {
             toast.error(response.data?.message || 'Failed to accept order. Please try again.')
             // Still close popup
             setShowNewOrderPopup(false)
+            clearPendingNewOrderPopup()
             setIsNewOrderPopupMinimized(false) // Reset minimized state
             setNewOrderDragY(0) // Reset drag position
           }
@@ -2661,6 +2778,7 @@ export default function DeliveryHome() {
 
           // Close popup even on error
           setShowNewOrderPopup(false)
+          clearPendingNewOrderPopup()
           setIsNewOrderPopupMinimized(false) // Reset minimized state
           setNewOrderDragY(0) // Reset drag position
         } finally {
@@ -3494,22 +3612,11 @@ export default function DeliveryHome() {
                     updateLiveTrackingPolyline(directionsResult, currentLocation)
                     // Show route polyline on main Feed map
                     if (window.deliveryMapInstance && window.google?.maps) {
-                      if (!directionsRendererRef.current) {
-                        directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-                          suppressMarkers: true,
-                          polylineOptions: { strokeColor: '#4285F4', strokeWeight: 0, strokeOpacity: 0, icons: [], zIndex: -1 },
-                          preserveViewport: true
-                        })
-                      }
-                      // Don't create main route polyline - only live tracking polyline will be shown
-                      // Remove old custom polyline if exists (cleanup)
                       try {
                         if (routePolylineRef.current) {
                           routePolylineRef.current.setMap(null);
                           routePolylineRef.current = null;
                         }
-
-                        // Remove DirectionsRenderer from map
                         if (directionsRendererRef.current) {
                           directionsRendererRef.current.setMap(null);
                         }
@@ -3521,7 +3628,6 @@ export default function DeliveryHome() {
                       if (bounds) {
                         const currentZoomBeforeFit = window.deliveryMapInstance.getZoom();
                         window.deliveryMapInstance.fitBounds(bounds, { padding: 100 });
-                        // Preserve zoom if user had zoomed in
                         setTimeout(() => {
                           const newZoom = window.deliveryMapInstance.getZoom();
                           if (currentZoomBeforeFit > newZoom && currentZoomBeforeFit >= 18) {
@@ -3738,10 +3844,10 @@ export default function DeliveryHome() {
       if (response.data?.success) {
         // Handle object results and prioritize totalEarning or amount
         const earningsData = response.data.data?.earnings || response.data.data || {};
-        const earningsValue = typeof earningsData === 'object' 
+        const earningsValue = typeof earningsData === 'object'
           ? (earningsData.totalEarning || earningsData.amount || 0)
           : (typeof earningsData === 'number' ? earningsData : 0);
-          
+
         setOrderEarnings(earningsValue)
         setOrderEarningsBreakdown(response.data.data?.earnings?.breakdown || response.data.data?.breakdown || null)
         window.dispatchEvent(new Event('deliveryWalletStateUpdated'))
@@ -3994,6 +4100,25 @@ export default function DeliveryHome() {
     return `${minutes} mins`
   }, [])
 
+  // Resolve full cafe name from any payload shape (socket/API/local fallback)
+  const resolveCafeDisplayName = (data) => {
+    const candidates = [
+      data?.cafeName,
+      data?.name,
+      data?.cafe?.name,
+      data?.cafeId?.name,
+      data?.restaurantName,
+      data?.vendorName,
+      data?.cafeLocation?.name
+    ]
+    for (const candidate of candidates) {
+      if (typeof candidate !== 'string') continue
+      const cleaned = candidate.trim().replace(/\s+/g, ' ')
+      if (cleaned) return cleaned
+    }
+    return 'Cafe'
+  }
+
   // Show new order popup when order is received from Socket.IO
   useEffect(() => {
     if (newOrder) {
@@ -4002,6 +4127,7 @@ export default function DeliveryHome() {
       // Check if this order has already been accepted
       if (acceptedOrderIdsRef.current.has(orderId)) {
 
+        clearPendingNewOrderPopup();
         clearNewOrder();
         return;
       }
@@ -4015,6 +4141,7 @@ export default function DeliveryHome() {
           if (activeOrderId === orderId) {
 
             acceptedOrderIdsRef.current.add(orderId);
+            clearPendingNewOrderPopup();
             clearNewOrder();
             return;
           }
@@ -4028,6 +4155,7 @@ export default function DeliveryHome() {
       const isCodOrder = orderPaymentMethod === 'cash'
 
       if (isCodOrder && availableCashLimit <= 0) {
+        clearPendingNewOrderPopup()
         clearNewOrder()
         return
       }
@@ -4106,7 +4234,7 @@ export default function DeliveryHome() {
       const cafeData = {
         id: newOrder.orderMongoId || newOrder.orderId,
         orderId: newOrder.orderId,
-        name: newOrder.cafeName,
+        name: resolveCafeDisplayName(newOrder),
         address: cafeAddress,
         lat: newOrderCafeCoords.lat,
         lng: newOrderCafeCoords.lng,
@@ -4129,11 +4257,9 @@ export default function DeliveryHome() {
         total: newOrder.total || 0
       }
 
-      setSelectedCafe(cafeData)
-      setShowNewOrderPopup(true)
-      setCountdownSeconds(300) // Reset countdown to 5 minutes
+      openPendingNewOrderPopup(cafeData, 300)
     }
-  }, [newOrder, calculateTimeAway, riderLocation])
+  }, [newOrder, calculateTimeAway, riderLocation, openPendingNewOrderPopup, clearPendingNewOrderPopup])
 
   // Recalculate distance when rider location becomes available
   useEffect(() => {
@@ -4483,7 +4609,7 @@ export default function DeliveryHome() {
           const cafeData = {
             id: firstOrder._id?.toString() || firstOrder.orderId,
             orderId: firstOrder.orderId,
-            name: firstOrder.cafeId?.name || 'Cafe',
+            name: resolveCafeDisplayName(firstOrder),
             address: cafeAddress,
             lat: assignedCafeCoords.lat,
             lng: assignedCafeCoords.lng,
@@ -4508,9 +4634,7 @@ export default function DeliveryHome() {
             amount: firstOrder.pricing?.total || 0
           }
 
-          setSelectedCafe(cafeData)
-          setShowNewOrderPopup(true)
-          setCountdownSeconds(300) // Reset countdown to 5 minutes
+          openPendingNewOrderPopup(cafeData, 300)
         } else {
         }
       } else {
@@ -4519,10 +4643,10 @@ export default function DeliveryHome() {
       console.error('? Error fetching assigned orders:', error)
       // Don't show error to user, just log it
     }
-    // Removed riderLocation from deps � using lastLocationRef.current instead
+    // Removed riderLocation from deps — using lastLocationRef.current instead
     // This prevents the callback from recreating on every GPS update, which was 
     // triggering the fallback polling and timeout effects into infinite loops.
-  }, [isOnline, calculateTimeAway, showNewOrderPopup])
+  }, [isOnline, calculateTimeAway, showNewOrderPopup, openPendingNewOrderPopup])
 
   // Fetch assigned orders when delivery person goes online
   useEffect(() => {
@@ -4540,10 +4664,10 @@ export default function DeliveryHome() {
   useEffect(() => {
     if (!isOnline) return undefined
 
-    // 30 seconds is plenty for fallback (sockets and push notifications handle real-time)
+    // Keep fallback reasonably fast in case a socket packet is missed.
     const intervalId = setInterval(() => {
       fetchAssignedOrders()
-    }, 30000)
+    }, 10000)
 
     return () => clearInterval(intervalId)
   }, [isOnline, fetchAssignedOrders])
@@ -4553,6 +4677,33 @@ export default function DeliveryHome() {
     if (!isOnline || !isConnected) return
     fetchAssignedOrders()
   }, [isOnline, isConnected, fetchAssignedOrders])
+
+  // Instant sync when assignment socket events are received.
+  useEffect(() => {
+    const handleAssignmentUpdated = () => {
+      if (!isOnline) return
+      fetchAssignedOrders()
+    }
+    window.addEventListener('deliveryAssignmentUpdated', handleAssignmentUpdated)
+    return () => {
+      window.removeEventListener('deliveryAssignmentUpdated', handleAssignmentUpdated)
+    }
+  }, [isOnline, fetchAssignedOrders])
+
+  // Sync when app/tab becomes visible again (covers backgrounded tabs).
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && isOnline) {
+        fetchAssignedOrders()
+      }
+    }
+    window.addEventListener('focus', handleVisibility)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.removeEventListener('focus', handleVisibility)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [isOnline, fetchAssignedOrders])
 
   // Also fetch orders on initial page load if already online
   useEffect(() => {
@@ -4651,6 +4802,9 @@ export default function DeliveryHome() {
 
       return;
     }
+
+    // Keep map available on /delivery even when there is no active order.
+    // Route/directions logic is still guarded by active-order checks.
 
     if (!mapContainerRef.current) {
 
@@ -4774,7 +4928,7 @@ export default function DeliveryHome() {
             const loader = new Loader({
               apiKey: apiKey,
               version: "weekly",
-              libraries: ["places", "geometry", "drawing"]
+              libraries: []
             });
             await loader.load();
 
@@ -4919,10 +5073,17 @@ export default function DeliveryHome() {
 
 
 
+        const MapCtor = await getGoogleMapConstructor();
+        if (!MapCtor) {
+          console.error('? Google Maps Map constructor is unavailable');
+          setMapLoading(false);
+          return;
+        }
+
         // Wrap map initialization in try-catch to handle any Google Maps internal errors
         let map;
         try {
-          map = new window.google.maps.Map(mapContainerRef.current, {
+          map = new MapCtor(mapContainerRef.current, {
             center: initialCenter,
             zoom: 18,
             minZoom: 10, // Minimum zoom level (city/area view)
@@ -5093,7 +5254,7 @@ export default function DeliveryHome() {
           if (selectedCafe && selectedCafe.lat && selectedCafe.lng) {
             setTimeout(() => {
               if (!cafeMarkerRef.current || cafeMarkerRef.current.getMap() === null) {
-                
+
                 const cafeLocation = {
                   lat: selectedCafe.lat,
                   lng: selectedCafe.lng
@@ -5102,18 +5263,7 @@ export default function DeliveryHome() {
                 cafeMarkerRef.current = new window.google.maps.Marker({
                   position: cafeLocation,
                   map: window.deliveryMapInstance,
-                  icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="11" fill="#e53935" stroke="#FFFFFF" stroke-width="2"/>
-                        <path d="M8 10c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v6H8v-6z" fill="#FFFFFF"/>
-                        <path d="M7 16h10M10 12h4M9 14h6" stroke="#e53935" stroke-width="1.5" stroke-linecap="round"/>
-                        <path d="M10 8h4v2h-4z" fill="#FFFFFF" opacity="0.7"/>
-                      </svg>
-                    `),
-                    scaledSize: new window.google.maps.Size(48, 48),
-                    anchor: new window.google.maps.Point(24, 48)
-                  },
+                  icon: getDestinationMarkerIcon('cafe'),
                   title: selectedCafe.name || 'Cafe',
                   zIndex: 10
                 });
@@ -5148,7 +5298,7 @@ export default function DeliveryHome() {
         // Don't set to null - preserve reference for re-attachment
       }
     }
-  }, [showHomeSections, mapInitRetry]) // Re-run when showHomeSections or container retry
+  }, [showHomeSections, mapInitRetry, selectedCafe]) // Re-run when showHomeSections or container retry
 
   // Initialize map when riderLocation becomes available (if map not already initialized)
   useEffect(() => {
@@ -5164,8 +5314,14 @@ export default function DeliveryHome() {
       try {
         const initialCenter = { lat: riderLocation[0], lng: riderLocation[1] }
         if (!window.google || !window.google.maps) return
+        const MapCtor = await getGoogleMapConstructor()
+        if (!MapCtor) {
+          console.error('? Google Maps Map constructor unavailable for rider initialization')
+          setMapLoading(false)
+          return
+        }
 
-        const map = new window.google.maps.Map(mapContainerRef.current, {
+        const map = new MapCtor(mapContainerRef.current, {
           center: initialCenter,
           zoom: 18,
           minZoom: 10,
@@ -5191,7 +5347,7 @@ export default function DeliveryHome() {
     }
 
     initializeMap()
-  }, [riderLocation, showHomeSections]) // Initialize when location is available
+  }, [riderLocation, showHomeSections, selectedCafe]) // Initialize when location is available
 
   // Update bike marker when going online - ensure bike appears immediately
   useEffect(() => {
@@ -5321,6 +5477,8 @@ export default function DeliveryHome() {
 
             cafeMarkerRef.current.setMap(window.deliveryMapInstance);
             cafeMarkerRef.current.setPosition(cafeLocation);
+            cafeMarkerRef.current.setIcon(getDestinationMarkerIcon('cafe'));
+            cafeMarkerRef.current.setTitle(selectedCafe.name || 'Cafe');
           }
         } else {
           // Marker doesn't exist, create it
@@ -5333,18 +5491,7 @@ export default function DeliveryHome() {
           cafeMarkerRef.current = new window.google.maps.Marker({
             position: cafeLocation,
             map: window.deliveryMapInstance,
-            icon: {
-              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="11" fill="#e53935" stroke="#FFFFFF" stroke-width="2"/>
-                  <path d="M8 10c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v6H8v-6z" fill="#FFFFFF"/>
-                  <path d="M7 16h10M10 12h4M9 14h6" stroke="#e53935" stroke-width="1.5" stroke-linecap="round"/>
-                  <path d="M10 8h4v2h-4z" fill="#FFFFFF" opacity="0.7"/>
-                </svg>
-              `),
-              scaledSize: new window.google.maps.Size(48, 48),
-              anchor: new window.google.maps.Point(24, 48)
-            },
+            icon: getDestinationMarkerIcon('cafe'),
             title: selectedCafe.name || 'Cafe',
             zIndex: 10
           });
@@ -5377,18 +5524,7 @@ export default function DeliveryHome() {
       cafeMarkerRef.current = new window.google.maps.Marker({
         position: cafeLocation,
         map: window.deliveryMapInstance,
-        icon: {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="11" fill="#e53935" stroke="#FFFFFF" stroke-width="2"/>
-              <path d="M8 10c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v6H8v-6z" fill="#FFFFFF"/>
-              <path d="M7 16h10M10 12h4M9 14h6" stroke="#e53935" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M10 8h4v2h-4z" fill="#FFFFFF" opacity="0.7"/>
-            </svg>
-          `),
-          scaledSize: new window.google.maps.Size(48, 48),
-          anchor: new window.google.maps.Point(24, 48)
-        },
+        icon: getDestinationMarkerIcon('cafe'),
         title: selectedCafe.name || 'Cafe',
         animation: window.google.maps.Animation.DROP,
         zIndex: 10
@@ -5405,79 +5541,87 @@ export default function DeliveryHome() {
     }
   }, [selectedCafe?.lat, selectedCafe?.lng, selectedCafe?.name])
 
-  // Calculate route using Google Maps Directions API (Zomato-style road-based routing)
-  // Optimized for TWO_WHEELER mode with DRIVING fallback
+  // Calculate route locally using interpolated polyline + haversine (no Google Directions API)
   // NOTE: Must be defined BEFORE the useEffect that uses it (Rules of Hooks)
   const calculateRouteWithDirectionsAPI = useCallback(async (origin, destination) => {
-    if (!window.google || !window.google.maps || !window.google.maps.DirectionsService) {
-      console.warn('?? Google Maps Directions API not available');
-      return null;
-    }
-
     try {
-      // Initialize Directions Service if not already created
-      if (!directionsServiceRef.current) {
-        directionsServiceRef.current = new window.google.maps.DirectionsService();
+      if (!origin || !Array.isArray(origin) || origin.length < 2 || !destination) {
+        return null;
       }
 
-      // Try TWO_WHEELER first (optimized for bike/delivery), fallback to DRIVING
-      const tryRoute = (travelMode, modeName) => {
-        return new Promise((resolve, reject) => {
-          directionsServiceRef.current.route(
-            {
-              origin: { lat: origin[0], lng: origin[1] },
-              destination: { lat: destination.lat, lng: destination.lng },
-              travelMode: travelMode,
-              provideRouteAlternatives: false, // Save API cost - don't get alternatives
-              avoidHighways: false,
-              avoidTolls: false,
-              optimizeWaypoints: false
-            },
-            (result, status) => {
-              if (status === window.google.maps.DirectionsStatus.OK) {
+      const start = { lat: Number(origin[0]), lng: Number(origin[1]) };
+      const end = { lat: Number(destination.lat), lng: Number(destination.lng) };
+      if (!Number.isFinite(start.lat) || !Number.isFinite(start.lng) || !Number.isFinite(end.lat) || !Number.isFinite(end.lng)) {
+        return null;
+      }
 
-
-                setDirectionsResponse(result);
-                directionsResponseRef.current = result; // Store in ref for callbacks
-                resolve(result);
-              } else {
-                // Handle specific error cases - suppress console errors for REQUEST_DENIED
-                if (status === 'REQUEST_DENIED') {
-                  // Don't log as error - this is expected when billing is not enabled
-                  // Just reject silently to trigger fallback
-                  reject(new Error(`Directions API not available: ${status}`));
-                } else if (status === 'OVER_QUERY_LIMIT') {
-                  console.warn(`?? Directions API quota exceeded (${modeName})`);
-                  reject(new Error(`Directions request failed: ${status}`));
-                } else {
-                  console.warn(`?? Directions API failed with ${modeName}: ${status}`);
-                  reject(new Error(`Directions request failed: ${status}`));
-                }
-              }
-            }
-          );
-        });
+      const interpolateSegment = (from, to, stepMeters = 60) => {
+        const segmentDistance = calculateDistance(from.lat, from.lng, to.lat, to.lng);
+        const steps = Math.max(1, Math.ceil(segmentDistance / stepMeters));
+        const points = [];
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          points.push({
+            lat: from.lat + (to.lat - from.lat) * t,
+            lng: from.lng + (to.lng - from.lng) * t
+          });
+        }
+        return points;
       };
 
-      // Try TWO_WHEELER first (if available in region)
-      try {
-        if (window.google.maps.TravelMode.TWO_WHEELER) {
-          return await tryRoute(window.google.maps.TravelMode.TWO_WHEELER, 'TWO_WHEELER');
-        }
-      } catch (twoWheelerError) {
-
+      const routePoints = interpolateSegment(start, end);
+      let totalDistanceMeters = 0;
+      for (let i = 1; i < routePoints.length; i++) {
+        const prev = routePoints[i - 1];
+        const curr = routePoints[i];
+        totalDistanceMeters += calculateDistance(prev.lat, prev.lng, curr.lat, curr.lng);
       }
 
-      // Fallback to DRIVING mode
-      return await tryRoute(window.google.maps.TravelMode.DRIVING, 'DRIVING');
+      const durationSeconds = Math.max(60, Math.round((totalDistanceMeters / 1000) / 22 * 3600));
+      const bounds = window.google?.maps?.LatLngBounds ? new window.google.maps.LatLngBounds() : null;
+      if (bounds) {
+        bounds.extend(start);
+        bounds.extend(end);
+      }
+
+      const result = {
+        request: {
+          origin: start,
+          destination: end,
+          travelMode: 'DRIVING',
+          source: 'haversine_polyline'
+        },
+        routes: [
+          {
+            bounds,
+            overview_path: routePoints,
+            polylinePoints: routePoints,
+            legs: [
+              {
+                start_location: start,
+                end_location: end,
+                distance: {
+                  value: Math.round(totalDistanceMeters),
+                  text: totalDistanceMeters < 1000
+                    ? `${Math.round(totalDistanceMeters)} m`
+                    : `${(totalDistanceMeters / 1000).toFixed(2)} km`
+                },
+                duration: {
+                  value: durationSeconds,
+                  text: `${Math.ceil(durationSeconds / 60)} mins`
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      setDirectionsResponse(result);
+      directionsResponseRef.current = result;
+      return result;
     } catch (error) {
-      // Handle REQUEST_DENIED and other errors gracefully
-      if (error.message?.includes('REQUEST_DENIED') || error.message?.includes('not available')) {
-        console.warn('?? Google Maps Directions API not available (billing/API key issue). Will use fallback route.');
-      } else {
-        console.error('? Error calculating route with Directions API:', error);
-      }
-      return null; // Return null to trigger fallback
+      console.error('Error calculating local route:', error);
+      return null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -5679,6 +5823,12 @@ export default function DeliveryHome() {
 
       try {
         setDirectionsMapLoading(true);
+        const MapCtor = await getGoogleMapConstructor();
+        if (!MapCtor) {
+          console.error('? Google Maps Map constructor unavailable for directions map');
+          setDirectionsMapLoading(false);
+          return;
+        }
 
         // Get current LIVE location (delivery boy) - prioritize riderLocation which is updated in real-time
         // Use rider location or last known location, don't use default
@@ -5710,12 +5860,12 @@ export default function DeliveryHome() {
 
 
         // Create map instance
-        const map = new window.google.maps.Map(directionsMapContainerRef.current, {
+        const map = new MapCtor(directionsMapContainerRef.current, {
           center: { lat: currentLocation[0], lng: currentLocation[1] },
           zoom: 18,
           minZoom: 10, // Minimum zoom level (city/area view)
           maxZoom: 21, // Maximum zoom level - allow full zoom
-          mapTypeId: window.google.maps.MapTypeId.ROADMAP || 'roadmap',
+          mapTypeId: window.google.maps.MapTypeId?.ROADMAP || 'roadmap',
           disableDefaultUI: false,
           zoomControl: true,
           mapTypeControl: false,
@@ -5727,24 +5877,14 @@ export default function DeliveryHome() {
 
         // Initialize Directions Service
         if (!directionsServiceRef.current) {
-          directionsServiceRef.current = new window.google.maps.DirectionsService();
+          directionsServiceRef.current = null;
         }
 
         // Initialize Directions Renderer
         if (!directionsRendererRef.current) {
           // Don't create DirectionsRenderer with map - it adds dots
           // We'll extract route path and use custom polyline instead
-          directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-            suppressMarkers: true,
-            polylineOptions: {
-              strokeColor: '#4285F4',
-              strokeWeight: 0,
-              strokeOpacity: 0,
-              zIndex: -1,
-              icons: []
-            },
-            preserveViewport: true
-          });
+          directionsRendererRef.current = null;
           // Explicitly don't set map - we use custom polyline instead
         } else {
           // Don't set map - we use custom polyline instead
@@ -5778,40 +5918,21 @@ export default function DeliveryHome() {
           }
 
           // Add custom Destination Marker (Cafe or Customer)
-          const markerIcon = navigationMode === 'customer'
-            ? `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#e53935">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/>
-                  <circle cx="12" cy="9" r="3" fill="#FFFFFF"/>
-                </svg>
-              `)}`
-            : `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#e53935">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/>
-                  <circle cx="12" cy="9" r="3" fill="#FFFFFF"/>
-                  <path d="M8 16h2v6H8zm6 0h2v6h-2z" fill="#FFFFFF"/>
-                </svg>
-              `)}`;
+          const destinationMarkerIcon = getDestinationMarkerIcon(
+            navigationMode === 'customer' ? 'customer' : 'cafe'
+          );
 
           if (!cafeMarkerRef.current) {
             cafeMarkerRef.current = new window.google.maps.Marker({
               position: destinationLocation,
               map: map,
-              icon: {
-                url: markerIcon,
-                scaledSize: new window.google.maps.Size(48, 48),
-                anchor: new window.google.maps.Point(24, 48)
-              },
+              icon: destinationMarkerIcon,
               title: destinationName,
               animation: window.google.maps.Animation.DROP
             });
           } else {
             cafeMarkerRef.current.setPosition(destinationLocation);
-            cafeMarkerRef.current.setIcon({
-              url: markerIcon,
-              scaledSize: new window.google.maps.Size(48, 48),
-              anchor: new window.google.maps.Point(24, 48)
-            });
+            cafeMarkerRef.current.setIcon(destinationMarkerIcon);
             cafeMarkerRef.current.setTitle(destinationName);
             cafeMarkerRef.current.setMap(map);
           }
@@ -5931,7 +6052,7 @@ export default function DeliveryHome() {
         // Only recalculate if moved >50 meters AND last recalculation was >30 seconds ago
         const timeSinceLastRecalc = Date.now() - (lastRouteRecalculationRef.current || 0);
         if (distance > 50 && timeSinceLastRecalc > 30000 && selectedCafe) {
-          
+
           lastRouteRecalculationRef.current = Date.now();
           calculateRouteWithDirectionsAPI(
             [newPosition.lat, newPosition.lng],
@@ -6020,52 +6141,8 @@ export default function DeliveryHome() {
       routePolylineRef.current.setMap(null);
     }
 
-    // Initialize DirectionsRenderer for main map if not exists
-    if (!directionsRendererRef.current) {
-
-      // Don't create DirectionsRenderer with map - it adds dots
-      // We'll extract route path and use custom polyline instead
-      directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
-        suppressMarkers: true,
-        suppressInfoWindows: false,
-        polylineOptions: {
-          strokeColor: '#4285F4',
-          strokeWeight: 0,
-          strokeOpacity: 0,
-          zIndex: -1,
-          icons: []
-        },
-        markerOptions: {
-          visible: false
-        },
-        preserveViewport: true
-      });
-      // Explicitly don't set map - we use custom polyline instead
-
-
-      // Ensure it's visible by explicitly setting map
-      directionsRendererRef.current.setMap(window.deliveryMapInstance);
-    } else {
-      // Ensure renderer is attached to main map
-      directionsRendererRef.current.setMap(window.deliveryMapInstance);
-      // Update polyline options to ensure visibility and suppress markers
-      directionsRendererRef.current.setOptions({
-        suppressMarkers: true, // Hide default markers including car icon
-        suppressInfoWindows: false,
-        polylineOptions: {
-          strokeColor: '#4285F4', // Bright blue like Zomato
-          strokeWeight: 0, // Completely hide DirectionsRenderer polyline (has dots)
-          strokeOpacity: 0, // Hide completely
-          zIndex: -1, // Put behind everything
-          icons: [] // No custom icons
-        },
-        markerOptions: {
-          visible: false // Explicitly hide all markers
-        },
-        preserveViewport: true
-      });
-
-    }
+    // We do not initialize DirectionsRenderer anymore.
+    directionsRendererRef.current = null;
 
     // Set directions response to renderer
     try {
@@ -6186,7 +6263,7 @@ export default function DeliveryHome() {
 
             // Update activeOrderData with fresh info (e.g., digitalBillHtml)
             if (remoteOrder.digitalBillHtml && activeOrderData.cafeInfo) {
-              
+
               activeOrderData.cafeInfo.digitalBillHtml = remoteOrder.digitalBillHtml;
               // Also update localStorage to persist this
               localStorage.setItem('deliveryActiveOrder', JSON.stringify(activeOrderData));
@@ -6220,7 +6297,7 @@ export default function DeliveryHome() {
         // Restore selectedCafe state
         if (activeOrderData.cafeInfo) {
           setSelectedCafe(activeOrderData.cafeInfo);
-          
+
         }
 
         // Wait for map to be ready
@@ -6330,7 +6407,7 @@ export default function DeliveryHome() {
   useEffect(() => {
     // Clear immediately on mount if no active order
     if (!selectedCafe && window.deliveryMapInstance) {
-      
+
       // Clear route polyline
       if (routePolylineRef.current) {
         routePolylineRef.current.setMap(null);
@@ -6357,7 +6434,7 @@ export default function DeliveryHome() {
     // Wait a bit for restoreActiveOrder to complete, then check again
     const timer = setTimeout(() => {
       if (!selectedCafe && window.deliveryMapInstance) {
-        
+
         // Clear route polyline
         if (routePolylineRef.current) {
           routePolylineRef.current.setMap(null);
@@ -6432,6 +6509,7 @@ export default function DeliveryHome() {
     setShowOrderDeliveredAnimation(false);
     setShowPaymentPage(false);
     setShowNewOrderPopup(false);
+    clearPendingNewOrderPopup();
     setShowreachedPickupPopup(false);
     setShowOrderIdConfirmationPopup(false);
     clearNewOrder();
@@ -6449,7 +6527,7 @@ export default function DeliveryHome() {
     directionsResponseRef.current = null;
     setRoutePolyline([]);
     setShowRoutePath(false);
-  }, [clearNewOrder, clearOrderReady])
+  }, [clearNewOrder, clearOrderReady, clearPendingNewOrderPopup])
 
   // Periodically verify order still exists (every 30 seconds) to catch deletions
   useEffect(() => {
@@ -6618,7 +6696,7 @@ export default function DeliveryHome() {
         orderStatus: 'ready'
       }
       setSelectedCafe(cafeInfo)
-      } else if (selectedCafe) {
+    } else if (selectedCafe) {
       // Always set orderStatus to 'ready' so location monitor shows Reached Pickup when rider is within 500m
       setSelectedCafe(prev => ({ ...prev, orderStatus: 'ready' }))
     }
@@ -6683,11 +6761,11 @@ export default function DeliveryHome() {
 
           if (order.cafeId?.address) {
             cafeAddress = order.cafeId.address
-            } else if (cafeLocation?.formattedAddress) {
+          } else if (cafeLocation?.formattedAddress) {
             cafeAddress = cafeLocation.formattedAddress
-            } else if (cafeLocation?.address) {
+          } else if (cafeLocation?.address) {
             cafeAddress = cafeLocation.address
-            } else if (cafeLocation?.street) {
+          } else if (cafeLocation?.street) {
             const addressParts = [
               cafeLocation.street,
               cafeLocation.area,
@@ -6696,7 +6774,7 @@ export default function DeliveryHome() {
               cafeLocation.zipCode || cafeLocation.pincode || cafeLocation.postalCode
             ].filter(Boolean)
             cafeAddress = addressParts.join(', ')
-            } else if (cafeLocation?.addressLine1) {
+          } else if (cafeLocation?.addressLine1) {
             const addressParts = [
               cafeLocation.addressLine1,
               cafeLocation.addressLine2,
@@ -6704,7 +6782,7 @@ export default function DeliveryHome() {
               cafeLocation.state
             ].filter(Boolean)
             cafeAddress = addressParts.join(', ')
-            } else if (order.cafeId?.street || order.cafeId?.city) {
+          } else if (order.cafeId?.street || order.cafeId?.city) {
             const addressParts = [
               order.cafeId.street,
               order.cafeId.area,
@@ -6713,15 +6791,15 @@ export default function DeliveryHome() {
               order.cafeId.zipCode || order.cafeId.pincode || order.cafeId.postalCode
             ].filter(Boolean)
             cafeAddress = addressParts.join(', ')
-            } else if (order.cafeAddress) {
+          } else if (order.cafeAddress) {
             cafeAddress = order.cafeAddress
-            } else if (order.cafe?.address) {
+          } else if (order.cafe?.address) {
             cafeAddress = order.cafe.address
-            } else if (order.cafe?.location?.formattedAddress) {
+          } else if (order.cafe?.location?.formattedAddress) {
             cafeAddress = order.cafe.location.formattedAddress
-            } else if (order.cafe?.location?.address) {
+          } else if (order.cafe?.location?.address) {
             cafeAddress = order.cafe.location.address
-            }
+          }
 
           // Update selectedCafe with fetched address
           if (cafeAddress && cafeAddress !== 'Cafe Address') {
@@ -6747,9 +6825,9 @@ export default function DeliveryHome() {
 
                   if (restLocation?.formattedAddress) {
                     fetchedAddress = restLocation.formattedAddress
-                    } else if (cafe.address) {
+                  } else if (cafe.address) {
                     fetchedAddress = cafe.address
-                    } else if (restLocation?.address) {
+                  } else if (restLocation?.address) {
                     fetchedAddress = restLocation.address
                   } else if (restLocation?.street) {
                     const addressParts = [
@@ -6768,7 +6846,7 @@ export default function DeliveryHome() {
                       restLocation.state
                     ].filter(Boolean)
                     fetchedAddress = addressParts.join(', ')
-                    } else if (cafe.street || cafe.city) {
+                  } else if (cafe.street || cafe.city) {
                     const addressParts = [
                       cafe.street,
                       cafe.area,
@@ -6790,7 +6868,7 @@ export default function DeliveryHome() {
                   if (cafePhone) {
                     updates.phone = cafePhone
                     updates.ownerPhone = cafe.ownerPhone || cafePhone
-                    }
+                  }
 
                   if (Object.keys(updates).length > 0) {
                     setSelectedCafe(prev => ({
@@ -6920,7 +6998,7 @@ export default function DeliveryHome() {
     calculateDistanceInMeters
   ])
 
-    // CRITICAL: Monitor order status and close all pickup/delivery popups when order is delivered
+  // CRITICAL: Monitor order status and close all pickup/delivery popups when order is delivered
   // Also clear selectedCafe if order is completed and payment page is closed
   useEffect(() => {
     const orderStatus = selectedCafe?.orderStatus || selectedCafe?.status || ''
@@ -7105,7 +7183,7 @@ export default function DeliveryHome() {
         const lng = coords?.[0]
         if (lat != null && lng != null && !(lat === 0 && lng === 0) && selectedCafe) {
           setSelectedCafe(prev => prev ? { ...prev, customerLat: lat, customerLng: lng } : null)
-          }
+        }
       })
       .catch(err => {
         console.warn('?? Reached Drop: getOrderDetails failed for customer coords:', err?.response?.data?.message || err.message)
@@ -7445,11 +7523,24 @@ export default function DeliveryHome() {
       }).filter(coord => coord !== null);
 
       if (path.length > 0) {
-        // Don't create main route polyline - only live tracking polyline will be shown
-        // Remove old custom polyline if exists (cleanup)
+        // Draw fallback rider->destination polyline (used when trimmed live route
+        // is not yet available or while map is settling).
         if (routePolylineRef.current) {
-          routePolylineRef.current.setMap(null);
-          routePolylineRef.current = null;
+          routePolylineRef.current.setPath(path);
+          if (routePolylineRef.current.getMap() === null) {
+            routePolylineRef.current.setMap(map);
+          }
+        } else {
+          routePolylineRef.current = new window.google.maps.Polyline({
+            path,
+            geodesic: true,
+            strokeColor: '#1E88E5',
+            strokeOpacity: 0.8,
+            strokeWeight: 5,
+            zIndex: 995,
+            icons: [],
+            map
+          });
         }
 
         // Fit map bounds to show entire route - but preserve zoom if user has zoomed in
@@ -7572,7 +7663,7 @@ export default function DeliveryHome() {
         title: `Earn ?${target} guarantee!`,
         subtitle: orders > 0
           ? `Complete ${orders} orders to earn ?${target}. ?${remaining.toFixed(0)} remaining.`
-          : `Active earning bonus offer � valid till ${weekEndDate}`,
+          : `Active earning bonus offer — valid till ${weekEndDate}`,
         icon: 'bag',
         buttonText: 'View',
         bgColor: 'bg-gray-700',
@@ -7581,6 +7672,25 @@ export default function DeliveryHome() {
         buttonBgColor: 'bg-gray-600 text-white',
         action: 'none'
       })
+    }
+
+    // Slide 4: Today's earnings summary (always shown if > 0 or at least delivery is approved)
+    if (deliveryStatus === 'approved' || deliveryStatus === 'active') {
+      if (todayEarnings > 0 || todayTrips > 0) {
+        slides.push({
+          id: 'today-summary',
+          title: `Today: ?${todayEarnings.toFixed(0)} earned`,
+          subtitle: `${todayTrips} ${todayTrips === 1 ? 'trip' : 'trips'} completed${todayHoursWorked > 0 ? ` · ${formatHours(todayHoursWorked)} hrs worked` : ''}`,
+          icon: 'bank',
+          buttonText: 'Details',
+          bgColor: 'bg-gray-700',
+          titleColor: 'text-white',
+          subtitleColor: 'text-white/90',
+          buttonBgColor: 'bg-gray-600 text-white',
+          action: 'navigate',
+          path: '/delivery/my-orders'
+        })
+      }
     }
 
     // Slide 5: COD cash pending removed as per request
@@ -9078,7 +9188,7 @@ export default function DeliveryHome() {
                     </div>
 
                     <h3 className="text-lg font-bold text-[#1E1E1E] mb-1">
-                      {newOrder?.cafeName || selectedCafe?.name || 'Cafe'}
+                      {selectedCafe?.name || resolveCafeDisplayName(newOrder)}
                     </h3>
                     <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                       {sliderCafeAddress || 'Address'}
@@ -9602,7 +9712,7 @@ export default function DeliveryHome() {
                         // Construct absolute URL (remove /api from BASE_URL to get root)
                         const rootUrl = API_BASE_URL.replace(/\/api\/?$/, '');
                         const fullUrl = `${rootUrl}${billUrl}`;
-                        
+
                         // For APK compatibility: best way is to open the direct link
                         // Modern Android WebViews handle PDF links better than Blobs
                         window.open(fullUrl, '_system');
@@ -9752,7 +9862,7 @@ export default function DeliveryHome() {
                     ? (tripDistance >= 1000
                       ? `${(tripDistance / 1000).toFixed(1)} kms`
                       : `${tripDistance.toFixed(0)} m`)
-                    : (selectedCafe?.tripDistance || '�')}
+                    : (selectedCafe?.tripDistance || '—')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -9765,7 +9875,7 @@ export default function DeliveryHome() {
                     ? (tripTime >= 60
                       ? `${Math.round(tripTime / 60)} mins`
                       : `${tripTime} secs`)
-                    : (selectedCafe?.tripTime || '�')}
+                    : (selectedCafe?.tripTime || '—')}
                 </span>
               </div>
             </div>
@@ -9836,7 +9946,7 @@ export default function DeliveryHome() {
                 </div>
               </motion.div>
 
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
@@ -9844,7 +9954,7 @@ export default function DeliveryHome() {
               >
                 Delivery Complete!
               </motion.h1>
-              <motion.p 
+              <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
@@ -10128,6 +10238,10 @@ export default function DeliveryHome() {
     </div >
   )
 }
+
+
+
+
 
 
 

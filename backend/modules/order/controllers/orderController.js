@@ -64,7 +64,7 @@ export const createOrder = async (req, res) => {
     // Support both camelCase and snake_case from client
     const paymentMethod = bodyPaymentMethod ?? req.body.payment_method;
 
-    // Normalize payment method: 'cod' / 'COD' / 'Cash on Delivery' → 'cash', 'wallet' → 'wallet'
+    // Normalize payment method: 'cod' / 'COD' / 'Cash on Delivery' Ã¢â€ â€™ 'cash', 'wallet' Ã¢â€ â€™ 'wallet'
     const normalizedPaymentMethod = (() => {
       const m = (paymentMethod && String(paymentMethod).toLowerCase().trim()) || '';
       if (m === 'cash' || m === 'cod' || m === 'cash on delivery') return 'cash';
@@ -107,7 +107,7 @@ export const createOrder = async (req, res) => {
     let assignedCafeName = cafeName;
 
     // Log incoming cafe data for debugging
-    logger.info('🔍 Order creation - Cafe lookup:', {
+    logger.info('Ã°Å¸â€Â Order creation - Cafe lookup:', {
       incomingCafeId: cafeId,
       incomingCafeName: cafeName,
       cafeIdType: typeof cafeId,
@@ -119,7 +119,7 @@ export const createOrder = async (req, res) => {
     // Try to find cafe by cafeId, _id, or slug
     if (mongoose.Types.ObjectId.isValid(cafeId) && cafeId.length === 24) {
       cafe = await Cafe.findById(cafeId);
-      logger.info('🔍 Cafe lookup by _id:', {
+      logger.info('Ã°Å¸â€Â Cafe lookup by _id:', {
         cafeId: cafeId,
         found: !!cafe,
         cafeName: cafe?.name
@@ -132,7 +132,7 @@ export const createOrder = async (req, res) => {
           { slug: cafeId }
         ]
       });
-      logger.info('🔍 Cafe lookup by cafeId/slug:', {
+      logger.info('Ã°Å¸â€Â Cafe lookup by cafeId/slug:', {
         cafeId: cafeId,
         found: !!cafe,
         cafeName: cafe?.name,
@@ -142,7 +142,7 @@ export const createOrder = async (req, res) => {
     }
 
     if (!cafe) {
-      logger.error('❌ Cafe not found:', {
+      logger.error('Ã¢ÂÅ’ Cafe not found:', {
         searchedCafeId: cafeId,
         searchedCafeName: cafeName
       });
@@ -154,7 +154,7 @@ export const createOrder = async (req, res) => {
 
     // CRITICAL: Validate cafe name matches
     if (cafeName && cafe.name !== cafeName) {
-      logger.warn('⚠️ Cafe name mismatch:', {
+      logger.warn('Ã¢Å¡Â Ã¯Â¸Â Cafe name mismatch:', {
         incomingName: cafeName,
         foundCafeName: cafe.name,
         incomingCafeId: cafeId,
@@ -166,7 +166,7 @@ export const createOrder = async (req, res) => {
     // Note: Removed isAcceptingOrders check - orders can come even when cafe is offline
     // Cafe can accept/reject orders manually, or orders will auto-reject after accept time expires
     // if (!cafe.isAcceptingOrders) {
-    //   logger.warn('⚠️ Cafe not accepting orders:', {
+    //   logger.warn('Ã¢Å¡Â Ã¯Â¸Â Cafe not accepting orders:', {
     //     cafeId: cafe._id?.toString() || cafe.cafeId,
     //     cafeName: cafe.name
     //   });
@@ -177,7 +177,7 @@ export const createOrder = async (req, res) => {
     // }
 
     if (!cafe.isActive) {
-      logger.warn('⚠️ Cafe is inactive:', {
+      logger.warn('Ã¢Å¡Â Ã¯Â¸Â Cafe is inactive:', {
         cafeId: cafe._id?.toString() || cafe.cafeId,
         cafeName: cafe.name
       });
@@ -192,7 +192,7 @@ export const createOrder = async (req, res) => {
     const cafeLng = cafe.location?.longitude || cafe.location?.coordinates?.[0];
 
     if (!cafeLat || !cafeLng) {
-      logger.error('❌ Cafe location not found:', {
+      logger.error('Ã¢ÂÅ’ Cafe location not found:', {
         cafeId: cafe._id?.toString() || cafe.cafeId,
         cafeName: cafe.name
       });
@@ -206,6 +206,15 @@ export const createOrder = async (req, res) => {
     const activeZones = await Zone.find({ isActive: true }).lean();
     let cafeInZone = false;
     let cafeZone = null;
+
+    // If no active zones are configured, skip strict zone enforcement (dev/local safety).
+    if (!activeZones || activeZones.length === 0) {
+      logger.warn('No active zones found. Skipping cafe zone validation for this order.', {
+        cafeId: cafe._id?.toString() || cafe.cafeId,
+        cafeName: cafe.name
+      });
+      cafeInZone = true;
+    }
 
     for (const zone of activeZones) {
       if (!zone.coordinates || zone.coordinates.length < 3) continue;
@@ -241,7 +250,7 @@ export const createOrder = async (req, res) => {
     }
 
     if (!cafeInZone) {
-      logger.warn('⚠️ Cafe location is not within any active zone:', {
+      logger.warn('Ã¢Å¡Â Ã¯Â¸Â Cafe location is not within any active zone:', {
         cafeId: cafe._id?.toString() || cafe.cafeId,
         cafeName: cafe.name,
         cafeLat,
@@ -253,7 +262,7 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    logger.info('✅ Cafe validated - location is within active zone:', {
+    logger.info('Ã¢Å“â€¦ Cafe validated - location is within active zone:', {
       cafeId: cafe._id?.toString() || cafe.cafeId,
       cafeName: cafe.name,
       zoneId: cafeZone?._id?.toString(),
@@ -262,36 +271,86 @@ export const createOrder = async (req, res) => {
 
     // CRITICAL: Validate user's zone matches cafe's zone (strict zone matching)
     const { zoneId: userZoneId } = req.body; // User's zone ID from frontend
+    if (userZoneId && cafeZone?._id) {
+      const cafeZoneId = String(cafeZone._id);
+      const requestedUserZoneId = String(userZoneId).trim();
 
-    if (userZoneId) {
-      const cafeZoneId = cafeZone._id.toString();
+      if (cafeZoneId !== requestedUserZoneId) {
+        // Handle overlap/order edge-cases: if requested user zone also contains cafe, allow order.
+        let requestedZoneContainsCafe = false;
+        try {
+          const point = { type: 'Point', coordinates: [cafeLng, cafeLat] };
+          const existsByBoundary = await Zone.exists({
+            _id: requestedUserZoneId,
+            isActive: true,
+            boundary: { $geoIntersects: { $geometry: point } }
+          });
 
-      if (cafeZoneId !== userZoneId) {
-        logger.warn('âš ï¸ Zone mismatch - user and cafe are in different zones:', {
-          userZoneId,
-          cafeZoneId,
-          cafeId: cafe._id?.toString() || cafe.cafeId,
-          cafeName: cafe.name
-        });
-        return res.status(403).json({
-          success: false,
-          message: 'This cafe is not available in your zone. Please select a cafe from your current delivery zone.'
-        });
+          if (existsByBoundary) {
+            requestedZoneContainsCafe = true;
+          } else {
+            // Fallback for legacy zones without proper boundary
+            const requestedZone = await Zone.findOne({ _id: requestedUserZoneId, isActive: true }).lean();
+            if (requestedZone?.coordinates?.length >= 3) {
+              let inside = false;
+              for (let i = 0, j = requestedZone.coordinates.length - 1; i < requestedZone.coordinates.length; j = i++) {
+                const ci = requestedZone.coordinates[i];
+                const cj = requestedZone.coordinates[j];
+                const xi = typeof ci === 'object' ? (ci.longitude ?? ci.lng) : null; // x = lng
+                const yi = typeof ci === 'object' ? (ci.latitude ?? ci.lat) : null;  // y = lat
+                const xj = typeof cj === 'object' ? (cj.longitude ?? cj.lng) : null;
+                const yj = typeof cj === 'object' ? (cj.latitude ?? cj.lat) : null;
+                if (xi === null || yi === null || xj === null || yj === null) continue;
+                const intersect = ((yi > cafeLat) !== (yj > cafeLat)) &&
+                  (cafeLng < ((xj - xi) * (cafeLat - yi)) / ((yj - yi) || 1e-12) + xi);
+                if (intersect) inside = !inside;
+              }
+              requestedZoneContainsCafe = inside;
+            }
+          }
+        } catch (zoneRecheckError) {
+          logger.warn('Zone mismatch recheck failed', {
+            userZoneId: requestedUserZoneId,
+            cafeZoneId,
+            error: zoneRecheckError?.message
+          });
+        }
+
+        if (!requestedZoneContainsCafe) {
+          logger.warn('Zone mismatch - user and cafe are in different zones:', {
+            userZoneId: requestedUserZoneId,
+            cafeZoneId,
+            cafeId: cafe._id?.toString() || cafe.cafeId,
+            cafeName: cafe.name
+          });
+          return res.status(403).json({
+            success: false,
+            message: 'This cafe is not available in your zone. Please select a cafe from your current delivery zone.'
+          });
+        }
+
+        // Prefer requested user zone in overlap scenario to keep FE/BE consistent.
+        cafeZone._id = requestedUserZoneId;
       }
 
-      logger.info('âœ… Zone match validated - user and cafe are in the same zone:', {
-        zoneId: userZoneId,
+      logger.info('Zone match validated - user and cafe are in the same zone:', {
+        zoneId: requestedUserZoneId,
+        cafeId: cafe._id?.toString() || cafe.cafeId
+      });
+    } else if (userZoneId && !cafeZone?._id) {
+      logger.warn('User zoneId provided but cafe zone context unavailable. Skipping strict zone match.', {
+        userZoneId,
         cafeId: cafe._id?.toString() || cafe.cafeId
       });
     } else {
-      logger.warn('âš ï¸ User zoneId not provided in order request - zone validation skipped');
+      logger.warn('User zoneId not provided in order request - zone validation skipped');
     }
 
     assignedCafeId = cafe._id?.toString() || cafe.cafeId;
     assignedCafeName = cafe.name;
 
     // Log cafe assignment for debugging
-    logger.info('✅ Cafe assigned to order:', {
+    logger.info('Ã¢Å“â€¦ Cafe assigned to order:', {
       assignedCafeId: assignedCafeId,
       assignedCafeName: assignedCafeName,
       cafe_id: cafe._id?.toString(),
@@ -349,7 +408,7 @@ export const createOrder = async (req, res) => {
       });
     }
     order.preparationTime = maxPreparationTime;
-    logger.info('📋 Preparation time extracted from items:', {
+    logger.info('Ã°Å¸â€œâ€¹ Preparation time extracted from items:', {
       maxPreparationTime,
       itemsCount: items?.length || 0
     });
@@ -404,17 +463,17 @@ export const createOrder = async (req, res) => {
           timestamp: new Date()
         });
 
-        logger.info('✅ ETA calculated for order:', {
+        logger.info('Ã¢Å“â€¦ ETA calculated for order:', {
           orderId: order.orderId,
           eta: `${finalMinETA}-${finalMaxETA} mins`,
           preparationTime: maxPreparationTime,
           baseETA: `${etaResult.minETA}-${etaResult.maxETA} mins`
         });
       } else {
-        logger.warn('⚠️ Could not calculate ETA - missing location data');
+        logger.warn('Ã¢Å¡Â Ã¯Â¸Â Could not calculate ETA - missing location data');
       }
     } catch (etaError) {
-      logger.error('❌ Error calculating ETA:', etaError);
+      logger.error('Ã¢ÂÅ’ Error calculating ETA:', etaError);
       // Continue with order creation even if ETA calculation fails
     }
 
@@ -460,7 +519,7 @@ export const createOrder = async (req, res) => {
         );
 
         if (existingTransaction) {
-          logger.warn('⚠️ Wallet payment already processed for this order', {
+          logger.warn('Ã¢Å¡Â Ã¯Â¸Â Wallet payment already processed for this order', {
             orderId: order.orderId,
             transactionId: existingTransaction._id
           });
@@ -483,7 +542,7 @@ export const createOrder = async (req, res) => {
             'wallet.currency': wallet.currency
           });
 
-          logger.info('✅ Wallet payment deducted for order:', {
+          logger.info('Ã¢Å“â€¦ Wallet payment deducted for order:', {
             orderId: order.orderId,
             userId: userId,
             amount: pricing.total,
@@ -514,7 +573,7 @@ export const createOrder = async (req, res) => {
           });
           await payment.save();
         } catch (paymentError) {
-          logger.error('❌ Error creating wallet payment record:', paymentError);
+          logger.error('Ã¢ÂÅ’ Error creating wallet payment record:', paymentError);
         }
 
         // Mark order as confirmed and payment as completed
@@ -536,13 +595,13 @@ export const createOrder = async (req, res) => {
         try {
           const notifyCafeResult = await notifyCafeNewOrder(order, assignedCafeId, 'wallet');
           await notifyUserOrderStatusUpdate(order, 'confirmed');
-          logger.info('✅ Wallet payment order notification sent to cafe', {
+          logger.info('Ã¢Å“â€¦ Wallet payment order notification sent to cafe', {
             orderId: order.orderId,
             cafeId: assignedCafeId,
             notifyCafeResult
           });
         } catch (notifyError) {
-          logger.error('❌ Error notifying cafe about wallet payment order:', notifyError);
+          logger.error('Ã¢ÂÅ’ Error notifying cafe about wallet payment order:', notifyError);
         }
 
         // Respond to client
@@ -563,7 +622,7 @@ export const createOrder = async (req, res) => {
           }
         });
       } catch (walletError) {
-        logger.error('❌ Error processing wallet payment:', walletError);
+        logger.error('Ã¢ÂÅ’ Error processing wallet payment:', walletError);
         return res.status(500).json({
           success: false,
           message: 'Failed to process wallet payment',
@@ -597,7 +656,7 @@ export const createOrder = async (req, res) => {
         });
         await payment.save();
       } catch (paymentError) {
-        logger.error('❌ Error creating COD payment record (continuing without blocking order):', {
+        logger.error('Ã¢ÂÅ’ Error creating COD payment record (continuing without blocking order):', {
           error: paymentError.message,
           stack: paymentError.stack
         });
@@ -622,13 +681,13 @@ export const createOrder = async (req, res) => {
       try {
         const notifyCafeResult = await notifyCafeNewOrder(order, assignedCafeId, 'cash');
         await notifyUserOrderStatusUpdate(order, 'confirmed');
-        logger.info('✅ COD order notification sent to cafe', {
+        logger.info('Ã¢Å“â€¦ COD order notification sent to cafe', {
           orderId: order.orderId,
           cafeId: assignedCafeId,
           notifyCafeResult
         });
       } catch (notifyError) {
-        logger.error('❌ Error notifying cafe about COD order (order still created):', {
+        logger.error('Ã¢ÂÅ’ Error notifying cafe about COD order (order still created):', {
           error: notifyError.message,
           stack: notifyError.stack
         });
@@ -820,7 +879,7 @@ export const verifyOrderPayment = async (req, res) => {
           await holdEscrow(order._id, userId, order.pricing.total);
         }
       } catch (settlementError) {
-        logger.error(`❌ Idempotency recovery failed for order ${order.orderId}:`, settlementError);
+        logger.error(`Ã¢ÂÅ’ Idempotency recovery failed for order ${order.orderId}:`, settlementError);
       }
 
       return res.json({
@@ -913,9 +972,9 @@ export const verifyOrderPayment = async (req, res) => {
         await holdEscrow(order._id, userId, order.pricing.total);
       }
 
-      logger.info(`✅ Order settlement calculated and escrow held for order ${order.orderId}`);
+      logger.info(`Ã¢Å“â€¦ Order settlement calculated and escrow held for order ${order.orderId}`);
     } catch (settlementError) {
-      logger.error(`❌ Error calculating settlement for order ${order.orderId}:`, settlementError);
+      logger.error(`Ã¢ÂÅ’ Error calculating settlement for order ${order.orderId}:`, settlementError);
       // Don't fail payment verification if settlement calculation fails
       // But log it for investigation
     }
@@ -926,7 +985,7 @@ export const verifyOrderPayment = async (req, res) => {
       const cafeName = order.cafeName;
 
       // CRITICAL: Log detailed info before notification
-      logger.info('🔔 CRITICAL: Attempting to notify cafe about confirmed order:', {
+      logger.info('Ã°Å¸â€â€ CRITICAL: Attempting to notify cafe about confirmed order:', {
         orderId: order.orderId,
         orderMongoId: order._id.toString(),
         cafeId: cafeId,
@@ -941,7 +1000,7 @@ export const verifyOrderPayment = async (req, res) => {
 
       // Verify order has cafeId before notifying
       if (!cafeId) {
-        logger.error('❌ CRITICAL: Cannot notify cafe - order.cafeId is missing!', {
+        logger.error('Ã¢ÂÅ’ CRITICAL: Cannot notify cafe - order.cafeId is missing!', {
           orderId: order.orderId,
           order: {
             _id: order._id?.toString(),
@@ -954,7 +1013,7 @@ export const verifyOrderPayment = async (req, res) => {
 
       // Verify order has cafeName before notifying
       if (!cafeName) {
-        logger.warn('⚠️ Order cafeName is missing:', {
+        logger.warn('Ã¢Å¡Â Ã¯Â¸Â Order cafeName is missing:', {
           orderId: order.orderId,
           cafeId: cafeId
         });
@@ -963,14 +1022,14 @@ export const verifyOrderPayment = async (req, res) => {
       const notificationResult = await notifyCafeNewOrder(order, cafeId);
       await notifyUserOrderStatusUpdate(order, 'confirmed');
 
-      logger.info(`✅ Successfully notified cafe about confirmed order:`, {
+      logger.info(`Ã¢Å“â€¦ Successfully notified cafe about confirmed order:`, {
         orderId: order.orderId,
         cafeId: cafeId,
         cafeName: cafeName,
         notificationResult: notificationResult
       });
     } catch (notificationError) {
-      logger.error(`❌ CRITICAL: Error notifying cafe after payment verification:`, {
+      logger.error(`Ã¢ÂÅ’ CRITICAL: Error notifying cafe after payment verification:`, {
         error: notificationError.message,
         stack: notificationError.stack,
         orderId: order.orderId,
@@ -1557,7 +1616,7 @@ function generateDigitalBillHtml(order) {
             ${addonText}
           </td>
           <td style="padding: 10px; text-align: center;">${item.quantity}</td>
-          <td style="padding: 10px; text-align: right;">₹${(item.price * item.quantity).toFixed(2)}</td>
+          <td style="padding: 10px; text-align: right;">Ã¢â€šÂ¹${(item.price * item.quantity).toFixed(2)}</td>
         </tr>
       `;
     }).join('');
@@ -1622,25 +1681,25 @@ function generateDigitalBillHtml(order) {
         <div class="totals">
           <div class="total-row">
             <span class="total-label">Subtotal:</span>
-            <span class="total-value">₹${(order.pricing.subtotal || 0).toFixed(2)}</span>
+            <span class="total-value">Ã¢â€šÂ¹${(order.pricing.subtotal || 0).toFixed(2)}</span>
           </div>
           <div class="total-row">
             <span class="total-label">Delivery Fee:</span>
-            <span class="total-value">₹${(order.pricing.deliveryFee || 0).toFixed(2)}</span>
+            <span class="total-value">Ã¢â€šÂ¹${(order.pricing.deliveryFee || 0).toFixed(2)}</span>
           </div>
           ${order.pricing.tax > 0 ? `
           <div class="total-row">
             <span class="total-label">Tax:</span>
-            <span class="total-value">₹${order.pricing.tax.toFixed(2)}</span>
+            <span class="total-value">Ã¢â€šÂ¹${order.pricing.tax.toFixed(2)}</span>
           </div>` : ''}
           ${order.pricing.discount > 0 ? `
           <div class="total-row" style="color: green;">
             <span class="total-label">Discount:</span>
-            <span class="total-value">-₹${order.pricing.discount.toFixed(2)}</span>
+            <span class="total-value">-Ã¢â€šÂ¹${order.pricing.discount.toFixed(2)}</span>
           </div>` : ''}
           <div class="total-row grand-total">
             <span class="total-label">Total:</span>
-            <span class="total-value">₹${(order.pricing.total || 0).toFixed(2)}</span>
+            <span class="total-value">Ã¢â€šÂ¹${(order.pricing.total || 0).toFixed(2)}</span>
           </div>
         </div>
 
@@ -1656,4 +1715,5 @@ function generateDigitalBillHtml(order) {
     return '<p>Error generating bill. Please contact support.</p>';
   }
 }
+
 

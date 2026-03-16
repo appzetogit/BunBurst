@@ -61,6 +61,51 @@ export function smoothRotation(currentBearing, targetBearing, smoothingFactor = 
 }
 
 /**
+ * Safely read marker rotation across marker types
+ * @param {Object} marker - Google Maps Marker instance
+ * @returns {number} Rotation in degrees
+ */
+export function getMarkerRotation(marker) {
+  if (!marker) return 0;
+
+  if (typeof marker.getRotation === 'function') {
+    const value = marker.getRotation();
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const icon = typeof marker.getIcon === 'function' ? marker.getIcon() : null;
+  if (icon && typeof icon === 'object' && Number.isFinite(icon.rotation)) {
+    return icon.rotation;
+  }
+
+  return Number.isFinite(marker.__routeRotation) ? marker.__routeRotation : 0;
+}
+
+/**
+ * Safely apply marker rotation across marker types
+ * @param {Object} marker - Google Maps Marker instance
+ * @param {number} rotation - Rotation in degrees
+ */
+export function setMarkerRotation(marker, rotation) {
+  if (!marker || !Number.isFinite(rotation)) return;
+
+  const normalized = (rotation % 360 + 360) % 360;
+  marker.__routeRotation = normalized;
+
+  if (typeof marker.setRotation === 'function') {
+    marker.setRotation(normalized);
+    return;
+  }
+
+  if (typeof marker.getIcon === 'function' && typeof marker.setIcon === 'function') {
+    const icon = marker.getIcon();
+    if (icon && typeof icon === 'object' && !Array.isArray(icon)) {
+      marker.setIcon({ ...icon, rotation: normalized });
+    }
+  }
+}
+
+/**
  * Animate marker smoothly along route polyline
  * @param {Object} marker - Google Maps Marker instance
  * @param {Object} currentPos - Current position {lat, lng}
@@ -99,16 +144,16 @@ export function animateMarkerSmoothly(marker, currentPos, targetPos, duration = 
         : currentPos;
       
       const bearing = calculateBearing(prevPos, { lat: currentLat, lng: currentLng });
-      const currentRotation = marker.getRotation() || 0;
+      const currentRotation = getMarkerRotation(marker);
       const smoothedBearing = smoothRotation(currentRotation, bearing, 0.4);
-      marker.setRotation(smoothedBearing);
+      setMarkerRotation(marker, smoothedBearing);
       
       requestAnimationFrame(animate);
     } else {
       // Animation complete
       marker.setPosition(targetPos);
       const finalBearing = calculateBearing(currentPos, targetPos);
-      marker.setRotation(finalBearing);
+      setMarkerRotation(marker, finalBearing);
       
       if (onComplete) onComplete();
     }
@@ -283,7 +328,7 @@ export class RouteBasedAnimationController {
       // First time - set position directly
       this.marker.setPosition(targetPos);
       if (bearing !== undefined) {
-        this.marker.setRotation(bearing);
+        setMarkerRotation(this.marker, bearing);
       }
     }
     

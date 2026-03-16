@@ -1,6 +1,10 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react"
+<<<<<<< HEAD
 import { locationAPI, userAPI } from "@/lib/api"
 import { writeUserLocation } from "@/lib/firebaseRealtime"
+=======
+import { userAPI } from "@/lib/api"
+>>>>>>> 3d4d1981f9a2cd76a1aa47f2cc28266f25c41ab6
 
 const LocationContext = createContext(null)
 
@@ -118,20 +122,16 @@ export function LocationProvider({ children }) {
 
       const { latitude, longitude } = position.coords
 
-      // Reverse geocode
-      const res = await fetch(
-        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-      )
-      const data = await res.json()
-
       const newLocation = {
         latitude,
         longitude,
-        city: data.city || data.locality || "Unknown",
-        state: data.principalSubdivision || "",
-        address: data.locality || data.city || "",
-        area: data.locality || "",
-        formattedAddress: `${data.locality || ""}, ${data.city || ""}, ${data.principalSubdivision || ""}`.replace(/^,\s*/, ""),
+        // No reverse geocoding on homepage flow.
+        // Keep previously known labels if available, otherwise leave empty.
+        city: location?.city || "",
+        state: location?.state || "",
+        address: location?.address || "",
+        area: location?.area || "",
+        formattedAddress: location?.formattedAddress || "",
       }
 
       setLocation(newLocation)
@@ -148,7 +148,7 @@ export function LocationProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }, [updateLocationInDB])
+  }, [location, updateLocationInDB])
 
   const setManualLocation = useCallback((locationData) => {
     if (!locationData) return

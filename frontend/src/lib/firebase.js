@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
 import { getPublicEnvValue } from './utils/publicEnv.js';
 
 const envFromRuntimeOrBuild = (key, fallback = '') =>
@@ -78,6 +78,7 @@ function resolveFirebaseConfigStatus() {
 let app;
 let firebaseAuth;
 let googleProvider;
+let facebookProvider;
 
 // Function to ensure Firebase is initialized
 function ensureFirebaseInitialized() {
@@ -122,6 +123,11 @@ function ensureFirebaseInitialized() {
       // Note: Don't set custom client_id - Firebase uses its own OAuth client
       
     }
+
+    if (!facebookProvider) {
+      facebookProvider = new FacebookAuthProvider();
+      facebookProvider.addScope('email');
+    }
     return true;
   } catch (error) {
     console.error('Firebase initialization error:', error);
@@ -134,6 +140,6 @@ function ensureFirebaseInitialized() {
 ensureFirebaseInitialized();
 
 export const firebaseApp = app;
-export { firebaseAuth, googleProvider, ensureFirebaseInitialized };
+export { firebaseAuth, googleProvider, facebookProvider, ensureFirebaseInitialized };
 
 

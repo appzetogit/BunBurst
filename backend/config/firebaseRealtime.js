@@ -6,6 +6,40 @@ import { getDatabase } from 'firebase-admin/database';
 let realtimeDb = null;
 let initAttempted = false;
 let initErrorLogged = false;
+const FIREBASE_RW_INTERVAL_MS = 10000; // 10 seconds
+const FIREBASE_READ_INTERVAL_MS = 10000; // 10 seconds
+
+const writeThrottle = {
+  deliveryPartner: new Map(),
+  activeOrderLocation: new Map(),
+  activeOrderRoute: new Map(),
+  userLocation: new Map(),
+  cafeLocation: new Map()
+};
+
+const readCache = {
+  activeOrder: new Map()
+};
+
+const activeOrderCreatedAtCache = new Map();
+
+function shouldSkipWrite(bucket, key, status = '') {
+  if (!bucket || !key) return false;
+  const now = Date.now();
+  const previous = bucket.get(key);
+  if (!previous) {
+    bucket.set(key, { timestamp: now, status });
+    return false;
+  }
+
+  const statusChanged = previous.status !== status;
+  if (!statusChanged && (now - previous.timestamp) < FIREBASE_RW_INTERVAL_MS) {
+    return true;
+  }
+
+  bucket.set(key, { timestamp: now, status });
+  return false;
+}
 
 function normalizePrivateKey(privateKey) {
   if (!privateKey || typeof privateKey !== 'string') return privateKey;
@@ -135,6 +169,9 @@ export async function syncDeliveryPartnerPresence({
 }) {
   const db = getFirebaseRealtimeDb();
   if (!db || !deliveryPartnerId) return false;
+  if (shouldSkipWrite(writeThrottle.deliveryPartner, deliveryPartnerId, isOnline ? 'online' : 'offline')) {
+    return true;
+  }
 
   const payload = {
     status: isOnline ? 'online' : 'offline',
@@ -163,15 +200,18 @@ export async function syncActiveOrderRoute({
 }) {
   const db = getFirebaseRealtimeDb();
   if (!db || !orderId) return false;
+  if (shouldSkipWrite(writeThrottle.activeOrderRoute, orderId, 'assigned')) {
+    return true;
+  }
 
   const orderRef = db.ref(`active_orders/${orderId}`);
-  const existingSnapshot = await orderRef.once('value');
-  const existing = existingSnapshot.val() || {};
   const now = Date.now();
+  const createdAt = activeOrderCreatedAtCache.get(orderId) || now;
+  activeOrderCreatedAtCache.set(orderId, createdAt);
 
   const payload = {
     status: 'assigned',
-    created_at: existing.created_at || now,
+    created_at: createdAt,
     last_updated: now
   };
 
@@ -221,15 +261,18 @@ export async function syncActiveOrderLocation({
 }) {
   const db = getFirebaseRealtimeDb();
   if (!db || !orderId) return false;
+  if (shouldSkipWrite(writeThrottle.activeOrderLocation, orderId, status)) {
+    return true;
+  }
 
   const orderRef = db.ref(`active_orders/${orderId}`);
-  const existingSnapshot = await orderRef.once('value');
-  const existing = existingSnapshot.val() || {};
   const now = Date.now();
+  const createdAt = activeOrderCreatedAtCache.get(orderId) || now;
+  activeOrderCreatedAtCache.set(orderId, createdAt);
 
   const payload = {
     status,
-    created_at: existing.created_at || now,
+    created_at: createdAt,
     last_updated: now
   };
 
@@ -245,6 +288,10 @@ export async function removeActiveOrderRealtime(orderId) {
   const db = getFirebaseRealtimeDb();
   if (!db || !orderId) return false;
   await db.ref(`active_orders/${orderId}`).remove();
+  activeOrderCreatedAtCache.delete(orderId);
+  writeThrottle.activeOrderLocation.delete(orderId);
+  writeThrottle.activeOrderRoute.delete(orderId);
+  readCache.activeOrder.delete(orderId);
   return true;
 }
 
@@ -262,6 +309,9 @@ export async function syncUserLocationRealtime({
 }) {
   const db = getFirebaseRealtimeDb();
   if (!db || !userId) return false;
+  if (shouldSkipWrite(writeThrottle.userLocation, userId, 'updated')) {
+    return true;
+  }
 
   const payload = {
     last_updated: typeof lastUpdated === 'number' ? lastUpdated : Date.now()
@@ -278,6 +328,54 @@ export async function syncUserLocationRealtime({
 
   await db.ref(`users/${userId}`).update(payload);
   return true;
+}
+
+export async function syncCafeLocationRealtime({
+  cafeId,
+  latitude,
+  longitude,
+  address,
+  area,
+  city,
+  state,
+  formattedAddress
+}) {
+  const db = getFirebaseRealtimeDb();
+  if (!db || !cafeId) return false;
+  if (shouldSkipWrite(writeThrottle.cafeLocation, cafeId, 'updated')) {
+    return true;
+  }
+
+  const payload = {
+    last_updated: Date.now()
+  };
+
+  if (typeof latitude === 'number' && Number.isFinite(latitude)) payload.lat = latitude;
+  if (typeof longitude === 'number' && Number.isFinite(longitude)) payload.lng = longitude;
+  if (address) payload.address = address;
+  if (area) payload.area = area;
+  if (city) payload.city = city;
+  if (state) payload.state = state;
+  if (formattedAddress) payload.formatted_address = formattedAddress;
+
+  await db.ref(`cafes/${cafeId}`).update(payload);
+  return true;
+}
+
+export async function getActiveOrderLocationRealtime(orderId) {
+  const db = getFirebaseRealtimeDb();
+  if (!db || !orderId) return null;
+
+  const cached = readCache.activeOrder.get(orderId);
+  const now = Date.now();
+  if (cached && (now - cached.timestamp) < FIREBASE_READ_INTERVAL_MS) {
+    return cached.value;
+  }
+
+  const snapshot = await db.ref(`active_orders/${orderId}`).once('value');
+  const value = snapshot.val() || null;
+  readCache.activeOrder.set(orderId, { value, timestamp: now });
+  return value;
 }
 
 function haversineKm(lat1, lon1, lat2, lon2) {

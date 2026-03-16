@@ -26,7 +26,7 @@ export default function AddCafe() {
   const navigate = useNavigate()
   const { id } = useParams()
   const isEditMode = !!id
-  const [loadingConfig, setLoadingConfig] = useState(false)
+  const [loadingConfig, setLoadingConfig] = useState(isEditMode)
   const [loadingZones, setLoadingZones] = useState(false)
   const [zones, setZones] = useState([])
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState("")
@@ -788,7 +788,24 @@ export default function AddCafe() {
   useEffect(() => {
     if (loadingConfig) return
     if (step !== 1) return
-    if (!mapRef.current || mapInstanceRef.current) return
+    if (!mapRef.current) return
+
+    // Recover if the previous map instance points to a stale/unmounted container.
+    if (mapInstanceRef.current) {
+      const existingDiv = typeof mapInstanceRef.current.getDiv === "function"
+        ? mapInstanceRef.current.getDiv()
+        : null
+      if (existingDiv === mapRef.current) return
+      if (markerRef.current) {
+        markerRef.current.setMap(null)
+        markerRef.current = null
+      }
+      if (zonePolygonRef.current) {
+        zonePolygonRef.current.setMap(null)
+        zonePolygonRef.current = null
+      }
+      mapInstanceRef.current = null
+    }
 
     let cancelled = false
 
