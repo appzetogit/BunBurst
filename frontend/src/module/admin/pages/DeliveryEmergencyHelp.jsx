@@ -36,6 +36,8 @@ export default function DeliveryEmergencyHelp() {
   const validatePhoneValue = (value = "") => {
     const normalized = normalizeForDial(value)
     if (!normalized) return ""
+    const digitsOnly = normalized.startsWith("+") ? normalized.slice(1) : normalized
+    if (/^0+$/.test(digitsOnly)) return "Invalid phone number"
     if (normalized.startsWith("+")) {
       const digits = normalized.slice(1)
       if (!/^\d{8,15}$/.test(digits)) return "Invalid phone number"
@@ -57,11 +59,16 @@ export default function DeliveryEmergencyHelp() {
 
       if (response?.data?.success && response?.data?.data) {
         const data = response.data.data
+        const safeValue = (value) => {
+          if (!value) return ""
+          const error = validatePhoneValue(value)
+          return error ? "" : value
+        }
         setFormData({
-          medicalEmergency: data.medicalEmergency || "",
-          accidentHelpline: data.accidentHelpline || "",
-          contactPolice: data.contactPolice || "",
-          insurance: data.insurance || "",
+          medicalEmergency: safeValue(data.medicalEmergency),
+          accidentHelpline: safeValue(data.accidentHelpline),
+          contactPolice: safeValue(data.contactPolice),
+          insurance: safeValue(data.insurance),
         })
       }
     } catch (error) {
@@ -98,6 +105,21 @@ export default function DeliveryEmergencyHelp() {
       [field]: sanitized
     }))
     // Clear error for this field when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
+  }
+
+  const handleInputBlur = (field, value) => {
+    const error = validatePhoneValue(value)
+    if (error) {
+      setFormErrors(prev => ({ ...prev, [field]: error }))
+      return
+    }
     if (formErrors[field]) {
       setFormErrors(prev => {
         const newErrors = { ...prev }
@@ -227,7 +249,11 @@ export default function DeliveryEmergencyHelp() {
                     type="text"
                     value={formData[field.id]}
                     onChange={(e) => handleInputChange(field.id, e.target.value)}
+                    onBlur={(e) => handleInputBlur(field.id, e.target.value)}
                     placeholder={field.placeholder}
+                    inputMode="tel"
+                    autoComplete="tel"
+                    maxLength={24}
                     className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935] text-[#1E1E1E] placeholder:text-[#1E1E1E]/40 ${formErrors[field.id]
                       ? "border-red-300 focus:ring-red-500"
                       : "border-[#F5F5F5]"
