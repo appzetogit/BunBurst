@@ -109,7 +109,7 @@ export default function CategoryFoodsPage() {
         ? section.subsections.flatMap((subsection) => (Array.isArray(subsection.items) ? subsection.items : []))
         : []
 
-      [...sectionItems, ...subsectionItems].forEach((item) => {
+      sectionItems.concat(subsectionItems).forEach((item) => {
         const itemPrice = typeof item.price === "number" ? item.price : Number(item.price) || 0
         const originalPrice = item.originalPrice !== null && item.originalPrice !== undefined
           ? Number(item.originalPrice) || 0
