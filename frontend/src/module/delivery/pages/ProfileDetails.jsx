@@ -303,15 +303,17 @@ export default function ProfileDetails() {
                 )}
               </div>
 
-              {/* Monthly Salary Display - Read Only */}
-              {profile?.salary?.type === 'fixed' && (
+              {/* Salary Display - Read Only, fetched from DB */}
+              {profile?.salary?.amount > 0 && (
                 <div className="p-2 px-3 flex items-center justify-between bg-[#FFF9E0]">
                   <div className="flex flex-col">
-                    <p className="text-sm text-gray-900 font-medium">Monthly Salary</p>
-                    <p className="text-xs text-[#FFC400]">Fixed Amount</p>
+                    <p className="text-sm text-gray-900 font-medium">Salary</p>
+                    <p className="text-xs text-[#FFC400] capitalize">
+                      {profile?.salary?.cycle ? `${profile.salary.cycle.charAt(0).toUpperCase()}${profile.salary.cycle.slice(1)}` : 'Monthly'}
+                    </p>
                   </div>
                   <p className="text-base font-bold text-gray-900">
-                    ₹{profile?.salary?.amount?.toLocaleString() || "0"}
+                    ₹{Number(profile.salary.amount).toLocaleString('en-IN')}
                   </p>
                 </div>
               )}

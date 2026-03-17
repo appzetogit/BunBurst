@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react"
-import { Search, Filter, Eye, Check, X, Package, ArrowUpDown, FileText, FileSpreadsheet, Loader2, Download, ExternalLink, Calendar, MapPin, CreditCard, User, Mail, Phone, Bike, FileCheck } from "lucide-react"
+import { Search, Filter, Eye, Check, X, Package, FileText, FileSpreadsheet, Loader2, Download, ExternalLink, Calendar, MapPin, CreditCard, User, Mail, Phone, Bike, FileCheck } from "lucide-react"
 import { adminAPI } from "@/lib/api"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { exportJoinRequestsToExcel, exportJoinRequestsToPDF } from "../../components/deliveryman/joinRequestExportUtils"
@@ -339,42 +339,12 @@ export default function JoinRequest() {
               <table className="w-full">
                 <thead className="bg-[#F5F5F5] border-b border-[#F5F5F5]">
                   <tr>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <span>SI</span>
-                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <span>Name</span>
-                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <span>Contact</span>
-                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <span>Zone</span>
-                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <span>Vehicle Type</span>
-                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <span>Availability Status</span>
-                        <ArrowUpDown className="w-3 h-3 text-[#1E1E1E]/40 cursor-pointer hover:text-[#1E1E1E]/70" />
-                      </div>
-                    </th>
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">SI</th>
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Zone</th>
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Vehicle Type</th>
+                    <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Availability Status</th>
                     <th className="px-6 py-4 text-center text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>

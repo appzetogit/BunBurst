@@ -6,6 +6,7 @@ import OrdersTopbar from "../components/orders/OrdersTopbar"
 import OrderDetectDeliveryTable from "../components/orders/OrderDetectDeliveryTable"
 import ViewOrderDetectDeliveryDialog from "../components/orders/ViewOrderDetectDeliveryDialog"
 import SettingsDialog from "../components/orders/SettingsDialog"
+import OrderDetectDeliveryFilterPanel from "../components/orders/OrderDetectDeliveryFilterPanel"
 import { useGenericTableManagement } from "../components/orders/useGenericTableManagement"
 
 // Function to map backend order status to frontend display status
@@ -285,7 +286,6 @@ export default function OrderDetectDelivery() {
     handleExport,
     handleViewOrder,
     handlePrintOrder,
-    toggleColumn,
   } = useGenericTableManagement(
     orders,
     "Order Detect Delivery",
@@ -307,6 +307,10 @@ export default function OrderDetectDelivery() {
     return { total, ordered, cafeAccepted, rejected, deliveryBoyAssigned, reachedPickup, orderIdAccepted, reachedDrop, delivered }
   }, [filteredData, orders.length])
 
+  const cafes = useMemo(() => {
+    return [...new Set(orders.map(order => order.cafeName).filter(Boolean))]
+  }, [orders])
+
   const resetColumns = () => {
     setVisibleColumns({
       si: true,
@@ -317,6 +321,13 @@ export default function OrderDetectDelivery() {
       status: true,
       actions: true,
     })
+  }
+
+  const toggleColumnLocal = (columnKey) => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [columnKey]: !prev[columnKey]
+    }))
   }
 
   // Loading state
@@ -365,114 +376,11 @@ export default function OrderDetectDelivery() {
         onSettingsClick={() => setIsSettingsOpen(true)}
       />
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Total Orders</p>
-              <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <Package className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Ordered</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.ordered}</p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <Clock className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Cafe Accepted</p>
-              <p className="text-2xl font-bold text-emerald-600">{stats.cafeAccepted}</p>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Rejected</p>
-              <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
-            </div>
-            <div className="p-3 bg-red-50 rounded-lg">
-              <XCircle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Delivery Boy Assigned</p>
-              <p className="text-2xl font-bold text-purple-600">{stats.deliveryBoyAssigned}</p>
-            </div>
-            <div className="p-3 bg-purple-50 rounded-lg">
-              <Truck className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Delivery Boy Reached Pickup</p>
-              <p className="text-2xl font-bold text-orange-600">{stats.reachedPickup}</p>
-            </div>
-            <div className="p-3 bg-orange-50 rounded-lg">
-              <Package className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Order ID Accepted</p>
-              <p className="text-2xl font-bold text-indigo-600">{stats.orderIdAccepted}</p>
-            </div>
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Reached Drop</p>
-              <p className="text-2xl font-bold text-amber-600">{stats.reachedDrop}</p>
-            </div>
-            <div className="p-3 bg-amber-50 rounded-lg">
-              <Truck className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500 mb-1">Delivered</p>
-              <p className="text-2xl font-bold text-emerald-600">{stats.delivered}</p>
-            </div>
-            <div className="p-3 bg-emerald-50 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
       <SettingsDialog
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         visibleColumns={visibleColumns}
-        toggleColumn={toggleColumn}
+        toggleColumn={toggleColumnLocal}
         resetColumns={resetColumns}
         columnsConfig={{
           si: "Serial Number",
@@ -483,6 +391,15 @@ export default function OrderDetectDelivery() {
           status: "Status",
           actions: "Actions",
         }}
+      />
+      <OrderDetectDeliveryFilterPanel
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        filters={filters}
+        setFilters={setFilters}
+        onApply={handleApplyFilters}
+        onReset={handleResetFilters}
+        cafes={cafes}
       />
       <ViewOrderDetectDeliveryDialog
         isOpen={isViewOrderOpen}

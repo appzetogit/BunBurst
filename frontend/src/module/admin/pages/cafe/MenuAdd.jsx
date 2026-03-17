@@ -44,6 +44,31 @@ export default function MenuAdd() {
             .replace(/\s+/g, "")
             .trim()
 
+    const collapseSpaces = (value) =>
+        String(value ?? "")
+            .replace(/\s+/g, " ")
+            .trim()
+
+    const trimEdges = (value) => String(value ?? "").trim()
+
+    const sanitizePriceInput = (value) => {
+        const cleaned = String(value ?? "").replace(/[^0-9.]/g, "")
+        const parts = cleaned.split(".")
+        if (parts.length <= 1) return cleaned
+        return `${parts[0]}.${parts.slice(1).join("")}`
+    }
+
+    const normalizePriceOnFocus = (value) => {
+        const raw = String(value ?? "").trim()
+        return raw === "0" ? "" : raw
+    }
+
+    const capitalizeWords = (value) => {
+        const text = String(value ?? "")
+        if (!text) return ""
+        return text.replace(/\b([a-z])/g, (match) => match.toUpperCase())
+    }
+
     // Preparation time options
     const preparationTimeOptions = [
         "10-20 mins",
@@ -263,7 +288,11 @@ export default function MenuAdd() {
             preparationTime: dish.preparationTime || "",
             isAvailable: dish.isAvailable !== false,
             isRecommended: dish.isRecommended || false,
-            stock: dish.stock === "Unlimited" || dish.stock === 0 || dish.stock === "0" ? true : (typeof dish.stock === 'number' && dish.stock > 0),
+            stock: dish.stock === "Unlimited" || dish.stock === "unlimited"
+                ? true
+                : (typeof dish.stock === "number"
+                    ? dish.stock > 0
+                    : parseFloat(dish.stock) > 0),
             hasVariants: hasVariants,
             variants: hasVariants ? dish.variations.map((v) => ({
                 id: v.id || `variant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -816,9 +845,9 @@ export default function MenuAdd() {
 
             {/* Add Dish Modal */}
             {showAddDishModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b border-[#F5F5F5] px-6 py-4 flex items-center justify-between">
+                        <div className="sticky top-0 z-20 bg-white border-b border-[#F5F5F5] px-6 py-4 flex items-center justify-between">
                             <h2 className="text-xl font-bold text-[#1E1E1E]">
                                 {editingDish ? "Edit Dish" : "Add Dish"}
                             </h2>
@@ -884,7 +913,9 @@ export default function MenuAdd() {
                                             <input
                                                 type="text"
                                                 value={newCategoryName}
-                                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                                onChange={(e) => setNewCategoryName(capitalizeWords(e.target.value))}
+                                                onBlur={(e) => setNewCategoryName(collapseSpaces(e.target.value))}
+                                                maxLength={60}
                                                 placeholder="Enter new category name"
                                                 className="flex-1 px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
                                                 onKeyPress={(e) => {
@@ -949,7 +980,11 @@ export default function MenuAdd() {
                                         <input
                                             type="text"
                                             value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            onChange={(e) => setFormData({ ...formData, name: capitalizeWords(e.target.value) })}
+                                            onBlur={(e) => setFormData({ ...formData, name: collapseSpaces(e.target.value) })}
+                                            maxLength={80}
+                                            autoComplete="off"
+                                            placeholder="Enter dish name"
                                             className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
                                             required
                                         />
@@ -961,6 +996,8 @@ export default function MenuAdd() {
                                         <textarea
                                             value={formData.description}
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                            onBlur={(e) => setFormData({ ...formData, description: trimEdges(e.target.value) })}
+                                            maxLength={300}
                                             rows={3}
                                             className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
                                             placeholder="Describe the dish..."
@@ -981,8 +1018,8 @@ export default function MenuAdd() {
                                         />
                                     )}
                                     <label className="flex items-center gap-2 px-4 py-2 bg-[#e53935] text-white rounded-lg hover:bg-[#d32f2f] cursor-pointer transition-colors">
-                                        <Upload className="w-5 h-5" />
-                                        Upload Image
+                                        {!formData.image && <Upload className="w-5 h-5" />}
+                                        {formData.image ? "Uploaded" : "Upload Image"}
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -1067,8 +1104,13 @@ export default function MenuAdd() {
                                                             type="text"
                                                             value={variant.name}
                                                             onChange={(e) =>
-                                                                handleUpdateVariant(variant.id, "name", e.target.value)
+                                                                handleUpdateVariant(variant.id, "name", capitalizeWords(e.target.value))
                                                             }
+                                                            onBlur={(e) =>
+                                                                handleUpdateVariant(variant.id, "name", collapseSpaces(e.target.value))
+                                                            }
+                                                            maxLength={40}
+                                                            autoComplete="off"
                                                             placeholder="e.g., Small, Medium, Large"
                                                             className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
                                                             required
@@ -1076,15 +1118,20 @@ export default function MenuAdd() {
                                                     </div>
                                                     <div>
                                                         <label className="block text-sm font-medium text-[#1E1E1E] mb-2">
-                                                            Price (₹) *
+                                                            Price (INR) *
                                                         </label>
                                                         <input
                                                             type="number"
                                                             step="0.01"
                                                             value={variant.price}
-                                                            onChange={(e) =>
-                                                                handleUpdateVariant(variant.id, "price", e.target.value)
+                                                            onFocus={(e) =>
+                                                                handleUpdateVariant(variant.id, "price", normalizePriceOnFocus(e.target.value))
                                                             }
+                                                            onChange={(e) =>
+                                                                handleUpdateVariant(variant.id, "price", sanitizePriceInput(e.target.value))
+                                                            }
+                                                            min="0"
+                                                            inputMode="decimal"
                                                             className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
                                                             required
                                                         />
@@ -1110,13 +1157,18 @@ export default function MenuAdd() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-[#1E1E1E] mb-2">
-                                            {formData.hasVariants ? "Base Price (₹)" : "Price (₹) *"}
+                                            {formData.hasVariants ? "Base Price (INR)" : "Price (INR) *"}
                                         </label>
                                         <input
                                             type="number"
                                             step="0.01"
                                             value={formData.price}
-                                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                            onFocus={(e) =>
+                                                setFormData({ ...formData, price: normalizePriceOnFocus(e.target.value) })
+                                            }
+                                            onChange={(e) => setFormData({ ...formData, price: sanitizePriceInput(e.target.value) })}
+                                            min="0"
+                                            inputMode="decimal"
                                             className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
                                             disabled={formData.hasVariants}
                                             required={!formData.hasVariants}
@@ -1284,4 +1336,5 @@ export default function MenuAdd() {
         </div>
     )
 }
+
 

@@ -150,7 +150,7 @@ export default function DiningList() {
     }
 
     const handleMaxGuestsUpdate = async (cafe, newValue) => {
-        const guests = parseInt(newValue)
+        const guests = parseInt(newValue, 10)
         if (isNaN(guests) || guests < 1) return
 
         // Prevent unnecessary API calls
@@ -340,7 +340,7 @@ export default function DiningList() {
                                                                         e.currentTarget.blur()
                                                                     }
                                                                 }}
-                                                                className="w-16 px-2 py-1 text-sm border border-[#F5F5F5] rounded focus:outline-none focus:border-[#e53935] text-center"
+                                                                className="w-16 px-2 py-1 text-sm border border-[#F5F5F5] rounded focus:outline-none focus:border-[#e53935] text-center no-spinner"
                                                             />
                                                         </div>
                                                     </td>
@@ -410,12 +410,17 @@ export default function DiningList() {
                                     type="number"
                                     min="1"
                                     max="100"
-                                    value={editingCafe.diningSettings?.maxGuests}
+                                    value={editingCafe.diningSettings?.maxGuests ?? ""}
                                     onChange={(e) => setEditingCafe(prev => ({
                                         ...prev,
-                                        diningSettings: { ...prev.diningSettings, maxGuests: parseInt(e.target.value) || 1 }
+                                        diningSettings: {
+                                            ...prev.diningSettings,
+                                            maxGuests: e.target.value === ""
+                                                ? ""
+                                                : (Number.isNaN(parseInt(e.target.value, 10)) ? "" : parseInt(e.target.value, 10))
+                                        }
                                     }))}
-                                    className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935] focus:border-[#e53935]"
+                                    className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935] focus:border-[#e53935] no-spinner"
                                 />
                             </div>
 
@@ -449,13 +454,25 @@ export default function DiningList() {
                                 onClick={async () => {
                                     try {
                                         setLoading(true)
-                                        await adminAPI.updateCafeDiningSettings(editingCafe._id, editingCafe.diningSettings)
+                                        const parsedMaxGuests = parseInt(editingCafe.diningSettings?.maxGuests, 10)
+                                        const sanitizedDiningSettings = {
+                                            ...editingCafe.diningSettings,
+                                            maxGuests: Number.isNaN(parsedMaxGuests) || parsedMaxGuests < 1 ? 1 : parsedMaxGuests
+                                        }
+
+                                        await adminAPI.updateCafeDiningSettings(editingCafe._id, sanitizedDiningSettings)
 
                                         // Update local state
                                         setCafes(prev => prev.map(r =>
-                                            r._id === editingCafe._id ? editingCafe : r
+                                            r._id === editingCafe._id
+                                                ? { ...editingCafe, diningSettings: sanitizedDiningSettings }
+                                                : r
                                         ))
 
+                                        setEditingCafe(prev => ({
+                                            ...prev,
+                                            diningSettings: sanitizedDiningSettings
+                                        }))
                                         setIsEditModalOpen(false)
                                         // toast.success("Settings updated")
                                     } catch (err) {

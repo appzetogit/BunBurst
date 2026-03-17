@@ -62,6 +62,8 @@ import heroBannerRoutes from './modules/heroBanner/index.js';
 import diningRoutes from './modules/dining/index.js';
 import diningAdminRoutes from './modules/dining/routes/diningAdminRoutes.js';
 import diningTablesAdminRoutes from './modules/dining/routes/diningTablesAdminRoutes.js';
+import couponModuleRoutes from './modules/coupon/index.js';
+
 
 
 // Validate required environment variables
@@ -363,6 +365,13 @@ app.use(cookieParser());
 // Data sanitization
 app.use(mongoSanitize());
 
+// Serve static files from uploads directory
+import { fileURLToPath } from 'url';
+import path from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname_path = path.dirname(__filename);
+app.use('/uploads', express.static(path.join(__dirname_path, 'uploads')));
+
 // ─────────────────────────────── Rate Limiting ───────────────────────────────
 // Provide proxy trust so `express-rate-limit` tracks REAL client IPs, not the load balancer IP
 app.set('trust proxy', 1);
@@ -482,6 +491,8 @@ app.use('/api', heroBannerRoutes);
 app.use('/api/dining', diningRoutes);
 app.use('/api/admin/dining', diningAdminRoutes);
 app.use('/api/admin/tables', diningTablesAdminRoutes);
+app.use('/api', couponModuleRoutes);
+
 
 // 404 handler - but skip Socket.IO paths
 app.use((req, res, next) => {

@@ -45,8 +45,10 @@ export default function DiningManagement() {
     const [configCafeId, setConfigCafeId] = useState("")
     const [configLoading, setConfigLoading] = useState(false)
     const [configData, setConfigData] = useState({ availableDates: [], timeSlots: [], tables: [] })
-    const [dateInput, setDateInput] = useState("")
+    const [dateRangeStart, setDateRangeStart] = useState("")
+    const [dateRangeEnd, setDateRangeEnd] = useState("")
     const [dateSubmitting, setDateSubmitting] = useState(false)
+    const [dateProgress, setDateProgress] = useState({ done: 0, total: 0, active: false })
     const [slotDateInput, setSlotDateInput] = useState("")
     const [slotStartTime, setSlotStartTime] = useState("")
     const [slotEndTime, setSlotEndTime] = useState("")
@@ -311,26 +313,67 @@ export default function DiningManagement() {
         }
     }
 
-    const handleCreateDate = async () => {
-        if (!configCafeId || !dateInput) {
-            setError("Cafe and date are required")
+    const handleCreateDateRange = async () => {
+        if (!configCafeId || !dateRangeStart || !dateRangeEnd) {
+            setError("Cafe, start date and end date are required")
             return
+        }
+
+        const start = new Date(dateRangeStart)
+        const end = new Date(dateRangeEnd)
+
+        if (end < start) {
+            setError("End date must be on or after start date")
+            return
+        }
+
+        // Max 31 days (1 month)
+        const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1
+        if (diffDays > 31) {
+            setError("Date range cannot exceed 31 days (1 month)")
+            return
+        }
+
+        // Build array of all dates in range
+        const datesToAdd = []
+        const cursor = new Date(start)
+        while (cursor <= end) {
+            datesToAdd.push(cursor.toISOString().split("T")[0])
+            cursor.setDate(cursor.getDate() + 1)
         }
 
         try {
             setDateSubmitting(true)
-            const response = await api.post(
-                "/admin/dining/date",
-                { cafeId: configCafeId, date: dateInput },
-                getAuthConfig(),
-            )
-            if (response.data?.success) {
-                setSuccess("Dining date added")
-                setDateInput("")
-                fetchDiningConfig(configCafeId)
+            setDateProgress({ done: 0, total: datesToAdd.length, active: true })
+            let added = 0
+            let failed = 0
+
+            for (const dateStr of datesToAdd) {
+                try {
+                    await api.post(
+                        "/admin/dining/date",
+                        { cafeId: configCafeId, date: dateStr },
+                        getAuthConfig(),
+                    )
+                    added++
+                } catch {
+                    failed++
+                }
+                setDateProgress((p) => ({ ...p, done: added + failed }))
             }
+
+            setDateProgress({ done: 0, total: 0, active: false })
+            if (failed === 0) {
+                setSuccess(`${added} date${added > 1 ? "s" : ""} added successfully!`)
+            } else {
+                setSuccess(`${added} dates added. ${failed} already existed or failed.`)
+            }
+            setDateRangeStart("")
+            setDateRangeEnd("")
+            fetchDiningConfig(configCafeId)
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to add dining date")
+            setError(err.response?.data?.message || "Failed to add dining dates")
+            setDateProgress({ done: 0, total: 0, active: false })
         } finally {
             setDateSubmitting(false)
         }
@@ -474,7 +517,8 @@ export default function DiningManagement() {
         { id: 'categories', label: 'Dining Categories', icon: Layout },
         { id: 'banners', label: 'Dining Banners', icon: ImageIcon },
         { id: 'stories', label: 'Dining Stories', icon: FileText },
-        { id: 'reservations', label: 'Dining Reservations', icon: CalendarDays },
+        { id: 'reservations', label: 'Add Configuration', icon: CalendarDays },
+        { id: 'dining-config', label: 'Current Config', icon: Table2 },
         { id: 'booking-requests', label: 'Booking Requests', icon: Users },
     ]
 
@@ -621,7 +665,7 @@ export default function DiningManagement() {
                                                 <button onClick={() => handleDeleteBanner(banner._id)} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {bannersDeleting === banner._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                                 </button>
-                                                <button onClick={() => handleEditBanner(banner)} className="absolute top-2 right-10 p-1.5 bg-blue-100 text-[#e53935] rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleEditBanner(banner)} className="absolute top-2 right-10 p-1.5 bg-red-50 text-[#e53935] rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -673,7 +717,7 @@ export default function DiningManagement() {
                                                 <button onClick={() => handleDeleteStory(story._id)} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {storiesDeleting === story._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                                 </button>
-                                                <button onClick={() => handleEditStory(story)} className="absolute top-2 right-10 p-1.5 bg-blue-100 text-[#e53935] rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleEditStory(story)} className="absolute top-2 right-10 p-1.5 bg-red-50 text-[#e53935] rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -687,263 +731,568 @@ export default function DiningManagement() {
                 )}
 
                 {activeTab === 'reservations' && (
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                        <div className="space-y-6 xl:col-span-1">
-                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
-                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">Select Cafe</h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        {/* ── Left Sidebar: Cafe Selection ── */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6 sticky top-6">
+                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                                    <UtensilsCrossed className="w-5 h-5 text-[#e53935]" />
+                                    Configure Cafe
+                                </h2>
+                                <p className="text-xs text-[#1E1E1E]/50 mb-4 font-medium">Select a cafe to update its dining dates, slots, or tables.</p>
+                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Select Target Cafe</Label>
                                 <select
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                                    className="flex h-11 w-full rounded-lg border border-slate-200 bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-[#e53935]/20 focus:border-[#e53935] outline-none transition-all"
                                     value={configCafeId}
                                     onChange={e => setConfigCafeId(e.target.value)}
                                 >
-                                    <option value="">Select Cafe</option>
+                                    <option value="">Choose a Cafe</option>
                                     {cafesList.map((cafe) => (
                                         <option key={cafe._id} value={cafe._id}>{cafe.name}</option>
                                     ))}
                                 </select>
-                            </div>
 
-                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
-                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
-                                    <CalendarDays className="w-4 h-4 text-[#e53935]" />
-                                    Add Dining Date
-                                </h2>
-                                <div className="space-y-3">
-                                    <Input type="date" min={getTodayInputValue()} value={dateInput} onChange={e => setDateInput(e.target.value)} />
-                                    <Button onClick={handleCreateDate} disabled={dateSubmitting} className="w-full bg-[#e53935] hover:bg-[#d32f2f]">
-                                        {dateSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Date"}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
-                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
-                                    <Clock3 className="w-4 h-4 text-[#e53935]" />
-                                    Add Time Slots
-                                </h2>
-                                <div className="space-y-3">
-                                    <Input type="date" min={getTodayInputValue()} value={slotDateInput} onChange={e => setSlotDateInput(e.target.value)} />
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <Input type="time" value={slotStartTime} onChange={e => setSlotStartTime(e.target.value)} />
-                                        <Input type="time" value={slotEndTime} onChange={e => setSlotEndTime(e.target.value)} />
-                                    </div>
-                                    <Button type="button" variant="outline" onClick={addPendingSlot} className="w-full">Add Slot</Button>
-                                    {pendingSlots.length > 0 && (
-                                        <div className="space-y-2 max-h-32 overflow-y-auto">
-                                            {pendingSlots.map((slot, idx) => (
-                                                <div key={`${slot.startTime}-${slot.endTime}-${idx}`} className="flex items-center justify-between bg-[#F5F5F5] border border-[#F5F5F5] rounded-lg px-3 py-2 text-sm">
-                                                    <span>{slot.startTime} - {slot.endTime}</span>
-                                                    <button onClick={() => removePendingSlot(idx)} className="text-red-600 hover:text-red-700">
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                {!configCafeId && (
+                                    <div className="mt-6 p-4 bg-red-50 border border-red-100 rounded-xl">
+                                        <div className="flex gap-2">
+                                            <AlertCircle className="w-4 h-4 text-[#e53935] shrink-0" />
+                                            <p className="text-[11px] text-[#e53935] leading-relaxed font-bold">
+                                                Please select a cafe first to enable the configuration forms.
+                                            </p>
                                         </div>
-                                    )}
-                                    <Button onClick={handleSubmitTimeSlots} disabled={slotSubmitting} className="w-full bg-[#e53935] hover:bg-[#d32f2f]">
-                                        {slotSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Time Slots"}
-                                    </Button>
-                                </div>
-                            </div>
+                                    </div>
+                                )}
 
-                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
-                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
-                                    <Table2 className="w-4 h-4 text-[#e53935]" />
-                                    Add Table
-                                </h2>
-                                <div className="space-y-3">
-                                    <Input value={tableNumber} onChange={e => setTableNumber(e.target.value)} placeholder="Table number (e.g. T1)" />
-                                    <Input type="number" min="1" value={tableCapacity} onChange={e => setTableCapacity(e.target.value)} placeholder="Capacity" />
-                                    <Button onClick={handleAddTable} disabled={tableSubmitting} className="w-full bg-[#e53935] hover:bg-[#d32f2f]">
-                                        {tableSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Table"}
-                                    </Button>
-                                </div>
+                                {configCafeId && (
+                                    <div className="mt-6">
+                                        <Button 
+                                            variant="ghost" 
+                                            className="w-full justify-start text-xs font-bold text-[#e53935] hover:bg-red-50"
+                                            onClick={() => setActiveTab('dining-config')}
+                                        >
+                                            <Table2 className="w-4 h-4 mr-2" />
+                                            View Active Config
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        <div className="xl:col-span-2">
-                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
-                                <h2 className="text-lg font-bold text-[#1E1E1E] mb-4">Current Dining Configuration</h2>
-                                {!configCafeId ? (
-                                    <p className="text-[#1E1E1E]/55">Select a cafe to load dining configuration.</p>
-                                ) : configLoading ? (
-                                    <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-[#e53935]" /></div>
-                                ) : (
-                                    <div className="space-y-6">
+                        {/* ── Main Content: Forms ── */}
+                        <div className={`lg:col-span-3 space-y-6 ${!configCafeId ? "opacity-40 pointer-events-none grayscale-[0.5]" : ""}`}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {/* Form: Dates */}
+                                <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6 hover:shadow-md transition-shadow">
+                                    <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                                            <CalendarDays className="w-4 h-4 text-[#e53935]" />
+                                        </div>
+                                        Add Dates
+                                    </h2>
+                                    <div className="space-y-4">
                                         <div>
-                                            <h3 className="font-semibold text-slate-800 mb-2">Available Dates</h3>
-                                            {(configData.availableDates || []).length > 0 ? (
-                                                <div className="border border-[#F5F5F5] rounded-lg overflow-hidden">
-                                                    <div className="grid grid-cols-2 bg-[#F5F5F5] text-xs font-semibold text-[#1E1E1E]/70 uppercase tracking-wide px-4 py-2">
-                                                        <span>Date</span>
-                                                        <span>Status</span>
-                                                    </div>
-                                                    <div className="divide-y divide-slate-200">
-                                                        {(configData.availableDates || []).map((dateValue, idx) => {
-                                                            const dateOnly = typeof dateValue === "string" ? dateValue : dateValue?.date
-                                                            const statusRaw = typeof dateValue === "string" ? null : dateValue?.status
-                                                            const status = (statusRaw || "").toLowerCase() === "expired" ? "expired" : "active"
+                                            <label className="text-xs font-bold text-[#1E1E1E]/50 uppercase tracking-tight mb-1 block">Start Date</label>
+                                            <Input
+                                                type="date"
+                                                min={getTodayInputValue()}
+                                                value={dateRangeStart}
+                                                onChange={e => {
+                                                    setDateRangeStart(e.target.value)
+                                                    if (!dateRangeEnd || dateRangeEnd < e.target.value) setDateRangeEnd(e.target.value)
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-[#1E1E1E]/50 uppercase tracking-tight mb-1 block">End Date</label>
+                                            <Input
+                                                type="date"
+                                                min={dateRangeStart || getTodayInputValue()}
+                                                max={(() => {
+                                                    if (!dateRangeStart) return ""
+                                                    const maxDate = new Date(dateRangeStart)
+                                                    maxDate.setDate(maxDate.getDate() + 30)
+                                                    return maxDate.toISOString().split("T")[0]
+                                                })()}
+                                                value={dateRangeEnd}
+                                                onChange={e => setDateRangeEnd(e.target.value)}
+                                            />
+                                        </div>
 
-                                                            return (
-                                                                <div key={`${dateOnly}-${idx}`} className="grid grid-cols-2 items-center px-4 py-2 text-sm">
-                                                                    <span className="text-slate-800 font-medium">
-                                                                        {dateOnly ? new Date(dateOnly).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
-                                                                    </span>
-                                                                    <span>
-                                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${status === "expired" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                                                                            {status === "expired" ? "Expired" : "Active"}
-                                                                        </span>
-                                                                    </span>
-                                                                </div>
-                                                            )
-                                                        })}
-                                                    </div>
+                                        {dateRangeStart && dateRangeEnd && dateRangeEnd >= dateRangeStart && (() => {
+                                            const diff = Math.round((new Date(dateRangeEnd) - new Date(dateRangeStart)) / (1000 * 60 * 60 * 24)) + 1
+                                            return (
+                                                <div className="py-2 px-3 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold flex items-center gap-2">
+                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    {diff} day{diff > 1 ? "s" : ""} will be added
                                                 </div>
-                                            ) : (
-                                                <p className="text-[#1E1E1E]/55 text-sm">No dates configured.</p>
-                                            )}
-                                        </div>
+                                            )
+                                        })()}
 
-                                        <div>
-                                            <h3 className="font-semibold text-slate-800 mb-2">Time Slots</h3>
-                                            <div className="space-y-3">
-                                                {(configData.timeSlots || []).map((slotDoc) => (
-                                                    <div key={slotDoc._id} className="border border-[#F5F5F5] rounded-lg p-3">
-                                                        <p className="text-sm font-semibold text-slate-800 mb-2">
-                                                            {new Date(slotDoc.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                        </p>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {(slotDoc.timeSlots || []).filter(slot => slot.isActive !== false).map((slot, idx) => (
-                                                                <span key={`${slot.startTime}-${slot.endTime}-${idx}`} className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
-                                                                    {slot.startTime}-{slot.endTime}
-                                                                </span>
-                                                            ))}
-                                                            {(!slotDoc.timeSlots || slotDoc.timeSlots.filter(slot => slot.isActive !== false).length === 0) && (
-                                                                <p className="text-[#1E1E1E]/55 text-xs">No active slots.</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                {(!configData.timeSlots || configData.timeSlots.length === 0) && (
-                                                    <p className="text-[#1E1E1E]/55 text-sm">No time slots configured.</p>
-                                                )}
+                                        {dateProgress.active && (
+                                            <div className="space-y-1.5 pt-2">
+                                                <div className="flex justify-between text-[10px] font-bold text-[#1E1E1E]/60 uppercase">
+                                                    <span>Sync Status</span>
+                                                    <span>{dateProgress.done}/{dateProgress.total}</span>
+                                                </div>
+                                                <div className="w-full bg-[#F5F5F5] rounded-full h-1.5 overflow-hidden">
+                                                    <div className="bg-[#e53935] h-full transition-all duration-300" style={{ width: `${(dateProgress.done / dateProgress.total) * 100}%` }} />
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
 
-                                        <div>
-                                            <h3 className="font-semibold text-slate-800 mb-2">Tables</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                {(configData.tables || []).map((table) => (
-                                                    <div key={table._id} className="border border-[#F5F5F5] rounded-lg p-3">
-                                                        <p className="font-semibold text-[#1E1E1E]">Table {table.tableNumber}</p>
-                                                        <p className="text-xs text-[#1E1E1E]/70 mt-1">{table.capacity} seats</p>
-                                                    </div>
-                                                ))}
-                                                {(!configData.tables || configData.tables.length === 0) && (
-                                                    <p className="text-[#1E1E1E]/55 text-sm">No tables configured.</p>
-                                                )}
-                                            </div>
-                                        </div>
-
+                                        <Button
+                                            onClick={handleCreateDateRange}
+                                            disabled={dateSubmitting || !dateRangeStart || !dateRangeEnd}
+                                            className="w-full bg-[#e53935] hover:bg-[#d32f2f] h-11 shadow-sm"
+                                        >
+                                            {dateSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sync Dates"}
+                                        </Button>
                                     </div>
-                                )}
+                                </div>
+
+                                {/* Form: Slots */}
+                                <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6 hover:shadow-md transition-shadow">
+                                    <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                                            <Clock3 className="w-4 h-4 text-[#e53935]" />
+                                        </div>
+                                        Add Slots
+                                    </h2>
+                                    <div className="space-y-3">
+                                        <Input type="date" min={getTodayInputValue()} value={slotDateInput} onChange={e => setSlotDateInput(e.target.value)} />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <Input type="time" value={slotStartTime} onChange={e => setSlotStartTime(e.target.value)} />
+                                            <Input type="time" value={slotEndTime} onChange={e => setSlotEndTime(e.target.value)} />
+                                        </div>
+                                        <Button type="button" variant="outline" onClick={addPendingSlot} className="w-full border-dashed h-10 text-xs font-bold hover:border-[#e53935] hover:text-[#e53935]">Add to List</Button>
+                                        
+                                        {pendingSlots.length > 0 && (
+                                            <div className="space-y-1.5 max-h-32 overflow-y-auto py-1">
+                                                {pendingSlots.map((slot, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5 text-[11px] font-bold text-slate-600">
+                                                        <span>{slot.startTime} - {slot.endTime}</span>
+                                                        <button onClick={() => removePendingSlot(idx)} className="text-red-500 hover:text-red-700"><X className="w-3.5 h-3.5" /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <Button onClick={handleSubmitTimeSlots} disabled={slotSubmitting} className="w-full bg-[#e53935] hover:bg-[#d32f2f] h-11">
+                                            {slotSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save All Slots"}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Form: Tables */}
+                                <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6 hover:shadow-md transition-shadow">
+                                    <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                                            <Table2 className="w-4 h-4 text-[#e53935]" />
+                                        </div>
+                                        Add Tables
+                                    </h2>
+                                    <div className="space-y-4">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Table ID</Label>
+                                            <Input value={tableNumber} onChange={e => setTableNumber(e.target.value)} placeholder="e.g. T-10" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Capacity (Persons)</Label>
+                                            <Input type="number" min="1" value={tableCapacity} onChange={e => setTableCapacity(e.target.value)} placeholder="e.g. 4" />
+                                        </div>
+                                        <Button onClick={handleAddTable} disabled={tableSubmitting} className="w-full bg-[#e53935] hover:bg-[#d32f2f] h-11 mt-2 shadow-sm">
+                                            {tableSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Physical Table"}
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {activeTab === 'booking-requests' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
-                        <h2 className="text-lg font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
-                            <Users className="w-4 h-4 text-[#e53935]" />
-                            Dining Booking Requests
-                        </h2>
-                        {bookingRequestsLoading ? (
-                            <div className="flex justify-center p-6"><Loader2 className="w-6 h-6 animate-spin text-[#e53935]" /></div>
-                        ) : bookingRequests.length === 0 ? (
-                            <p className="text-[#1E1E1E]/55 text-sm">No pending booking requests.</p>
-                        ) : (
-                            <div className="border border-[#F5F5F5] rounded-lg overflow-hidden">
-                                <div className="grid grid-cols-7 bg-[#F5F5F5] text-xs font-semibold text-[#1E1E1E]/70 uppercase tracking-wide px-4 py-2">
-                                    <span>Customer</span>
-                                    <span>Date</span>
-                                    <span>Slot</span>
-                                    <span>Table</span>
-                                    <span>Guests</span>
-                                    <span>Status</span>
-                                    <span>Action</span>
+                {activeTab === 'dining-config' && (
+                    <div className="space-y-6">
+                        {/* ── Top Dashboard Header ── */}
+                        <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-[#e53935] flex items-center justify-center shadow-lg shadow-red-100">
+                                        <Table2 className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-[#1E1E1E]">Dining Performance Dashboard</h2>
+                                        <p className="text-sm text-[#1E1E1E]/50 font-medium">Monitoring active setup for your cafe locations</p>
+                                    </div>
                                 </div>
-                                <div className="divide-y divide-slate-200">
-                                    {bookingRequests.map((booking) => (
-                                        <div key={booking._id} className="grid grid-cols-7 items-center px-4 py-3 text-sm">
-                                            {(() => {
-                                                const statusValue = booking.bookingStatus || booking.status || "pending"
-                                                const statusLabel = statusValue === "confirmed"
-                                                    ? "Approved"
-                                                    : statusValue === "cancelled"
-                                                        ? "Rejected"
-                                                        : "Pending"
-                                                return null
-                                            })()}
-                                            <span className="text-slate-800 font-medium">{booking.user?.name || "Customer"}</span>
-                                            <span className="text-[#1E1E1E]/70">{new Date(booking.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                                            <span className="text-[#1E1E1E]/70">{booking.timeSlot}</span>
-                                            <span className="text-[#1E1E1E]/70">{booking.tableId?.tableNumber ? `T${booking.tableId.tableNumber}` : "-"}</span>
-                                            <span className="text-[#1E1E1E]/70">{booking.guests}</span>
-                                            <span className="text-xs font-semibold">
-                                                {(() => {
-                                                    const statusValue = booking.bookingStatus || booking.status || "pending"
-                                                    const statusLabel = statusValue === "confirmed"
-                                                        ? "Approved"
-                                                        : statusValue === "cancelled"
-                                                            ? "Rejected"
-                                                            : "Pending"
-                                                    const statusClass = statusValue === "confirmed"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : statusValue === "cancelled"
-                                                            ? "bg-red-100 text-red-700"
-                                                            : "bg-yellow-100 text-yellow-700"
-                                                    return (
-                                                        <span className={`px-2.5 py-1 rounded-full ${statusClass}`}>
-                                                            {statusLabel}
-                                                        </span>
-                                                    )
-                                                })()}
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => setSelectedBookingInfo(booking)}
-                                                    className="h-8 w-8 p-0 border-[#F5F5F5] text-[#1E1E1E]/70 hover:bg-slate-100"
-                                                    title="View customer info"
-                                                >
-                                                    <Info className="w-4 h-4" />
-                                                </Button>
-                                                {(booking.bookingStatus || booking.status) === "confirmed" || (booking.bookingStatus || booking.status) === "cancelled" ? null : (
-                                                    <>
-                                                        <Button
-                                                            onClick={() => handleApproveBooking(booking._id)}
-                                                            disabled={bookingActionLoading === booking._id}
-                                                            className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700"
-                                                        >
-                                                            {bookingActionLoading === booking._id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Approve"}
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            onClick={() => handleRejectBooking(booking._id)}
-                                                            disabled={bookingActionLoading === booking._id}
-                                                            className="h-8 px-3 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                        >
-                                                            Reject
-                                                        </Button>
-                                                    </>
-                                                )}
+                                <div className="w-full md:w-64">
+                                    <Label className="text-[10px] uppercase tracking-widest font-black text-[#e53935] mb-1.5 block">Active Cafe Filter</Label>
+                                    <select
+                                        className="flex h-11 w-full rounded-xl border-2 border-slate-100 bg-white px-4 py-2 text-sm font-bold text-[#1E1E1E] focus:border-[#e53935] outline-none transition-all shadow-sm"
+                                        value={configCafeId}
+                                        onChange={e => setConfigCafeId(e.target.value)}
+                                    >
+                                        <option value="">Select a Cafe</option>
+                                        {cafesList.map((cafe) => (
+                                            <option key={cafe._id} value={cafe._id}>{cafe.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {!configCafeId ? (
+                            <div className="bg-white rounded-2xl border border-dashed border-slate-200 py-20 flex flex-col items-center justify-center text-center">
+                                <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mb-4">
+                                    <CalendarDays className="w-10 h-10 text-slate-200" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800">No Cafe Selected</h3>
+                                <p className="text-sm text-slate-400 max-w-xs mt-2">Pick a cafe from the filter above to see the available dates, slots, and tables.</p>
+                            </div>
+                        ) : configLoading ? (
+                            <div className="bg-white rounded-2xl p-20 flex flex-col items-center">
+                                <Loader2 className="w-12 h-12 animate-spin text-[#e53935] mb-4" />
+                                <p className="text-sm font-bold text-slate-500">Fetching Configuration...</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Section: Dates */}
+                                <div className="lg:col-span-1 border border-[#F5F5F5] bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                                    <div className="p-5 border-b border-slate-50 flex items-center justify-between bg-red-50/30">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+                                                <CalendarDays className="w-5 h-5 text-[#e53935]" />
                                             </div>
+                                            <span className="font-bold text-[#1E1E1E]">Active Dates</span>
                                         </div>
-                                    ))}
+                                        <span className="px-3 py-1 bg-[#e53935] text-white text-[10px] font-black rounded-full shadow-sm shadow-red-100">
+                                            {configData.availableDates?.length || 0} TOTAL
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 max-h-[500px] overflow-y-auto">
+                                        {(configData.availableDates || []).length > 0 ? (
+                                            <div className="divide-y divide-slate-50">
+                                                {(configData.availableDates || []).map((dateValue, idx) => {
+                                                    const dateOnly = typeof dateValue === "string" ? dateValue : dateValue?.date
+                                                    const statusRaw = typeof dateValue === "string" ? null : dateValue?.status
+                                                    const isExpired = (statusRaw || "").toLowerCase() === "expired"
+                                                    return (
+                                                        <div key={idx} className="p-4 flex items-center justify-between hover:bg-red-50/20 transition-colors">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-[10px] font-mono text-slate-300 font-bold">{String(idx + 1).padStart(2, '0')}</span>
+                                                                <p className="text-sm font-bold text-slate-700">
+                                                                    {new Date(dateOnly).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                                </p>
+                                                            </div>
+                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider uppercase ${isExpired ? "bg-red-50 text-red-500" : "bg-emerald-50 text-emerald-600"}`}>
+                                                                {isExpired ? "Expired" : "Active"}
+                                                            </span>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="p-10 text-center text-slate-400 text-xs italic">No dates available</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Section: Slots & Tables */}
+                                <div className="lg:col-span-2 space-y-6">
+                                    {/* Time Slots Card */}
+                                    <div className="bg-white rounded-2xl border border-[#F5F5F5] shadow-sm overflow-hidden flex flex-col">
+                                        <div className="p-5 border-b border-slate-50 flex items-center justify-between bg-red-50/30">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+                                                    <Clock3 className="w-5 h-5 text-[#e53935]" />
+                                                </div>
+                                                <span className="font-bold text-[#1E1E1E]">Time Slots Matrix</span>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-[#e53935] bg-red-100 px-3 py-1 rounded-full uppercase tracking-widest">
+                                                {configData.timeSlots?.length || 0} Date Mappings
+                                            </span>
+                                        </div>
+                                        <div className="p-5 max-h-[300px] overflow-y-auto">
+                                            {(configData.timeSlots || []).length > 0 ? (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {(configData.timeSlots).map((slotDoc) => (
+                                                        <div key={slotDoc._id} className="p-3 rounded-xl border border-slate-100 bg-red-50/10">
+                                                            <p className="text-[11px] font-black text-[#e53935]/60 uppercase mb-2">
+                                                                {new Date(slotDoc.date).toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })}
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {(slotDoc.timeSlots || []).filter(s => s.isActive !== false).map((s, si) => (
+                                                                    <span key={si} className="px-2.5 py-1.5 bg-white border border-red-100 rounded-lg text-[10px] font-bold shadow-sm text-slate-600">
+                                                                        {s.startTime} - {s.endTime}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="p-10 text-center text-slate-400 text-xs italic">No time slots mapped</div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Tables Card */}
+                                    <div className="bg-white rounded-2xl border border-[#F5F5F5] shadow-sm overflow-hidden">
+                                        <div className="p-5 border-b border-slate-50 flex items-center justify-between bg-red-50/30">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+                                                    <Table2 className="w-5 h-5 text-[#e53935]" />
+                                                </div>
+                                                <span className="font-bold text-[#1E1E1E]">Furniture Setup</span>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-[#e53935] bg-red-100 px-3 py-1 rounded-full uppercase tracking-widest">
+                                                {configData.tables?.length || 0} Tables
+                                            </span>
+                                        </div>
+                                        <div className="p-5">
+                                            {(configData.tables || []).length > 0 ? (
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-h-[250px] overflow-y-auto pr-2">
+                                                    {(configData.tables).map((table) => (
+                                                        <div key={table._id} className="p-4 rounded-2xl border-2 border-slate-50 flex flex-col items-center justify-center gap-1 hover:border-red-100 hover:bg-red-50/20 transition-all group">
+                                                            <p className="text-sm font-black text-slate-800">T-{table.tableNumber}</p>
+                                                            <div className="flex items-center gap-1 opacity-60">
+                                                                <Users className="w-3 h-3 text-[#e53935]" />
+                                                                <span className="text-[10px] font-bold">{table.capacity}</span>
+                                                            </div>
+                                                            {table.isActive === false && <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-400" />}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="p-10 text-center text-slate-400 text-xs italic">No tables configured</div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {activeTab === 'booking-requests' && (
+                    <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                        {/* ── Left Sidebar (Quick Config View) ── */}
+                        <div className="xl:col-span-1 space-y-6">
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-5">
+                                <h3 className="text-sm font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                                    <UtensilsCrossed className="w-4 h-4 text-[#e53935]" />
+                                    Filter by Cafe
+                                </h3>
+                                <select
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mb-2"
+                                    value={configCafeId}
+                                    onChange={e => setConfigCafeId(e.target.value)}
+                                >
+                                    <option value="">All Cafes</option>
+                                    {cafesList.map((cafe) => (
+                                        <option key={cafe._id} value={cafe._id}>{cafe.name}</option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-[#1E1E1E]/40 italic uppercase tracking-wider">
+                                    Selecting a cafe will filter requests and show its config
+                                </p>
+                            </div>
+
+                            {configCafeId && !configLoading && (
+                                <div className="space-y-4">
+                                    <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] overflow-hidden">
+                                        <div className="px-5 py-3 bg-slate-50 border-b border-[#F5F5F5] flex items-center justify-between">
+                                            <span className="text-xs font-bold text-[#1E1E1E]">Active Dates</span>
+                                            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
+                                                {configData.availableDates?.length || 0}
+                                            </span>
+                                        </div>
+                                        <div className="max-h-32 overflow-y-auto p-2">
+                                            {configData.availableDates?.slice(0, 10).map((d, i) => (
+                                                <div key={i} className="text-[11px] py-1 px-3 border-b border-slate-50 last:border-0 flex justify-between">
+                                                    <span className="text-slate-600">
+                                                        {new Date(typeof d === 'string' ? d : d.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                    </span>
+                                                    <span className="text-emerald-600 font-bold">Active</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] overflow-hidden">
+                                        <div className="px-5 py-3 bg-slate-50 border-b border-[#F5F5F5] flex items-center justify-between">
+                                            <span className="text-xs font-bold text-[#1E1E1E]">Tables</span>
+                                            <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
+                                                {configData.tables?.length || 0}
+                                            </span>
+                                        </div>
+                                        <div className="max-h-32 overflow-y-auto p-2">
+                                            {configData.tables?.map((t, i) => (
+                                                <div key={i} className="text-[11px] py-1 px-3 border-b border-slate-50 last:border-0 flex justify-between items-center">
+                                                    <span className="font-semibold">Table {t.tableNumber}</span>
+                                                    <span className="text-slate-400">{t.capacity} seats</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    <Button 
+                                        variant="outline" 
+                                        className="w-full text-xs h-9 border-dashed border-slate-300 text-slate-500 hover:text-[#e53935]"
+                                        onClick={() => setActiveTab('reservations')}
+                                    >
+                                        Edit Full Config
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ── Right Content (Booking Requests Table) ── */}
+                        <div className="xl:col-span-3 space-y-4">
+                            <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] overflow-hidden">
+                                <div className="px-6 py-5 border-b border-[#F5F5F5] flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                                            <Users className="w-5 h-5 text-[#e53935]" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-lg font-bold text-[#1E1E1E]">Booking Requests</h2>
+                                            <p className="text-xs text-[#1E1E1E]/50">Manage table reservations and customer approvals</p>
+                                        </div>
+                                    </div>
+                                    <Button 
+                                        onClick={fetchBookingRequests} 
+                                        variant="outline" 
+                                        className="h-9 px-4 text-xs font-bold gap-2 hover:border-[#e53935] hover:text-[#e53935] transition-all"
+                                        disabled={bookingRequestsLoading}
+                                    >
+                                        {bookingRequestsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                        Refresh List
+                                    </Button>
+                                </div>
+
+                                {bookingRequestsLoading ? (
+                                    <div className="flex flex-col items-center justify-center p-20 gap-3">
+                                        <Loader2 className="w-10 h-10 animate-spin text-[#e53935]" />
+                                        <p className="text-sm text-slate-400 font-medium">Fetching latest requests...</p>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-[#FAFAFA] border-b border-[#F5F5F5]">
+                                                    <th className="px-6 py-4 text-[10px] font-bold text-[#1E1E1E]/50 uppercase tracking-widest">Customer</th>
+                                                    <th className="px-6 py-4 text-[10px] font-bold text-[#1E1E1E]/50 uppercase tracking-widest">Cafe</th>
+                                                    <th className="px-6 py-4 text-[10px] font-bold text-[#1E1E1E]/50 uppercase tracking-widest">Date / Slot</th>
+                                                    <th className="px-6 py-4 text-[10px] font-bold text-[#1E1E1E]/50 uppercase tracking-widest">Table</th>
+                                                    <th className="px-6 py-4 text-[10px] font-bold text-[#1E1E1E]/50 uppercase tracking-widest">Guests</th>
+                                                    <th className="px-6 py-4 text-[10px] font-bold text-[#1E1E1E]/50 uppercase tracking-widest">Status</th>
+                                                    <th className="px-6 py-4 text-[10px] font-bold text-[#1E1E1E]/50 uppercase tracking-widest">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-[#F5F5F5]">
+                                                {bookingRequests
+                                                    .filter(b => !configCafeId || (b.cafe?._id || b.cafe) === configCafeId)
+                                                    .map((booking) => {
+                                                        const status = (booking.bookingStatus || booking.status || "pending").toLowerCase();
+                                                        return (
+                                                            <tr key={booking._id} className="hover:bg-slate-50/50 transition-colors group">
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-sm font-bold text-[#1E1E1E]">{booking.user?.name || "Customer"}</span>
+                                                                        <span className="text-[10px] text-slate-400 truncate max-w-[120px]">{booking.bookingId}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">
+                                                                        {booking.cafe?.name || "N/A"}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-xs font-medium text-[#1E1E1E]">
+                                                                            {new Date(booking.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                                        </span>
+                                                                        <span className="text-[11px] text-slate-500">{booking.timeSlot}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                                                                        {booking.tableId?.tableNumber ? `T${booking.tableId.tableNumber}` : "—"}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <div className="inline-flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-full">
+                                                                        <Users className="w-3 h-3 text-slate-400" />
+                                                                        <span className="text-xs font-bold text-slate-600">{booking.guests}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    {status === "confirmed" ? (
+                                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase">
+                                                                            <CheckCircle2 className="w-3 h-3" /> Approved
+                                                                        </span>
+                                                                    ) : status === "cancelled" || status === "rejected" ? (
+                                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-100 text-red-700 text-[10px] font-bold uppercase">
+                                                                            <X className="w-3 h-3" /> Rejected
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase animate-pulse">
+                                                                            <Clock3 className="w-3 h-3" /> Pending
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="icon"
+                                                                            onClick={() => setSelectedBookingInfo(booking)}
+                                                                            className="h-8 w-8 rounded-lg border-slate-200 text-slate-400 hover:text-[#e53935] hover:bg-red-50"
+                                                                        >
+                                                                            <Info className="w-4 h-4" />
+                                                                        </Button>
+                                                                        {status === "pending" && (
+                                                                            <>
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    onClick={() => handleApproveBooking(booking._id)}
+                                                                                    disabled={bookingActionLoading === booking._id}
+                                                                                    className="h-8 bg-green-600 hover:bg-green-700 px-3 text-[11px] font-bold"
+                                                                                >
+                                                                                    {bookingActionLoading === booking._id ? <Loader2 className="w-3 h-3 animate-spin" /> : "APPROVE"}
+                                                                                </Button>
+                                                                                <Button
+                                                                                    size="sm"
+                                                                                    variant="outline"
+                                                                                    onClick={() => handleRejectBooking(booking._id)}
+                                                                                    disabled={bookingActionLoading === booking._id}
+                                                                                    className="h-8 border-red-200 text-red-600 hover:bg-red-50 px-3 text-[11px] font-bold"
+                                                                                >
+                                                                                    REJECT
+                                                                                </Button>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                
+                                                {bookingRequests.filter(b => !configCafeId || (b.cafe?._id || b.cafe) === configCafeId).length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="7" className="px-6 py-20 text-center">
+                                                            <div className="flex flex-col items-center gap-2 opacity-30">
+                                                                <Users className="w-12 h-12" />
+                                                                <p className="text-sm font-bold">No booking requests found</p>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -979,8 +1328,8 @@ export default function DiningManagement() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="px-5 py-4 border-t border-[#F5F5F5] bg-[#F5F5F5]">
-                                <Button onClick={() => setSelectedBookingInfo(null)} className="w-full">
+                            <div className="px-5 py-4 border-t border-[#F5F5F5] bg-slate-50/50">
+                                <Button onClick={() => setSelectedBookingInfo(null)} className="w-full bg-[#e53935] hover:bg-[#d32f2f] h-11 font-bold">
                                     Close
                                 </Button>
                             </div>

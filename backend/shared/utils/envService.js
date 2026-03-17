@@ -12,6 +12,8 @@ const logger = winston.createLogger({
   ],
 });
 
+const GOOGLE_MAPS_DISABLED = process.env.DISABLE_GOOGLE_MAPS !== "false";
+let warnedMapsDisabled = false;
 // Cache for environment variables (cache for 5 minutes)
 let envCache = null;
 let cacheTimestamp = null;
@@ -191,5 +193,12 @@ export async function getSMSHubIndiaCredentials() {
  * @returns {Promise<string>} Google Maps API Key
  */
 export async function getGoogleMapsApiKey() {
+  if (GOOGLE_MAPS_DISABLED) {
+    if (!warnedMapsDisabled) {
+      warnedMapsDisabled = true;
+      logger.warn("Google Maps API is disabled. Skipping API key retrieval.");
+    }
+    return "";
+  }
   return await getEnvVar("VITE_GOOGLE_MAPS_API_KEY");
 }

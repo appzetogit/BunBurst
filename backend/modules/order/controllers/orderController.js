@@ -17,6 +17,7 @@ import etaWebSocketService from '../services/etaWebSocketService.js';
 import OrderEvent from '../models/OrderEvent.js';
 import UserWallet from '../../user/models/UserWallet.js';
 import FeedbackExperience from '../../admin/models/FeedbackExperience.js';
+import Coupon from '../../coupon/models/Coupon.js';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -27,6 +28,22 @@ const logger = winston.createLogger({
     })
   ]
 });
+
+/**
+ * Helper to increment coupon usage count
+ */
+const incrementCouponUsage = async (code) => {
+  if (!code) return;
+  try {
+    await Coupon.findOneAndUpdate(
+      { code: code.toUpperCase() },
+      { $inc: { usedCount: 1 } }
+    );
+    logger.info(`✅ Coupon usage incremented: ${code}`);
+  } catch (error) {
+    logger.error(`❌ Error incrementing coupon usage for ${code}:`, error);
+  }
+};
 
 /**
  * Create a new order and initiate Razorpay payment
@@ -569,6 +586,11 @@ export const createOrder = async (req, res) => {
         };
         await order.save();
 
+        // Increment coupon usage if used
+        if (order.pricing?.couponCode) {
+          await incrementCouponUsage(order.pricing.couponCode);
+        }
+
         // Notify cafe about new wallet payment order
         try {
           const notifyCafeResult = await notifyCafeNewOrder(order, assignedCafeId, 'wallet');
@@ -649,6 +671,11 @@ export const createOrder = async (req, res) => {
         timestamp: new Date()
       };
       await order.save();
+
+      // Increment coupon usage if used
+      if (order.pricing?.couponCode) {
+        await incrementCouponUsage(order.pricing.couponCode);
+      }
 
       // Notify cafe about new COD order via Socket.IO (non-blocking)
       try {
@@ -925,6 +952,11 @@ export const verifyOrderPayment = async (req, res) => {
     order.status = 'confirmed';
     order.tracking.confirmed = { status: true, timestamp: new Date() };
     await order.save();
+
+    // Increment coupon usage if used
+    if (order.pricing?.couponCode) {
+      await incrementCouponUsage(order.pricing.couponCode);
+    }
 
     // Calculate order settlement and hold escrow
     try {

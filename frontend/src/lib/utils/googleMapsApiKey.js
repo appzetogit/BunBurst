@@ -8,6 +8,7 @@
 
 let cachedApiKey = null;
 let apiKeyPromise = null;
+let warnedDisabled = false;
 
 /**
  * Get Google Maps API Key
@@ -15,6 +16,13 @@ let apiKeyPromise = null;
  * @returns {Promise<string>} Google Maps API Key or empty string
  */
 export async function getGoogleMapsApiKey() {
+  if (!MAP_APIS_ENABLED) {
+    if (!warnedDisabled) {
+      warnedDisabled = true;
+      console.warn('Google Maps APIs are disabled. Skipping API key retrieval.');
+    }
+    return '';
+  }
   // Return cached key if already resolved
   if (cachedApiKey) {
     return cachedApiKey;
@@ -78,7 +86,7 @@ export function clearGoogleMapsApiKeyCache() {
 }
 
 /**
- * MAP_APIS_ENABLED — now always true since key fetching is dynamic.
+ * MAP_APIS_ENABLED — disabled to prevent any Google Maps API usage.
  * Kept for backward compatibility with any existing imports.
  */
 export const MAP_APIS_ENABLED = true;

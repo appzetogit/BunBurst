@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { Search, Download, ChevronDown, Eye, Settings, ArrowUpDown, Loader2, X, MapPin, Phone, Mail, Clock, Star, Building2, User, FileText, CreditCard, Calendar, Image as ImageIcon, ExternalLink, ShieldX, AlertTriangle, Trash2, Plus, Utensils, Edit } from "lucide-react"
+import { Search, Download, ChevronDown, Eye, Settings, Loader2, X, MapPin, Phone, Mail, Clock, Star, Building2, User, FileText, CreditCard, Calendar, Image as ImageIcon, ExternalLink, ShieldX, AlertTriangle, Trash2, Plus, Utensils, Edit } from "lucide-react"
 import { adminAPI, cafeAPI } from "../../../../lib/api"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu"
 import { exportCafesToPDF } from "../../components/cafes/cafesExportUtils"
@@ -642,42 +642,12 @@ export default function CafesList() {
               <table className="w-full">
                 <thead className="bg-[#FAFAFA] border-b border-[#F5F5F5]">
                   <tr>
-                    {visibleColumns.sl && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-1">
-                        <span>SL</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      </div>
-                    </th>}
-                    {visibleColumns.cafeInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-1">
-                        <span>Cafe Info</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      </div>
-                    </th>}
-                    {visibleColumns.ownerInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-1">
-                        <span>Owner Info</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      </div>
-                    </th>}
-                    {visibleColumns.zone && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-1">
-                        <span>Zone</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      </div>
-                    </th>}
-                    {visibleColumns.cuisine && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-1">
-                        <span>Cuisine</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      </div>
-                    </th>}
-                    {visibleColumns.status && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                      <div className="flex items-center gap-1">
-                        <span>Status</span>
-                        <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                      </div>
-                    </th>}
+                    {visibleColumns.sl && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">SL</th>}
+                    {visibleColumns.cafeInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Cafe Info</th>}
+                    {visibleColumns.ownerInfo && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Owner Info</th>}
+                    {visibleColumns.zone && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Zone</th>}
+                    {visibleColumns.cuisine && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Cuisine</th>}
+                    {visibleColumns.status && <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Status</th>}
                     {visibleColumns.action && <th className="px-6 py-4 text-center text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Action</th>}
                   </tr>
                 </thead>

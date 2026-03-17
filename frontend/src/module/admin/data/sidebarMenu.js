@@ -94,7 +94,7 @@ export const sidebarMenuData = [
     items: [
       {
         type: "link",
-        label: "Cafe Coupons & Offers",
+        label: "Manage Coupons",
         path: "/admin/coupons",
         icon: "Gift",
       },
@@ -160,7 +160,6 @@ export const sidebarMenuData = [
             label: "Salary Setup",
             path: "/admin/delivery-partners/salary-setup",
           },
-          { label: "Deliveryman Reviews", path: "/admin/delivery-partners/reviews" },
           { label: "Cash Settlements", path: "/admin/delivery-boy-wallet" },
         ],
       },
@@ -203,12 +202,10 @@ export const sidebarMenuData = [
         icon: "FileText",
       },
       {
-        type: "expandable",
+        type: "link",
         label: "Cafe Report",
+        path: "/admin/cafe-report",
         icon: "FileText",
-        subItems: [
-          { label: "Cafe Report", path: "/admin/cafe-report" },
-        ],
       },
       {
         type: "expandable",
@@ -220,18 +217,6 @@ export const sidebarMenuData = [
             path: "/admin/customer-report/feedback-experience",
           },
         ],
-      },
-    ],
-  },
-  {
-    type: "section",
-    label: "TRANSACTION MANAGEMENT",
-    items: [
-      {
-        type: "link",
-        label: "Cafe Withdraws",
-        path: "/admin/cafe-withdraws",
-        icon: "CreditCard",
       },
     ],
   },

@@ -1,6 +1,7 @@
 import Cafe from '../../cafe/models/Cafe.js';
 import Offer from '../../cafe/models/Offer.js';
 import FeeSettings from '../../admin/models/FeeSettings.js';
+import Coupon from '../../coupon/models/Coupon.js';
 import mongoose from 'mongoose';
 
 /**
@@ -284,69 +285,110 @@ export const calculateOrderPricing = async ({
     let discount = 0;
     let appliedCoupon = null;
 
-    if (couponCode && cafe) {
+    if (couponCode) {
       try {
-        // Get cafe ObjectId
-        let cafeObjectId = cafe._id;
-        if (!cafeObjectId && mongoose.Types.ObjectId.isValid(cafeId) && cafeId.length === 24) {
-          cafeObjectId = new mongoose.Types.ObjectId(cafeId);
+        const now = new Date();
+        
+        // 1. Check Global Coupons first
+        const globalCoupon = await Coupon.findOne({
+          code: couponCode.toUpperCase(),
+          isActive: true,
+          $or: [
+            { startDate: { $lte: now }, endDate: { $gte: now } },
+            { startDate: { $exists: false }, endDate: { $exists: false } },
+            { startDate: null, endDate: null },
+            { startDate: { $lte: now }, endDate: null },
+            { startDate: null, endDate: { $gte: now } }
+          ]
+        }).lean();
+
+        if (globalCoupon) {
+          // Validate min order
+          if (subtotal >= (globalCoupon.minOrderAmount || 0)) {
+            // Check usage limit
+            if (globalCoupon.usageLimit === null || globalCoupon.usedCount < globalCoupon.usageLimit) {
+              // Calculate discount
+              if (globalCoupon.discountType === 'flat') {
+                discount = globalCoupon.discountValue;
+              } else if (globalCoupon.discountType === 'percentage') {
+                discount = (subtotal * globalCoupon.discountValue) / 100;
+                if (globalCoupon.maxDiscount && discount > globalCoupon.maxDiscount) {
+                  discount = globalCoupon.maxDiscount;
+                }
+              }
+              
+              appliedCoupon = {
+                code: globalCoupon.code,
+                discount: Math.round(discount),
+                type: globalCoupon.discountType,
+                minOrder: globalCoupon.minOrderAmount || 0
+              };
+            }
+          }
         }
 
-        if (cafeObjectId) {
-          const now = new Date();
+        // 2. If no global coupon found, fallback to Item-specific Offers (Legacy)
+        if (!appliedCoupon && cafe) {
+          // Get cafe ObjectId
+          let cafeObjectId = cafe._id;
+          if (!cafeObjectId && mongoose.Types.ObjectId.isValid(cafeId) && cafeId.length === 24) {
+            cafeObjectId = new mongoose.Types.ObjectId(cafeId);
+          }
 
-          // Find active offer with this coupon code for this cafe
-          const offer = await Offer.findOne({
-            cafe: cafeObjectId,
-            status: 'active',
-            'items.couponCode': couponCode,
-            startDate: { $lte: now },
-            $or: [
-              { endDate: { $gte: now } },
-              { endDate: null }
-            ]
-          }).lean();
+          if (cafeObjectId) {
+            // Find active offer with this coupon code for this cafe
+            const offer = await Offer.findOne({
+              cafe: cafeObjectId,
+              status: 'active',
+              'items.couponCode': couponCode,
+              startDate: { $lte: now },
+              $or: [
+                { endDate: { $gte: now } },
+                { endDate: null }
+              ]
+            }).lean();
 
-          if (offer) {
-            // Find the specific item coupon
-            const couponItem = offer.items.find(item => item.couponCode === couponCode);
+            if (offer) {
+              // Find the specific item coupon
+              const couponItem = offer.items.find(item => item.couponCode === couponCode);
 
-            if (couponItem) {
-              // Check if coupon is valid for items in cart
-              const cartItemIds = items.map(item => item.itemId);
-              const isValidForCart = couponItem.itemId && cartItemIds.includes(couponItem.itemId);
+              if (couponItem) {
+                // Check if coupon is valid for items in cart
+                const cartItemIds = items.map(item => item.itemId);
+                const isValidForCart = couponItem.itemId && cartItemIds.includes(couponItem.itemId);
 
-              // Check minimum order value
-              const minOrderMet = !offer.minOrderValue || subtotal >= offer.minOrderValue;
+                // Check minimum order value
+                const minOrderMet = !offer.minOrderValue || subtotal >= offer.minOrderValue;
 
-              if (isValidForCart && minOrderMet) {
-                // Calculate discount based on offer type
-                const itemInCart = items.find(item => item.itemId === couponItem.itemId);
-                if (itemInCart) {
-                  const itemQuantity = itemInCart.quantity || 1;
+                if (isValidForCart && minOrderMet) {
+                  // Calculate discount based on offer type
+                  const itemInCart = items.find(item => item.itemId === couponItem.itemId);
+                  if (itemInCart) {
+                    const itemQuantity = itemInCart.quantity || 1;
 
-                  // Calculate discount per item
-                  const discountPerItem = couponItem.originalPrice - couponItem.discountedPrice;
+                    // Calculate discount per item
+                    const discountPerItem = couponItem.originalPrice - couponItem.discountedPrice;
 
-                  // Apply discount to all quantities of this item
-                  discount = Math.round(discountPerItem * itemQuantity);
+                    // Apply discount to all quantities of this item
+                    discount = Math.round(discountPerItem * itemQuantity);
 
-                  // Ensure discount doesn't exceed item subtotal
-                  const itemSubtotal = (itemInCart.price || 0) * itemQuantity;
-                  discount = Math.min(discount, itemSubtotal);
+                    // Ensure discount doesn't exceed item subtotal
+                    const itemSubtotal = (itemInCart.price || 0) * itemQuantity;
+                    discount = Math.min(discount, itemSubtotal);
+                  }
+
+                  appliedCoupon = {
+                    code: couponCode,
+                    discount: discount,
+                    discountPercentage: couponItem.discountPercentage,
+                    minOrder: offer.minOrderValue || 0,
+                    type: offer.discountType === 'percentage' ? 'percentage' : 'flat',
+                    itemId: couponItem.itemId,
+                    itemName: couponItem.itemName,
+                    originalPrice: couponItem.originalPrice,
+                    discountedPrice: couponItem.discountedPrice,
+                  };
                 }
-
-                appliedCoupon = {
-                  code: couponCode,
-                  discount: discount,
-                  discountPercentage: couponItem.discountPercentage,
-                  minOrder: offer.minOrderValue || 0,
-                  type: offer.discountType === 'percentage' ? 'percentage' : 'flat',
-                  itemId: couponItem.itemId,
-                  itemName: couponItem.itemName,
-                  originalPrice: couponItem.originalPrice,
-                  discountedPrice: couponItem.discountedPrice,
-                };
               }
             }
           }

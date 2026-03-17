@@ -15,6 +15,22 @@ export default function DeliveryLayout({
     getUnreadDeliveryNotificationCount()
   )
 
+  useEffect(() => {
+    const viewportMeta = document.querySelector('meta[name="viewport"]')
+    if (!viewportMeta) return
+
+    const originalContent = viewportMeta.getAttribute("content") || ""
+    const lockedContent = "width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+
+    if (originalContent !== lockedContent) {
+      viewportMeta.setAttribute("content", lockedContent)
+    }
+
+    return () => {
+      viewportMeta.setAttribute("content", originalContent)
+    }
+  }, [])
+
   // Update badge count when location changes
   useEffect(() => {
     setRequestBadgeCount(getUnreadDeliveryNotificationCount())

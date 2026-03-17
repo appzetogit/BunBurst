@@ -1854,3 +1854,69 @@ export const completeDelivery = asyncHandler(async (req, res) => {
   }
 });
 
+
+/**
+ * Reject Order (Delivery Boy rejects the assigned order/request)
+ * PATCH /api/delivery/orders/:orderId/reject
+ */
+export const rejectOrder = asyncHandler(async (req, res) => {
+  try {
+    const delivery = req.delivery;
+    const { orderId } = req.params;
+    const { reason } = req.body;
+
+    console.log('?? Delivery partner ' + delivery._id + ' rejecting order ' + orderId + '. Reason: ' + (reason || 'No reason provided'));
+
+    // Find order - try both by _id and orderId
+    let order = await Order.findOne({
+      $or: [
+        { _id: (mongoose.Types.ObjectId.isValid(orderId) ? orderId : null) },
+        { orderId: orderId }
+      ].filter(q => q !== null)
+    });
+
+    if (!order) {
+      return errorResponse(res, 404, 'Order not found');
+    }
+
+    const currentDeliveryId = delivery._id.toString();
+
+    // Check if order is assigned to this delivery partner
+    if (order.deliveryPartnerId?.toString() === currentDeliveryId) {
+      console.log('?? Order ' + order.orderId + ' was assigned to ' + currentDeliveryId + '. Unassigning...');
+      
+      // Unassign the order
+      order.deliveryPartnerId = null;
+      if (order.assignmentInfo) {
+        order.assignmentInfo.deliveryPartnerId = null;
+        order.assignmentInfo.rejectedBy = currentDeliveryId;
+      }
+      
+      // Reset delivery state if it was accepted or further
+      if (order.deliveryState) {
+        order.deliveryState.status = 'pending';
+        order.deliveryState.currentPhase = 'assigned'; // Reset to assigned (awaiting new assignment)
+        order.deliveryState.acceptedAt = null;
+      }
+    }
+
+    // Record rejection to avoid re-notifying this partner
+    if (!order.rejectedDeliveryPartnerIds) {
+      order.rejectedDeliveryPartnerIds = [];
+    }
+    
+    if (!order.rejectedDeliveryPartnerIds.includes(delivery._id)) {
+      order.rejectedDeliveryPartnerIds.push(delivery._id);
+    }
+
+    await order.save();
+
+    logger.info('Order ' + order.orderId + ' rejected by delivery partner ' + currentDeliveryId);
+
+    return successResponse(res, 200, 'Order rejected successfully');
+  } catch (error) {
+    logger.error('Error rejecting order: ' + error.message);
+    console.error('Error rejecting order:', error);
+    return errorResponse(res, 500, 'Failed to reject order');
+  }
+});

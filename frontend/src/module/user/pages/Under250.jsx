@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom"
 import { useState, useMemo, useCallback, useEffect, useRef } from "react"
-import { Star, Clock, MapPin, ArrowDownUp, Timer, ArrowRight, ChevronDown, Bookmark, Share2, Plus, Minus, X, Search, Mic, UtensilsCrossed } from "lucide-react"
+import { Star, Clock, MapPin, ArrowRight, Bookmark, Share2, Plus, Minus, X, Search, Mic, UtensilsCrossed } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import AnimatedPage from "../components/AnimatedPage"
@@ -42,10 +42,7 @@ export default function Under250() {
   const { vegMode, handleVegModeChange } = useProfile()
   const { addToCart, updateQuantity, removeFromCart, getCartItem, cart } = useCart()
   const [activeCategory, setActiveCategory] = useState("all")
-  const [showSortPopup, setShowSortPopup] = useState(false)
   const [showAllCategoriesPopup, setShowAllCategoriesPopup] = useState(false)
-  const [selectedSort, setSelectedSort] = useState(null)
-  const [under30MinsFilter, setUnder30MinsFilter] = useState(false)
   const [showItemDetail, setShowItemDetail] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
   const [quantities, setQuantities] = useState({})
@@ -60,6 +57,19 @@ export default function Under250() {
   const [loadingCafes, setLoadingCafes] = useState(true)
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
 
+  const isVegItem = (item) => {
+    if (item?.isVeg === true) return true
+    const foodType = String(item?.foodType || item?.dishType || "").toLowerCase()
+    if (!foodType) return false
+    if (foodType.includes("non")) return false
+    return foodType.includes("veg")
+  }
+
+  const filterVegItems = (items) => {
+    const safeItems = Array.isArray(items) ? items : []
+    return vegMode ? safeItems.filter(isVegItem) : safeItems
+  }
+
   // Animated placeholder cycling
   useEffect(() => {
     const interval = setInterval(() => {
@@ -72,7 +82,6 @@ export default function Under250() {
   useEffect(() => {
     const isAnyModalOpen =
       showItemDetail ||
-      showSortPopup ||
       showAllCategoriesPopup;
 
     if (isAnyModalOpen) {
@@ -84,107 +93,26 @@ export default function Under250() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showItemDetail, showSortPopup, showAllCategoriesPopup]);
-
-  const sortOptions = [
-    { id: null, label: 'Relevance' },
-    { id: 'rating-high', label: 'Rating: High to Low' },
-    { id: 'delivery-time-low', label: 'Delivery Time: Low to High' },
-    { id: 'distance-low', label: 'Distance: Low to High' },
-  ]
-
-  const handleClearAll = () => {
-    setSelectedSort(null)
-  }
-
-  const handleApply = () => {
-    setShowSortPopup(false)
-  }
+  }, [showItemDetail, showAllCategoriesPopup]);
 
   const handleAllCategoriesClick = () => {
     setActiveCategory("all")
     setShowAllCategoriesPopup(true)
   }
 
-  // Helper function to parse delivery time (e.g., "12-15 mins" -> 12 or average)
-  const parseDeliveryTime = (deliveryTime) => {
-    if (!deliveryTime) return 999 // Default high value for sorting
-    const match = deliveryTime.match(/(\d+)/)
-    if (match) {
-      return parseInt(match[1])
-    }
-    // Try to find range (e.g., "12-15 mins")
-    const rangeMatch = deliveryTime.match(/(\d+)\s*-\s*(\d+)/)
-    if (rangeMatch) {
-      return (parseInt(rangeMatch[1]) + parseInt(rangeMatch[2])) / 2 // Average
-    }
-    return 999
-  }
-
-  // Helper function to parse distance (e.g., "0.4 km" -> 0.4)
-  const parseDistance = (distance) => {
-    if (!distance) return 999 // Default high value for sorting
-    const match = distance.match(/(\d+\.?\d*)/)
-    if (match) {
-      return parseFloat(match[1])
-    }
-    return 999
-  }
-
-  // Sort and filter cafes based on selected sort and filters
   const sortedAndFilteredCafes = useMemo(() => {
-    let filtered = [...under250Cafes]
-
-    // Apply "Under 30 mins" filter
-    if (under30MinsFilter) {
-      filtered = filtered.filter(cafe => {
-        const deliveryTime = parseDeliveryTime(cafe.deliveryTime)
-        return deliveryTime <= 30
-      })
-    }
-
-    // Apply sorting
-    if (selectedSort === 'rating-high') {
-      filtered.sort((a, b) => {
-        const ratingA = a.rating || 0
-        const ratingB = b.rating || 0
-        if (ratingB !== ratingA) {
-          return ratingB - ratingA
-        }
-        // Secondary sort by number of dishes
-        return (b.menuItems?.length || 0) - (a.menuItems?.length || 0)
-      })
-    } else if (selectedSort === 'delivery-time-low') {
-      filtered.sort((a, b) => {
-        const timeA = parseDeliveryTime(a.deliveryTime)
-        const timeB = parseDeliveryTime(b.deliveryTime)
-        if (timeA !== timeB) {
-          return timeA - timeB
-        }
-        // Secondary sort by rating
-        return (b.rating || 0) - (a.rating || 0)
-      })
-    } else if (selectedSort === 'distance-low') {
-      filtered.sort((a, b) => {
-        const distA = parseDistance(a.distance)
-        const distB = parseDistance(b.distance)
-        if (distA !== distB) {
-          return distA - distB
-        }
-        // Secondary sort by rating
-        return (b.rating || 0) - (a.rating || 0)
-      })
-    } else {
-      // Default: Relevance (keep original order from backend - already sorted by rating)
-      // No additional sorting needed
-    }
-
-    return filtered
-  }, [under250Cafes, selectedSort, under30MinsFilter])
+    return [...under250Cafes]
+  }, [under250Cafes])
 
   // Keep existing sorting/filtering and additionally filter menu items by selected category
   const cafesByCategory = useMemo(() => {
-    if (activeCategory === "all") return sortedAndFilteredCafes
+    if (activeCategory === "all") {
+      const vegFiltered = sortedAndFilteredCafes.map((cafe) => ({
+        ...cafe,
+        menuItems: filterVegItems(cafe.menuItems),
+      }))
+      return vegMode ? vegFiltered.filter((cafe) => cafe.menuItems.length > 0) : vegFiltered
+    }
 
     const selectedCategoryObj = categories.find((cat) => cat.id === activeCategory)
     if (!selectedCategoryObj) return sortedAndFilteredCafes
@@ -212,10 +140,10 @@ export default function Under250() {
     return sortedAndFilteredCafes
       .map((cafe) => ({
         ...cafe,
-        menuItems: (cafe.menuItems || []).filter((item) => matchesCategory(item.category)),
+        menuItems: filterVegItems((cafe.menuItems || []).filter((item) => matchesCategory(item.category))),
       }))
       .filter((cafe) => cafe.menuItems.length > 0)
-  }, [sortedAndFilteredCafes, activeCategory, categories])
+  }, [sortedAndFilteredCafes, activeCategory, categories, vegMode])
 
   // State to handle multiple banners if array returned
   const [bannersData, setBannersData] = useState([])
@@ -588,33 +516,7 @@ export default function Under250() {
           </div>
         </section>
 
-        <section className="py-2 sm:py-3 md:py-4">
-          <div className="flex items-center gap-2 md:gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowSortPopup(true)}
-              className="h-8 sm:h-9 md:h-10 px-3 sm:px-4 md:px-5 rounded-md flex items-center gap-2 whitespace-nowrap flex-shrink-0 font-medium transition-all bg-card border border-border hover:bg-muted text-foreground text-sm md:text-base"
-            >
-              <ArrowDownUp className="h-4 w-4 md:h-5 md:w-5 rotate-90" />
-              <span className="text-sm md:text-base font-medium">
-                {selectedSort ? sortOptions.find(opt => opt.id === selectedSort)?.label : 'Sort'}
-              </span>
-              <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setUnder30MinsFilter(!under30MinsFilter)}
-              className={`h-8 sm:h-9 md:h-10 px-3 sm:px-4 md:px-5 rounded-md flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-medium transition-all text-sm md:text-base ${under30MinsFilter
-                ? 'bg-primary text-primary-foreground border border-primary hover:bg-primary/90'
-                : 'bg-card border border-border hover:bg-muted text-foreground/80'
-                }`}
-            >
-              <Timer className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-              <span className="text-xs sm:text-sm md:text-base font-medium">Under 30 mins</span>
-            </Button>
-          </div>
-        </section>
-
+        <section className="py-2 sm:py-3 md:py-4" />
 
         {/* Cafe Menu Sections */}
         {loadingCafes ? (
@@ -855,91 +757,6 @@ export default function Under250() {
                     </button>
                   ))}
                 </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Sort Popup - Bottom Sheet */}
-      <AnimatePresence>
-        {showSortPopup && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setShowSortPopup(false)}
-              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-100"
-            />
-
-            {/* Bottom Sheet */}
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 30
-              }}
-              className="fixed bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-lg lg:max-w-2xl bg-card rounded-t-3xl shadow-2xl z-[110] max-h-[60vh] md:max-h-[80vh] overflow-hidden flex flex-col"
-            >
-              {/* Drag Handle */}
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-12 h-1 bg-muted rounded-full" />
-              </div>
-
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 md:px-6 py-4 md:py-5 border-b border-border">
-                <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-foreground">Sort By</h2>
-                <button
-                  onClick={handleClearAll}
-                  className="text-primary font-medium text-sm md:text-base"
-                >
-                  Clear all
-                </button>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
-                <div className="flex flex-col gap-3 md:gap-4">
-                  {sortOptions.map((option) => (
-                    <button
-                      key={option.id || 'relevance'}
-                      onClick={() => setSelectedSort(option.id)}
-                      className={`px-4 md:px-5 lg:px-6 py-3 md:py-4 rounded-xl border text-left transition-colors ${selectedSort === option.id
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:border-primary'
-                        }`}
-                    >
-                      <span className={`text-sm md:text-base lg:text-lg font-medium ${selectedSort === option.id ? 'text-primary' : 'text-foreground/80'}`}>
-                        {option.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="flex items-center gap-4 md:gap-6 px-4 md:px-6 py-4 md:py-5 border-t border-border bg-card">
-                <button
-                  onClick={() => setShowSortPopup(false)}
-                  className="flex-1 py-3 md:py-4 text-center font-semibold text-muted-foreground hover:text-foreground text-sm md:text-base"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleApply}
-                  className={`flex-1 py-3 md:py-4 font-semibold rounded-xl transition-colors text-sm md:text-base ${selectedSort
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    : 'bg-muted text-muted-foreground'
-                    }`}
-                >
-                  Apply
-                </button>
               </div>
             </motion.div>
           </>

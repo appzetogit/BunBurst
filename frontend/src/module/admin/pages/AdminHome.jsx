@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Area,
@@ -16,7 +16,7 @@ import {
   YAxis,
 } from "recharts"
 import { useNavigate } from "react-router-dom"
-import { Activity, ShoppingBag, CreditCard, Truck, Receipt, DollarSign, Store, UserCheck, Package, UserCircle, Clock, CheckCircle, Plus } from "lucide-react"
+import { Activity, ShoppingBag, CreditCard, Truck, Receipt, DollarSign, Store, UserCheck, Package, UserCircle, Clock, CheckCircle, Plus, RefreshCw } from "lucide-react"
 import appzetoLogo from "@/assets/appzetologo.png"
 import { adminAPI } from "@/lib/api"
 
@@ -25,26 +25,27 @@ export default function AdminHome() {
   const [isLoading, setIsLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState(null)
 
-  // Fetch dashboard stats on mount
-  useEffect(() => {
-    const fetchDashboardStats = async () => {
-      try {
-        setIsLoading(true)
-        const response = await adminAPI.getDashboardStats()
-        if (response.data?.success && response.data?.data) {
-          setDashboardData(response.data.data)
-        } else {
-          console.error('❌ Invalid response format:', response.data)
-        }
-      } catch (error) {
-        console.error('❌ Error fetching dashboard stats:', error)
-      } finally {
-        setIsLoading(false)
+  // Fetch dashboard stats - hoisted so Refresh button can also call it
+  const fetchDashboardStats = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const response = await adminAPI.getDashboardStats()
+      if (response.data?.success && response.data?.data) {
+        setDashboardData(response.data.data)
+      } else {
+        console.error('❌ Invalid response format:', response.data)
       }
+    } catch (error) {
+      console.error('❌ Error fetching dashboard stats:', error)
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchDashboardStats()
   }, [])
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchDashboardStats()
+  }, [fetchDashboardStats])
 
   // Get order stats from real data
   const getOrderStats = () => {
@@ -135,7 +136,16 @@ export default function AdminHome() {
             </div>
 
           </div>
-          <div className="flex flex-wrap gap-3" />
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={fetchDashboardStats}
+              disabled={isLoading}
+              className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
         <div className="space-y-6 px-6 py-6">
@@ -146,6 +156,7 @@ export default function AdminHome() {
               helper="Rolling 12 months"
               icon={<ShoppingBag className="h-5 w-5 text-emerald-600" />}
               accent="bg-emerald-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/transaction-report")}
             />
             <MetricCard
@@ -154,6 +165,7 @@ export default function AdminHome() {
               helper="Fulfilled & billed"
               icon={<Activity className="h-5 w-5 text-amber-600" />}
               accent="bg-amber-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/orders/all")}
             />
             <MetricCard
@@ -162,6 +174,7 @@ export default function AdminHome() {
               helper="Total platform fees"
               icon={<CreditCard className="h-5 w-5 text-purple-600" />}
               accent="bg-purple-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/fee-settings")}
             />
             <MetricCard
@@ -170,7 +183,8 @@ export default function AdminHome() {
               helper="Total delivery fees"
               icon={<Truck className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
-              onClick={() => navigate("/admin/delivery-partners")}
+              isLoading={isLoading}
+              onClick={() => navigate("/admin/fee-settings")}
             />
             <MetricCard
               title="GST"
@@ -178,14 +192,16 @@ export default function AdminHome() {
               helper="Total GST collected"
               icon={<Receipt className="h-5 w-5 text-orange-600" />}
               accent="bg-orange-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/tax-report")}
             />
             <MetricCard
               title="Total revenue"
               value={`₹${totalAdminEarnings.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              helper={`Commission ₹${commissionTotal.toFixed(2)} + Platform ₹${platformFeeTotal.toFixed(2)} + Delivery ₹${deliveryFeeTotal.toFixed(2)} + GST ₹${gstTotal.toFixed(2)}`}
+              helper="Total admin earnings"
               icon={<DollarSign className="h-5 w-5 text-green-600" />}
               accent="bg-green-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/transaction-report")}
             />
             <MetricCard
@@ -194,6 +210,7 @@ export default function AdminHome() {
               helper="All registered cafes"
               icon={<Store className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/cafes")}
             />
             <MetricCard
@@ -202,6 +219,7 @@ export default function AdminHome() {
               helper="All delivery partners"
               icon={<Truck className="h-5 w-5 text-indigo-600" />}
               accent="bg-indigo-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/delivery-partners")}
             />
             <MetricCard
@@ -210,6 +228,7 @@ export default function AdminHome() {
               helper="Awaiting verification"
               icon={<Clock className="h-5 w-5 text-yellow-600" />}
               accent="bg-yellow-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/delivery-partners/join-request")}
             />
             <MetricCard
@@ -218,6 +237,7 @@ export default function AdminHome() {
               helper="Active menu items"
               icon={<Package className="h-5 w-5 text-purple-600" />}
               accent="bg-purple-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/foods")}
             />
             <MetricCard
@@ -226,6 +246,7 @@ export default function AdminHome() {
               helper="Active addon items"
               icon={<Plus className="h-5 w-5 text-pink-600" />}
               accent="bg-pink-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/addons")}
             />
             <MetricCard
@@ -234,6 +255,7 @@ export default function AdminHome() {
               helper="Registered users"
               icon={<UserCircle className="h-5 w-5 text-cyan-600" />}
               accent="bg-cyan-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/customers")}
             />
             <MetricCard
@@ -242,6 +264,7 @@ export default function AdminHome() {
               helper="Orders awaiting processing"
               icon={<Clock className="h-5 w-5 text-red-600" />}
               accent="bg-red-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/orders/pending")}
             />
             <MetricCard
@@ -250,6 +273,7 @@ export default function AdminHome() {
               helper="Successfully delivered"
               icon={<CheckCircle className="h-5 w-5 text-emerald-600" />}
               accent="bg-emerald-200/40"
+              isLoading={isLoading}
               onClick={() => navigate("/admin/orders/delivered")}
             />
           </div>
@@ -375,7 +399,7 @@ export default function AdminHome() {
   )
 }
 
-function MetricCard({ title, value, helper, icon, accent, onClick }) {
+function MetricCard({ title, value, helper, icon, accent, onClick, isLoading }) {
   return (
     <Card
       className={`overflow-hidden border-neutral-200 bg-white p-0 ${onClick ? "cursor-pointer transition-transform hover:-translate-y-0.5" : ""}`}
@@ -384,10 +408,19 @@ function MetricCard({ title, value, helper, icon, accent, onClick }) {
       <CardContent className="relative flex flex-col gap-2 px-4 pb-4 pt-4">
         <div className={`absolute inset-0 ${accent} `} />
         <div className="relative flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">{title}</p>
-            <p className="text-2xl font-semibold text-neutral-900">{value}</p>
-            <p className="text-xs text-neutral-500">{helper}</p>
+            {isLoading ? (
+              <>
+                <div className="mt-1 h-8 w-24 animate-pulse rounded-md bg-neutral-200" />
+                <div className="mt-1.5 h-3 w-32 animate-pulse rounded bg-neutral-200" />
+              </>
+            ) : (
+              <>
+                <p className="text-2xl font-semibold text-neutral-900">{value}</p>
+                <p className="text-xs text-neutral-500">{helper}</p>
+              </>
+            )}
           </div>
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-100 ring-1 ring-neutral-200">
             {icon}

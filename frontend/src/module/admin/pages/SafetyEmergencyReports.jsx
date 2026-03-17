@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Search, ArrowUpDown, Settings, Folder, ChevronDown, Eye, Trash2, AlertTriangle, Loader2 } from "lucide-react"
+import { Search, Settings, Folder, Eye, Trash2, AlertTriangle, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import apiClient from "@/lib/api/axios"
 import { API_ENDPOINTS } from "@/lib/api/config"
@@ -251,42 +251,12 @@ export default function SafetyEmergencyReports() {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>SI</span>
-                    <ChevronDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Name</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Email</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Report</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Priority</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Status</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">SI</th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Report</th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Priority</th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center justify-center gap-2">
                     <span>Action</span>
@@ -352,27 +322,35 @@ export default function SafetyEmergencyReports() {
                             <Settings className="w-4 h-4" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewReport(report)}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
+                        <DropdownMenuContent
+                          align="end"
+                          className="min-w-[240px] rounded-md border border-slate-200 bg-white p-1 shadow-lg flex flex-col z-50"
+                        >
+                          <DropdownMenuItem
+                            onClick={() => handleViewReport(report)}
+                            className="flex items-center gap-2 whitespace-nowrap"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>View Details</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleUpdateStatus(report._id, report.status === 'unread' ? 'read' : 'unread')}
+                            className="flex items-center gap-2 whitespace-nowrap"
                           >
-                            Mark as {report.status === 'unread' ? 'Read' : 'Unread'}
+                            <span>Mark as {report.status === 'unread' ? 'Read' : 'Unread'}</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleUpdatePriority(report._id, report.priority === 'critical' ? 'high' : 'critical')}
+                            className="flex items-center gap-2 whitespace-nowrap"
                           >
-                            Set Priority: {report.priority === 'critical' ? 'High' : 'Critical'}
+                            <span>Set Priority: {report.priority === 'critical' ? 'High' : 'Critical'}</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDelete(report._id)}
-                            className="text-red-600"
+                            className="flex items-center gap-2 text-red-600 whitespace-nowrap"
                           >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
+                            <Trash2 className="w-4 h-4" />
+                            <span>Delete</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

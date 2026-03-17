@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Star, Clock, Search, SlidersHorizontal, ChevronDown, Bookmark, BadgePercent, Mic, MapPin, ArrowDownUp, Timer, IndianRupee, UtensilsCrossed, ShieldCheck, X, Loader2 } from "lucide-react"
+import { ArrowLeft, Star, Clock, Search, SlidersHorizontal, ChevronDown, Bookmark, BadgePercent, MapPin, ArrowDownUp, Timer, IndianRupee, UtensilsCrossed, ShieldCheck, X, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -54,6 +54,17 @@ export default function CategoryPage() {
   const [cafesData, setCafesData] = useState([])
   const [loadingCafes, setLoadingCafes] = useState(true)
   const [categoryKeywords, setCategoryKeywords] = useState({})
+
+  const normalizeRestaurantType = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z]/g, "")
+
+  const isCafeAllowedByVegMode = (cafe) => {
+    if (!vegMode) return true
+    const type = normalizeRestaurantType(cafe?.restaurantType)
+    return type !== "nonveg"
+  }
 
   // Fetch categories from admin API
   useEffect(() => {
@@ -306,6 +317,7 @@ export default function CategoryPage() {
                 cafeId: cafeId,
                 hasPaneer: false,
                 category: 'all',
+                restaurantType: cafe.restaurantType || cafe.restaurant_type || null,
               }
             })
 
@@ -462,6 +474,10 @@ export default function CategoryPage() {
     const sourceData = cafesData.length > 0 ? cafesData : []
     let filtered = [...sourceData]
 
+    if (vegMode) {
+      filtered = filtered.filter(isCafeAllowedByVegMode)
+    }
+
     // Filter by category - Dynamic filtering based on menu items
     if (selectedCategory && selectedCategory !== 'all') {
       const expandedDishes = []
@@ -551,6 +567,10 @@ export default function CategoryPage() {
   const filteredAllCafes = useMemo(() => {
     const sourceData = cafesData.length > 0 ? cafesData : []
     let filtered = [...sourceData]
+
+    if (vegMode) {
+      filtered = filtered.filter(isCafeAllowedByVegMode)
+    }
 
     // Filter by category - Dynamic filtering based on menu items
     // If category is selected, expand cafes into dish cards (one card per matching dish)
@@ -701,7 +721,6 @@ export default function CategoryPage() {
                 className="pl-10 pr-10 h-11 md:h-12 rounded-lg border-border bg-muted focus:bg-card focus:border-primary text-sm md:text-base text-foreground placeholder:text-muted-foreground"
               />
               <button className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Mic className="h-4 w-4 text-muted-foreground" />
               </button>
             </div>
           </div>

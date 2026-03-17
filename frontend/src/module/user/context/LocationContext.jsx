@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react"
 import { userAPI } from "@/lib/api"
+import { writeUserLocation } from "@/lib/firebaseRealtime"
 
 const LocationContext = createContext(null)
 
@@ -52,6 +53,17 @@ export function LocationProvider({ children }) {
       const userToken = localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken')
       if (!userToken || userToken === 'null' || userToken === 'undefined') return
 
+      const userId = (() => {
+        try {
+          const raw = localStorage.getItem('user_user') || localStorage.getItem('user')
+          if (!raw) return null
+          const parsed = JSON.parse(raw)
+          return parsed?._id || parsed?.id || null
+        } catch {
+          return null
+        }
+      })()
+
       const locationPayload = {
         latitude: locationData.latitude || locationData.lat,
         longitude: locationData.longitude || locationData.lng,
@@ -63,6 +75,22 @@ export function LocationProvider({ children }) {
       }
 
       await userAPI.updateLocation(locationPayload)
+
+      const lat = Number(locationPayload.latitude)
+      const lng = Number(locationPayload.longitude)
+      if (userId && Number.isFinite(lat) && Number.isFinite(lng)) {
+        writeUserLocation({
+          userId,
+          lat,
+          lng,
+          address: locationPayload.address,
+          formattedAddress: locationPayload.formattedAddress,
+          area: locationPayload.area,
+          city: locationPayload.city,
+          state: locationPayload.state,
+          source: "address",
+        })
+      }
     } catch (err) {
       if (err.code !== "ERR_NETWORK" && err.response?.status !== 404 && err.response?.status !== 401) {
         console.error("❌ DB location update error:", err)

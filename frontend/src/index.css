@@ -262,9 +262,61 @@
 }
 
 /* ======================================================
+   ORDERS PAGE DARK THEME FIXES
+   ====================================================== */
+.dark .orders-page {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.dark .orders-page .bg-white {
+  background-color: var(--card) !important;
+}
+
+.dark .orders-page .bg-gray-50 {
+  background-color: var(--card) !important;
+}
+
+.dark .orders-page .bg-gray-100 {
+  background-color: var(--muted) !important;
+}
+
+.dark .orders-page .bg-gray-200 {
+  background-color: var(--border) !important;
+}
+
+.dark .orders-page .text-gray-900,
+.dark .orders-page .text-gray-800,
+.dark .orders-page .text-gray-700 {
+  color: var(--foreground) !important;
+}
+
+.dark .orders-page .text-gray-600,
+.dark .orders-page .text-gray-500,
+.dark .orders-page .text-gray-400 {
+  color: var(--muted-foreground) !important;
+}
+
+.dark .orders-page .border-gray-200,
+.dark .orders-page .border-gray-100 {
+  border-color: var(--border) !important;
+}
+
+/* ======================================================
    UTILITIES
    ====================================================== */
 @layer utilities {
+  .no-spinner {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .no-spinner::-webkit-outer-spin-button,
+  .no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;

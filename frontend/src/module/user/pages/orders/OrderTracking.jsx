@@ -75,7 +75,7 @@ const DeliveryMap = ({ orderId, order, isVisible }) => {
 
   // Get coordinates from order or use defaults (Indore)
   const getCafeCoords = () => {
-    console.log('🔍 Getting cafe coordinates from order:', {
+    console.log('ðŸ” Getting cafe coordinates from order:', {
       hasOrder: !!order,
       cafeLocation: order?.cafeLocation,
       coordinates: order?.cafeLocation?.coordinates,
@@ -92,19 +92,19 @@ const DeliveryMap = ({ orderId, order, isVisible }) => {
       Array.isArray(order.cafeLocation.coordinates) &&
       order.cafeLocation.coordinates.length >= 2) {
       coords = order.cafeLocation.coordinates;
-      console.log('✅ Using cafeLocation.coordinates:', coords);
+      console.log('âœ… Using cafeLocation.coordinates:', coords);
     }
     // Priority 2: cafeId.location.coordinates (if cafeId is populated)
     else if (order?.cafeId?.location?.coordinates &&
       Array.isArray(order.cafeId.location.coordinates) &&
       order.cafeId.location.coordinates.length >= 2) {
       coords = order.cafeId.location.coordinates;
-      console.log('✅ Using cafeId.location.coordinates:', coords);
+      console.log('âœ… Using cafeId.location.coordinates:', coords);
     }
     // Priority 3: cafeId.location with latitude/longitude
     else if (order?.cafeId?.location?.latitude && order?.cafeId?.location?.longitude) {
       coords = [order.cafeId.location.longitude, order.cafeId.location.latitude];
-      console.log('✅ Using cafeId.location (lat/lng):', coords);
+      console.log('âœ… Using cafeId.location (lat/lng):', coords);
     }
 
     if (coords && coords.length >= 2) {
@@ -113,11 +113,11 @@ const DeliveryMap = ({ orderId, order, isVisible }) => {
         lat: coords[1], // Latitude is second element
         lng: coords[0]  // Longitude is first element
       };
-      console.log('✅ Final cafe coordinates (lat, lng):', result, 'from GeoJSON:', coords);
+      console.log('âœ… Final cafe coordinates (lat, lng):', result, 'from GeoJSON:', coords);
       return result;
     }
 
-    console.warn('⚠️ Cafe coordinates not found, using default Indore coordinates');
+    console.warn('âš ï¸ Cafe coordinates not found, using default Indore coordinates');
     // Default Indore coordinates
     return { lat: 22.7196, lng: 75.8577 };
   };
@@ -251,7 +251,7 @@ export default function OrderTracking() {
 
   // Keep a ref to the latest order so the polling interval can read current state
   // without needing `order` as an effect dependency (which would restart the interval
-  // every time order updates — causing an infinite cascade of new intervals).
+  // every time order updates â€” causing an infinite cascade of new intervals).
   const orderRef = useRef(order)
   useEffect(() => { orderRef.current = order }, [order])
 
@@ -263,7 +263,7 @@ export default function OrderTracking() {
       const currentOrder = orderRef.current
       if (!currentOrder) return
 
-      // Stop polling entirely for terminal states — no point continuing
+      // Stop polling entirely for terminal states â€” no point continuing
       const terminalStatuses = ['delivered', 'cancelled', 'rejected']
       if (terminalStatuses.includes(currentOrder.status)) return
 
@@ -279,7 +279,7 @@ export default function OrderTracking() {
         const prevPhase = currentOrder?.deliveryState?.currentPhase
         const prevOrderStatus = currentOrder?.status
 
-        // Only update state if something actually changed — avoids noisy re-renders
+        // Only update state if something actually changed â€” avoids noisy re-renders
         const hasChanged =
           newDeliveryStatus !== prevDeliveryStatus ||
           newPhase !== prevPhase ||
@@ -325,7 +325,7 @@ export default function OrderTracking() {
         else if (newOrderStatus === 'preparing') setOrderStatus('preparing')
 
       } catch (err) {
-        // Silently ignore 429 / network errors — interval will retry next tick
+        // Silently ignore 429 / network errors â€” interval will retry next tick
         if (err?.response?.status !== 429) {
           console.error('Error polling order updates:', err)
         }
@@ -335,7 +335,7 @@ export default function OrderTracking() {
     // Determine poll interval based on current order state
     // Delivered/cancelled orders: no polling (handled by terminal check above)
     // Delivery partner assigned: 30s (location updates come via socket anyway)
-    // Waiting for assignment: 15s (was 5s — reduced to avoid rate limits)
+    // Waiting for assignment: 15s (was 5s â€” reduced to avoid rate limits)
     const currentOrder = orderRef.current
     const phase = currentOrder?.deliveryState?.currentPhase
     const isEnRoute = phase === 'en_route_to_pickup' || phase === 'at_pickup' || phase === 'en_route_to_delivery'
@@ -343,7 +343,7 @@ export default function OrderTracking() {
 
     const interval = setInterval(tick, pollInterval)
     return () => clearInterval(interval)
-    // Only depends on orderId — order state is read via ref, not deps
+    // Only depends on orderId â€” order state is read via ref, not deps
     // This prevents the interval from being destroyed/recreated on every order update
   }, [orderId])
 
@@ -362,16 +362,23 @@ export default function OrderTracking() {
         // Also ensure cafeId is present
         if (!contextOrder.cafeId && contextOrder.cafe) {
           // Try to preserve cafeId if it exists
-          console.log('⚠️ Context order missing cafeId, will fetch from API');
+          console.log('âš ï¸ Context order missing cafeId, will fetch from API');
         }
         setOrder(contextOrder)
+
+        if (contextOrder.status === 'cancelled') setOrderStatus('cancelled');
+        else if (contextOrder.status === 'preparing') setOrderStatus('preparing');
+        else if (contextOrder.status === 'ready') setOrderStatus('pickup');
+        else if (contextOrder.status === 'out_for_delivery') setOrderStatus('on_way');
+        else if (contextOrder.status === 'delivered') setOrderStatus('delivered');
+
         setLoading(false)
-        return
+        // do not return so SWR background fetch runs
       }
 
       // If not in context, fetch from API
       try {
-        setLoading(true)
+        if (!contextOrder) setLoading(true)
         setError(null)
 
         const response = await orderAPI.getOrderDetails(orderId)
@@ -380,7 +387,7 @@ export default function OrderTracking() {
           const apiOrder = response.data.data.order
 
           // Log full API response structure for debugging
-          console.log('🔍 Full API Order Response:', {
+          console.log('ðŸ” Full API Order Response:', {
             orderId: apiOrder.orderId || apiOrder._id,
             hasCafeId: !!apiOrder.cafeId,
             cafeIdType: typeof apiOrder.cafeId,
@@ -399,37 +406,37 @@ export default function OrderTracking() {
             Array.isArray(apiOrder.cafeId.location.coordinates) &&
             apiOrder.cafeId.location.coordinates.length >= 2) {
             cafeCoords = apiOrder.cafeId.location.coordinates;
-            console.log('✅ Found coordinates in cafeId.location.coordinates:', cafeCoords);
+            console.log('âœ… Found coordinates in cafeId.location.coordinates:', cafeCoords);
           }
           // Priority 2: cafeId.location with latitude/longitude properties
           else if (apiOrder.cafeId?.location?.latitude && apiOrder.cafeId?.location?.longitude) {
             cafeCoords = [apiOrder.cafeId.location.longitude, apiOrder.cafeId.location.latitude];
-            console.log('✅ Found coordinates in cafeId.location (lat/lng):', cafeCoords);
+            console.log('âœ… Found coordinates in cafeId.location (lat/lng):', cafeCoords);
           }
           // Priority 3: Check if cafeId is a string ID and fetch cafe details
           else if (typeof apiOrder.cafeId === 'string') {
-            console.log('⚠️ cafeId is a string ID, fetching cafe details...', apiOrder.cafeId);
+            console.log('âš ï¸ cafeId is a string ID, fetching cafe details...', apiOrder.cafeId);
             try {
               const cafeResponse = await cafeAPI.getCafeById(apiOrder.cafeId);
               if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
                 const cafe = cafeResponse.data.data.cafe;
                 if (cafe.location?.coordinates && Array.isArray(cafe.location.coordinates) && cafe.location.coordinates.length >= 2) {
                   cafeCoords = cafe.location.coordinates;
-                  console.log('✅ Fetched cafe coordinates from API:', cafeCoords);
+                  console.log('âœ… Fetched cafe coordinates from API:', cafeCoords);
                 }
               }
             } catch (err) {
-              console.error('❌ Error fetching cafe details:', err);
+              console.error('âŒ Error fetching cafe details:', err);
             }
           }
           // Priority 4: Check nested cafe data
           else if (apiOrder.cafe?.location?.coordinates) {
             cafeCoords = apiOrder.cafe.location.coordinates;
-            console.log('✅ Found coordinates in cafe.location.coordinates:', cafeCoords);
+            console.log('âœ… Found coordinates in cafe.location.coordinates:', cafeCoords);
           }
 
-          console.log('📍 Final cafe coordinates:', cafeCoords);
-          console.log('📍 Customer coordinates:', apiOrder.address?.location?.coordinates);
+          console.log('ðŸ“ Final cafe coordinates:', cafeCoords);
+          console.log('ðŸ“ Customer coordinates:', apiOrder.address?.location?.coordinates);
 
           // Transform API order to match component structure
           const transformedOrder = {
@@ -482,7 +489,7 @@ export default function OrderTracking() {
           } else if (apiOrder.status === 'ready') {
             setOrderStatus('pickup');
           } else if (apiOrder.status === 'out_for_delivery') {
-            setOrderStatus('pickup');
+            setOrderStatus('on_way');
           } else if (apiOrder.status === 'delivered') {
             setOrderStatus('delivered');
           }
@@ -507,7 +514,7 @@ export default function OrderTracking() {
     if (confirmed) {
       const timer1 = setTimeout(() => {
         setShowConfirmation(false)
-        setOrderStatus('preparing')
+        setOrderStatus(prev => prev === 'placed' ? 'preparing' : prev)
       }, 3000)
       return () => clearTimeout(timer1)
     }
@@ -526,7 +533,7 @@ export default function OrderTracking() {
     const handleOrderStatusNotification = (event) => {
       const { message, title, status, estimatedDeliveryTime } = event.detail;
 
-      console.log('📢 Order status notification received:', { message, status });
+      console.log('ðŸ“¢ Order status notification received:', { message, status });
 
       // Update order status in UI
       if (status === 'out_for_delivery') {
@@ -537,7 +544,7 @@ export default function OrderTracking() {
       if (message) {
         toast.success(message, {
           duration: 5000,
-          icon: '🏍️',
+          icon: 'ðŸï¸',
           position: 'top-center',
           description: estimatedDeliveryTime
             ? `Estimated delivery in ${Math.round(estimatedDeliveryTime / 60)} minutes`
@@ -644,18 +651,18 @@ export default function OrderTracking() {
         }
         // Priority 4: Check if cafeId is a string ID and fetch cafe details
         else if (typeof apiOrder.cafeId === 'string') {
-          console.log('⚠️ cafeId is a string ID, fetching cafe details...', apiOrder.cafeId);
+          console.log('âš ï¸ cafeId is a string ID, fetching cafe details...', apiOrder.cafeId);
           try {
             const cafeResponse = await cafeAPI.getCafeById(apiOrder.cafeId);
             if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
               const cafe = cafeResponse.data.data.cafe;
               if (cafe.location?.coordinates && Array.isArray(cafe.location.coordinates) && cafe.location.coordinates.length >= 2) {
                 cafeCoords = cafe.location.coordinates;
-                console.log('✅ Fetched cafe coordinates from API:', cafeCoords);
+                console.log('âœ… Fetched cafe coordinates from API:', cafeCoords);
               }
             }
           } catch (err) {
-            console.error('❌ Error fetching cafe details:', err);
+            console.error('âŒ Error fetching cafe details:', err);
           }
         }
 
@@ -760,6 +767,11 @@ export default function OrderTracking() {
       subtitle: `Arriving in ${estimatedTime} mins`,
       color: "bg-[#e53935]"
     },
+    on_way: {
+      title: "Order on the way",
+      subtitle: `Arriving in ${estimatedTime} mins`,
+      color: "bg-[#e53935]"
+    },
     delivered: {
       title: "Order delivered",
       subtitle: "Enjoy your meal!",
@@ -773,7 +785,6 @@ export default function OrderTracking() {
   }
 
   const currentStatus = statusConfig[orderStatus] || statusConfig.placed
-
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
       {/* Order Confirmed Modal */}
@@ -822,7 +833,7 @@ export default function OrderTracking() {
         )}
       </AnimatePresence>
 
-      {/* Green Header */}
+      {/* Red Header */}
       <motion.div
         className={`${currentStatus.color} text-white sticky top-0 z-40`}
         initial={{ opacity: 0 }}
@@ -839,7 +850,7 @@ export default function OrderTracking() {
             </motion.button>
           </Link>
           <h2 className="font-semibold text-lg">{order.cafe}</h2>
-          <div className="w-10" /> {/* Placeholder to keep title centered */}
+          <div className="w-10" />
         </div>
 
         {/* Status section */}
@@ -888,16 +899,13 @@ export default function OrderTracking() {
 
       {/* Scrollable Content */}
       <div className="w-full lg:max-w-[1100px] mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-4 md:space-y-6 pb-24 md:pb-32">
-        {/* Food Cooking Status - Show until delivery partner accepts pickup */}
+        {/* Food Cooking Status */}
         {(() => {
-          // Check if delivery partner has accepted pickup
-          // Delivery partner accepts when status is 'ready' or 'out_for_delivery' or tracking shows outForDelivery
           const hasAcceptedPickup = order?.tracking?.outForDelivery?.status === true ||
             order?.tracking?.out_for_delivery?.status === true ||
             order?.status === 'out_for_delivery' ||
             order?.status === 'ready'
 
-          // Show "Food is Cooking" until delivery partner accepts pickup
           if (!hasAcceptedPickup) {
             return (
               <motion.div
@@ -908,22 +916,15 @@ export default function OrderTracking() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-[#FFF8E1] flex items-center justify-center overflow-hidden">
-                    <img
-                      src={circleIcon}
-                      alt="Food cooking"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={circleIcon} alt="Food cooking" className="w-full h-full object-cover" />
                   </div>
                   <p className="font-semibold text-[#1E1E1E]">Food is Cooking</p>
                 </div>
               </motion.div>
             )
           }
-
-          // Don't show card if delivery partner has accepted pickup
           return null
         })()}
-
 
         {/* Delivery Details Banner */}
         <motion.div
@@ -932,9 +933,7 @@ export default function OrderTracking() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.65 }}
         >
-          <p className="text-[#1E1E1E] font-medium">
-            All your delivery details in one place 👇
-          </p>
+          <p className="text-[#1E1E1E] font-medium">All your delivery details in one place 👇</p>
         </motion.div>
 
         {/* Contact & Address Section */}
@@ -944,7 +943,6 @@ export default function OrderTracking() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          {/* Delivery Partner Info - Shown when assigned */}
           {order?.deliveryPartner && (
             <SectionItem
               icon={Phone}
@@ -965,60 +963,34 @@ export default function OrderTracking() {
           <SectionItem
             showArrow={false}
             title={`${order?.userName || order?.userId?.fullName || order?.userId?.name || profile?.fullName || profile?.name || 'Customer'} (You)`}
-            subtitle={
-              order?.userPhone ||
-              order?.userId?.phone ||
-              profile?.phone ||
-              defaultAddress?.phone ||
-              'Phone number not available'
-            }
+            subtitle={order?.userPhone || order?.userId?.phone || profile?.phone || defaultAddress?.phone || 'Phone number not available'}
           />
           <SectionItem
             icon={HomeIcon}
             title={`Delivery at ${selectedAddressLabel || 'Location'}`}
             showArrow={false}
             subtitle={(() => {
-              // Priority 1: Use order address formattedAddress (live location address)
-              if (order?.address?.formattedAddress && order.address.formattedAddress !== "Select location") {
-                return order.address.formattedAddress
-              }
-
-              // Priority 2: Use current live location from hook (reflects what's in Cart)
-              if (userLiveLocation?.formattedAddress && userLiveLocation.formattedAddress !== "Select location") {
-                return userLiveLocation.formattedAddress
-              }
-
-              // Priority 3: Build full address from order address parts
+              if (order?.address?.formattedAddress && order.address.formattedAddress !== "Select location") return order.address.formattedAddress
+              if (userLiveLocation?.formattedAddress && userLiveLocation.formattedAddress !== "Select location") return userLiveLocation.formattedAddress
               if (order?.address) {
-                const orderAddressParts = []
-                if (order.address.street) orderAddressParts.push(order.address.street)
-                if (order.address.additionalDetails) orderAddressParts.push(order.address.additionalDetails)
-                if (order.address.city) orderAddressParts.push(order.address.city)
-                if (order.address.state) orderAddressParts.push(order.address.state)
-                if (order.address.zipCode) orderAddressParts.push(order.address.zipCode)
-                if (orderAddressParts.length > 0) {
-                  return orderAddressParts.join(', ')
-                }
+                const parts = []
+                if (order.address.street) parts.push(order.address.street)
+                if (order.address.additionalDetails) parts.push(order.address.additionalDetails)
+                if (order.address.city) parts.push(order.address.city)
+                if (order.address.state) parts.push(order.address.state)
+                if (order.address.zipCode) parts.push(order.address.zipCode)
+                if (parts.length > 0) return parts.join(', ')
               }
-
-              // Priority 4: Use defaultAddress formattedAddress (live location address)
-              if (defaultAddress?.formattedAddress && defaultAddress.formattedAddress !== "Select location") {
-                return defaultAddress.formattedAddress
-              }
-
-              // Priority 4: Build full address from defaultAddress parts
+              if (defaultAddress?.formattedAddress && defaultAddress.formattedAddress !== "Select location") return defaultAddress.formattedAddress
               if (defaultAddress) {
-                const defaultAddressParts = []
-                if (defaultAddress.street) defaultAddressParts.push(defaultAddress.street)
-                if (defaultAddress.additionalDetails) defaultAddressParts.push(defaultAddress.additionalDetails)
-                if (defaultAddress.city) defaultAddressParts.push(defaultAddress.city)
-                if (defaultAddress.state) defaultAddressParts.push(defaultAddress.state)
-                if (defaultAddress.zipCode) defaultAddressParts.push(defaultAddress.zipCode)
-                if (defaultAddressParts.length > 0) {
-                  return defaultAddressParts.join(', ')
-                }
+                const parts = []
+                if (defaultAddress.street) parts.push(defaultAddress.street)
+                if (defaultAddress.additionalDetails) parts.push(defaultAddress.additionalDetails)
+                if (defaultAddress.city) parts.push(defaultAddress.city)
+                if (defaultAddress.state) parts.push(defaultAddress.state)
+                if (defaultAddress.zipCode) parts.push(defaultAddress.zipCode)
+                if (parts.length > 0) return parts.join(', ')
               }
-
               return 'Add delivery address'
             })()}
           />
@@ -1042,7 +1014,6 @@ export default function OrderTracking() {
             </div>
           </div>
 
-          {/* Order Items */}
           <motion.button
             onClick={() => navigate(`/orders/${orderId}/details`)}
             className="w-full text-left p-4 border-b border-dashed border-[#F5F5F5] hover:bg-[#fff8f7] transition-colors"
@@ -1068,20 +1039,22 @@ export default function OrderTracking() {
           </motion.button>
         </motion.div>
 
-        {/* Help Section */}
-        <motion.div
-          className="bg-white rounded-xl shadow-sm overflow-hidden"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-        >
-          <SectionItem
-            icon={CircleSlash}
-            title="Cancel order"
-            subtitle=""
-            onClick={handleCancelOrder}
-          />
-        </motion.div>
+        {/* Cancel Order Button - Hidden when order is delivered or cancelled */}
+        {order?.status !== 'delivered' && order?.status !== 'cancelled' && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
+          <motion.div
+            className="bg-white rounded-xl shadow-sm overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <SectionItem
+              icon={CircleSlash}
+              title="Cancel order"
+              subtitle=""
+              onClick={handleCancelOrder}
+            />
+          </motion.div>
+        )}
 
       </div>
 
@@ -1106,10 +1079,7 @@ export default function OrderTracking() {
             <div className="flex gap-3 pt-2">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setShowCancelDialog(false);
-                  setCancellationReason("");
-                }}
+                onClick={() => { setShowCancelDialog(false); setCancellationReason(""); }}
                 disabled={isCancelling}
                 className="flex-1"
               >
@@ -1136,3 +1106,4 @@ export default function OrderTracking() {
     </div>
   )
 }
+

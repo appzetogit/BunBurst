@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
-import { BarChart3, ChevronDown, Info, Settings, FileText, FileSpreadsheet, Code, Loader2 } from "lucide-react"
+import { BarChart3, ChevronDown, Info, FileText, FileSpreadsheet, Code, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { exportTransactionReportToCSV, exportTransactionReportToExcel, exportTransactionReportToPDF, exportTransactionReportToJSON } from "../../components/reports/reportsExportUtils"
 import { adminAPI } from "@/lib/api"
 import { toast } from "sonner"
@@ -9,31 +8,32 @@ import { toast } from "sonner"
 // Import icons from Transaction-report-icons
 import completedIcon from "../../assets/Transaction-report-icons/trx1.png"
 import refundedIcon from "../../assets/Transaction-report-icons/trx3.png"
-import adminEarningIcon from "../../assets/Transaction-report-icons/admin-earning.png"
-import cafeEarningIcon from "../../assets/Transaction-report-icons/store-earning.png"
-import deliverymanEarningIcon from "../../assets/Transaction-report-icons/deliveryman-earning.png"
 
 // Import search and export icons from Dashboard-icons
 import searchIcon from "../../assets/Dashboard-icons/image8.png"
 import exportIcon from "../../assets/Dashboard-icons/image9.png"
 
 export default function TransactionReport() {
+  const [searchInput, setSearchInput] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState({
     completedTransaction: 0,
-    refundedTransaction: 0,
-    adminEarning: 0,
-    cafeEarning: 0,
-    deliverymanEarning: 0
+    refundedTransaction: 0
   })
   const [filters, setFilters] = useState({
     zone: "All Zones",
     cafe: "All cafes",
     time: "All Time",
   })
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [pendingFilters, setPendingFilters] = useState({
+    zone: "All Zones",
+    cafe: "All cafes",
+    time: "All Time",
+  })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [zones, setZones] = useState([])
   const [cafes, setCafes] = useState([])
 
@@ -58,6 +58,15 @@ export default function TransactionReport() {
     }
     fetchFilterData()
   }, [])
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(searchInput.trim())
+    }, 400)
+
+    return () => clearTimeout(handler)
+  }, [searchInput])
 
   // Fetch transaction report data
   useEffect(() => {
@@ -89,22 +98,22 @@ export default function TransactionReport() {
           cafe: filters.cafe !== "All cafes" ? filters.cafe : undefined,
           fromDate: fromDate ? fromDate.toISOString() : undefined,
           toDate: toDate ? toDate.toISOString() : undefined,
-          limit: 1000
+          page: currentPage,
+          limit: 20
         }
 
         const response = await adminAPI.getTransactionReport(params)
 
         if (response?.data?.success && response.data.data) {
           setTransactions(response.data.data.transactions || [])
+          setTotalPages(response.data.data.pagination?.pages || 1)
           setSummary(response.data.data.summary || {
             completedTransaction: 0,
-            refundedTransaction: 0,
-            adminEarning: 0,
-            cafeEarning: 0,
-            deliverymanEarning: 0
+            refundedTransaction: 0
           })
         } else {
           setTransactions([])
+          setTotalPages(1)
           if (response?.data?.message) {
             toast.error(response.data.message)
           }
@@ -113,17 +122,18 @@ export default function TransactionReport() {
         console.error("Error fetching transaction report:", error)
         toast.error("Failed to fetch transaction report")
         setTransactions([])
+        setTotalPages(1)
       } finally {
         setLoading(false)
       }
     }
 
     fetchTransactionReport()
-  }, [searchQuery, filters])
+  }, [searchQuery, filters, currentPage])
 
   const filteredTransactions = useMemo(() => {
-    return transactions // Backend already filters, so just return transactions
-  }, [transactions])
+    return transactions
+  }, [transactions, searchQuery])
 
   const handleExport = (format) => {
     if (filteredTransactions.length === 0) {
@@ -139,18 +149,22 @@ export default function TransactionReport() {
   }
 
   const handleFilterApply = () => {
-    // Filters are already applied via useMemo
+    setCurrentPage(1)
+    setFilters(pendingFilters)
   }
 
   const handleResetFilters = () => {
-    setFilters({
+    const reset = {
       zone: "All Zones",
       cafe: "All cafes",
       time: "All Time",
-    })
+    }
+    setPendingFilters(reset)
+    setFilters(reset)
+    setCurrentPage(1)
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.cafe !== "All cafes" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (pendingFilters.zone !== "All Zones" ? 1 : 0) + (pendingFilters.cafe !== "All cafes" ? 1 : 0) + (pendingFilters.time !== "All Time" ? 1 : 0)
 
   const formatCurrency = (amount) => {
     if (amount >= 1000) {
@@ -192,8 +206,8 @@ export default function TransactionReport() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <div className="relative flex-1 min-w-0">
               <select
-                value={filters.zone}
-                onChange={(e) => setFilters(prev => ({ ...prev, zone: e.target.value }))}
+                value={pendingFilters.zone}
+                onChange={(e) => setPendingFilters(prev => ({ ...prev, zone: e.target.value }))}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs appearance-none cursor-pointer"
               >
                 <option value="All Zones">All Zones</option>
@@ -206,13 +220,13 @@ export default function TransactionReport() {
 
             <div className="relative flex-1 min-w-0">
               <select
-                value={filters.cafe}
-                onChange={(e) => setFilters(prev => ({ ...prev, cafe: e.target.value }))}
+                value={pendingFilters.cafe}
+                onChange={(e) => setPendingFilters(prev => ({ ...prev, cafe: e.target.value }))}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs appearance-none cursor-pointer"
               >
                 <option value="All cafes">All cafes</option>
                 {cafes.map(cafe => (
-                  <option key={cafe._id} value={cafe.name}>{cafe.name}</option>
+                  <option key={cafe._id} value={cafe._id || cafe.cafeId}>{cafe.name}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
@@ -220,8 +234,8 @@ export default function TransactionReport() {
 
             <div className="relative flex-1 min-w-0">
               <select
-                value={filters.time}
-                onChange={(e) => setFilters(prev => ({ ...prev, time: e.target.value }))}
+                value={pendingFilters.time}
+                onChange={(e) => setPendingFilters(prev => ({ ...prev, time: e.target.value }))}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs appearance-none cursor-pointer"
               >
                 <option value="All Time">All Time</option>
@@ -253,101 +267,6 @@ export default function TransactionReport() {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-          {/* Left Column - Large Cards */}
-          <div className="space-y-3">
-            {/* Completed Transaction - Green */}
-            <div className="rounded-lg shadow-sm border border-slate-200 p-4" style={{ backgroundColor: '#f1f5f9' }}>
-              <div className="relative mb-3 flex justify-center">
-                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                  <img src={completedIcon} alt="Completed" className="w-12 h-12" />
-                </div>
-                <div className="absolute top-0 right-0 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                  <Info className="w-3 h-3 text-white" />
-                </div>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-green-600 mb-1">{formatCurrency(summary.completedTransaction)}</p>
-                <p className="text-sm text-slate-600 leading-tight">Completed Transaction</p>
-              </div>
-            </div>
-
-            {/* Refunded Transaction - Red */}
-            <div className="rounded-lg shadow-sm border border-slate-200 p-4" style={{ backgroundColor: '#f1f5f9' }}>
-              <div className="relative mb-3 flex justify-center">
-                <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                  <img src={refundedIcon} alt="Refunded" className="w-12 h-12" />
-                </div>
-                <div className="absolute top-0 right-0 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
-                  <Info className="w-3 h-3 text-white" />
-                </div>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-red-600 mb-1">{formatFullCurrency(summary.refundedTransaction)}</p>
-                <p className="text-sm text-slate-600 leading-tight">Refunded Transaction</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Small Cards */}
-          <div className="space-y-3">
-            {/* Admin Earning */}
-            <div className="rounded-lg shadow-sm border border-slate-200 p-3" style={{ backgroundColor: '#f1f5f9' }}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <img src={adminEarningIcon} alt="Admin Earning" className="w-6 h-6" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900">Admin Earning</p>
-                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                      <Info className="w-3 h-3 text-white" />
-                    </div>
-                  </div>
-                </div>
-                <p className="text-base font-bold text-slate-900">{formatCurrency(summary.adminEarning)}</p>
-              </div>
-            </div>
-
-            {/* Cafe Earning */}
-            <div className="rounded-lg shadow-sm border border-slate-200 p-3" style={{ backgroundColor: '#f1f5f9' }}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <img src={cafeEarningIcon} alt="Cafe Earning" className="w-6 h-6" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900">Cafe Earning</p>
-                    <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                      <Info className="w-3 h-3 text-white" />
-                    </div>
-                  </div>
-                </div>
-                <p className="text-base font-bold text-green-600">{formatCurrency(summary.cafeEarning)}</p>
-              </div>
-            </div>
-
-            {/* Deliveryman Earning */}
-            <div className="rounded-lg shadow-sm border border-slate-200 p-3" style={{ backgroundColor: '#f1f5f9' }}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <img src={deliverymanEarningIcon} alt="Deliveryman Earning" className="w-6 h-6" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-slate-900">Deliveryman Earning</p>
-                    <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                      <Info className="w-3 h-3 text-white" />
-                    </div>
-                  </div>
-                </div>
-                <p className="text-base font-bold text-orange-600">{formatCurrency(summary.deliverymanEarning)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Order Transactions Section */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
@@ -358,8 +277,8 @@ export default function TransactionReport() {
                 <input
                   type="text"
                   placeholder="Search by Order ID"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-7 pr-2 py-1.5 w-full text-[11px] rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <img src={searchIcon} alt="Search" className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3" />
@@ -394,12 +313,6 @@ export default function TransactionReport() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-all"
-              >
-                <Settings className="w-3 h-3" />
-              </button>
             </div>
           </div>
 
@@ -489,35 +402,33 @@ export default function TransactionReport() {
                 )}
               </tbody>
             </table>
-      </div>
-
-      {/* Settings Dialog */}
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-md bg-white p-0 opacity-0 data-[state=open]:opacity-100 data-[state=closed]:opacity-0 transition-opacity duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:scale-100 data-[state=closed]:scale-100">
-          <DialogHeader className="px-6 pt-6 pb-4">
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Report Settings
-            </DialogTitle>
-          </DialogHeader>
-          <div className="px-6 pb-6">
-            <p className="text-sm text-slate-700">
-              Transaction report settings and preferences will be available here.
-            </p>
           </div>
-          <div className="px-6 pb-6 flex items-center justify-end">
-            <button
-              onClick={() => setIsSettingsOpen(false)}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-all shadow-md"
-            >
-              Close
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-      </div>
 
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+              <div className="text-sm text-slate-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

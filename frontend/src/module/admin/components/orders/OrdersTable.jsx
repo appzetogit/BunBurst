@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Eye, Printer, ArrowUpDown, Loader2 } from "lucide-react"
+import { Eye, Printer, Loader2 } from "lucide-react"
 
 const getStatusColor = (orderStatus) => {
   const colors = {
@@ -76,84 +76,34 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
           <thead className="bg-[#F5F5F5] border-b border-[#F5F5F5]">
             <tr>
               {visibleColumns.si && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>SI</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">SI</th>
               )}
               {visibleColumns.orderId && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Order ID</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Order ID</th>
               )}
               {visibleColumns.orderDate && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Order Date</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Order Date</th>
               )}
               {visibleColumns.customer && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Customer Information</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Customer Information</th>
               )}
               {visibleColumns.cafe && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Cafe</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Cafe</th>
               )}
               {visibleColumns.foodItems && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider min-w-[200px]">
-                  <div className="flex items-center gap-2">
-                    <span>Food Items</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider min-w-[200px]">Food Items</th>
               )}
               {visibleColumns.totalAmount && (
-                <th className="px-6 py-4 text-right text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                  <div className="flex items-center justify-end gap-2">
-                    <span>Total Amount</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-right text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Total Amount</th>
               )}
               {(visibleColumns.paymentType !== false) && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Payment Type</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Payment Type</th>
               )}
               {(visibleColumns.paymentCollectionStatus !== false) && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Payment Status</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Payment Status</th>
               )}
               {visibleColumns.orderStatus && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
-                  <div className="flex items-center gap-2">
-                    <span>Order Status</span>
-                    <ArrowUpDown className="w-3 h-3 text-[#1E1E1E] cursor-pointer hover:text-[#1E1E1E]" />
-                  </div>
-                </th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Order Status</th>
               )}
               {visibleColumns.actions && (
                 <th className="px-6 py-4 text-center text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">

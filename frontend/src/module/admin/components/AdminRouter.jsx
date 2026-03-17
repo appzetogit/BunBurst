@@ -35,7 +35,7 @@ const AddonsList = lazy(() => import("../pages/addons/AddonsList"));
 // Promotions Management
 const BasicCampaign = lazy(() => import("../pages/campaigns/BasicCampaign"));
 const FoodCampaign = lazy(() => import("../pages/campaigns/FoodCampaign"));
-const Coupons = lazy(() => import("../pages/Coupons"));
+const GlobalCouponManagement = lazy(() => import("../pages/GlobalCouponManagement"));
 const Cashback = lazy(() => import("../pages/Cashback"));
 const Banners = lazy(() => import("../pages/Banners"));
 const PromotionalBanner = lazy(() => import("../pages/PromotionalBanner"));
@@ -61,7 +61,6 @@ const DeliverySupportTickets = lazy(() => import("../pages/DeliverySupportTicket
 const JoinRequest = lazy(() => import("../pages/delivery-partners/JoinRequest"));
 const AddDeliveryman = lazy(() => import("../pages/delivery-partners/AddDeliveryman"));
 const DeliverymanList = lazy(() => import("../pages/delivery-partners/DeliverymanList"));
-const DeliverymanReviews = lazy(() => import("../pages/delivery-partners/DeliverymanReviews"));
 const DeliverymanBonus = lazy(() => import("../pages/delivery-partners/DeliverymanBonus"));
 const EarningAddon = lazy(() => import("../pages/delivery-partners/EarningAddon"));
 const EarningAddonHistory = lazy(() => import("../pages/delivery-partners/EarningAddonHistory"));
@@ -81,7 +80,6 @@ const FeedbackExperienceReport = lazy(() => import("../pages/reports/FeedbackExp
 const TaxReport = lazy(() => import("../pages/reports/TaxReport"));
 const CafeVATReport = lazy(() => import("../pages/reports/CafeVATReport"));
 // Transaction Management
-const CafeWithdraws = lazy(() => import("../pages/transactions/CafeWithdraws"));
 const WithdrawMethod = lazy(() => import("../pages/transactions/WithdrawMethod"));
 // Employee Management
 const EmployeeRole = lazy(() => import("../pages/employees/EmployeeRole"));
@@ -197,7 +195,7 @@ export default function AdminRouter() {
           {/* Campaigns */}
           <Route path="campaigns/basic" element={<BasicCampaign />} />
           <Route path="campaigns/food" element={<FoodCampaign />} />
-          <Route path="coupons" element={<Coupons />} />
+          <Route path="coupons" element={<GlobalCouponManagement />} />
           <Route path="cashback" element={<Cashback />} />
           <Route path="banners" element={<Banners />} />
           <Route path="promotional-banner" element={<PromotionalBanner />} />
@@ -232,7 +230,6 @@ export default function AdminRouter() {
           <Route path="delivery-partners/join-request" element={<JoinRequest />} />
           <Route path="delivery-partners/add" element={<AddDeliveryman />} />
           <Route path="delivery-partners" element={<DeliverymanList />} />
-          <Route path="delivery-partners/reviews" element={<DeliverymanReviews />} />
           <Route path="delivery-partners/bonus" element={<DeliverymanBonus />} />
           <Route path="delivery-partners/earning-addon" element={<EarningAddon />} />
           <Route path="delivery-partners/earning-addon-history" element={<EarningAddonHistory />} />
@@ -260,7 +257,6 @@ export default function AdminRouter() {
           <Route path="cafe-vat-report" element={<CafeVATReport />} />
 
           {/* TRANSACTION MANAGEMENT */}
-          <Route path="cafe-withdraws" element={<CafeWithdraws />} />
           <Route path="withdraw-method" element={<WithdrawMethod />} />
 
           {/* EMPLOYEE MANAGEMENT */}

@@ -27,8 +27,7 @@ import {
   Loader2,
   X as CloseIcon,
   RefreshCw,
-  CheckCircle2,
-  Bell
+  CheckCircle2
 } from "lucide-react"
 
 import AnimatedPage from "../../components/AnimatedPage"
@@ -47,9 +46,10 @@ import {
 } from "@/components/ui/dialog"
 import { authAPI, userAPI } from "@/lib/api"
 import { firebaseAuth } from "@/lib/firebase"
-import { getCurrentFcmToken, unregisterFCMToken } from "@/lib/firebaseMessaging"
+import { unregisterFCMToken } from "@/lib/firebaseMessaging"
 import { clearModuleAuth } from "@/lib/utils/auth"
 import { toast } from "sonner"
+import { useCustomerTheme } from "../../context/CustomerThemeContext"
 
 
 export default function Profile() {
@@ -73,22 +73,7 @@ export default function Profile() {
   const canvasRef = useRef(null)
 
   // Settings states
-  const [appearance, setAppearance] = useState(() => {
-    // Load theme from localStorage or default to 'light'
-    return localStorage.getItem('appTheme') || 'light'
-  })
-
-  // Apply theme to document
-  useEffect(() => {
-    const root = document.documentElement
-    if (appearance === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-    // Save to localStorage
-    localStorage.setItem('appTheme', appearance)
-  }, [appearance])
+  const { theme: appearance, setTheme: setAppearance } = useCustomerTheme()
 
   // Get first letter of name for avatar
   const avatarInitial = userProfile?.name?.charAt(0)?.toUpperCase() || userProfile?.phone?.charAt(1)?.toUpperCase() || 'U'
@@ -172,37 +157,6 @@ export default function Profile() {
   }, [userProfile])
 
   const isComplete = profileCompletion === 100
-
-  // Handle test notification
-  const [isTestingPush, setIsTestingPush] = useState(false)
-  const handleTestNotification = async () => {
-    if (isTestingPush) return
-    setIsTestingPush(true)
-
-    try {
-      const tokenToUse = getCurrentFcmToken() || null;
-      console.log("[Test Push] FCM Token from browser:", tokenToUse ? tokenToUse.slice(0, 20) + '...' : 'NULL');
-
-      if (!tokenToUse) {
-        toast.error("No FCM token found. Please allow notifications in your browser and refresh the page.");
-        setIsTestingPush(false);
-        return;
-      }
-
-      console.log("[Test Push] Sending test notification with token...");
-      const res = await userAPI.testPushNotification(tokenToUse);
-      if (res?.data?.success) {
-        toast.success("Test notification sent! Check your device/browser.");
-      } else {
-        toast.error(res?.data?.message || "Failed to send test notification");
-      }
-    } catch (error) {
-      console.error("Test notification error:", error);
-      toast.error(error?.response?.data?.message || "Failed to send test notification");
-    } finally {
-      setIsTestingPush(false)
-    }
-  }
 
   const handleLogout = async () => {
     if (isLoggingOut) return // Prevent multiple clicks
@@ -898,38 +852,6 @@ export default function Profile() {
                 </Card>
               </motion.div>
             </Link>
-
-            {/* Test Push Notification button */}
-            <motion.div
-              whileHover={{ x: 4, scale: 1.01 }}
-              transition={{ duration: 0.2, type: "spring", stiffness: 300 }}
-            >
-              <Card
-                className="bg-card py-0 rounded-xl shadow-sm border border-border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleTestNotification}
-              >
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <motion.div
-                      className="bg-muted rounded-full p-2"
-                      whileHover={{ rotate: 15, scale: 1.1 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Bell className={`h-5 w-5 text-blue-500 ${isTestingPush ? 'animate-bounce' : ''}`} />
-                    </motion.div>
-                    <span className="text-base font-medium text-foreground">
-                      {isTestingPush ? 'Sending...' : 'Test Push Notification'}
-                    </span>
-                  </div>
-                  <motion.div
-                    whileHover={{ x: 4 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </motion.div>
-                </CardContent>
-              </Card>
-            </motion.div>
 
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}

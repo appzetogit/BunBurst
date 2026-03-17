@@ -84,6 +84,12 @@ export default function CafeDetails() {
     vegNonVeg: null, // "veg" | "non-veg"
   })
 
+  useEffect(() => {
+    if (vegMode && filters.vegNonVeg === "non-veg") {
+      setFilters((prev) => ({ ...prev, vegNonVeg: null }))
+    }
+  }, [vegMode, filters.vegNonVeg])
+
   // Addon states
   const [itemAddons, setItemAddons] = useState([])
   const [selectedAddons, setSelectedAddons] = useState([])
@@ -1221,6 +1227,13 @@ export default function CafeDetails() {
     return sorted
   }
 
+  const isItemOutOfStock = (item) => {
+    if (!item) return false
+    if (item.isAvailable === false) return true
+    const stockValue = typeof item.stock === "string" ? item.stock.trim().toLowerCase() : item.stock
+    return stockValue === 0 || stockValue === "0" || stockValue === "out of stock"
+  }
+
   // Helper function to check if a section has any items under ₹250
   const sectionHasItemsUnder250 = (section) => {
     if (!showOnlyUnder250) return true; // If not filtering, show all sections
@@ -1228,7 +1241,6 @@ export default function CafeDetails() {
     // Check direct items
     if (section.items && section.items.length > 0) {
       const hasUnder250Items = section.items.some(item => {
-        if (item.isAvailable === false) return false;
         const finalPrice = getFinalPrice(item);
         return finalPrice <= 250;
       });
@@ -1240,7 +1252,6 @@ export default function CafeDetails() {
       for (const subsection of section.subsections) {
         if (subsection.items && subsection.items.length > 0) {
           const hasUnder250Items = subsection.items.some(item => {
-            if (item.isAvailable === false) return false;
             const finalPrice = getFinalPrice(item);
             return finalPrice <= 250;
           });
@@ -1528,24 +1539,26 @@ export default function CafeDetails() {
                   <X className="h-3 w-3 text-gray-600" />
                 )}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 bg-white rounded-full ${filters.vegNonVeg === "non-veg" ? "border-amber-700 bg-amber-50" : ""
-                  }`}
-                onClick={() =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg",
-                  }))
-                }
-              >
-                <div className="h-3 w-3 rounded-full bg-amber-700" />
-                Non-veg
-                {filters.vegNonVeg === "non-veg" && (
-                  <X className="h-3 w-3 text-gray-600" />
-                )}
-              </Button>
+              {!vegMode && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 bg-white rounded-full ${filters.vegNonVeg === "non-veg" ? "border-amber-700 bg-amber-50" : ""
+                    }`}
+                  onClick={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg",
+                    }))
+                  }
+                >
+                  <div className="h-3 w-3 rounded-full bg-amber-700" />
+                  Non-veg
+                  {filters.vegNonVeg === "non-veg" && (
+                    <X className="h-3 w-3 text-gray-600" />
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -1650,6 +1663,7 @@ export default function CafeDetails() {
                         const quantity = quantities[item.id] || 0
                         // Determine veg/non-veg based on foodType
                         const isVeg = isVegFoodType(item.foodType)
+                        const isOutOfStock = isItemOutOfStock(item)
 
                         return (
                           <div
@@ -1695,6 +1709,11 @@ export default function CafeDetails() {
                                   </div>
                                 )}
                               </div>
+                              {isOutOfStock && (
+                                <span className="inline-block mt-1 text-xs font-semibold text-red-600">
+                                  Out of stock
+                                </span>
+                              )}
 
                               {/* Description - Show if available */}
                               {item.description && (
@@ -1758,25 +1777,25 @@ export default function CafeDetails() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      if (!shouldShowGrayscale) {
+                                      if (!shouldShowGrayscale && !isOutOfStock) {
                                         updateItemQuantity(item, Math.max(0, quantity - 1), e)
                                       }
                                     }}
-                                    disabled={shouldShowGrayscale}
-                                    className={shouldShowGrayscale ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                    disabled={shouldShowGrayscale || isOutOfStock}
+                                    className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
                                   >
                                     <Minus size={14} />
                                   </button>
-                                  <span className={`mx-2 text-sm ${shouldShowGrayscale ? 'text-gray-400' : ''}`}>{quantity}</span>
+                                  <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      if (!shouldShowGrayscale) {
+                                      if (!shouldShowGrayscale && !isOutOfStock) {
                                         updateItemQuantity(item, quantity + 1, e)
                                       }
                                     }}
-                                    disabled={shouldShowGrayscale}
-                                    className={shouldShowGrayscale ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                    disabled={shouldShowGrayscale || isOutOfStock}
+                                    className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
                                   >
                                     <Plus size={14} className="stroke-[3px]" />
                                   </button>
@@ -1789,7 +1808,7 @@ export default function CafeDetails() {
                                   transition={{ duration: 0.3, type: "spring", damping: 20, stiffness: 300 }}
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    if (!shouldShowGrayscale) {
+                                    if (!shouldShowGrayscale && !isOutOfStock) {
                                       if (item.categoryId) {
                                         handleItemClick(item)
                                       } else {
@@ -1797,13 +1816,17 @@ export default function CafeDetails() {
                                       }
                                     }
                                   }}
-                                  disabled={shouldShowGrayscale}
-                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-colors ${shouldShowGrayscale
+                                  disabled={shouldShowGrayscale || isOutOfStock}
+                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-colors ${shouldShowGrayscale || isOutOfStock
                                     ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
                                     : 'border-green-600 text-green-600 hover:bg-green-50'
                                     }`}
                                 >
-                                  ADD <Plus size={14} className="stroke-[3px]" />
+                                  {isOutOfStock ? "OUT OF STOCK" : (
+                                    <>
+                                      ADD <Plus size={14} className="stroke-[3px]" />
+                                    </>
+                                  )}
                                 </motion.button>
                               )}
                             </div>
@@ -1821,7 +1844,6 @@ export default function CafeDetails() {
                         if (!showOnlyUnder250) return true;
                         if (!subsection.items || subsection.items.length === 0) return false;
                         return subsection.items.some(item => {
-                          if (item.isAvailable === false) return false;
                           const finalPrice = getFinalPrice(item);
                           return finalPrice <= 250;
                         });
@@ -1865,6 +1887,7 @@ export default function CafeDetails() {
                                   const quantity = quantities[item.id] || 0
                                   // Determine veg/non-veg based on foodType
                                   const isVeg = isVegFoodType(item.foodType)
+                                  const isOutOfStock = isItemOutOfStock(item)
 
                                   return (
                                     <div
@@ -1910,6 +1933,11 @@ export default function CafeDetails() {
                                             </div>
                                           )}
                                         </div>
+                                        {isOutOfStock && (
+                                          <span className="inline-block mt-1 text-xs font-semibold text-red-600">
+                                            Out of stock
+                                          </span>
+                                        )}
 
                                         {/* Description - Show if available */}
                                         {item.description && (
@@ -1966,31 +1994,31 @@ export default function CafeDetails() {
                                               : 'border-green-600 text-green-600 hover:bg-green-50'
                                               }`}
                                           >
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                if (!shouldShowGrayscale) {
-                                                  updateItemQuantity(item, Math.max(0, quantity - 1), e)
-                                                }
-                                              }}
-                                              disabled={shouldShowGrayscale}
-                                              className={shouldShowGrayscale ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
-                                            >
-                                              <Minus size={14} />
-                                            </button>
-                                            <span className={`mx-2 text-sm ${shouldShowGrayscale ? 'text-gray-400' : ''}`}>{quantity}</span>
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                if (!shouldShowGrayscale) {
-                                                  updateItemQuantity(item, quantity + 1, e)
-                                                }
-                                              }}
-                                              disabled={shouldShowGrayscale}
-                                              className={shouldShowGrayscale ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
-                                            >
-                                              <Plus size={14} className="stroke-[3px]" />
-                                            </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              if (!shouldShowGrayscale && !isOutOfStock) {
+                                                updateItemQuantity(item, Math.max(0, quantity - 1), e)
+                                              }
+                                            }}
+                                            disabled={shouldShowGrayscale || isOutOfStock}
+                                            className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                          >
+                                            <Minus size={14} />
+                                          </button>
+                                          <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              if (!shouldShowGrayscale && !isOutOfStock) {
+                                                updateItemQuantity(item, quantity + 1, e)
+                                              }
+                                            }}
+                                            disabled={shouldShowGrayscale || isOutOfStock}
+                                            className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                          >
+                                            <Plus size={14} className="stroke-[3px]" />
+                                          </button>
                                           </motion.div>
                                         ) : (
                                           <motion.button
@@ -1998,24 +2026,28 @@ export default function CafeDetails() {
                                             initial={{ opacity: 0, scale: 0.9 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ duration: 0.3, type: "spring", damping: 20, stiffness: 300 }}
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              if (!shouldShowGrayscale) {
-                                                if (item.categoryId) {
-                                                  handleItemClick(item)
-                                                } else {
-                                                  updateItemQuantity(item, 1, e)
-                                                }
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            if (!shouldShowGrayscale && !isOutOfStock) {
+                                              if (item.categoryId) {
+                                                handleItemClick(item)
+                                              } else {
+                                                updateItemQuantity(item, 1, e)
                                               }
-                                            }}
-                                            disabled={shouldShowGrayscale}
-                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-colors ${shouldShowGrayscale
-                                              ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
-                                              : 'border-green-600 text-green-600 hover:bg-green-50'
-                                              }`}
-                                          >
-                                            ADD <Plus size={14} className="stroke-[3px]" />
-                                          </motion.button>
+                                            }
+                                          }}
+                                          disabled={shouldShowGrayscale || isOutOfStock}
+                                          className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-colors ${shouldShowGrayscale || isOutOfStock
+                                            ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
+                                            : 'border-green-600 text-green-600 hover:bg-green-50'
+                                            }`}
+                                        >
+                                          {isOutOfStock ? "OUT OF STOCK" : (
+                                            <>
+                                              ADD <Plus size={14} className="stroke-[3px]" />
+                                            </>
+                                          )}
+                                        </motion.button>
                                         )}
                                       </div>
                                     </div>
@@ -2243,21 +2275,23 @@ export default function CafeDetails() {
                           <div className="h-4 w-4 rounded-full bg-green-500 dark:bg-green-400" />
                           <span className="font-medium">Veg</span>
                         </button>
-                        <button
-                          onClick={() =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg",
-                            }))
-                          }
-                          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "non-veg"
-                            ? "border-amber-700 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
-                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
-                            }`}
-                        >
-                          <div className="h-4 w-4 rounded-full bg-amber-700 dark:bg-amber-600" />
-                          <span className="font-medium">Non-veg</span>
-                        </button>
+                        {!vegMode && (
+                          <button
+                            onClick={() =>
+                              setFilters((prev) => ({
+                                ...prev,
+                                vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg",
+                              }))
+                            }
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "non-veg"
+                              ? "border-amber-700 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                              : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                              }`}
+                          >
+                            <div className="h-4 w-4 rounded-full bg-amber-700 dark:bg-amber-600" />
+                            <span className="font-medium">Non-veg</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -2758,47 +2792,6 @@ export default function CafeDetails() {
                       </p>
                     )}
 
-                    {/* Add-ons Section */}
-                    {itemAddons.length > 0 && (
-                      <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-                            Add-ons
-                          </h3>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Optional
-                          </span>
-                        </div>
-                        <div className="space-y-3">
-                          {itemAddons.map((addon) => (
-                            <div
-                              key={addon._id}
-                              className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-orange-200 dark:hover:border-orange-900/30 transition-colors cursor-pointer group"
-                              onClick={() => toggleAddon(addon)}
-                            >
-                              <div className="flex items-center gap-3">
-                                <Checkbox
-                                  checked={selectedAddons.some(a => a._id === addon._id)}
-                                  onCheckedChange={() => toggleAddon(addon)}
-                                  id={`addon-${addon._id}`}
-                                  className="border-gray-300 dark:border-gray-600 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
-                                />
-                                <Label
-                                  htmlFor={`addon-${addon._id}`}
-                                  className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer group-hover:text-gray-900 dark:group-hover:text-white"
-                                >
-                                  {addon.name}
-                                </Label>
-                              </div>
-                              <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                +₹{addon.price}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     {loadingAddons && (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
@@ -2810,25 +2803,25 @@ export default function CafeDetails() {
                   <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4 bg-white dark:bg-[#1a1a1a]">
                     <div className="flex items-center gap-4">
                       {/* Quantity Selector */}
-                      <div className={`flex items-center gap-3 border-2 rounded-lg px-3 h-[44px] bg-white dark:bg-[#2a2a2a] ${shouldShowGrayscale
+                      <div className={`flex items-center gap-3 border-2 rounded-lg px-3 h-[44px] bg-white dark:bg-[#2a2a2a] ${shouldShowGrayscale || isItemOutOfStock(selectedItem)
                         ? 'border-gray-300 dark:border-gray-700 opacity-50'
                         : 'border-gray-300 dark:border-gray-700'
                         }`}>
                         <button
                           onClick={(e) => {
-                            if (!shouldShowGrayscale) {
+                            if (!shouldShowGrayscale && !isItemOutOfStock(selectedItem)) {
                               setItemDetailQuantity((prev) => Math.max(1, prev - 1))
                             }
                           }}
-                          disabled={itemDetailQuantity <= 1 || shouldShowGrayscale}
-                          className={`${shouldShowGrayscale
+                          disabled={itemDetailQuantity <= 1 || shouldShowGrayscale || isItemOutOfStock(selectedItem)}
+                          className={`${shouldShowGrayscale || isItemOutOfStock(selectedItem)
                             ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed'
                             }`}
                         >
                           <Minus className="h-5 w-5" />
                         </button>
-                        <span className={`text-lg font-semibold min-w-[2rem] text-center ${shouldShowGrayscale
+                        <span className={`text-lg font-semibold min-w-[2rem] text-center ${shouldShowGrayscale || isItemOutOfStock(selectedItem)
                           ? 'text-gray-400 dark:text-gray-600'
                           : 'text-gray-900 dark:text-white'
                           }`}>
@@ -2836,12 +2829,12 @@ export default function CafeDetails() {
                         </span>
                         <button
                           onClick={(e) => {
-                            if (!shouldShowGrayscale) {
+                            if (!shouldShowGrayscale && !isItemOutOfStock(selectedItem)) {
                               setItemDetailQuantity((prev) => prev + 1)
                             }
                           }}
-                          disabled={shouldShowGrayscale}
-                          className={shouldShowGrayscale
+                          disabled={shouldShowGrayscale || isItemOutOfStock(selectedItem)}
+                          className={shouldShowGrayscale || isItemOutOfStock(selectedItem)
                             ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                           }
@@ -2852,24 +2845,30 @@ export default function CafeDetails() {
 
                       {/* Add Item Button */}
                       <Button
-                        className={`flex-1 h-[44px] rounded-lg font-semibold flex items-center justify-center gap-2 ${shouldShowGrayscale
+                        className={`flex-1 h-[44px] rounded-lg font-semibold flex items-center justify-center gap-2 ${shouldShowGrayscale || isItemOutOfStock(selectedItem)
                           ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-600 cursor-not-allowed opacity-50'
                           : 'bg-red-500 hover:bg-red-600 text-white'
                           }`}
                         onClick={(e) => {
-                          if (!shouldShowGrayscale) {
+                          if (!shouldShowGrayscale && !isItemOutOfStock(selectedItem)) {
                             updateItemQuantity(selectedItem, itemDetailQuantity, e, selectedAddons)
                             setShowItemDetail(false)
                           }
                         }}
-                        disabled={shouldShowGrayscale}
+                        disabled={shouldShowGrayscale || isItemOutOfStock(selectedItem)}
                       >
-                        <span>Add item</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-base font-bold">
-                            ₹{Math.round(calculateTotalPrice())}
-                          </span>
-                        </div>
+                        {isItemOutOfStock(selectedItem) ? (
+                          <span>OUT OF STOCK</span>
+                        ) : (
+                          <>
+                            <span>Add item</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-base font-bold">
+                                ₹{Math.round(calculateTotalPrice())}
+                              </span>
+                            </div>
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -3238,4 +3237,5 @@ export default function CafeDetails() {
     </AnimatedPage>
   )
 }
+
 

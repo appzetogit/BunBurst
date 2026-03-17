@@ -24,8 +24,8 @@ import { API_ENDPOINTS } from "./config.js";
 // Export the configured axios instance
 export default apiClient;
 
-// Export API endpoints for convenience
-export { API_ENDPOINTS };
+// Export API endpoints and base URL for convenience
+export { API_ENDPOINTS, API_BASE_URL } from "./config.js";
 
 // Export helper functions for common operations
 export const api = {
@@ -475,12 +475,13 @@ export const cafeAPI = {
       item,
     });
   },
-  getMenuByCafeId: (cafeId) => {
+  getMenuByCafeId: (cafeId, params = {}) => {
     return apiClient.get(
       API_ENDPOINTS.CAFE.MENU_BY_CAFE_ID.replace(
         ":id",
         cafeId,
       ),
+      { params },
     );
   },
 
@@ -663,12 +664,13 @@ export const cafeAPI = {
     );
   },
 
-  getMenuByCafeId: (cafeId) => {
+  getMenuByCafeId: (cafeId, params = {}) => {
     return apiClient.get(
       API_ENDPOINTS.CAFE.MENU_BY_CAFE_ID.replace(
         ":id",
         cafeId,
       ),
+      { params },
     );
   },
 
@@ -936,6 +938,9 @@ export const deliveryAPI = {
       API_ENDPOINTS.DELIVERY.ORDER_BY_ID.replace(":orderId", orderId),
     );
   },
+  getOrderBill: (orderId) => {
+    return apiClient.get(API_ENDPOINTS.ORDER.BILL.replace(":id", orderId));
+  },
   acceptOrder: (orderId, currentLocation = {}) => {
     const payload = {};
     if (currentLocation.lat !== undefined && currentLocation.lat !== null) {
@@ -947,6 +952,12 @@ export const deliveryAPI = {
     return apiClient.patch(
       API_ENDPOINTS.DELIVERY.ORDER_ACCEPT.replace(":orderId", orderId),
       payload,
+    );
+  },
+  rejectOrder: (orderId, reason) => {
+    return apiClient.patch(
+      API_ENDPOINTS.DELIVERY.ORDER_REJECT.replace(":orderId", orderId),
+      { reason }
     );
   },
   confirmReachedPickup: (orderId) => {
@@ -1108,6 +1119,26 @@ export const adminAPI = {
   // Send push notification
   sendPushNotification: (payload) => {
     return apiClient.post(API_ENDPOINTS.NOTIFICATION.ADMIN_SEND, payload);
+  },
+
+  // Get admin notifications
+  getAdminNotifications: (params = {}) => {
+    return apiClient.get(API_ENDPOINTS.NOTIFICATION.ADMIN_LIST, { params });
+  },
+
+  // Update admin notification status
+  updateAdminNotificationStatus: (id, status) => {
+    return apiClient.patch(API_ENDPOINTS.NOTIFICATION.ADMIN_STATUS.replace(":id", id), { status });
+  },
+
+  // Update admin notification
+  updateAdminNotification: (id, payload) => {
+    return apiClient.patch(API_ENDPOINTS.NOTIFICATION.ADMIN_UPDATE.replace(":id", id), payload);
+  },
+
+  // Delete admin notification
+  deleteAdminNotification: (id) => {
+    return apiClient.delete(API_ENDPOINTS.NOTIFICATION.ADMIN_DELETE.replace(":id", id));
   },
 
   // Get users
@@ -1891,6 +1922,31 @@ export const adminAPI = {
       API_ENDPOINTS.ADMIN.FEEDBACK_EXPERIENCE_BY_ID.replace(":id", id),
     );
   },
+
+  // Global Coupons
+  // Global Coupon Management Methods
+  getGlobalCoupons: () => {
+    return apiClient.get(API_ENDPOINTS.ADMIN.COUPONS);
+  },
+  createGlobalCoupon: (data) => {
+    return apiClient.post(API_ENDPOINTS.ADMIN.COUPONS, data);
+  },
+  updateGlobalCoupon: (id, data) => {
+    return apiClient.put(
+      API_ENDPOINTS.ADMIN.COUPON_BY_ID.replace(":id", id),
+      data,
+    );
+  },
+  toggleGlobalCoupon: (id) => {
+    return apiClient.patch(
+      API_ENDPOINTS.ADMIN.COUPON_TOGGLE.replace(":id", id),
+    );
+  },
+  deleteGlobalCoupon: (id) => {
+    return apiClient.delete(
+      API_ENDPOINTS.ADMIN.COUPON_BY_ID.replace(":id", id),
+    );
+  },
 };
 
 // Upload / media helper functions
@@ -1967,6 +2023,11 @@ export const orderAPI = {
     return apiClient.patch(API_ENDPOINTS.ORDER.CANCEL.replace(":id", orderId), {
       reason,
     });
+  },
+
+  // Get order bill PDF
+  getOrderBill: (orderId) => {
+    return apiClient.get(API_ENDPOINTS.ORDER.BILL.replace(":id", orderId));
   },
 };
 
@@ -2089,4 +2150,16 @@ export const heroBannerAPI = {
   getGourmetCafes: () => {
     return apiClient.get(API_ENDPOINTS.HERO_BANNER.GOURMET_PUBLIC);
   },
+};
+
+// Export user coupon API helper functions
+export const couponAPI = {
+  // Apply coupon
+  apply: (couponCode, cartTotal) => {
+    return apiClient.post(API_ENDPOINTS.COUPON.APPLY, { couponCode, cartTotal });
+  },
+  // Get active coupons for user
+  getActiveCoupons: () => {
+    return apiClient.get(API_ENDPOINTS.COUPON.LIST);
+  }
 };

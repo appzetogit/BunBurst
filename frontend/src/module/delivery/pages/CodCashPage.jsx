@@ -26,30 +26,55 @@ export default function CodCashPage() {
   const [summary, setSummary] = useState(EMPTY_SUMMARY)
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [fetchingMore, setFetchingMore] = useState(false)
 
-  const loadData = async () => {
+  const loadData = async (pageNum = 1, append = false) => {
     try {
-      setLoading(true)
+      if (!append) {
+        setLoading(true)
+      } else {
+        setFetchingMore(true)
+      }
+      
+      const limit = 15
       const [summaryRes, txRes] = await Promise.all([
-        deliveryAPI.getPocketSummary(),
-        deliveryAPI.getPocketTransactions({ limit: 50 })
+        pageNum === 1 ? deliveryAPI.getPocketSummary() : Promise.resolve(null),
+        deliveryAPI.getPocketTransactions({ page: pageNum, limit })
       ])
 
       const pocket = summaryRes?.data?.data || summaryRes?.data || {}
-      const txList = txRes?.data?.data?.transactions || txRes?.data?.transactions || []
+      const txData = txRes?.data?.data || txRes?.data || {}
+      const txList = txData.transactions || []
+      const pagination = txData.pagination || {}
 
-      setSummary({
-        totalCollectedCash: Number(pocket.totalCollectedCash) || 0,
-        totalSubmittedCash: Number(pocket.totalSubmittedCash) || 0,
-        pendingCash: Number(pocket.pendingCash) || 0
-      })
-      setTransactions(Array.isArray(txList) ? txList : [])
+      if (pageNum === 1 && summaryRes) {
+        setSummary({
+          totalCollectedCash: Number(pocket.totalCollectedCash) || 0,
+          totalSubmittedCash: Number(pocket.totalSubmittedCash) || 0,
+          pendingCash: Number(pocket.pendingCash) || 0
+        })
+      }
+
+      setTransactions(prev => append ? [...prev, ...txList] : txList)
+      setPage(pageNum)
+      setTotalPages(pagination.pages || 1)
     } catch (error) {
       console.error("Error loading COD cash data:", error)
-      setSummary(EMPTY_SUMMARY)
-      setTransactions([])
+      if (pageNum === 1) {
+        setSummary(EMPTY_SUMMARY)
+        setTransactions([])
+      }
     } finally {
       setLoading(false)
+      setFetchingMore(false)
+    }
+  }
+
+  const handleLoadMore = () => {
+    if (page < totalPages && !fetchingMore) {
+      loadData(page + 1, true)
     }
   }
 
@@ -65,7 +90,7 @@ export default function CodCashPage() {
   }, [])
 
   return (
-    <div className="w-full min-h-screen bg-gray-100">
+    <div className="w-full min-h-screen bg-gray-100 pb-24">
       <div className="bg-white px-4 py-4 flex items-center gap-3 shadow-sm">
         <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100">
           <ArrowLeft className="w-5 h-5 text-gray-700" />
@@ -129,6 +154,18 @@ export default function CodCashPage() {
                     </div>
                   )
                 })}
+
+                {page < totalPages && (
+                  <div className="pt-2">
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={fetchingMore}
+                      className="w-full py-2.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+                    >
+                      {fetchingMore ? "Loading more..." : "Load More Transactions"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

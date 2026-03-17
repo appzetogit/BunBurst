@@ -560,10 +560,10 @@ export default function Home() {
 
       // Dietary Preference filter
       // In veg mode:
-      // - "all" should keep all cafes visible
+      // - "all" should show veg dishes from all cafes
       // - "pure-veg" should filter to pure veg cafes only
-      if (vegMode && vegModeOption === 'pure-veg') {
-        params.dietaryPreference = 'pure-veg'
+      if (vegMode) {
+        params.dietaryPreference = vegModeOption === 'pure-veg' ? 'pure-veg' : 'veg'
       }
 
       // Optional: Add zoneId if available (for sorting/filtering, but show all cafes)
@@ -676,6 +676,7 @@ export default function Home() {
             location: cafe.location, // Store location for distance recalculation
             isActive: cafe.isActive !== false, // Default to true if not specified
             isAcceptingOrders: cafe.isAcceptingOrders !== false, // Default to true if not specified
+            restaurantType: cafe.restaurantType || cafe.restaurant_type || null,
           }
         })
 
@@ -770,9 +771,25 @@ export default function Home() {
     })
   }, [cafesData, location?.latitude, location?.longitude])
 
+  const normalizeRestaurantType = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z]/g, "")
+
+  const isCafeAllowedByVegMode = (cafe) => {
+    if (!vegMode) return true
+    const type = normalizeRestaurantType(cafe?.restaurantType)
+    if (vegModeOption === "pure-veg") return type === "pureveg"
+    return type !== "nonveg"
+  }
+
   // Filter cafes based on active filters
   const filteredCafes = useMemo(() => {
     let filtered = [...cafesWithDistances]
+
+    if (vegMode) {
+      filtered = filtered.filter(isCafeAllowedByVegMode)
+    }
 
     // Apply filters
     if (activeFilters.has('price-under-200')) {
@@ -870,7 +887,7 @@ export default function Home() {
     }
 
     return filtered
-  }, [cafesData, activeFilters, selectedCuisine, sortBy])
+  }, [cafesWithDistances, activeFilters, selectedCuisine, sortBy, vegMode, vegModeOption])
 
   // Featured foods removed - will be handled by cafes data from API
   const filteredFeaturedFoods = useMemo(() => {
