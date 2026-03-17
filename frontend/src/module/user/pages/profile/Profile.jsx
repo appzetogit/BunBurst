@@ -644,7 +644,7 @@ export default function Profile() {
                     >
                       <Bookmark className="h-5 w-5 text-muted-foreground" />
                     </motion.div>
-                    <span className="text-base font-medium text-foreground">Your collections</span>
+                    <span className="text-base font-medium text-foreground">My collection</span>
                   </div>
                   <motion.div
                     whileHover={{ x: 4 }}
@@ -658,79 +658,46 @@ export default function Profile() {
           </Link>
         </div>
 
-        {/* Food Orders Section */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-1 h-4 bg-primary rounded"></div>
-            <h3 className="text-base font-semibold text-foreground">Food Orders</h3>
-          </div>
-          <div className="space-y-2">
-            <Link to="/user/orders" className="block">
-              <motion.div
-                whileHover={{ x: 4, scale: 1.01 }}
-                transition={{ duration: 0.2, type: "spring", stiffness: 300 }}
-              >
-                <Card className="bg-card py-0 rounded-xl shadow-md border-2 border-border cursor-pointer">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <motion.div
-                        className="bg-muted rounded-full p-2"
-                        whileHover={{ rotate: 15, scale: 1.1 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <Building2 className="h-5 w-5 text-muted-foreground" />
-                      </motion.div>
-                      <span className="text-base font-medium text-foreground">Your orders</span>
-                    </div>
-                    <motion.div
-                      whileHover={{ x: 4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Link>
-          </div>
-        </div>
+        {/* Food Orders Section removed as requested */}
 
-        {/* Dining Bookings Section */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-1 h-4 bg-accent rounded"></div>
-            <h3 className="text-base font-semibold text-foreground">Dining</h3>
-          </div>
-          <div className="space-y-2">
-            <Link to="/bookings" className="block">
-              <motion.div
-                whileHover={{ x: 4, scale: 1.01 }}
-                transition={{ duration: 0.2, type: "spring", stiffness: 300 }}
-              >
-                <Card className="bg-card py-0 rounded-xl shadow-md border-2 border-border cursor-pointer">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+        {/* Dining Bookings Section (Disabled) */}
+        {/*
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <div className="w-1 h-4 bg-accent rounded"></div>
+              <h3 className="text-base font-semibold text-foreground">Dining</h3>
+            </div>
+            <div className="space-y-2">
+              <Link to="/bookings" className="block">
+                <motion.div
+                  whileHover={{ x: 4, scale: 1.01 }}
+                  transition={{ duration: 0.2, type: "spring", stiffness: 300 }}
+                >
+                  <Card className="bg-card py-0 rounded-xl shadow-md border-2 border-border cursor-pointer">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <motion.div
+                          className="bg-muted rounded-full p-2"
+                          whileHover={{ rotate: 15, scale: 1.1 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+                        </motion.div>
+                        <span className="text-base font-medium text-foreground">Your table bookings</span>
+                      </div>
                       <motion.div
-                        className="bg-muted rounded-full p-2"
-                        whileHover={{ rotate: 15, scale: 1.1 }}
-                        transition={{ duration: 0.3 }}
+                        whileHover={{ x: 4 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
                       </motion.div>
-                      <span className="text-base font-medium text-foreground">Your table bookings</span>
-                    </div>
-                    <motion.div
-                      whileHover={{ x: 4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Link>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </Link>
+            </div>
           </div>
-        </div>
+        */}
 
         {/* Coupons section removed as requested */}
 

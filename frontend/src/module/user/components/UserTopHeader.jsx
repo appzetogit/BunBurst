@@ -137,8 +137,8 @@ export default function UserTopHeader({
     return (
         <header
             className={cn(
-                "w-full bg-background/95 backdrop-blur-md border-b-2 border-border shadow-md z-[60] transition-colors duration-300",
-                "sticky top-0",
+                "w-full bg-background/95 backdrop-blur-md border-b-2 border-border shadow-md z-[50] transition-colors duration-300",
+                "sticky top-0 md:top-[44px]",
                 className
             )}
         >

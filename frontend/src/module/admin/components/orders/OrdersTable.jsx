@@ -26,7 +26,7 @@ const getPaymentStatusColor = (paymentStatus) => {
   return "text-[#1E1E1E]"
 }
 
-export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPrintOrder, onRefund }) {
+export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPrintOrder, onRefund, onAcceptOrder }) {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
   const totalPages = Math.ceil(orders.length / itemsPerPage)
@@ -234,10 +234,26 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
-                          {order.orderStatus}
+                          {order.orderStatus || order.status}
                         </span>
                         <span className="text-xs text-[#1E1E1E]">{order.deliveryType}</span>
                       </div>
+                      {(order.adminAcceptance?.status === false || String(order.orderStatus || "").toLowerCase() === "pending") && (
+                        <div className="mt-1">
+                          <select
+                            value="Pending"
+                            onChange={(e) => {
+                              if (e.target.value === "Accepted") {
+                                onAcceptOrder && onAcceptOrder(order)
+                              }
+                            }}
+                            className="text-xs px-2 py-1 rounded-md border border-[#F5F5F5] text-[#1E1E1E] bg-white"
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Accepted">Accept</option>
+                          </select>
+                        </div>
+                      )}
                       {order.cancellationReason && (
                         <div className="text-xs text-red-600 mt-1">
                           <span className="font-medium">

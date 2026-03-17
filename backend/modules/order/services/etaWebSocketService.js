@@ -185,7 +185,7 @@ class ETAWebSocketService {
     const intervalId = setInterval(async () => {
       try {
         const order = await Order.findById(orderId);
-        if (!order || order.status === 'delivered' || order.status === 'cancelled') {
+        if (!order || order.status === 'delivered' || order.status === 'picked_up' || order.status === 'cancelled') {
           clearInterval(intervalId);
           return;
         }

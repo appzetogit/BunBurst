@@ -516,7 +516,7 @@ class ETACalculationService {
     }
 
     // If order is delivered, return 0
-    if (order.status === 'delivered') {
+    if (order.status === 'delivered' || order.status === 'picked_up') {
       return {
         minETA: 0,
         maxETA: 0,

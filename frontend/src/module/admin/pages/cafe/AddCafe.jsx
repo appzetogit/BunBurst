@@ -985,7 +985,6 @@ export default function AddCafe() {
     if (!step1.primaryContactNumber?.trim()) errors.push("Primary contact number is required")
     if (step1.primaryContactNumber && step1.primaryContactNumber.length !== 10) errors.push("Primary contact number must be 10 digits")
     const formattedArea = formatAreaSector(step1.location?.area)
-    if (!formattedArea) errors.push("Area/Sector/Locality is required")
     const formattedCity = formatCityState(step1.location?.city)
     if (!formattedCity) errors.push("City is required")
     const formattedState = formatCityState(step1.location?.state)
@@ -1362,9 +1361,9 @@ export default function AddCafe() {
           <Input
             value={step1.location?.area || ""}
             onChange={(e) => {
-              const formatted = formatTitleCaseLive(
-                e.target.value.replace(/[^a-zA-Z0-9\s]/g, " ")
-              )
+              const formatted = e.target.value
+                .replace(/[^a-zA-Z0-9\s]/g, " ")
+                .replace(/\s+/g, " ")
               setStep1({ ...step1, location: { ...step1.location, area: formatted } })
             }}
             onBlur={() => {
@@ -1374,7 +1373,7 @@ export default function AddCafe() {
               }))
             }}
             className="bg-white text-sm"
-            placeholder="Area / Sector / Locality*"
+            placeholder="Area / Sector / Locality"
           />
           <Input
             value={step1.location?.city || ""}

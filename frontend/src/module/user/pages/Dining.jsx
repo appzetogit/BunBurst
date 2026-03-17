@@ -237,7 +237,7 @@ export default function Dining() {
         showVegToggle={false}
       />
       {/* Desktop Search Bar Row (Hidden on Mobile) */}
-      <div className="hidden md:block sticky top-16 z-40 bg-background/95 backdrop-blur-md pt-4 pb-4 mt-16 px-0 border-b border-border shadow-sm transition-all duration-300">
+      <div className="hidden md:block sticky top-[104px] sm:top-[108px] z-40 bg-background/95 backdrop-blur-md pt-4 pb-4 px-0 border-b border-border shadow-sm transition-all duration-300">
         <div className="max-w-[1100px] mx-auto flex items-center gap-6">
           {/* Search Input Container */}
           <div className="flex-1 relative">

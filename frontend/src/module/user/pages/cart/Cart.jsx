@@ -15,7 +15,7 @@ import { orderAPI, cafeAPI, adminAPI, userAPI, API_ENDPOINTS, zoneAPI, couponAPI
 import { API_BASE_URL } from "@/lib/api/config"
 import { initRazorpayPayment } from "@/lib/utils/razorpay"
 import { toast } from "sonner"
-import { getCompanyNameAsync } from "@/lib/utils/businessSettings"
+import { getCompanyNameAsync, getOrderingOptionsAsync } from "@/lib/utils/businessSettings"
 import { useLocationSelector } from "../../components/UserLayout"
 
 
@@ -60,6 +60,162 @@ const formatAmount = (value) => {
   if (!Number.isFinite(amount)) return "0.00"
   return amount.toFixed(2)
 }
+
+const DeliverySuccessCard = ({ defaultAddress, formatFullAddress, handleGoToOrders }) => (
+  <div className="relative z-10 flex flex-col items-center px-6">
+    <div
+      className="relative mb-8"
+      style={{ animation: 'scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both' }}
+    >
+      <div
+        className="absolute inset-0 w-32 h-32 rounded-full border-4 border-primary"
+        style={{
+          animation: 'ringPulse 1.5s ease-out infinite',
+          opacity: 0.3
+        }}
+      />
+      <div className="w-32 h-32 bg-primary rounded-full flex items-center justify-center shadow-2xl">
+        <svg
+          className="w-16 h-16 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ animation: 'checkDraw 0.5s ease-out 0.5s both' }}
+        >
+          <path d="M5 12l5 5L19 7" className="check-path" />
+        </svg>
+      </div>
+      {[...Array(6)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute w-2 h-2 bg-yellow-400 rounded-full"
+          style={{
+            top: '50%',
+            left: '50%',
+            animation: `sparkle 0.6s ease-out ${0.3 + i * 0.1}s both`,
+            transform: `rotate(${i * 60}deg) translateY(-80px)`,
+          }}
+        />
+      ))}
+    </div>
+
+    <div
+      className="text-center"
+      style={{ animation: 'slideUp 0.5s ease-out 0.6s both' }}
+    >
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <div className="w-5 h-5 text-primary">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-foreground">
+          {defaultAddress?.city || "Your Location"}
+        </h2>
+      </div>
+      <p className="text-muted-foreground text-base">
+        {defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Delivery Address") : "Delivery Address"}
+      </p>
+    </div>
+
+    <div
+      className="mt-12 text-center"
+      style={{ animation: 'slideUp 0.5s ease-out 0.8s both' }}
+    >
+      <h3 className="text-3xl font-bold text-primary mb-2">Order Placed!</h3>
+      <p className="text-muted-foreground">Your delicious food is on its way</p>
+    </div>
+
+    <button
+      onClick={handleGoToOrders}
+      className="mt-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-4 px-12 rounded-xl shadow-lg transition-all hover:shadow-xl hover:scale-105"
+      style={{ animation: 'slideUp 0.5s ease-out 1s both' }}
+    >
+      Track Your Order
+    </button>
+  </div>
+);
+
+const PickupSuccessCard = ({ cafeData, handleGoToOrders }) => (
+  <div className="relative z-10 flex flex-col items-center px-6">
+    <div
+      className="relative mb-8"
+      style={{ animation: 'scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both' }}
+    >
+      <div
+        className="absolute inset-0 w-32 h-32 rounded-full border-4 border-primary"
+        style={{
+          animation: 'ringPulse 1.5s ease-out infinite',
+          opacity: 0.3
+        }}
+      />
+      <div className="w-32 h-32 bg-primary rounded-full flex items-center justify-center shadow-2xl">
+        <svg
+          className="w-16 h-16 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ animation: 'checkDraw 0.5s ease-out 0.5s both' }}
+        >
+          <path d="M5 12l5 5L19 7" className="check-path" />
+        </svg>
+      </div>
+      {[...Array(6)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute w-2 h-2 bg-yellow-400 rounded-full"
+          style={{
+            top: '50%',
+            left: '50%',
+            animation: `sparkle 0.6s ease-out ${0.3 + i * 0.1}s both`,
+            transform: `rotate(${i * 60}deg) translateY(-80px)`,
+          }}
+        />
+      ))}
+    </div>
+
+    <div
+      className="text-center"
+      style={{ animation: 'slideUp 0.5s ease-out 0.6s both' }}
+    >
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <div className="w-5 h-5 text-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-foreground">
+          {cafeData?.name || "Cafe"}
+        </h2>
+      </div>
+      <p className="text-muted-foreground text-base">
+        {cafeData?.address || cafeData?.location?.formattedAddress || "Pickup from cafe location"}
+      </p>
+    </div>
+
+    <div
+      className="mt-12 text-center"
+      style={{ animation: 'slideUp 0.5s ease-out 0.8s both' }}
+    >
+      <h3 className="text-3xl font-bold text-primary mb-2">Pickup Success!</h3>
+      <p className="text-muted-foreground">Your order will be ready for pickup soon</p>
+    </div>
+
+    <button
+      onClick={handleGoToOrders}
+      className="mt-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-4 px-12 rounded-xl shadow-lg transition-all hover:shadow-xl hover:scale-105"
+      style={{ animation: 'slideUp 0.5s ease-out 1s both' }}
+    >
+      View Order Status
+    </button>
+  </div>
+);
 
 export default function Cart() {
   const navigate = useNavigate()
@@ -345,6 +501,11 @@ export default function Cart() {
   const [selectedAddressLabel, setSelectedAddressLabel] = useState(() => {
     return localStorage.getItem("userDeliveryAddressLabel") || "Location"
   })
+  const [orderingOptions, setOrderingOptions] = useState({
+    enableDelivery: true,
+    enablePickup: true,
+  })
+  const [orderType, setOrderType] = useState("DELIVERY")
 
   // Keep the selected label in sync when the location selector overlay saves/chooses an address.
   useEffect(() => {
@@ -358,6 +519,35 @@ export default function Cart() {
     window.addEventListener("userDeliveryLabelChanged", handleLabelChange)
     return () => {
       window.removeEventListener("userDeliveryLabelChanged", handleLabelChange)
+    }
+  }, [])
+
+  // Load ordering options (delivery/pickup toggles)
+  useEffect(() => {
+    let isMounted = true
+
+    const loadOrderingOptions = async () => {
+      try {
+        const options = await getOrderingOptionsAsync()
+        if (!isMounted) return
+        const enableDelivery = options?.enableDelivery !== false
+        const enablePickup = options?.enablePickup !== false
+        setOrderingOptions({ enableDelivery, enablePickup })
+
+        if (!enableDelivery && enablePickup) {
+          setOrderType("PICKUP")
+        } else if (enableDelivery && !enablePickup) {
+          setOrderType("DELIVERY")
+        }
+      } catch (error) {
+        // keep defaults
+      }
+    }
+
+    loadOrderingOptions()
+
+    return () => {
+      isMounted = false
     }
   }, [])
 
@@ -384,8 +574,10 @@ export default function Cart() {
     gstRate: 5,
   })
 
-
   const cartCount = getCartCount()
+  const canOrderDelivery = orderingOptions.enableDelivery !== false
+  const canOrderPickup = orderingOptions.enablePickup !== false
+  const orderingDisabled = !canOrderDelivery && !canOrderPickup
   const savedAddress = getDefaultAddress()
 
   // Memoize defaultAddress so it keeps the same object reference between renders
@@ -443,7 +635,7 @@ export default function Cart() {
     return Array.from(unique)
   }, [cart, categoryLookup])
 
-  // Stable fingerprint of the cart � changes only when items/quantities actually change.
+  // Stable fingerprint of the cart  changes only when items/quantities actually change.
   // Used as a dep instead of the raw `cart` array to avoid re-firing effects on
   // reference-identity changes (e.g. context re-renders that produce a new array).
   const cartKey = useMemo(
@@ -453,7 +645,8 @@ export default function Cart() {
 
   // Use backend pricing if available, otherwise fallback to database settings
   const subtotal = pricing?.subtotal || cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0)
-  const deliveryFee = pricing?.deliveryFee ?? (subtotal >= feeSettings.freeDeliveryThreshold || appliedCoupon?.freeDelivery ? 0 : feeSettings.deliveryFee)
+  const baseDeliveryFee = pricing?.deliveryFee ?? (subtotal >= feeSettings.freeDeliveryThreshold || appliedCoupon?.freeDelivery ? 0 : feeSettings.deliveryFee)
+  const deliveryFee = orderType === "PICKUP" ? 0 : baseDeliveryFee
   const platformFee = pricing?.platformFee || feeSettings.platformFee
   const gstCharges = pricing?.tax || Math.round(subtotal * (feeSettings.gstRate / 100))
   const discount = pricing?.discount || (appliedCoupon ? Math.min(appliedCoupon.discount, subtotal * 0.5) : 0)
@@ -461,7 +654,7 @@ export default function Cart() {
   // Calculate original price (crossed-out amount) using GST on full subtotal
   // This ensures the crossed-out price (e.g. 622) doesn't change when a coupon reduces the tax (e.g. to 619)
   const originalGst = Math.round(subtotal * (feeSettings.gstRate / 100))
-  const originalDeliveryFee = subtotal >= feeSettings.freeDeliveryThreshold ? 0 : feeSettings.deliveryFee
+  const originalDeliveryFee = orderType === "PICKUP" ? 0 : (subtotal >= feeSettings.freeDeliveryThreshold ? 0 : feeSettings.deliveryFee)
   const totalBeforeDiscount = subtotal + originalDeliveryFee + platformFee + originalGst
   
   const total = pricing?.total || (totalBeforeDiscount - discount)
@@ -827,17 +1020,17 @@ export default function Cart() {
   // Calculate pricing from backend whenever cart, address, or coupon changes.
   // Uses a 400ms debounce so rapid quantity taps don't fire a request per tap.
   // Skips calculation when restaurantId is not yet resolved, and also skips while
-  // an order is being placed (isPlacingOrder) to avoid extra calls on click.
+  // an order is being placed (isPlacingOrder) to avoid extra API calls.
   useEffect(() => {
-    if (cart.length === 0 || !defaultAddress) {
+    if (cart.length === 0 || (orderType === "DELIVERY" && !defaultAddress)) {
       setPricing(null)
       return
     }
 
-    // Skip if cafe hasn't loaded yet � the effect will re-run when it does
+    // Skip if cafe hasn't loaded yet  the effect will re-run when it does
     if (!cafeId) return
 
-    // Skip while an order is being placed � no point recalculating mid-placement
+    // Skip while an order is being placed  no point recalculating mid-placement
     if (isPlacingOrder) return
 
     let cancelled = false
@@ -858,8 +1051,9 @@ export default function Cart() {
         const response = await orderAPI.calculateOrder({
           items,
           cafeId: cafeData?.cafeId || cafeData?._id || cafeId || null,
-          deliveryAddress: defaultAddress,
-          couponCode: appliedCoupon?.code || couponCode || null
+          deliveryAddress: orderType === "DELIVERY" ? defaultAddress : null,
+          couponCode: appliedCoupon?.code || couponCode || null,
+          orderType
         })
 
         if (cancelled) return
@@ -884,17 +1078,17 @@ export default function Cart() {
       } finally {
         if (!cancelled) setLoadingPricing(false)
       }
-    }, 400) // 400ms debounce � batches rapid cart changes into one request
+    }, 400) // 400ms debounce  batches rapid cart changes into one request
 
     return () => {
       cancelled = true
       clearTimeout(timer)
     }
-    // addressKey (stable string) replaces defaultAddress object in deps � prevents
+    // addressKey (stable string) replaces defaultAddress object in deps  prevents
     // firing on every render just because a new object reference was created.
     // isPlacingOrder prevents extra call when Place Order button is clicked.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartKey, addressKey, appliedCoupon?.code, couponCode, cafeId, isPlacingOrder])
+  }, [cartKey, addressKey, appliedCoupon?.code, couponCode, cafeId, isPlacingOrder, orderType])
 
   // Fetch wallet balance
   useEffect(() => {
@@ -991,7 +1185,7 @@ export default function Cart() {
       setAppliedCoupon(coupon)
       setCouponCode(coupon.code)
       // The calculatePricing effect will automatically re-run because
-      // appliedCoupon.code and couponCode changed � no manual call needed.
+      // appliedCoupon.code and couponCode changed  no manual call needed.
     }
   }
 
@@ -1000,12 +1194,17 @@ export default function Cart() {
     setAppliedCoupon(null)
     setCouponCode("")
     // The calculatePricing effect will automatically re-run because
-    // appliedCoupon.code and couponCode changed � no manual call needed.
+    // appliedCoupon.code and couponCode changed  no manual call needed.
   }
 
 
   const handlePlaceOrder = async () => {
-    if (!defaultAddress) {
+    if (orderingDisabled) {
+      toast.error("Ordering is currently unavailable. Please try again later.")
+      return
+    }
+
+    if (orderType === "DELIVERY" && !defaultAddress) {
       alert("Please add a delivery address")
       return
     }
@@ -1222,38 +1421,41 @@ export default function Cart() {
 
       // Resolve zoneId from the delivery address to avoid stale/mismatched zone validation
       let resolvedZoneId = zoneId;
-      const addressCoords = defaultAddress?.location?.coordinates;
-      if (Array.isArray(addressCoords) && addressCoords.length >= 2) {
-        const [addrLng, addrLat] = addressCoords;
-        if (addrLat && addrLng) {
-          try {
-            const zoneResponse = await zoneAPI.detectZone(addrLat, addrLng);
-            if (zoneResponse?.data?.success) {
-              const zoneData = zoneResponse.data.data;
-              if (zoneData?.status === 'IN_SERVICE' && zoneData.zoneId) {
-                resolvedZoneId = zoneData.zoneId;
-              } else if (zoneData?.status === 'OUT_OF_SERVICE') {
-                toast.error('Your delivery address is outside the service zone. Please select a location within the service area.');
-                setIsPlacingOrder(false);
-                return;
+      if (orderType === "DELIVERY") {
+        const addressCoords = defaultAddress?.location?.coordinates;
+        if (Array.isArray(addressCoords) && addressCoords.length >= 2) {
+          const [addrLng, addrLat] = addressCoords;
+          if (addrLat && addrLng) {
+            try {
+              const zoneResponse = await zoneAPI.detectZone(addrLat, addrLng);
+              if (zoneResponse?.data?.success) {
+                const zoneData = zoneResponse.data.data;
+                if (zoneData?.status === 'IN_SERVICE' && zoneData.zoneId) {
+                  resolvedZoneId = zoneData.zoneId;
+                } else if (zoneData?.status === 'OUT_OF_SERVICE') {
+                  toast.error('Your delivery address is outside the service zone. Please select a location within the service area.');
+                  setIsPlacingOrder(false);
+                  return;
+                }
               }
+            } catch (zoneError) {
+              console.warn('?????? Zone detection failed during order placement. Falling back to existing zoneId.', zoneError?.response?.data || zoneError?.message);
             }
-          } catch (zoneError) {
-            console.warn('⚠️ Zone detection failed during order placement. Falling back to existing zoneId.', zoneError?.response?.data || zoneError?.message);
           }
         }
       }
 
       const orderPayload = {
         items: orderItems,
-        address: defaultAddress,
+        address: orderType === "DELIVERY" ? defaultAddress : null,
         cafeId: finalCafeId,
         cafeName: finalCafeName,
         pricing: orderPricing,
         note: note || "",
         sendCutlery: sendCutlery !== false,
         paymentMethod: selectedPaymentMethod,
-        zoneId: resolvedZoneId // CRITICAL: Pass zoneId for strict zone validation
+        zoneId: orderType === "DELIVERY" ? resolvedZoneId : null, // CRITICAL: Pass zoneId for strict zone validation
+        orderType
       };
       // Log final order details (including paymentMethod for COD debugging)
       console.log('?? FINAL: Sending order to backend with:', {
@@ -1280,7 +1482,7 @@ export default function Cart() {
 
       // Cash flow: order placed without online payment
       if (selectedPaymentMethod === "cash") {
-        toast.success("Order placed with Cash on Delivery")
+        toast.success("Order placed with Pay on delivery")
         setPlacedOrderId(order?.orderId || order?.id || null)
         setShowOrderSuccess(true)
         clearCart()
@@ -1820,60 +2022,121 @@ export default function Cart() {
                 <div className="flex items-center gap-3 md:gap-4">
                   <Clock className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="text-sm md:text-base text-foreground">Delivery in <span className="font-semibold">{cafeData?.estimatedDeliveryTime || "10-15 mins"}</span></p>
+                    <p className="text-sm md:text-base text-foreground">
+                      {orderType === "PICKUP" ? "Pickup in" : "Delivery in"}{" "}
+                      <span className="font-semibold">{cafeData?.estimatedDeliveryTime || "10-15 mins"}</span>
+                    </p>
                   </div>
                 </div>
               </div>
 
+              {/* Order Type */}
+              <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <Truck className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm md:text-base text-foreground">Order Type</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      Choose how you want to receive this order
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => canOrderDelivery && setOrderType("DELIVERY")}
+                    disabled={!canOrderDelivery}
+                    className={`flex-1 text-xs md:text-sm px-3 py-2 rounded-md border transition-all ${orderType === "DELIVERY"
+                      ? "border-primary text-primary bg-primary/10"
+                      : "border-border text-foreground hover:bg-muted"
+                      } ${!canOrderDelivery ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    Delivery
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => canOrderPickup && setOrderType("PICKUP")}
+                    disabled={!canOrderPickup}
+                    className={`flex-1 text-xs md:text-sm px-3 py-2 rounded-md border transition-all ${orderType === "PICKUP"
+                      ? "border-primary text-primary bg-primary/10"
+                      : "border-border text-foreground hover:bg-muted"
+                      } ${!canOrderPickup ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    Pickup
+                  </button>
+                </div>
+                {orderingDisabled && (
+                  <p className="mt-2 text-xs md:text-sm text-rose-600">
+                    Ordering is temporarily unavailable.
+                  </p>
+                )}
+              </div>
 
-              {/* Delivery Address */}
-              <div
-                className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={openLocationSelector}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 md:gap-4 w-full">
-                    <MapPin className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between w-full">
-                        <p className="text-sm md:text-base text-foreground">
-                          Delivery at <span className="font-semibold">{selectedAddressLabel}</span>
+
+              {/* Delivery Address / Pickup Location */}
+              {orderType === "DELIVERY" ? (
+                <div
+                  className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={openLocationSelector}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 md:gap-4 w-full">
+                      <MapPin className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between w-full">
+                          <p className="text-sm md:text-base text-foreground">
+                            Delivery at <span className="font-semibold">{selectedAddressLabel}</span>
+                          </p>
+                          <span className="text-primary font-medium text-xs md:text-sm">Edit</span>
+                        </div>
+                        <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                          {defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Add delivery address") : "Add delivery address"}
                         </p>
-                        <span className="text-primary font-medium text-xs md:text-sm">Edit</span>
-                      </div>
-                      <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 mt-0.5">
-                        {defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Add delivery address") : "Add delivery address"}
-                      </p>
-                      {/* Address Selection Buttons */}
-                      <div className="flex gap-2 mt-2">
-                        {["Home", "Office", "Other"].map((label) => {
-                          const addressExists = addresses.some(addr => addr.label === label)
-                          const isActive = selectedAddressLabel === label
-                          return (
-                            <button
-                              key={label}
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                handleSelectAddressByLabel(label)
-                              }}
+                        {/* Address Selection Buttons */}
+                        <div className="flex gap-2 mt-2">
+                          {["Home", "Office", "Other"].map((label) => {
+                            const addressExists = addresses.some(addr => addr.label === label)
+                            const isActive = selectedAddressLabel === label
+                            return (
+                              <button
+                                key={label}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  handleSelectAddressByLabel(label)
+                                }}
 
-                              className={`text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded-md border transition-all duration-200 ${isActive
-                                ? 'border-primary text-primary bg-primary/10 shadow-sm scale-110'
-                                : addressExists
-                                  ? 'border-border text-foreground hover:bg-muted bg-card'
-                                  : 'border-border/30 text-muted-foreground/60 bg-muted/50 hover:bg-muted'
-                                }`}
-                            >
-                              {label}
-                            </button>
-                          )
-                        })}
+                                className={`text-xs md:text-sm px-2 md:px-3 py-1 md:py-1.5 rounded-md border transition-all duration-200 ${isActive
+                                  ? 'border-primary text-primary bg-primary/10 shadow-sm scale-110'
+                                  : addressExists
+                                    ? 'border-border text-foreground hover:bg-muted bg-card'
+                                    : 'border-border/30 text-muted-foreground/60 bg-muted/50 hover:bg-muted'
+                                  }`}
+                              >
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <MapPin className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm md:text-base text-foreground">
+                        Pickup at <span className="font-semibold">{cafeData?.name || "Cafe"}</span>
+                      </p>
+                      <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                        {cafeData?.address || cafeData?.location?.formattedAddress || "Pickup from cafe location"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Contact */}
               <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl">
@@ -1924,7 +2187,7 @@ export default function Cart() {
                       <span className="text-foreground">₹{formatAmount(subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm md:text-base">
-                      <span className="text-muted-foreground">Delivery Fee</span>
+                      <span className="text-muted-foreground">{orderType === "PICKUP" ? "Pickup" : "Delivery Fee"}</span>
                       <span className={deliveryFee === 0 ? "text-primary font-bold" : "text-foreground"}>
                         {deliveryFee === 0 ? "FREE" : `₹${formatAmount(deliveryFee)}`}
                       </span>
@@ -1970,10 +2233,10 @@ export default function Cart() {
                     </p>
                     <p className="text-sm md:text-base font-medium text-foreground">
                       {selectedPaymentMethod === "razorpay"
-                        ? "Razorpay"
+                        ? "Online Payment"
                         : selectedPaymentMethod === "wallet"
                           ? "Wallet"
-                          : "Cash on Delivery"}
+                          : "Pay on delivery"}
                     </p>
                   </div>
                 </div>
@@ -1984,9 +2247,9 @@ export default function Cart() {
                     onChange={(e) => setSelectedPaymentMethod(e.target.value)}
                     className="appearance-none bg-muted border border-border text-foreground rounded-lg px-3 py-2 pr-9 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
-                    <option value="razorpay">Razorpay</option>
+                    <option value="razorpay">Online Payment</option>
                     <option value="wallet">Wallet {walletBalance > 0 ? `(₹${formatAmount(walletBalance)})` : ''}</option>
-                    <option value="cash">COD</option>
+                    <option value="cash">Pay on delivery</option>
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 </div>
@@ -1995,7 +2258,7 @@ export default function Cart() {
               <Button
                 size="lg"
                 onClick={handlePlaceOrder}
-                disabled={isPlacingOrder || (selectedPaymentMethod === "wallet" && walletBalance < total)}
+                disabled={orderingDisabled || isPlacingOrder || (selectedPaymentMethod === "wallet" && walletBalance < total)}
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground px-6 md:px-10 h-14 md:h-16 rounded-lg md:rounded-xl text-base md:text-lg font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {(selectedPaymentMethod === "razorpay" || selectedPaymentMethod === "wallet") && (
@@ -2005,221 +2268,24 @@ export default function Cart() {
                   </div>
                 )}
                 <span className="font-bold text-base md:text-lg">
-                  {isPlacingOrder
+                  {orderingDisabled
+                    ? "Ordering Disabled"
+                    : isPlacingOrder
                     ? "Processing..."
                     : selectedPaymentMethod === "razorpay"
                       ? "Select Payment"
                       : selectedPaymentMethod === "wallet"
                         ? walletBalance >= total
-                          ? "Place Order"
+                          ? "Pay with Wallet"
                           : "Insufficient Balance"
-                        : "Place Order"}
+                        : "Place Order"
+                  }
                 </span>
-                <ChevronRight className="h-5 w-5 md:h-6 md:w-6 ml-2" />
               </Button>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Placing Order Modal */}
-      {showPlacingOrder && (
-        <div className="fixed inset-0 z-[60] h-screen w-screen overflow-hidden">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
-          {/* Modal Sheet */}
-          <div
-            className="absolute bottom-0 left-0 right-0 bg-card rounded-t-3xl shadow-2xl overflow-hidden"
-            style={{ animation: 'slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}
-          >
-            <div className="px-6 py-8">
-              {/* Title */}
-              <h2 className="text-2xl font-bold text-foreground mb-6">Placing your order</h2>
-
-              {/* Payment Info */}
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-14 h-14 rounded-xl border border-border flex items-center justify-center bg-card shadow-sm">
-                  <CreditCard className="w-6 h-6 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-foreground">
-                    {selectedPaymentMethod === "razorpay"
-                      ? `Pay ₹${total.toFixed(2)} online (Razorpay)`
-                      : selectedPaymentMethod === "wallet"
-                        ? `Pay ₹${total.toFixed(2)} from Wallet`
-                        : `Pay on delivery (COD)`}
-                  </p>
-                </div>
-              </div>
-
-              {/* Delivery Address */}
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 rounded-xl border border-border flex items-center justify-center bg-muted">
-                  <svg className="w-7 h-7 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path d="M9 22V12h6v10" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-foreground">Delivering to Location</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Address") : "Add address"}
-                  </p>
-                  <p className="text-sm text-muted-foreground/60">
-                    {defaultAddress ? (formatFullAddress(defaultAddress) || "Address") : "Address"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="relative mb-6">
-                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-100 ease-linear"
-                    style={{
-                      width: `${orderProgress}%`,
-                      boxShadow: '0 0 10px rgba(255, 112, 81, 0.5)'
-                    }}
-                  />
-                </div>
-                {/* Animated shimmer effect */}
-                <div
-                  className="absolute inset-0 h-2.5 rounded-full overflow-hidden pointer-events-none"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                    animation: 'shimmer 1.5s infinite',
-                    width: `${orderProgress}%`
-                  }}
-                />
-              </div>
-
-              {/* Cancel Button */}
-              <button
-                onClick={() => {
-                  setShowPlacingOrder(false)
-                  setIsPlacingOrder(false)
-                }}
-                className="w-full text-right"
-              >
-                <span className="text-primary font-semibold text-base hover:text-primary/80 transition-colors">
-                  CANCEL
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Order Success Celebration Page */}
-      {showOrderSuccess && (
-        <div
-          className="fixed inset-0 z-[70] bg-white flex flex-col items-center justify-center h-screen w-screen overflow-hidden"
-          style={{ animation: 'fadeIn 0.3s ease-out' }}
-        >
-          {/* Confetti Background */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {/* Animated confetti pieces */}
-            {[...Array(50)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-3 h-3 rounded-sm"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `-10%`,
-                  backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][Math.floor(Math.random() * 6)],
-                  animation: `confettiFall ${2 + Math.random() * 2}s linear ${Math.random() * 2}s infinite`,
-                  transform: `rotate(${Math.random() * 360}deg)`,
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Success Content */}
-          <div className="relative z-10 flex flex-col items-center px-6">
-            {/* Success Tick Circle */}
-            <div
-              className="relative mb-8"
-              style={{ animation: 'scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both' }}
-            >
-              {/* Outer ring animation */}
-              <div
-                className="absolute inset-0 w-32 h-32 rounded-full border-4 border-primary"
-                style={{
-                  animation: 'ringPulse 1.5s ease-out infinite',
-                  opacity: 0.3
-                }}
-              />
-              {/* Main circle */}
-              <div className="w-32 h-32 bg-primary rounded-full flex items-center justify-center shadow-2xl">
-                <svg
-                  className="w-16 h-16 text-white"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ animation: 'checkDraw 0.5s ease-out 0.5s both' }}
-                >
-                  <path d="M5 12l5 5L19 7" className="check-path" />
-                </svg>
-              </div>
-              {/* Sparkles */}
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-2 h-2 bg-yellow-400 rounded-full"
-                  style={{
-                    top: '50%',
-                    left: '50%',
-                    animation: `sparkle 0.6s ease-out ${0.3 + i * 0.1}s both`,
-                    transform: `rotate(${i * 60}deg) translateY(-80px)`,
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Location Info */}
-            <div
-              className="text-center"
-              style={{ animation: 'slideUp 0.5s ease-out 0.6s both' }}
-            >
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="w-5 h-5 text-primary">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-foreground">
-                  {defaultAddress?.city || "Your Location"}
-                </h2>
-              </div>
-              <p className="text-muted-foreground text-base">
-                {defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Delivery Address") : "Delivery Address"}
-              </p>
-            </div>
-
-            {/* Order Placed Message */}
-            <div
-              className="mt-12 text-center"
-              style={{ animation: 'slideUp 0.5s ease-out 0.8s both' }}
-            >
-              <h3 className="text-3xl font-bold text-primary mb-2">Order Placed!</h3>
-              <p className="text-muted-foreground">Your delicious food is on its way</p>
-            </div>
-
-            {/* Action Button */}
-            <button
-              onClick={handleGoToOrders}
-              className="mt-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-4 px-12 rounded-xl shadow-lg transition-all hover:shadow-xl hover:scale-105"
-              style={{ animation: 'slideUp 0.5s ease-out 1s both' }}
-            >
-              Track Your Order
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Addon Customization Modal */}
       <AnimatePresence>
@@ -2316,6 +2382,94 @@ export default function Cart() {
                 </Button>
               </div>
             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Placing Order Modal */}
+      <AnimatePresence>
+        {isPlacingOrder && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-card p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-6 max-w-xs w-full border border-border"
+            >
+              <div className="relative w-20 h-20">
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  <circle
+                    className="text-muted stroke-current"
+                    strokeWidth="8"
+                    fill="transparent"
+                    r="40"
+                    cx="50"
+                    cy="50"
+                  />
+                  <circle
+                    className="text-primary stroke-current"
+                    strokeWidth="8"
+                    strokeDasharray="251.2"
+                    strokeDashoffset={251.2 - (251.2 * orderProgress) / 100}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    r="40"
+                    cx="50"
+                    cy="50"
+                    style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xl font-bold text-foreground">{orderProgress}%</span>
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-foreground mb-2">Placing Order</h3>
+                <p className="text-sm text-muted-foreground">Please wait while we confirm your delicious meal...</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Order Success Celebration Page */}
+      <AnimatePresence>
+        {showOrderSuccess && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-0 md:p-4 overflow-hidden">
+            {/* Background Celebration */}
+            <div
+              className="absolute inset-0 bg-background/95 backdrop-blur-xl"
+              style={{ animation: 'fadeInBackdrop 0.5s ease-out both' }}
+            />
+
+            {/* Confetti Elements */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {[...Array(30)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 md:w-3 md:h-3 rounded-sm"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    backgroundColor: ['#e53935', '#FBBC05', '#4285F4', '#34A853'][Math.floor(Math.random() * 4)],
+                    animation: `confettiFall ${2 + Math.random() * 2}s linear ${Math.random() * 2}s infinite`,
+                    transform: `rotate(${Math.random() * 360}deg)`,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Success Content */}
+            {orderType === "PICKUP" ? (
+              <PickupSuccessCard cafeData={cafeData} handleGoToOrders={handleGoToOrders} />
+            ) : (
+              <DeliverySuccessCard defaultAddress={defaultAddress} formatFullAddress={formatFullAddress} handleGoToOrders={handleGoToOrders} />
+            )}
           </div>
         )}
       </AnimatePresence>

@@ -83,6 +83,16 @@ const businessSettingsSchema = new mongoose.Schema(
         default: null,
       },
     },
+    orderingOptions: {
+      enableDelivery: {
+        type: Boolean,
+        default: true,
+      },
+      enablePickup: {
+        type: Boolean,
+        default: true,
+      },
+    },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin",

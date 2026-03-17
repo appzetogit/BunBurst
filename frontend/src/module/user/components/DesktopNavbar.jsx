@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom"
 import { useEffect, useState, useRef } from "react"
-import { ChevronDown, ShoppingCart, Wallet } from "lucide-react"
+import { ChevronDown, ShoppingCart, Wallet, Compass, UtensilsCrossed } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLocation as useLocationHook } from "../hooks/useLocation"
 import { useCart } from "../context/CartContext"
@@ -84,9 +84,10 @@ export default function DesktopNavbar() {
 
   // Check active routes - support both /user/* and /* paths
   const isDining = location.pathname === "/dining" || location.pathname === "/user/dining" || location.pathname.startsWith("/dining/") || location.pathname.startsWith("/user/dining/")
+  const isOrders = location.pathname === "/orders" || location.pathname === "/user/orders" || location.pathname.startsWith("/orders/") || location.pathname.startsWith("/user/orders/")
   const isUnder250 = location.pathname === "/under-250" || location.pathname === "/user/under-250"
   const isProfile = location.pathname.startsWith("/profile") || location.pathname.startsWith("/user/profile")
-  const isDelivery = !isDining && !isUnder250 && !isProfile && (location.pathname === "/" || location.pathname === "/user" || (location.pathname.startsWith("/") && !location.pathname.startsWith("/cafe") && !location.pathname.startsWith("/delivery") && !location.pathname.startsWith("/admin") && !location.pathname.startsWith("/usermain")))
+  const isDelivery = !isDining && !isUnder250 && !isOrders && !isProfile && (location.pathname === "/" || location.pathname === "/user" || (location.pathname.startsWith("/") && !location.pathname.startsWith("/cafe") && !location.pathname.startsWith("/delivery") && !location.pathname.startsWith("/admin") && !location.pathname.startsWith("/usermain")))
 
   // Reset visibility and scroll position when route changes
   useEffect(() => {
@@ -95,7 +96,7 @@ export default function DesktopNavbar() {
 
   return (
     <nav
-      className="hidden md:block fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+      className="hidden md:block sticky top-[40px] sm:top-[44px] z-50 transition-all duration-300 w-full"
     >
       {/* Background */}
       <div className="absolute inset-0 bg-background/95 backdrop-blur-md border-b border-border shadow-sm" />
@@ -156,7 +157,10 @@ export default function DesktopNavbar() {
                   : "text-foreground/60 hover:text-[#e53935] transition-colors"
                   }`}
               >
-                <span className="relative z-10">Delivery</span>
+                <div className="flex items-center gap-2 relative z-10">
+                  <Compass className="h-4 w-4" />
+                  <span>Explore</span>
+                </div>
                 {isDelivery && (
                   <div className="absolute bottom-[-11px] left-0 right-0 h-0.5 bg-[#e53935] rounded-t-full" />
                 )}
@@ -173,7 +177,10 @@ export default function DesktopNavbar() {
                   : "text-foreground/60 hover:text-[#e53935] transition-colors"
                   }`}
               >
-                <span className="relative z-10">Under 250</span>
+                <div className="flex items-center gap-2 relative z-10">
+                  <UtensilsCrossed className="h-4 w-4" />
+                  <span>Menu</span>
+                </div>
                 {isUnder250 && (
                   <div className="absolute bottom-[-11px] left-0 right-0 h-0.5 bg-[#e53935] rounded-t-full" />
                 )}
@@ -182,16 +189,32 @@ export default function DesktopNavbar() {
               {/* Divider */}
               <div className="h-6 w-px bg-border" />
 
-              {/* Dining Tab */}
+              {/* Dining Tab (Disabled) */}
+              {/*
+                <Link
+                  to="/user/dining"
+                  className={`px-4 lg:px-6 py-2.5 text-sm lg:text-base font-medium transition-all duration-200 relative ${isDining
+                    ? "text-[#e53935]"
+                    : "text-foreground/60 hover:text-[#e53935] transition-colors"
+                    }`}
+                >
+                  <span className="relative z-10">Dining</span>
+                  {isDining && (
+                    <div className="absolute bottom-[-11px] left-0 right-0 h-0.5 bg-[#e53935] rounded-t-full" />
+                  )}
+                </Link>
+              */}
+
+              {/* My Orders Tab */}
               <Link
-                to="/user/dining"
-                className={`px-4 lg:px-6 py-2.5 text-sm lg:text-base font-medium transition-all duration-200 relative ${isDining
+                to="/user/orders"
+                className={`px-4 lg:px-6 py-2.5 text-sm lg:text-base font-medium transition-all duration-200 relative ${isOrders
                   ? "text-[#e53935]"
                   : "text-foreground/60 hover:text-[#e53935] transition-colors"
                   }`}
               >
-                <span className="relative z-10">Dining</span>
-                {isDining && (
+                <span className="relative z-10">My Orders</span>
+                {isOrders && (
                   <div className="absolute bottom-[-11px] left-0 right-0 h-0.5 bg-[#e53935] rounded-t-full" />
                 )}
               </Link>

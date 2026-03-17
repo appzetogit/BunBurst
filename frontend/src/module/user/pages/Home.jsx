@@ -1068,7 +1068,7 @@ export default function Home() {
       </div>
 
       {/* Desktop Search Bar Row (Hidden on Mobile) */}
-      <div className="hidden md:block sticky top-16 z-40 bg-background/95 backdrop-blur-md pt-4 pb-4 mt-16 px-0 border-b border-border shadow-sm transition-all duration-300">
+      <div className="hidden md:block sticky top-[104px] sm:top-[108px] z-40 bg-background/95 backdrop-blur-md pt-4 pb-4 px-0 border-b border-border shadow-sm transition-all duration-300">
         <div className="max-w-[1100px] mx-auto flex items-center gap-6">
           {/* Search Input Container */}
           <div className="flex-1 relative">
@@ -1153,7 +1153,7 @@ export default function Home() {
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-sm border border-border relative">
                 <OptimizedImage
                   src={mealDealLogo}
-                  alt="Meals Under ₹200"
+                  alt="Menu"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, 96px"
                   objectFit="cover"
@@ -1161,7 +1161,7 @@ export default function Home() {
                 />
               </div>
               <span className="text-xs sm:text-sm font-medium text-foreground/80 text-center w-16 sm:w-20 truncate">
-                Meals @ ₹200
+                Menu
               </span>
             </motion.div>
             {loadingRealCategories ? (

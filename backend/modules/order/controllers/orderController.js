@@ -18,6 +18,7 @@ import OrderEvent from '../models/OrderEvent.js';
 import UserWallet from '../../user/models/UserWallet.js';
 import FeedbackExperience from '../../admin/models/FeedbackExperience.js';
 import Coupon from '../../coupon/models/Coupon.js';
+import BusinessSettings from '../../admin/models/BusinessSettings.js';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -59,7 +60,8 @@ export const createOrder = async (req, res) => {
       pricing,
       note,
       sendCutlery,
-      paymentMethod: bodyPaymentMethod
+      paymentMethod: bodyPaymentMethod,
+      orderType: bodyOrderType
     } = req.body;
     // Support both camelCase and snake_case from client
     const paymentMethod = bodyPaymentMethod ?? req.body.payment_method;
@@ -73,6 +75,36 @@ export const createOrder = async (req, res) => {
     })();
     logger.info('Order create paymentMethod:', { raw: paymentMethod, normalized: normalizedPaymentMethod, bodyKeys: Object.keys(req.body || {}).filter(k => k.toLowerCase().includes('payment')) });
 
+    const normalizedOrderType = String(bodyOrderType || 'DELIVERY').toUpperCase() === 'PICKUP'
+      ? 'PICKUP'
+      : 'DELIVERY';
+
+    // Check ordering options from business settings (enable/disable delivery/pickup)
+    try {
+      const settings = await BusinessSettings.getSettings();
+      const orderingOptions = settings?.orderingOptions || {};
+      const enableDelivery = orderingOptions.enableDelivery !== undefined ? orderingOptions.enableDelivery : true;
+      const enablePickup = orderingOptions.enablePickup !== undefined ? orderingOptions.enablePickup : true;
+
+      if (normalizedOrderType === 'DELIVERY' && !enableDelivery) {
+        return res.status(400).json({
+          success: false,
+          message: 'Delivery orders are currently disabled'
+        });
+      }
+
+      if (normalizedOrderType === 'PICKUP' && !enablePickup) {
+        return res.status(400).json({
+          success: false,
+          message: 'Pickup orders are currently disabled'
+        });
+      }
+    } catch (settingsError) {
+      logger.warn('Unable to load ordering options. Proceeding with defaults.', {
+        error: settingsError?.message
+      });
+    }
+
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -81,7 +113,7 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    if (!address) {
+    if (normalizedOrderType === 'DELIVERY' && !address) {
       return res.status(400).json({
         success: false,
         message: 'Delivery address is required'
@@ -270,80 +302,83 @@ export const createOrder = async (req, res) => {
     });
 
     // CRITICAL: Validate user's zone matches cafe's zone (strict zone matching)
+    // Only applicable for DELIVERY orders
     const { zoneId: userZoneId } = req.body; // User's zone ID from frontend
-    if (userZoneId && cafeZone?._id) {
-      const cafeZoneId = String(cafeZone._id);
-      const requestedUserZoneId = String(userZoneId).trim();
+    if (normalizedOrderType === 'DELIVERY') {
+      if (userZoneId && cafeZone?._id) {
+        const cafeZoneId = String(cafeZone._id);
+        const requestedUserZoneId = String(userZoneId).trim();
 
-      if (cafeZoneId !== requestedUserZoneId) {
-        // Handle overlap/order edge-cases: if requested user zone also contains cafe, allow order.
-        let requestedZoneContainsCafe = false;
-        try {
-          const point = { type: 'Point', coordinates: [cafeLng, cafeLat] };
-          const existsByBoundary = await Zone.exists({
-            _id: requestedUserZoneId,
-            isActive: true,
-            boundary: { $geoIntersects: { $geometry: point } }
-          });
+        if (cafeZoneId !== requestedUserZoneId) {
+          // Handle overlap/order edge-cases: if requested user zone also contains cafe, allow order.
+          let requestedZoneContainsCafe = false;
+          try {
+            const point = { type: 'Point', coordinates: [cafeLng, cafeLat] };
+            const existsByBoundary = await Zone.exists({
+              _id: requestedUserZoneId,
+              isActive: true,
+              boundary: { $geoIntersects: { $geometry: point } }
+            });
 
-          if (existsByBoundary) {
-            requestedZoneContainsCafe = true;
-          } else {
-            // Fallback for legacy zones without proper boundary
-            const requestedZone = await Zone.findOne({ _id: requestedUserZoneId, isActive: true }).lean();
-            if (requestedZone?.coordinates?.length >= 3) {
-              let inside = false;
-              for (let i = 0, j = requestedZone.coordinates.length - 1; i < requestedZone.coordinates.length; j = i++) {
-                const ci = requestedZone.coordinates[i];
-                const cj = requestedZone.coordinates[j];
-                const xi = typeof ci === 'object' ? (ci.longitude ?? ci.lng) : null; // x = lng
-                const yi = typeof ci === 'object' ? (ci.latitude ?? ci.lat) : null;  // y = lat
-                const xj = typeof cj === 'object' ? (cj.longitude ?? cj.lng) : null;
-                const yj = typeof cj === 'object' ? (cj.latitude ?? cj.lat) : null;
-                if (xi === null || yi === null || xj === null || yj === null) continue;
-                const intersect = ((yi > cafeLat) !== (yj > cafeLat)) &&
-                  (cafeLng < ((xj - xi) * (cafeLat - yi)) / ((yj - yi) || 1e-12) + xi);
-                if (intersect) inside = !inside;
+            if (existsByBoundary) {
+              requestedZoneContainsCafe = true;
+            } else {
+              // Fallback for legacy zones without proper boundary
+              const requestedZone = await Zone.findOne({ _id: requestedUserZoneId, isActive: true }).lean();
+              if (requestedZone?.coordinates?.length >= 3) {
+                let inside = false;
+                for (let i = 0, j = requestedZone.coordinates.length - 1; i < requestedZone.coordinates.length; j = i++) {
+                  const ci = requestedZone.coordinates[i];
+                  const cj = requestedZone.coordinates[j];
+                  const xi = typeof ci === 'object' ? (ci.longitude ?? ci.lng) : null; // x = lng
+                  const yi = typeof ci === 'object' ? (ci.latitude ?? ci.lat) : null;  // y = lat
+                  const xj = typeof cj === 'object' ? (cj.longitude ?? cj.lng) : null;
+                  const yj = typeof cj === 'object' ? (cj.latitude ?? cj.lat) : null;
+                  if (xi === null || yi === null || xj === null || yj === null) continue;
+                  const intersect = ((yi > cafeLat) !== (yj > cafeLat)) &&
+                    (cafeLng < ((xj - xi) * (cafeLat - yi)) / ((yj - yi) || 1e-12) + xi);
+                  if (intersect) inside = !inside;
+                }
+                requestedZoneContainsCafe = inside;
               }
-              requestedZoneContainsCafe = inside;
             }
+          } catch (zoneRecheckError) {
+            logger.warn('Zone mismatch recheck failed', {
+              userZoneId: requestedUserZoneId,
+              cafeZoneId,
+              error: zoneRecheckError?.message
+            });
           }
-        } catch (zoneRecheckError) {
-          logger.warn('Zone mismatch recheck failed', {
-            userZoneId: requestedUserZoneId,
-            cafeZoneId,
-            error: zoneRecheckError?.message
-          });
+
+          if (!requestedZoneContainsCafe) {
+            logger.warn('Zone mismatch - user and cafe are in different zones:', {
+              userZoneId: requestedUserZoneId,
+              cafeZoneId,
+              cafeId: cafe._id?.toString() || cafe.cafeId,
+              cafeName: cafe.name
+            });
+            return res.status(403).json({
+              success: false,
+              message: 'This cafe is not available in your zone. Please select a cafe from your current delivery zone.'
+            });
+          }
+
+          // Prefer requested user zone in overlap scenario to keep FE/BE consistent.
+          cafeZone._id = requestedUserZoneId;
         }
 
-        if (!requestedZoneContainsCafe) {
-          logger.warn('Zone mismatch - user and cafe are in different zones:', {
-            userZoneId: requestedUserZoneId,
-            cafeZoneId,
-            cafeId: cafe._id?.toString() || cafe.cafeId,
-            cafeName: cafe.name
-          });
-          return res.status(403).json({
-            success: false,
-            message: 'This cafe is not available in your zone. Please select a cafe from your current delivery zone.'
-          });
-        }
-
-        // Prefer requested user zone in overlap scenario to keep FE/BE consistent.
-        cafeZone._id = requestedUserZoneId;
+        logger.info('Zone match validated - user and cafe are in the same zone:', {
+          zoneId: requestedUserZoneId,
+          cafeId: cafe._id?.toString() || cafe.cafeId
+        });
+      } else if (userZoneId && !cafeZone?._id) {
+        logger.warn('User zoneId provided but cafe zone context unavailable. Skipping strict zone match.', {
+          userZoneId,
+          cafeId: cafe._id?.toString() || cafe.cafeId
+        });
+      } else {
+        logger.warn('User zoneId not provided in order request - zone validation skipped');
       }
-
-      logger.info('Zone match validated - user and cafe are in the same zone:', {
-        zoneId: requestedUserZoneId,
-        cafeId: cafe._id?.toString() || cafe.cafeId
-      });
-    } else if (userZoneId && !cafeZone?._id) {
-      logger.warn('User zoneId provided but cafe zone context unavailable. Skipping strict zone match.', {
-        userZoneId,
-        cafeId: cafe._id?.toString() || cafe.cafeId
-      });
-    } else {
-      logger.warn('User zoneId not provided in order request - zone validation skipped');
     }
 
     assignedCafeId = cafe._id?.toString() || cafe.cafeId;
@@ -369,17 +404,24 @@ export const createOrder = async (req, res) => {
       pricing.couponCode = pricing.appliedCoupon.code;
     }
 
+    const normalizedPricing = {
+      ...pricing,
+      deliveryFee: normalizedOrderType === 'PICKUP' ? 0 : pricing.deliveryFee
+    };
+    const normalizedAddress = normalizedOrderType === 'DELIVERY' ? address : (address || null);
+
     // Create order in database with pending status
     const order = new Order({
       orderId: generatedOrderId,
       userId,
       cafeId: assignedCafeId,
       cafeName: assignedCafeName,
+      orderType: normalizedOrderType,
       items,
-      address,
+      address: normalizedAddress,
       pricing: {
-        ...pricing,
-        couponCode: pricing.couponCode || null
+        ...normalizedPricing,
+        couponCode: normalizedPricing.couponCode || null
       },
       note: note || '',
       sendCutlery: sendCutlery !== false,
@@ -387,7 +429,12 @@ export const createOrder = async (req, res) => {
       payment: {
         method: normalizedPaymentMethod,
         status: 'pending'
-      }
+      },
+      adminAcceptance: { status: false },
+      paymentCollectionStatus:
+        normalizedPaymentMethod === 'cash' || normalizedPaymentMethod === 'cod'
+          ? 'Not Collected'
+          : 'Collected'
     });
 
     // Parse preparation time from order items
@@ -429,7 +476,7 @@ export const createOrder = async (req, res) => {
         }
         : null;
 
-      if (cafeLocation && userLocation) {
+      if (normalizedOrderType === 'DELIVERY' && cafeLocation && userLocation) {
         const etaResult = await etaCalculationService.calculateInitialETA({
           cafeId: assignedCafeId,
           cafeLocation,
@@ -1232,10 +1279,16 @@ export const getUserOrders = async (req, res) => {
         null;
 
       const reviewRating = order?.review?.rating ?? null;
+      const paymentMethod = order?.payment?.method;
+      const isCod = paymentMethod === 'cash' || paymentMethod === 'cod';
+      const fallbackCollectionStatus = isCod
+        ? (order.status === 'delivered' || order.status === 'picked_up' ? 'Collected' : 'Not Collected')
+        : 'Collected';
 
       return {
         ...order,
-        userRating: reviewRating ?? feedbackRating
+        userRating: reviewRating ?? feedbackRating,
+        paymentCollectionStatus: order.paymentCollectionStatus || fallbackCollectionStatus
       };
     });
 
@@ -1374,7 +1427,7 @@ export const cancelOrder = async (req, res) => {
       });
     }
 
-    if (order.status === 'delivered') {
+    if (order.status === 'delivered' || order.status === 'picked_up') {
       return res.status(400).json({
         success: false,
         message: 'Cannot cancel a delivered order'
@@ -1454,7 +1507,7 @@ export const cancelOrder = async (req, res) => {
  */
 export const calculateOrder = async (req, res) => {
   try {
-    const { items, cafeId, deliveryAddress, couponCode } = req.body;
+    const { items, cafeId, deliveryAddress, couponCode, orderType } = req.body;
 
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -1469,7 +1522,8 @@ export const calculateOrder = async (req, res) => {
       items,
       cafeId,
       deliveryAddress,
-      couponCode
+      couponCode,
+      orderType
     });
 
     res.json({

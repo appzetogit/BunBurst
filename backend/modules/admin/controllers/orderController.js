@@ -3,6 +3,7 @@ import { successResponse, errorResponse } from '../../../shared/utils/response.j
 import asyncHandler from '../../../shared/middleware/asyncHandler.js';
 import mongoose from 'mongoose';
 import { resolveOrderPaymentMethod } from '../../../shared/utils/deliveryCashLimitGuard.js';
+import { notifyUserOrderStatusUpdate } from '../../order/services/userNotificationService.js';
 
 /**
  * Get all orders for admin
@@ -22,7 +23,8 @@ export const getOrders = asyncHandler(async (req, res) => {
       paymentStatus,
       zone,
       customer,
-      cancelledBy
+      cancelledBy,
+      orderType
     } = req.query;
 
     // Build query
@@ -68,6 +70,22 @@ export const getOrders = asyncHandler(async (req, res) => {
     // Payment status filter
     if (paymentStatus) {
       query['payment.status'] = paymentStatus.toLowerCase();
+    }
+
+    // Order type filter (DELIVERY / PICKUP)
+    let orderTypeFilter = null;
+    if (orderType && orderType !== 'all') {
+      const normalizedOrderType = String(orderType).toUpperCase();
+      if (normalizedOrderType === 'DELIVERY') {
+        orderTypeFilter = {
+          $or: [
+            { orderType: { $exists: false } },
+            { orderType: 'DELIVERY' }
+          ]
+        };
+      } else {
+        orderTypeFilter = { orderType: normalizedOrderType };
+      }
     }
 
     // Date range filter
@@ -183,6 +201,18 @@ export const getOrders = asyncHandler(async (req, res) => {
       }
     }
 
+    // Apply order type filter without breaking existing $or search logic
+    if (orderTypeFilter) {
+      if (query.$and) {
+        query.$and.push(orderTypeFilter);
+      } else if (query.$or) {
+        query.$and = [orderTypeFilter, { $or: query.$or }];
+        delete query.$or;
+      } else {
+        Object.assign(query, orderTypeFilter);
+      }
+    }
+
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -267,21 +297,37 @@ export const getOrders = asyncHandler(async (req, res) => {
           orderStatusDisplay = isCafeCancelled ? 'Cancelled by Cafe' : 'Cancelled by User';
         }
       } else {
+        const adminAccepted = order.adminAcceptance?.status === true;
+        const pendingOverrideStatuses = [
+          'pending',
+          'confirmed',
+          'preparing',
+          'ready',
+          'assigned',
+          'out_for_delivery'
+        ];
+        if (!adminAccepted && pendingOverrideStatuses.includes(order.status)) {
+          orderStatusDisplay = 'Pending';
+        } else {
         const statusMap = {
           'pending': 'Pending',
           'confirmed': 'Accepted',
           'preparing': 'Processing',
           'ready': 'Ready',
+          'ready_for_pickup': 'Ready For Pickup',
+          'picked_up': 'Picked Up',
           'out_for_delivery': 'Food On The Way',
           'delivered': 'Delivered',
+          'completed': 'Delivered',
           'scheduled': 'Scheduled',
           'dine_in': 'Dine In'
         };
         orderStatusDisplay = statusMap[order.status] || order.status;
+        }
       }
 
       // Determine delivery type
-      const deliveryType = 'Home Delivery';
+      const deliveryType = order.orderType === 'PICKUP' ? 'Pickup' : 'Home Delivery';
 
       // Calculate report-specific fields
       const subtotal = order.pricing?.subtotal || 0;
@@ -414,12 +460,16 @@ export const getOrders = asyncHandler(async (req, res) => {
             return 'Online';
           }
         })(),
-        paymentCollectionStatus: (order.payment?.method === 'cash' || order.payment?.method === 'cod')
-          ? (order.status === 'delivered' ? 'Collected' : 'Not Collected')
-          : 'Collected',
+        paymentCollectionStatus:
+          order.paymentCollectionStatus ||
+          ((order.payment?.method === 'cash' || order.payment?.method === 'cod')
+            ? (order.status === 'delivered' || order.status === 'picked_up' ? 'Collected' : 'Not Collected')
+            : 'Collected'),
         orderStatus: orderStatusDisplay,
+        adminAcceptance: order.adminAcceptance || { status: false },
         status: order.status, // Backend status
         deliveryType: deliveryType,
+        orderType: order.orderType || 'DELIVERY',
         items: order.items || [],
         address: order.address || {},
         deliveryPartnerName: order.deliveryPartnerId?.name || null,
@@ -499,6 +549,210 @@ export const getOrderById = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Mark pickup order as ready for pickup
+ * PATCH /api/admin/orders/:orderId/ready-for-pickup
+ */
+export const markOrderReadyForPickup = asyncHandler(async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    let order = null;
+    if (mongoose.Types.ObjectId.isValid(orderId) && orderId.length === 24) {
+      order = await Order.findById(orderId);
+    }
+    if (!order) {
+      order = await Order.findOne({ orderId: orderId });
+    }
+    if (!order) {
+      return errorResponse(res, 404, 'Order not found');
+    }
+
+    if (order.orderType !== 'PICKUP') {
+      return errorResponse(res, 400, 'Only pickup orders can be marked as ready for pickup');
+    }
+
+    if (['cancelled', 'delivered', 'picked_up'].includes(order.status)) {
+      return errorResponse(res, 400, `Order cannot be updated. Current status: ${order.status}`);
+    }
+
+    if (order.status === 'ready_for_pickup') {
+      return successResponse(res, 200, 'Order is already marked as ready for pickup', { order });
+    }
+
+    // Enforce pickup transitions:
+    // pending/confirmed -> preparing (handled by cafe), preparing -> ready_for_pickup (admin)
+    if (!['preparing', 'confirmed'].includes(order.status)) {
+      return errorResponse(
+        res,
+        400,
+        `Invalid status transition for pickup order. Current status: ${order.status}`,
+      );
+    }
+
+    order.status = 'ready_for_pickup';
+    await order.save();
+
+    try {
+      await notifyUserOrderStatusUpdate(order, 'ready_for_pickup');
+    } catch (notifyError) {
+      console.warn('Failed to notify user for ready_for_pickup:', notifyError?.message);
+    }
+
+    return successResponse(res, 200, 'Order marked as ready for pickup', { order });
+  } catch (error) {
+    console.error('Error updating pickup order status:', error);
+    return errorResponse(res, 500, 'Failed to update pickup order status');
+  }
+});
+
+/**
+ * Mark pickup order as picked up
+ * PATCH /api/admin/orders/:orderId/picked-up
+ */
+export const markOrderPickedUp = asyncHandler(async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    let order = null;
+    if (mongoose.Types.ObjectId.isValid(orderId) && orderId.length === 24) {
+      order = await Order.findById(orderId);
+    }
+    if (!order) {
+      order = await Order.findOne({ orderId: orderId });
+    }
+    if (!order) {
+      return errorResponse(res, 404, 'Order not found');
+    }
+
+    if (order.orderType !== 'PICKUP') {
+      return errorResponse(res, 400, 'Only pickup orders can be marked as picked up');
+    }
+
+    if (['cancelled', 'delivered', 'picked_up'].includes(order.status)) {
+      return errorResponse(res, 400, `Order cannot be updated. Current status: ${order.status}`);
+    }
+
+    // Enforce pickup transitions: ready_for_pickup -> picked_up
+    if (order.status !== 'ready_for_pickup') {
+      return errorResponse(
+        res,
+        400,
+        `Invalid status transition for pickup order. Current status: ${order.status}`,
+      );
+    }
+
+    order.status = 'picked_up';
+    await order.save();
+
+    try {
+      await notifyUserOrderStatusUpdate(order, 'picked_up');
+    } catch (notifyError) {
+      console.warn('Failed to notify user for picked_up:', notifyError?.message);
+    }
+
+    return successResponse(res, 200, 'Order marked as picked up', { order });
+  } catch (error) {
+    console.error('Error updating pickup order status:', error);
+    return errorResponse(res, 500, 'Failed to update pickup order status');
+  }
+});
+
+/**
+ * Update payment collection status for pickup COD orders
+ * PATCH /api/admin/orders/:orderId/payment-collection
+ */
+export const updatePaymentCollectionStatus = asyncHandler(async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    const normalizedStatus = String(status || '').trim();
+    if (!['Collected', 'Not Collected'].includes(normalizedStatus)) {
+      return errorResponse(res, 400, 'Invalid payment collection status');
+    }
+
+    let order = null;
+    if (mongoose.Types.ObjectId.isValid(orderId) && orderId.length === 24) {
+      order = await Order.findById(orderId);
+    }
+    if (!order) {
+      order = await Order.findOne({ orderId: orderId });
+    }
+    if (!order) {
+      return errorResponse(res, 404, 'Order not found');
+    }
+
+    const paymentMethod = order.payment?.method;
+    if (paymentMethod !== 'cash' && paymentMethod !== 'cod') {
+      return errorResponse(res, 400, 'Payment collection is only allowed for COD orders');
+    }
+
+    if (order.orderType !== 'PICKUP') {
+      return errorResponse(res, 400, 'Payment collection is only allowed for pickup orders');
+    }
+
+    if (order.status !== 'picked_up') {
+      return errorResponse(res, 400, `Payment collection can be updated only after pickup. Current status: ${order.status}`);
+    }
+
+    order.paymentCollectionStatus = normalizedStatus;
+    await order.save();
+
+    return successResponse(res, 200, 'Payment collection status updated', { order });
+  } catch (error) {
+    console.error('Error updating payment collection status:', error);
+    return errorResponse(res, 500, 'Failed to update payment collection status');
+  }
+});
+
+/**
+ * Accept order (admin) - moves pending -> confirmed
+ * PATCH /api/admin/orders/:orderId/accept
+ */
+export const acceptOrderByAdmin = asyncHandler(async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    let order = null;
+    if (mongoose.Types.ObjectId.isValid(orderId) && orderId.length === 24) {
+      order = await Order.findById(orderId);
+    }
+    if (!order) {
+      order = await Order.findOne({ orderId: orderId });
+    }
+    if (!order) {
+      return errorResponse(res, 404, 'Order not found');
+    }
+
+    if (['cancelled', 'delivered', 'picked_up'].includes(order.status)) {
+      return errorResponse(res, 400, `Order cannot be accepted. Current status: ${order.status}`);
+    }
+
+    if (order.adminAcceptance?.status === true) {
+      return successResponse(res, 200, 'Order is already accepted', { order });
+    }
+
+    order.adminAcceptance = { status: true, timestamp: new Date() };
+    if (order.status === 'pending') {
+      order.status = 'confirmed';
+      order.tracking.confirmed = { status: true, timestamp: new Date() };
+    }
+    await order.save();
+
+    try {
+      await notifyUserOrderStatusUpdate(order, 'confirmed');
+    } catch (notifyError) {
+      console.warn('Failed to notify user for confirmed:', notifyError?.message);
+    }
+
+    return successResponse(res, 200, 'Order accepted successfully', { order });
+  } catch (error) {
+    console.error('Error accepting order:', error);
+    return errorResponse(res, 500, 'Failed to accept order');
+  }
+});
+
+/**
  * Get orders searching for deliveryman (ready orders without delivery partner)
  * GET /api/admin/orders/searching-deliveryman
  * Query params: page, limit, search
@@ -521,6 +775,14 @@ export const getSearchingDeliverymanOrders = asyncHandler(async (req, res) => {
       $or: [
         { deliveryPartnerId: { $exists: false } },
         { deliveryPartnerId: null }
+      ],
+      $and: [
+        {
+          $or: [
+            { orderType: { $exists: false } },
+            { orderType: 'DELIVERY' }
+          ]
+        }
       ]
     };
 
@@ -702,7 +964,15 @@ export const getOngoingOrders = asyncHandler(async (req, res) => {
     // Orders that have deliveryPartnerId assigned but are not delivered/cancelled
     const baseConditions = {
       deliveryPartnerId: { $exists: true, $ne: null },
-      status: { $nin: ['delivered', 'cancelled'] }
+      status: { $nin: ['delivered', 'cancelled', 'picked_up'] },
+      $and: [
+        {
+          $or: [
+            { orderType: { $exists: false } },
+            { orderType: 'DELIVERY' }
+          ]
+        }
+      ]
     };
 
     // Build search conditions if search is provided

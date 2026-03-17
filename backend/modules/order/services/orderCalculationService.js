@@ -253,7 +253,8 @@ export const calculateOrderPricing = async ({
   items,
   cafeId,
   deliveryAddress = null,
-  couponCode = null
+  couponCode = null,
+  orderType = 'DELIVERY'
 }) => {
   try {
     // Calculate subtotal from items
@@ -399,14 +400,17 @@ export const calculateOrderPricing = async ({
       }
     }
 
-    // Calculate delivery fee
-    const deliveryFee = await calculateDeliveryFee(
-      subtotal,
-      cafe,
-      deliveryAddress
-    );
+    // Calculate delivery fee (skip for pickup)
+    let deliveryFee = 0;
+    if (String(orderType).toUpperCase() !== 'PICKUP') {
+      deliveryFee = await calculateDeliveryFee(
+        subtotal,
+        cafe,
+        deliveryAddress
+      );
+    }
 
-    // Apply free delivery from coupon
+    // Apply free delivery from coupon (only relevant for delivery)
     const finalDeliveryFee = appliedCoupon?.freeDelivery ? 0 : deliveryFee;
 
     // Calculate platform fee

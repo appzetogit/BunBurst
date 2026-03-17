@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom"
-import { UtensilsCrossed, Tag, User, Truck } from "lucide-react"
+import { UtensilsCrossed, Compass, User, Truck, FileText } from "lucide-react"
 import { motion } from "framer-motion"
 
 export default function BottomNavigation() {
@@ -7,16 +7,17 @@ export default function BottomNavigation() {
 
   // Check active routes - support both /user/* and /* paths
   const isDining = location.pathname === "/dining" || location.pathname === "/user/dining"
+  const isOrders = location.pathname === "/orders" || location.pathname === "/user/orders" || location.pathname.startsWith("/orders/") || location.pathname.startsWith("/user/orders/")
   const isUnder250 = location.pathname === "/under-250" || location.pathname === "/user/under-250"
   const isProfile = location.pathname.startsWith("/profile") || location.pathname.startsWith("/user/profile")
-  const isDelivery = !isDining && !isUnder250 && !isProfile && (location.pathname === "/" || location.pathname === "/user" || (location.pathname.startsWith("/") && !location.pathname.startsWith("/cafe") && !location.pathname.startsWith("/delivery") && !location.pathname.startsWith("/admin") && !location.pathname.startsWith("/usermain")))
+  const isDelivery = !isDining && !isUnder250 && !isOrders && !isProfile && (location.pathname === "/" || location.pathname === "/user" || (location.pathname.startsWith("/") && !location.pathname.startsWith("/cafe") && !location.pathname.startsWith("/delivery") && !location.pathname.startsWith("/admin") && !location.pathname.startsWith("/usermain")))
 
   return (
     <div
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] pb-[max(24px,env(safe-area-inset-bottom,24px))]"
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] pb-[max(16px,env(safe-area-inset-bottom,16px))]"
     >
-      <div className="flex items-center justify-around h-[76px] sm:h-[84px] px-2 pt-1">
-        {/* Delivery Tab */}
+      <div className="flex items-center justify-around h-[76px] sm:h-[84px] px-2 pt-2">
+        {/* Explore Tab */}
         <Link
           to="/user"
           className={`flex flex-col items-center justify-center gap-1 min-w-[70px] py-1 transition-all duration-300 relative ${isDelivery
@@ -24,9 +25,9 @@ export default function BottomNavigation() {
             : "text-muted-foreground"
             }`}
         >
-          <Truck className={`h-6 w-6 transition-transform duration-300 ${isDelivery ? "text-accent fill-accent/10 scale-110" : "text-muted-foreground"}`} strokeWidth={isDelivery ? 2.5 : 2} />
+          <Compass className={`h-6 w-6 transition-transform duration-300 ${isDelivery ? "text-accent fill-accent/10 scale-110" : "text-muted-foreground"}`} strokeWidth={isDelivery ? 2.5 : 2} />
           <span className={`text-[10px] sm:text-xs font-bold transition-all duration-300 ${isDelivery ? "text-accent" : "text-muted-foreground"}`}>
-            Delivery
+            Explore
           </span>
           {isDelivery && (
             <motion.div
@@ -36,7 +37,7 @@ export default function BottomNavigation() {
           )}
         </Link>
 
-        {/* Under 200 Tab */}
+        {/* Menu Tab */}
         <Link
           to="/user/under-250"
           className={`flex flex-col items-center justify-center gap-1 min-w-[70px] py-1 transition-all duration-300 relative ${isUnder250
@@ -44,9 +45,9 @@ export default function BottomNavigation() {
             : "text-muted-foreground"
             }`}
         >
-          <Tag className={`h-6 w-6 transition-transform duration-300 ${isUnder250 ? "text-accent fill-accent/10 scale-110" : "text-muted-foreground"}`} strokeWidth={isUnder250 ? 2.5 : 2} />
+          <UtensilsCrossed className={`h-6 w-6 transition-transform duration-300 ${isUnder250 ? "text-accent fill-accent/10 scale-110" : "text-muted-foreground"}`} strokeWidth={isUnder250 ? 2.5 : 2} />
           <span className={`text-[10px] sm:text-xs font-bold transition-all duration-300 ${isUnder250 ? "text-accent" : "text-muted-foreground"}`}>
-            Under 200
+            Menu
           </span>
           {isUnder250 && (
             <motion.div
@@ -56,19 +57,41 @@ export default function BottomNavigation() {
           )}
         </Link>
 
-        {/* Dining Tab */}
+        {/* Dining Tab (Disabled) */}
+        {/*
+          <Link
+            to="/user/dining"
+            className={`flex flex-col items-center justify-center gap-1 min-w-[70px] py-1 transition-all duration-300 relative ${isDining
+              ? "text-accent"
+              : "text-muted-foreground"
+              }`}
+          >
+            <UtensilsCrossed className={`h-6 w-6 transition-transform duration-300 ${isDining ? "text-accent fill-accent/10 scale-110" : "text-muted-foreground"}`} strokeWidth={isDining ? 2.5 : 2} />
+            <span className={`text-[10px] sm:text-xs font-bold transition-all duration-300 ${isDining ? "text-accent" : "text-muted-foreground"}`}>
+              Dining
+            </span>
+            {isDining && (
+              <motion.div
+                layoutId="navTab"
+                className="absolute -top-[1px] left-4 right-4 h-1 bg-accent rounded-b-xl shadow-md shadow-accent/40"
+              />
+            )}
+          </Link>
+        */}
+
+        {/* My Orders Tab */}
         <Link
-          to="/user/dining"
-          className={`flex flex-col items-center justify-center gap-1 min-w-[70px] py-1 transition-all duration-300 relative ${isDining
+          to="/user/orders"
+          className={`flex flex-col items-center justify-center gap-1 min-w-[70px] py-1 transition-all duration-300 relative ${isOrders
             ? "text-accent"
             : "text-muted-foreground"
             }`}
         >
-          <UtensilsCrossed className={`h-6 w-6 transition-transform duration-300 ${isDining ? "text-accent fill-accent/10 scale-110" : "text-muted-foreground"}`} strokeWidth={isDining ? 2.5 : 2} />
-          <span className={`text-[10px] sm:text-xs font-bold transition-all duration-300 ${isDining ? "text-accent" : "text-muted-foreground"}`}>
-            Dining
+          <FileText className={`h-6 w-6 transition-transform duration-300 ${isOrders ? "text-accent fill-accent/10 scale-110" : "text-muted-foreground"}`} strokeWidth={isOrders ? 2.5 : 2} />
+          <span className={`text-[10px] sm:text-xs font-bold transition-all duration-300 ${isOrders ? "text-accent" : "text-muted-foreground"}`}>
+            My Orders
           </span>
-          {isDining && (
+          {isOrders && (
             <motion.div
               layoutId="navTab"
               className="absolute -top-[1px] left-4 right-4 h-1 bg-accent rounded-b-xl shadow-md shadow-accent/40"

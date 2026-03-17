@@ -14,6 +14,7 @@ import { initializeCloudinary } from "../../../config/cloudinary.js";
 export const getBusinessSettingsPublic = asyncHandler(async (req, res) => {
   try {
     const settings = await BusinessSettings.getSettings();
+    const orderingOptions = settings?.orderingOptions || {};
 
     // Return only public-facing data with defaults if not set
     return successResponse(
@@ -24,6 +25,16 @@ export const getBusinessSettingsPublic = asyncHandler(async (req, res) => {
         companyName: settings?.companyName || "Appzeto Food",
         logo: settings?.logo || { url: "", publicId: "" },
         favicon: settings?.favicon || { url: "", publicId: "" },
+        orderingOptions: {
+          enableDelivery:
+            orderingOptions.enableDelivery !== undefined
+              ? orderingOptions.enableDelivery
+              : true,
+          enablePickup:
+            orderingOptions.enablePickup !== undefined
+              ? orderingOptions.enablePickup
+              : true,
+        },
       },
     );
   } catch (error) {
@@ -37,6 +48,10 @@ export const getBusinessSettingsPublic = asyncHandler(async (req, res) => {
         companyName: "Appzeto Food",
         logo: { url: "", publicId: "" },
         favicon: { url: "", publicId: "" },
+        orderingOptions: {
+          enableDelivery: true,
+          enablePickup: true,
+        },
       },
     );
   }
@@ -77,6 +92,8 @@ export const updateBusinessSettings = asyncHandler(async (req, res) => {
       pincode,
       region,
       maintenanceMode,
+      enableDelivery,
+      enablePickup,
     } = req.body;
 
     // Get existing settings
@@ -114,6 +131,38 @@ export const updateBusinessSettings = asyncHandler(async (req, res) => {
       if (maintenanceMode.endDate) {
         settings.maintenanceMode.endDate = new Date(maintenanceMode.endDate);
       }
+    }
+
+    // Ordering options (delivery/pickup toggles)
+    const parseBoolean = (value, fallback) => {
+      if (value === undefined) return fallback;
+      if (typeof value === "boolean") return value;
+      if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        if (["true", "1", "yes", "on"].includes(normalized)) return true;
+        if (["false", "0", "no", "off"].includes(normalized)) return false;
+      }
+      return Boolean(value);
+    };
+
+    if (!settings.orderingOptions) {
+      settings.orderingOptions = {
+        enableDelivery: true,
+        enablePickup: true,
+      };
+    }
+
+    if (enableDelivery !== undefined) {
+      settings.orderingOptions.enableDelivery = parseBoolean(
+        enableDelivery,
+        settings.orderingOptions.enableDelivery,
+      );
+    }
+    if (enablePickup !== undefined) {
+      settings.orderingOptions.enablePickup = parseBoolean(
+        enablePickup,
+        settings.orderingOptions.enablePickup,
+      );
     }
 
     // Handle logo upload

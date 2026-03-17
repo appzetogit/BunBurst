@@ -200,7 +200,11 @@ import {
   getOngoingOrders,
   getTransactionReport,
   getCafeReport,
+  acceptOrderByAdmin,
   manualAssignOrder,
+  markOrderReadyForPickup,
+  markOrderPickedUp,
+  updatePaymentCollectionStatus,
 } from "../controllers/orderController.js";
 import {
   getAllReviews,
@@ -451,7 +455,11 @@ router.get("/orders/searching-deliveryman", getSearchingDeliverymanOrders);
 router.get("/orders/ongoing", getOngoingOrders);
 router.get("/orders/transaction-report", getTransactionReport);
 router.get("/orders/cafe-report", getCafeReport);
+router.patch("/orders/:orderId/accept", acceptOrderByAdmin);
 router.post("/orders/:orderId/assign", manualAssignOrder);
+router.patch("/orders/:orderId/ready-for-pickup", markOrderReadyForPickup);
+router.patch("/orders/:orderId/picked-up", markOrderPickedUp);
+router.patch("/orders/:orderId/payment-collection", updatePaymentCollectionStatus);
 
 // Order Refund - MUST be before /orders/:id to avoid route conflicts
 // Using explicit pattern /orders/refund/:orderId

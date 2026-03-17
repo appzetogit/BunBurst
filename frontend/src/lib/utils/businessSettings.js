@@ -102,3 +102,32 @@ export const getCompanyNameAsync = async () => {
     return "Appzeto Food";
   }
 };
+
+/**
+ * Get ordering options from business settings with fallback
+ */
+export const getOrderingOptions = () => {
+  const settings = getCachedSettings();
+  return settings?.orderingOptions || {
+    enableDelivery: true,
+    enablePickup: true,
+  };
+};
+
+/**
+ * Get ordering options asynchronously (loads if not cached)
+ */
+export const getOrderingOptionsAsync = async () => {
+  try {
+    const settings = await loadBusinessSettings();
+    return settings?.orderingOptions || {
+      enableDelivery: true,
+      enablePickup: true,
+    };
+  } catch (error) {
+    return {
+      enableDelivery: true,
+      enablePickup: true,
+    };
+  }
+};

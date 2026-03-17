@@ -146,8 +146,12 @@ export default function OrderHelp() {
         return "bg-blue-500"
       case "preparing":
         return "bg-primary-orange"
+      case "ready_for_pickup":
+        return "bg-amber-500"
       case "outForDelivery":
         return "bg-orange-500"
+      case "picked_up":
+        return "bg-green-500"
       case "delivered":
         return "bg-green-500"
       default:
@@ -161,8 +165,12 @@ export default function OrderHelp() {
         return "Confirmed"
       case "preparing":
         return "Preparing"
+      case "ready_for_pickup":
+        return "Ready for Pickup"
       case "outForDelivery":
         return "Out for Delivery"
+      case "picked_up":
+        return "Picked Up"
       case "delivered":
         return "Delivered"
       default:

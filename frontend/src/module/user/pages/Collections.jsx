@@ -92,17 +92,19 @@ export default function Collections() {
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-blue-500 rounded-full" />
             )}
           </button>
-          <button
-            onClick={() => setActiveTab("dining")}
-            className={`flex-1 py-4 text-center font-semibold transition-colors relative ${
-              activeTab === "dining" ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"
-            }`}
-          >
-            Dining
-            {activeTab === "dining" && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-blue-500 rounded-full" />
-            )}
-          </button>
+          {/*
+            <button
+              onClick={() => setActiveTab("dining")}
+              className={`flex-1 py-4 text-center font-semibold transition-colors relative ${
+                activeTab === "dining" ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"
+              }`}
+            >
+              Dining
+              {activeTab === "dining" && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-blue-500 rounded-full" />
+              )}
+            </button>
+          */}
         </div>
       </div>
 

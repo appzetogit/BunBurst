@@ -70,6 +70,7 @@ export const sidebarMenuData = [
           { label: "Processing", path: "/admin/orders/processing" },
           { label: "Food On The Way", path: "/admin/orders/food-on-the-way" },
           { label: "Delivered", path: "/admin/orders/delivered" },
+          { label: "Pickup Orders", path: "/admin/orders/pickup" },
           { label: "Canceled", path: "/admin/orders/canceled" },
           {
             label: "Cafe cancelled",

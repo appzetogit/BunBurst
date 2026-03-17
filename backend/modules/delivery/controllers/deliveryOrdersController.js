@@ -36,6 +36,16 @@ export const getOrders = asyncHandler(async (req, res) => {
     // Build query
     const query = { deliveryPartnerId: delivery._id };
 
+    // Only include delivery orders (backward compatible with legacy orders)
+    query.$and = [
+      {
+        $or: [
+          { orderType: { $exists: false } },
+          { orderType: 'DELIVERY' }
+        ]
+      }
+    ];
+
     if (status) {
       query.status = status;
     } else {
@@ -1877,6 +1887,10 @@ export const rejectOrder = asyncHandler(async (req, res) => {
 
     if (!order) {
       return errorResponse(res, 404, 'Order not found');
+    }
+
+    if (order.orderType === 'PICKUP') {
+      return errorResponse(res, 400, 'Pickup orders are not available for delivery partners');
     }
 
     const currentDeliveryId = delivery._id.toString();

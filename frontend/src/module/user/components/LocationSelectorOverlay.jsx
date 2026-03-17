@@ -842,8 +842,11 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
           locationData.formattedAddress.split(',').length >= 4
       })
 
-      // Save location to backend with ALL fields
-      if (locationData?.latitude && locationData?.longitude) {
+      // Save location to backend only if user is logged in
+      const userToken = localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken')
+      const isLoggedIn = userToken && userToken !== 'null' && userToken !== 'undefined'
+
+      if (isLoggedIn && locationData?.latitude && locationData?.longitude) {
         try {
           await userAPI.updateLocation({
             latitude: locationData.latitude,
@@ -861,11 +864,13 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
           console.log("✅ Location saved to backend successfully")
         } catch (backendError) {
           // Only log non-network errors (network errors are handled by axios interceptor)
-          if (backendError.code !== 'ERR_NETWORK' && backendError.message !== 'Network Error') {
+          if (backendError.code !== 'ERR_NETWORK' && backendError.message !== 'Network Error' && backendError.response?.status !== 401) {
             console.error("Error saving location to backend:", backendError)
           }
           // Don't fail the whole operation if backend save fails
         }
+      } else if (!isLoggedIn) {
+        console.log("ℹ️ Guest user detected, skipping backend location update")
       }
 
       // Update map position - don't automatically show address form
@@ -2008,7 +2013,10 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       const longitude = coordinates[0]
       const latitude = coordinates[1]
 
-      if (latitude && longitude) {
+      const userToken = localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken')
+      const isLoggedIn = userToken && userToken !== 'null' && userToken !== 'undefined'
+
+      if (isLoggedIn && latitude && longitude) {
         // Update location in backend
         await userAPI.updateLocation({
           latitude,

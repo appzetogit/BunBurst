@@ -73,6 +73,14 @@ export async function notifyUserOrderStatusUpdate(order, status) {
         title = '🛵 On the Way!';
         body = `Your order from ${order.cafeName} has been picked up and is heading your way.`;
         break;
+      case 'ready_for_pickup':
+        title = '???? Ready for Pickup';
+        body = `Your order from ${order.cafeName} is ready for pickup.`;
+        break;
+      case 'picked_up':
+        title = '??? Order Picked Up';
+        body = `Your order from ${order.cafeName} has been picked up.`;
+        break;
       case 'delivered':
         title = '🍱 Enjoy your meal!';
         body = `Your order from ${order.cafeName} has been delivered successfully.`;

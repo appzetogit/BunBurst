@@ -174,7 +174,7 @@ export const updateSettlementOnStatusChange = async (orderId, newStatus, previou
     }
 
     // Update escrow status based on order status
-    if (newStatus === 'delivered') {
+    if (newStatus === 'delivered' || newStatus === 'picked_up') {
       settlement.escrowStatus = 'released';
       settlement.escrowReleasedAt = new Date();
       settlement.settlementStatus = 'completed';

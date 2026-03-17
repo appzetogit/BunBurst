@@ -46,7 +46,8 @@ export default function OrdersPage({ statusKey = "all" }) {
           limit: 1000, // Fetch all orders for now (can be optimized with pagination later)
           status: statusKey === "all" ? undefined : 
                  statusKey === "cafe-cancelled" ? "cancelled" : statusKey,
-          cancelledBy: statusKey === "cafe-cancelled" ? "cafe" : undefined
+          cancelledBy: statusKey === "cafe-cancelled" ? "cafe" : undefined,
+          orderType: "DELIVERY"
         }
         
         const response = await adminAPI.getOrders(params)
@@ -130,7 +131,8 @@ export default function OrdersPage({ statusKey = "all" }) {
           limit: 1000,
           status: statusKey === "all" ? undefined : 
                  statusKey === "cafe-cancelled" ? "cancelled" : statusKey,
-          cancelledBy: statusKey === "cafe-cancelled" ? "cafe" : undefined
+          cancelledBy: statusKey === "cafe-cancelled" ? "cafe" : undefined,
+          orderType: "DELIVERY"
         }
         const refreshResponse = await adminAPI.getOrders(params)
         if (refreshResponse.data?.success && refreshResponse.data?.data?.orders) {
@@ -200,6 +202,28 @@ export default function OrdersPage({ statusKey = "all" }) {
   const handleRefundConfirm = (amount) => {
     if (selectedOrderForRefund) {
       processRefund(selectedOrderForRefund, amount)
+    }
+  }
+
+  const handleAcceptOrder = async (order) => {
+    const orderIdToUse = order.id || order._id || order.orderId
+    if (!orderIdToUse) {
+      toast.error("Order ID not found")
+      return
+    }
+
+    try {
+      await adminAPI.acceptOrder(orderIdToUse)
+      toast.success(`Order ${order.orderId} accepted`)
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          (o.id === order.id || o._id === order._id || o.orderId === order.orderId)
+            ? { ...o, status: "confirmed", orderStatus: "Accepted" }
+            : o
+        )
+      )
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to accept order")
     }
   }
 
@@ -286,6 +310,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         onViewOrder={handleViewOrder}
         onPrintOrder={handlePrintOrder}
         onRefund={handleRefund}
+        onAcceptOrder={handleAcceptOrder}
       />
     </div>
   )

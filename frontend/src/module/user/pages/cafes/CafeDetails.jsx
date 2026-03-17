@@ -1441,7 +1441,7 @@ export default function CafeDetails() {
       </div>
 
       {/* Main Content Card */}
-      <div className="bg-white dark:bg-[#1a1a1a] rounded-t-3xl relative z-10 min-h-[40vh] pb-[160px] md:pb-[160px]">
+      <div className="bg-white dark:bg-[#1a1a1a] rounded-t-3xl relative z-10 min-h-[40vh] pb-[200px] md:pb-[200px]">
         <div className="w-full lg:max-w-[1100px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-5 md:py-6 lg:py-8 space-y-3 md:space-y-4 lg:space-y-5 pb-0">
           {/* Cafe Name and Rating */}
           <div className="flex items-start justify-between">
@@ -1892,7 +1892,7 @@ export default function CafeDetails() {
                                   return (
                                     <div
                                       key={item.id}
-                                      className="flex gap-4 p-4 border-b border-gray-100 last:border-none relative cursor-pointer"
+                                      className="flex gap-4 pt-4 px-4 pb-8 border-b border-gray-100 last:border-none relative cursor-pointer"
                                       onClick={() => handleItemClick(item)}
                                     >
                                       {/* Left Side - Details */}
@@ -1989,7 +1989,7 @@ export default function CafeDetails() {
                                           <motion.div
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
-                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
+                                            className={`absolute bottom-1 left-1/2 -translate-x-1/2 bg-white border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
                                               ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
                                               : 'border-green-600 text-green-600 hover:bg-green-50'
                                               }`}
@@ -2037,7 +2037,7 @@ export default function CafeDetails() {
                                             }
                                           }}
                                           disabled={shouldShowGrayscale || isOutOfStock}
-                                          className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-colors ${shouldShowGrayscale || isOutOfStock
+                                          className={`absolute bottom-1 left-1/2 -translate-x-1/2 bg-white border font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-colors ${shouldShowGrayscale || isOutOfStock
                                             ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
                                             : 'border-green-600 text-green-600 hover:bg-green-50'
                                             }`}
@@ -2069,7 +2069,7 @@ export default function CafeDetails() {
 
       {/* Menu Button - Sticky at page bottom right (hidden when filter or menu sheet open) */}
       {!showFilterSheet && !showMenuSheet && !showMenuOptionsSheet && (
-        <div className="sticky dark:bg-[#1a1a1a] bottom-4 flex justify-end px-4 z-50 mt-auto">
+        <div className="sticky dark:bg-[#1a1a1a] bottom-32 flex justify-end px-4 z-50 mt-auto">
           <Button
             className="bg-gray-800 hover:bg-gray-900 text-white flex items-center gap-2 shadow-lg px-6 py-2.5 rounded-lg"
             size="lg"
@@ -3230,7 +3230,7 @@ export default function CafeDetails() {
 
       {/* Add to Cart Animation Component */}
       <AddToCartAnimation
-        bottomOffset={150}
+        bottomOffset={224}
         linkTo="/cart"
         hideOnPages={true}
       />

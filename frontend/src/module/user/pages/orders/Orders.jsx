@@ -39,7 +39,7 @@ export default function Orders() {
 
   // Calculate countdown for an order
   const calculateCountdown = (order) => {
-    if (!order || order.status === 'delivered' || order.status === 'cancelled' || order.status === 'cafe_cancelled') {
+    if (!order || order.status === 'delivered' || order.status === 'picked_up' || order.status === 'cancelled' || order.status === 'cafe_cancelled') {
       return null
     }
 
@@ -91,9 +91,10 @@ export default function Orders() {
   // Get order status text
   const getOrderStatus = (order) => {
     const status = order.status
+    if (status === 'picked_up') return 'picked_up'
     if (status === 'delivered' || status === 'completed') return 'delivered'
     if (status === 'out_for_delivery' || status === 'outForDelivery') return 'outForDelivery'
-    if (status === 'ready') return 'preparing'
+    if (status === 'ready' || status === 'ready_for_pickup') return 'preparing'
     if (status === 'preparing') return 'preparing'
     if (status === 'confirmed') return 'confirmed'
     return status || 'confirmed'
@@ -120,12 +121,16 @@ export default function Orders() {
       const isDelivered = 
         originalStatus === 'delivered' || 
         originalStatus === 'completed' ||
+        originalStatus === 'picked_up' ||
         originalStatus.toLowerCase() === 'delivered' ||
         originalStatus.toLowerCase() === 'completed' ||
+        originalStatus.toLowerCase() === 'picked_up' ||
         transformedStatus === 'delivered' ||
         transformedStatus === 'completed' ||
+        transformedStatus === 'picked_up' ||
         transformedStatus.toLowerCase() === 'delivered' ||
-        transformedStatus.toLowerCase() === 'completed'
+        transformedStatus.toLowerCase() === 'completed' ||
+        transformedStatus.toLowerCase() === 'picked_up'
       
       // Check if order has rating (user experience rating), not delivery module rating
       const hasRating = 
@@ -321,6 +326,8 @@ export default function Orders() {
               pricing: order.pricing || {}, // Keep full pricing object for discounts, coupons
               payment: order.payment || {},
               paymentMethod: order.payment?.method || order.paymentMethod,
+              paymentCollectionStatus: order.paymentCollectionStatus || null,
+              paymentStatus: order.payment?.status || order.paymentStatus || null,
               cafe: order.cafeId?.name || order.cafeName || 'Cafe',
               cafeId: order.cafeId?._id || order.cafeId,
               cafeImage: order.cafeId?.profileImage?.url || order.cafeId?.profileImage || null,
@@ -347,7 +354,7 @@ export default function Orders() {
           
           dlog('✅ Orders fetched and transformed:', {
             total: transformedOrders.length,
-            delivered: transformedOrders.filter(o => o.status === 'delivered' || o.originalStatus === 'delivered').length,
+            delivered: transformedOrders.filter(o => o.status === 'delivered' || o.status === 'picked_up' || o.originalStatus === 'delivered' || o.originalStatus === 'picked_up').length,
             withRating: transformedOrders.filter(o => o.userRating).length,
             sample: transformedOrders.slice(0, 2).map(o => ({
               id: o.id,
@@ -677,7 +684,8 @@ Order again from this cafe in the ${companyName} app.`
                                  !isCancelled && 
                                  (order.payment?.status === 'failed')
             
-            const isDelivered = order.status === 'delivered'
+            const isDelivered = order.status === 'delivered' || order.status === 'picked_up'
+            const isPickedUp = order.status === 'picked_up'
             const isCafeCancelled = order.isCafeCancelled || order.status === 'cafe_cancelled'
             const isUserCancelled = order.isUserCancelled || (isCancelled && order.cancelledBy === 'user')
             // Prefer food image from first item; fallback to cafe image, then generic food photo
@@ -862,7 +870,9 @@ Order again from this cafe in the ${companyName} app.`
                   <div className="flex-1">
                     <p className="text-xs text-gray-400">Order placed on {formatDate(order.createdAt)}</p>
                     {order.deliveredAt && (
-                      <p className="text-xs text-gray-400 mt-0.5">Delivered on {formatDate(order.deliveredAt)}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {isPickedUp ? 'Picked up' : 'Delivered'} on {formatDate(order.deliveredAt)}
+                      </p>
                     )}
                     {order.payment && (
                       <p className="text-xs text-gray-500 mt-1">
@@ -872,20 +882,54 @@ Order again from this cafe in the ${companyName} app.`
                            order.payment.method === 'razorpay' ? 'Online' :
                            order.payment.method || 'N/A'}
                         </span>
-                        {order.payment.status && (
-                          <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                            order.payment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            order.payment.status === 'failed' ? 'bg-red-100 text-red-700' :
-                            order.payment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {order.payment.status}
-                          </span>
-                        )}
+                        {(() => {
+                          const isCod = order.payment?.method === 'cash' || order.payment?.method === 'cod'
+                          const rawStatus = order.paymentCollectionStatus || order.payment?.status || order.paymentStatus
+                          const normalized = String(rawStatus || '').toLowerCase()
+                          let displayStatus = rawStatus
+
+                          if (isCod) {
+                            if (order.paymentCollectionStatus) {
+                              displayStatus = order.paymentCollectionStatus
+                            } else if (['completed', 'paid', 'success', 'succeeded', 'collected'].includes(normalized)) {
+                              displayStatus = 'Completed'
+                            } else if (normalized) {
+                              displayStatus = normalized === 'pending' ? 'Not Collected' : rawStatus
+                            } else {
+                              displayStatus = 'Not Collected'
+                            }
+                          } else if (normalized) {
+                            if (['completed', 'paid', 'success', 'succeeded'].includes(normalized)) {
+                              displayStatus = 'Completed'
+                            } else if (normalized === 'failed') {
+                              displayStatus = 'Failed'
+                            } else if (normalized === 'pending') {
+                              displayStatus = 'Pending'
+                            }
+                          }
+
+                          if (!displayStatus) return null
+
+                          const statusKey = String(displayStatus).toLowerCase()
+                          const badgeClass =
+                            statusKey.includes('paid') || statusKey.includes('collected') || statusKey.includes('completed')
+                              ? 'bg-green-100 text-green-700'
+                              : statusKey.includes('fail')
+                              ? 'bg-red-100 text-red-700'
+                              : statusKey.includes('pending') || statusKey.includes('not collected')
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-700'
+
+                          return (
+                            <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium ${badgeClass}`}>
+                              {displayStatus}
+                            </span>
+                          )
+                        })()}
                       </p>
                     )}
                     {isDelivered && !paymentFailed && (
-                      <p className="text-xs font-medium text-green-600 mt-1">✓ Delivered</p>
+                      <p className="text-xs font-medium text-green-600 mt-1">✓ {isPickedUp ? 'Picked up' : 'Delivered'}</p>
                     )}
                     {isCafeCancelled && (
                       <p className="text-xs font-medium text-red-500 mt-1">✗ Cafe Cancelled</p>
@@ -941,7 +985,7 @@ Order again from this cafe in the ${companyName} app.`
                     </div>
                   ) : isDelivered ? (
                     <div>
-                      <p className="text-xs text-gray-500">Order delivered</p>
+                      <p className="text-xs text-gray-500">Order {isPickedUp ? 'picked up' : 'delivered'}</p>
                       <button
                         type="button"
                         onClick={() => handleOpenRating(order)}
@@ -1128,3 +1172,5 @@ Order again from this cafe in the ${companyName} app.`
     </div>
   )
 }
+
+

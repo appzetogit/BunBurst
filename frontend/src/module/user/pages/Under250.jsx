@@ -450,7 +450,7 @@ export default function Under250() {
       </div>
 
       {/* Content Section */}
-      <div className="relative w-[92%] sm:w-[95%] md:w-full max-w-[1100px] mx-auto px-0 space-y-5 sm:space-y-3 md:space-y-0 pt-4 sm:pt-4 lg:pt-6 pb-6 md:pb-8 lg:pb-10">
+      <div className="relative w-[92%] sm:w-[95%] md:w-full max-w-[1100px] mx-auto px-0 space-y-5 sm:space-y-3 md:space-y-0 pt-4 sm:pt-4 lg:pt-6 pb-32 sm:pb-28 md:pb-12 lg:pb-14">
 
         <section className="space-y-1 sm:space-y-1.5">
           <div
@@ -465,21 +465,22 @@ export default function Under250() {
             {/* All Button */}
             <div className="flex-shrink-0">
               <motion.div
-                className="flex flex-col items-center gap-1.5 w-[56px] sm:w-20 md:w-24"
+                className="flex flex-col items-center gap-1.5 w-[56px] sm:w-20 md:w-24 border-none bg-transparent"
                 onClick={handleAllCategoriesClick}
                 whileHover={{ scale: 1.1, y: -4 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
               >
                 <div
-                  className={`w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-md transition-all flex items-center justify-center ${activeCategory === "all"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-white text-gray-700"
-                    }`}
+                  className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden transition-all flex items-center justify-center border-2 ${
+                    activeCategory === "all"
+                      ? "border-[#e53935] ring-4 ring-[#e53935]/10 bg-white"
+                      : "border-transparent bg-white shadow-sm"
+                  }`}
                 >
-                  <UtensilsCrossed className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
+                  <UtensilsCrossed className={`h-6 w-6 sm:h-8 sm:w-8 ${activeCategory === "all" ? "text-[#e53935]" : "text-slate-400 font-medium"}`} />
                 </div>
-                <span className={`text-[10px] sm:text-xs md:text-sm font-semibold text-foreground/80 text-center pb-1 ${activeCategory === "all" ? 'border-b-2 border-primary' : ''}`}>
+                <span className={`text-[11px] sm:text-xs md:text-sm font-medium text-center pb-1 ${activeCategory === "all" ? 'text-[#e53935]' : 'text-slate-600'}`}>
                   All
                 </span>
               </motion.div>
@@ -490,24 +491,25 @@ export default function Under250() {
                 <div key={category.id} className="flex-shrink-0">
                   <motion.button
                     type="button"
-                    className="flex flex-col items-center gap-1.5 w-[56px] sm:w-20 md:w-24"
+                    className="flex flex-col items-center gap-1.5 w-[56px] sm:w-20 md:w-24 border-none bg-transparent"
                     onClick={() => setActiveCategory(category.id)}
                     whileHover={{ scale: 1.1, y: -4 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-md transition-all">
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden transition-all border-2 ${
+                      isActive ? "border-[#e53935] ring-4 ring-[#e53935]/10" : "border-transparent shadow-sm"
+                    }`}>
                       <OptimizedImage
                         src={category.image}
                         alt={category.name}
-                        className="w-full h-full bg-white rounded-full"
-                        objectFit="cover"
-                        sizes="(max-width: 640px) 48px, (max-width: 768px) 64px, 80px"
+                        className="w-full h-full bg-white rounded-full object-cover"
+                        sizes="(max-width: 640px) 56px, (max-width: 768px) 64px, 80px"
                         placeholder="blur"
                       />
                     </div>
-                    <span className={`text-[10px] sm:text-xs md:text-sm font-semibold text-foreground/80 text-center pb-1 ${isActive ? 'border-b-2 border-primary' : ''}`}>
-                      {category.name.length > 7 ? `${category.name.slice(0, 7)}...` : category.name}
+                    <span className={`text-[11px] sm:text-xs md:text-sm font-medium text-center pb-1 ${isActive ? 'text-[#e53935]' : 'text-slate-600'}`}>
+                      {category.name}
                     </span>
                   </motion.button>
                 </div>
@@ -516,7 +518,7 @@ export default function Under250() {
           </div>
         </section>
 
-        <section className="py-2 sm:py-3 md:py-4" />
+
 
         {/* Cafe Menu Sections */}
         {loadingCafes ? (
@@ -534,31 +536,36 @@ export default function Under250() {
             </div>
           </div>
         ) : (
-          cafesByCategory.map((cafe) => {
+          <div className="space-y-6 sm:space-y-8">
+            <div className="relative flex items-center py-2">
+              <div className="flex-grow border-t border-slate-300 dark:border-white/20"></div>
+              <h2 className="flex-shrink mx-4 text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 dark:text-white uppercase tracking-tight">
+                Explore Menu
+              </h2>
+              <div className="flex-grow border-t border-slate-300 dark:border-white/20"></div>
+            </div>
+            
+            {cafesByCategory.map((cafe) => {
             const cafeSlug = cafe.slug || cafe.name.toLowerCase().replace(/\s+/g, "-")
             return (
-              <section key={cafe.id} className="pt-4 sm:pt-6 md:pt-8 lg:pt-10">
+                <div 
+                  key={cafe.id} 
+                  className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-4 sm:p-5 md:p-6 mb-6 transition-all hover:shadow-md"
+                >
                 {/* Cafe Header */}
-                <div className="flex items-start justify-between mb-3 md:mb-4 lg:mb-6">
-                  <div className="flex-1">
-                    <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white mb-1 md:mb-2">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white leading-tight">
                       {cafe.name}
                     </h3>
-                    <div className="flex items-center gap-2 text-sm md:text-base lg:text-lg text-muted-foreground">
-                      <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
-                      <span className="font-medium">{cafe.deliveryTime}</span>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+                      <Clock className="h-4 w-4" />
+                      <span>{cafe.deliveryTime}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <div className="flex items-center gap-1 bg-primary text-primary-foreground px-1 py-1 md:px-2 md:py-1.5 lg:px-3 lg:py-2 rounded-full">
-                      <div className="bg-primary-foreground text-primary px-1 py-1 md:px-1.5 md:py-1.5 lg:px-2 lg:py-2 rounded-full">
-                        <Star className="h-3.5 w-3.5 md:h-4 md:w-4 lg:h-5 lg:w-5 fill-primary text-primary" />
-                      </div>
-                      <span className="text-xs md:text-sm lg:text-base font-bold">{cafe.rating}</span>
-                    </div>
-                    <span className="text-xs md:text-sm lg:text-base text-gray-400 dark:text-gray-500 mt-0.5">
-                      {cafe.totalRatings > 0 ? `By ${cafe.totalRatings >= 1000 ? `${(cafe.totalRatings / 1000).toFixed(1)}K+` : `${cafe.totalRatings}+`}` : ''}
-                    </span>
+                  <div className="flex items-center gap-1 bg-[#e53935] text-white px-2 py-1 rounded-full shadow-sm">
+                    <Star className="h-4 w-4 fill-white" />
+                    <span className="text-sm font-bold">{cafe.rating || '0'}</span>
                   </div>
                 </div>
 
@@ -579,100 +586,64 @@ export default function Under250() {
                         return (
                           <motion.div
                             key={item.id}
-                            className="flex-shrink-0 w-[200px] sm:w-[220px] md:w-full bg-card rounded-lg md:rounded-xl border border-border overflow-hidden cursor-pointer"
+                            className="flex-shrink-0 w-[180px] sm:w-[200px] md:w-full bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm overflow-hidden"
                             onClick={() => handleItemClick(item, cafe)}
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 15 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-50px" }}
-                            transition={{ duration: 0.4, delay: itemIndex * 0.05 }}
-                            whileHover={{ y: -8, scale: 1.02 }}
-                            style={{ boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)" }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.3 }}
+                            whileHover={{ y: -4 }}
                           >
-                            <div className="relative w-full h-[160px] sm:h-36 md:h-40 lg:h-48 xl:h-52 overflow-hidden">
-                              <motion.div
-                                className="absolute inset-0"
-                                whileHover={{ scale: 1.1 }}
-                                transition={{ duration: 0.5, ease: "easeOut" }}
-                              >
-                                <OptimizedImage
-                                  src={item.image}
-                                  alt={item.name}
-                                  className="w-full h-full"
-                                  objectFit="cover"
-                                  sizes="(max-width: 640px) 200px, (max-width: 768px) 220px, 100vw"
-                                  placeholder="blur"
-                                  priority={itemIndex < 4}
-                                />
-                              </motion.div>
-                              {/* Gradient Overlay on Hover */}
-                              <motion.div
-                                className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"
-                                initial={{ opacity: 0 }}
-                                whileHover={{ opacity: 1 }}
-                                transition={{ duration: 0.3 }}
+                            <div className="relative aspect-square w-full overflow-hidden">
+                              <OptimizedImage
+                                src={item.image}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                                sizes="(max-width: 640px) 180px, 200px"
+                                placeholder="blur"
                               />
-                              {/* Veg Indicator */}
+                              {/* Veg Icon Layer Overlay */}
                               {item.isVeg && (
-                                <motion.div
-                                  className="absolute top-2 left-2 md:top-3 md:left-3 h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 rounded border-2 border-green-600 bg-white flex items-center justify-center z-10"
-                                  whileHover={{ scale: 1.2, rotate: 5 }}
-                                  transition={{ duration: 0.2 }}
-                                >
-                                  <div className="h-2 w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 rounded-full bg-green-600" />
-                                </motion.div>
+                                <div className="absolute top-2 left-2 h-5 w-5 bg-white/90 rounded-sm flex items-center justify-center shadow-sm z-10">
+                                  <div className="h-4 w-4 rounded-sm border-2 border-green-600 flex items-center justify-center">
+                                    <div className="h-2 w-2 rounded-full bg-green-600" />
+                                  </div>
+                                </div>
                               )}
                             </div>
 
-                            {/* Item Details */}
-                            <div className="p-3 md:p-4 lg:p-5">
-                              <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2 lg:mb-3">
-                                {item.isVeg && (
-                                  <div className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 rounded border border-primary bg-primary/10 flex items-center justify-center">
-                                    <div className="h-1.5 w-1.5 md:h-2 md:w-2 lg:h-2.5 lg:w-2.5 rounded-full bg-primary" />
-                                  </div>
-                                )}
-                                <span className="text-sm md:text-base lg:text-lg font-semibold text-foreground">
+                            <div className="p-3">
+                              <div className="flex items-center gap-1.5 mb-3">
+                                <div className="h-3 w-3 rounded-full bg-[#ef4444]/10 flex items-center justify-center">
+                                  <div className="h-1.5 w-1.5 rounded-full bg-[#ef4444]" />
+                                </div>
+                                <span className="text-[11px] sm:text-xs text-slate-700 dark:text-zinc-300 font-medium truncate">
                                   1 x {item.name}
                                 </span>
                               </div>
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-base md:text-lg lg:text-xl xl:text-2xl font-bold text-foreground">
-                                    ₹{Math.round(item.price)}
-                                  </p>
-                                  {item.bestPrice && (
-                                    <p className="text-xs md:text-sm lg:text-base text-gray-500 dark:text-gray-400">Best price</p>
-                                  )}
-                                </div>
-                                {quantity > 0 ? (
-                                  <Link to="/user/cart" onClick={(e) => e.stopPropagation()}>
-                                    <Button
-                                      variant={"outline"}
-                                      size="sm"
-                                      className="bg-primary/10 text-primary border-primary hover:bg-primary hover:text-primary-foreground h-7 md:h-8 lg:h-9 px-3 md:px-4 lg:px-5 text-xs md:text-sm lg:text-base"
-                                    >
-                                      View cart
-                                    </Button>
-                                  </Link>
-                                ) : (
-                                  <Button
-                                    variant={"outline"}
-                                    size="sm"
-                                    disabled={shouldShowGrayscale}
-                                    className={`h-7 md:h-8 lg:h-9 px-3 md:px-4 lg:px-5 text-xs md:text-sm lg:text-base ${shouldShowGrayscale
-                                      ? 'bg-muted text-muted-foreground border-border cursor-not-allowed opacity-50'
-                                      : 'bg-primary/10 text-primary border-primary hover:bg-primary hover:text-primary-foreground'
-                                      }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      if (!shouldShowGrayscale) {
-                                        handleItemClick(item, cafe)
-                                      }
-                                    }}
-                                  >
-                                    Add
-                                  </Button>
-                                )}
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
+                                  ₹{Math.round(item.price)}
+                                </span>
+                                
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={shouldShowGrayscale}
+                                  className={`h-8 px-4 rounded-lg text-xs font-semibold transition-all ${
+                                    quantity > 0 
+                                      ? 'bg-red-50 text-[#e53935] border-[#e53935] hover:bg-red-100' 
+                                      : 'bg-white text-[#e53935] border-[#e53935]/20 hover:border-[#e53935] hover:bg-red-50'
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (!shouldShowGrayscale) {
+                                      updateItemQuantity(item, quantity + 1, e, cafe.name)
+                                    }
+                                  }}
+                                >
+                                  {quantity > 0 ? `× ${quantity}` : 'Add'}
+                                </Button>
                               </div>
                             </div>
                           </motion.div>
@@ -681,19 +652,24 @@ export default function Under250() {
                     </div>
 
                     {/* View Full Menu Button */}
-                    <Link className="flex justify-center mt-2 md:mt-3 lg:mt-4" to={`/user/cafes/${cafeSlug}?under250=true`}>
-                      <Button
-                        variant="outline"
-                        className="w-min align-center text-center rounded-lg md:rounded-xl mx-auto bg-card hover:bg-muted text-foreground border-border h-9 md:h-10 lg:h-11 px-4 md:px-6 lg:px-8 text-sm md:text-base lg:text-lg"
-                      >
-                        View full menu <ArrowRight className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 ml-2 text-foreground/70" />
-                      </Button>
-                    </Link>
+                    <div className="flex justify-center mt-6">
+                      <Link to={`/user/cafes/${cafeSlug}?under250=true`}>
+                        <Button
+                          variant="outline"
+                          className="rounded-xl border-[#e53935] bg-[#e53935] text-white hover:bg-[#d32f2f] h-12 px-10 text-base font-bold transition-all shadow-md group"
+                        >
+                          View full menu 
+                          <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 )}
-              </section>
+                </div>
             )
-          }))}
+            })}
+          </div>
+        )}
       </div>
 
       {/* All Categories Popup */}

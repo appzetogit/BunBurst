@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
-import { ChevronDown, ShoppingCart, Search, Mic, MapPin, User } from "lucide-react"
+import { ChevronDown, ShoppingCart, Search, MapPin, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -123,8 +123,8 @@ export default function MobileHeader({
     return (
         <header
             className={cn(
-                "w-full bg-background border-b border-border z-50",
-                sticky && "sticky top-0",
+                "w-full bg-background border-b border-border z-[50]",
+                sticky && "sticky top-[40px] sm:top-[44px]",
                 className
             )}
         >
@@ -244,13 +244,7 @@ export default function MobileHeader({
                                         </div>
                                     )}
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={handleVoiceSearch}
-                                    className="p-1.5 hover:bg-muted rounded-lg transition-all duration-200"
-                                >
-                                    <Mic className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
-                                </button>
+                                {/* Mic button removed as requested */}
                             </div>
                         </div>
 

@@ -6,7 +6,7 @@ const LocationContext = createContext(null)
 
 export function LocationProvider({ children }) {
   const [location, setLocation] = useState(() => {
-    const stored = localStorage.getItem("userLocation")
+    const stored = localStorage.getItem("userLocation") || localStorage.getItem("guestLocation")
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
@@ -33,7 +33,9 @@ export function LocationProvider({ children }) {
   // Sync state with localStorage
   useEffect(() => {
     if (location) {
-      localStorage.setItem("userLocation", JSON.stringify(location))
+      const userToken = localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken')
+      const storageKey = (userToken && userToken !== 'null' && userToken !== 'undefined') ? "userLocation" : "guestLocation"
+      localStorage.setItem(storageKey, JSON.stringify(location))
     }
   }, [location])
 

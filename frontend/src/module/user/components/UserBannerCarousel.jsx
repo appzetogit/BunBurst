@@ -148,21 +148,6 @@ const UserBannerCarousel = ({
                             />
                         ))}
                     </div>
-
-                    <button
-                        onClick={() => { prevBanner(); resetAutoSlide(); }}
-                        className="absolute left-6 sm:left-8 lg:left-10 top-1/2 -translate-y-1/2 z-30 bg-background/90 hover:bg-background text-foreground p-2 sm:p-3 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 backdrop-blur-sm"
-                        aria-label="Previous banner"
-                    >
-                        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
-                    <button
-                        onClick={() => { nextBanner(); resetAutoSlide(); }}
-                        className="absolute right-6 sm:right-8 lg:right-10 top-1/2 -translate-y-1/2 z-30 bg-background/90 hover:bg-background text-foreground p-2 sm:p-3 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 backdrop-blur-sm"
-                        aria-label="Next banner"
-                    >
-                        <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
                 </>
             )}
         </div>

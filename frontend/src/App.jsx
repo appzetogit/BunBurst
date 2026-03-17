@@ -2,9 +2,11 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom"
 import ProtectedRoute from "@/components/ProtectedRoute"
 import AuthRedirect from "@/components/AuthRedirect"
 
-import { Suspense, lazy } from "react"
+import { Suspense, lazy, useEffect, useState } from "react"
 import Loader from "@/components/Loader"
 import PushNotificationBootstrap from "@/components/PushNotificationBootstrap"
+import ComingSoonBanner from "@/components/ComingSoonBanner"
+import ComingSoonPage from "@/components/ComingSoonPage"
 
 // Lazy Loading Components
 const UserRouter = lazy(() => import("@/module/user/components/UserRouter"))
@@ -47,70 +49,97 @@ function UserPathRedirect() {
 }
 
 export default function App() {
+  const location = useLocation()
+  const isSiteLive = false
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === "undefined") return false
+    return window.innerWidth > 768
+  })
+  const showBanner = !location.pathname.startsWith("/admin")
+    && !location.pathname.startsWith("/delivery")
+    && !location.pathname.startsWith("/cafe")
+  const showBannerDesktop = showBanner && isDesktop
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const onResize = () => {
+      setIsDesktop(window.innerWidth > 768)
+    }
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
+
+  if (!isSiteLive && isDesktop && showBanner) {
+    return <ComingSoonPage />
+  }
+
   return (
     <Suspense fallback={<Loader />}>
-      <PushNotificationBootstrap />
-      <Routes>
-        <Route path="/user" element={<Navigate to="/" replace />} />
-        <Route path="/user/*" element={<UserPathRedirect />} />
-        {/* Removed /routes route - Home should be accessed through UserRouter */}
+      {showBannerDesktop && <ComingSoonBanner />}
+      <div className={showBannerDesktop ? "pt-[40px] sm:pt-[44px]" : undefined}>
+        <PushNotificationBootstrap />
+        <Routes>
+          <Route path="/user" element={<Navigate to="/" replace />} />
+          <Route path="/user/*" element={<UserPathRedirect />} />
+          {/* Removed /routes route - Home should be accessed through UserRouter */}
 
-        {/* Cafe Routes - Disabled & Redirected to Admin */}
-        <Route path="/cafe/*" element={<Navigate to="/admin/login" replace />} />
-        {/* Delivery Public Routes */}
-        <Route path="/delivery/sign-in" element={<DeliverySignIn />} />
-        <Route path="/delivery/signup" element={<DeliverySignup />} />
-        <Route path="/delivery/otp" element={<DeliveryOTP />} />
-        <Route path="/delivery/welcome" element={<AuthRedirect module="delivery"><DeliveryWelcome /></AuthRedirect>} />
+          {/* Cafe Routes - Disabled & Redirected to Admin */}
+          <Route path="/cafe/*" element={<Navigate to="/admin/login" replace />} />
+          {/* Delivery Public Routes */}
+          <Route path="/delivery/sign-in" element={<DeliverySignIn />} />
+          <Route path="/delivery/signup" element={<DeliverySignup />} />
+          <Route path="/delivery/otp" element={<DeliveryOTP />} />
+          <Route path="/delivery/welcome" element={<AuthRedirect module="delivery"><DeliveryWelcome /></AuthRedirect>} />
 
-        {/* Delivery Signup Routes (Protected - require authentication) */}
-        <Route
-          path="/delivery/signup/details"
-          element={
-            <ProtectedRoute requiredRole="delivery" loginPath="/delivery/sign-in">
-              <DeliverySignupStep1 />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/delivery/signup/documents"
-          element={
-            <ProtectedRoute requiredRole="delivery" loginPath="/delivery/sign-in">
-              <DeliverySignupStep2 />
-            </ProtectedRoute>
-          }
-        />
+          {/* Delivery Signup Routes (Protected - require authentication) */}
+          <Route
+            path="/delivery/signup/details"
+            element={
+              <ProtectedRoute requiredRole="delivery" loginPath="/delivery/sign-in">
+                <DeliverySignupStep1 />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delivery/signup/documents"
+            element={
+              <ProtectedRoute requiredRole="delivery" loginPath="/delivery/sign-in">
+                <DeliverySignupStep2 />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Delivery Protected Routes */}
-        <Route
-          path="/delivery/*"
-          element={
-            <ProtectedRoute requiredRole="delivery" loginPath="/delivery/sign-in">
-              <DeliveryRouter />
-            </ProtectedRoute>
-          }
-        />
+          {/* Delivery Protected Routes */}
+          <Route
+            path="/delivery/*"
+            element={
+              <ProtectedRoute requiredRole="delivery" loginPath="/delivery/sign-in">
+                <DeliveryRouter />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Admin Public Routes */}
-        <Route path="/admin/login" element={<AuthRedirect module="admin"><AdminLogin /></AuthRedirect>} />
-        <Route path="/admin/signup" element={<AuthRedirect module="admin"><AdminSignup /></AuthRedirect>} />
-        <Route path="/admin/forgot-password" element={<AuthRedirect module="admin"><AdminForgotPassword /></AuthRedirect>} />
+          {/* Admin Public Routes */}
+          <Route path="/admin/login" element={<AuthRedirect module="admin"><AdminLogin /></AuthRedirect>} />
+          <Route path="/admin/signup" element={<AuthRedirect module="admin"><AdminSignup /></AuthRedirect>} />
+          <Route path="/admin/forgot-password" element={<AuthRedirect module="admin"><AdminForgotPassword /></AuthRedirect>} />
 
-        {/* Admin Protected Routes */}
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute requiredRole="admin" loginPath="/admin/login">
-              <AdminRouter />
-            </ProtectedRoute>
-          }
-        />
+          {/* Admin Protected Routes */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute requiredRole="admin" loginPath="/admin/login">
+                <AdminRouter />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/*"
-          element={<UserRouter />}
-        />
-      </Routes>
+          <Route
+            path="/*"
+            element={<UserRouter />}
+          />
+        </Routes>
+      </div>
     </Suspense>
   )
 }

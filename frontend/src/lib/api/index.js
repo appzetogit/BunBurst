@@ -1519,6 +1519,21 @@ export const adminAPI = {
     return apiClient.post(`/admin/orders/${orderId}/assign`, { deliveryBoyId });
   },
 
+  // Accept order (admin)
+  acceptOrder: (orderId) => {
+    return apiClient.patch(
+      API_ENDPOINTS.ADMIN.ORDERS_ACCEPT.replace(":orderId", orderId),
+    );
+  },
+
+  // Update payment collection status (admin)
+  updatePaymentCollectionStatus: (orderId, status) => {
+    return apiClient.patch(
+      API_ENDPOINTS.ADMIN.ORDERS_PAYMENT_COLLECTION.replace(":orderId", orderId),
+      { status },
+    );
+  },
+
   // Get refund requests
   getRefundRequests: (params = {}) => {
     return apiClient.get("/api/admin/refund-requests", { params });
@@ -1604,6 +1619,18 @@ export const adminAPI = {
         "Content-Type": "multipart/form-data",
       },
     });
+  },
+
+  // Pickup order status updates
+  markOrderReadyForPickup: (orderId) => {
+    return apiClient.patch(
+      API_ENDPOINTS.ADMIN.ORDERS_READY_FOR_PICKUP.replace(":orderId", orderId),
+    );
+  },
+  markOrderPickedUp: (orderId) => {
+    return apiClient.patch(
+      API_ENDPOINTS.ADMIN.ORDERS_PICKED_UP.replace(":orderId", orderId),
+    );
   },
 
   // Get analytics

@@ -171,13 +171,17 @@ function UserLayoutContent() {
   // Note: Authentication checks and redirects are handled by ProtectedRoute components
   // UserLayout should not interfere with authentication redirects
 
-  // Show bottom navigation only on home page, dining page, under-250 page, and profile page
+  // Show bottom navigation only on home page, orders page, under-250 page, and profile page
   const showBottomNav = location.pathname === "/" ||
     location.pathname === "/user" ||
-    location.pathname === "/dining" ||
-    location.pathname === "/user/dining" ||
+    // location.pathname === "/dining" ||
+    // location.pathname === "/user/dining" ||
     location.pathname === "/under-250" ||
     location.pathname === "/user/under-250" ||
+    location.pathname === "/orders" ||
+    location.pathname === "/user/orders" ||
+    location.pathname.startsWith("/orders/") ||
+    location.pathname.startsWith("/user/orders/") ||
     location.pathname === "/profile" ||
     location.pathname === "/user/profile" ||
     location.pathname.startsWith("/user/profile")

@@ -60,6 +60,7 @@ export default function OrderTrackingCard() {
     const activeOrderObj = uniqueOrders.find(order => {
       const status = (order.status || order.deliveryState?.status || '').toLowerCase();
       return status !== 'delivered' &&
+        status !== 'picked_up' &&
         status !== 'cancelled' &&
         status !== 'completed' &&
         status !== '';
@@ -102,7 +103,7 @@ export default function OrderTrackingCard() {
       }
 
       const status = (currentActive.status || currentActive.deliveryState?.status || '').toLowerCase();
-      if (status === 'delivered' || status === 'cancelled' || status === 'completed') {
+      if (status === 'delivered' || status === 'picked_up' || status === 'cancelled' || status === 'completed') {
         setActiveOrder(null);
         setTimeRemaining(null);
         return;
@@ -156,16 +157,27 @@ export default function OrderTrackingCard() {
 
   // Check if order is delivered or time remaining is 0 - hide card
   const orderStatus = (activeOrder.status || activeOrder.deliveryState?.status || 'preparing').toLowerCase();
-  if (orderStatus === 'delivered' || orderStatus === 'completed' || timeRemaining === 0) {
+  if (orderStatus === 'delivered' || orderStatus === 'picked_up' || orderStatus === 'completed' || timeRemaining === 0) {
     return null;
   }
 
   const cafeName = activeOrder.cafe || activeOrder.cafeName || activeOrder.cafeName || 'Cafe';
-  const statusText = orderStatus === 'preparing' || orderStatus === 'confirmed' || orderStatus === 'pending'
-    ? 'Preparing your order'
-    : orderStatus === 'out_for_delivery' || orderStatus === 'outfordelivery' || orderStatus === 'on_way'
-      ? 'On the way'
-      : 'Preparing your order';
+  const orderType = String(activeOrder?.orderType || "DELIVERY").toUpperCase()
+  const statusText = (() => {
+    if (orderType === "PICKUP") {
+      if (orderStatus === "confirmed") return "Order accepted"
+      if (orderStatus === "preparing") return "Preparing your order"
+      if (orderStatus === "ready_for_pickup") return "Your order is ready for pickup"
+      if (orderStatus === "picked_up") return "Order picked up"
+      if (orderStatus === "pending") return "Order placed"
+      return "Order update"
+    }
+    // DELIVERY (existing)
+    if (orderStatus === "preparing" || orderStatus === "confirmed" || orderStatus === "pending") return "Preparing your order"
+    if (orderStatus === "ready_for_pickup") return "Ready"
+    if (orderStatus === "out_for_delivery" || orderStatus === "outfordelivery" || orderStatus === "on_way") return "On the way"
+    return "Preparing your order"
+  })()
 
   return (
     <AnimatePresence>

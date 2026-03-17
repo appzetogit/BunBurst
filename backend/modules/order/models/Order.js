@@ -56,6 +56,12 @@ const orderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  orderType: {
+    type: String,
+    enum: ['DELIVERY', 'PICKUP'],
+    default: 'DELIVERY',
+    index: true
+  },
   items: {
     type: [orderItemSchema],
     required: true,
@@ -148,11 +154,20 @@ const orderSchema = new mongoose.Schema({
       type: String
     }
   },
+  paymentCollectionStatus: {
+    type: String,
+    enum: ['Collected', 'Not Collected'],
+    default: null
+  },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled', 'assigned'],
+    enum: ['pending', 'confirmed', 'preparing', 'ready', 'ready_for_pickup', 'picked_up', 'out_for_delivery', 'delivered', 'cancelled', 'assigned'],
     default: 'pending',
     index: true
+  },
+  adminAcceptance: {
+    status: { type: Boolean, default: false },
+    timestamp: { type: Date }
   },
   tracking: {
     confirmed: {
@@ -167,7 +182,15 @@ const orderSchema = new mongoose.Schema({
       status: { type: Boolean, default: false },
       timestamp: { type: Date }
     },
+    readyForPickup: {
+      status: { type: Boolean, default: false },
+      timestamp: { type: Date }
+    },
     outForDelivery: {
+      status: { type: Boolean, default: false },
+      timestamp: { type: Date }
+    },
+    pickedUp: {
       status: { type: Boolean, default: false },
       timestamp: { type: Date }
     },
@@ -345,9 +368,20 @@ orderSchema.pre('save', function (next) {
           this.tracking.ready = { status: true, timestamp: now };
         }
         break;
+      case 'ready_for_pickup':
+        if (!this.tracking.readyForPickup.status) {
+          this.tracking.readyForPickup = { status: true, timestamp: now };
+        }
+        break;
       case 'out_for_delivery':
         if (!this.tracking.outForDelivery.status) {
           this.tracking.outForDelivery = { status: true, timestamp: now };
+        }
+        break;
+      case 'picked_up':
+        if (!this.tracking.pickedUp.status) {
+          this.tracking.pickedUp = { status: true, timestamp: now };
+          this.deliveredAt = now;
         }
         break;
       case 'delivered':
@@ -368,4 +402,3 @@ orderSchema.pre('save', function (next) {
 });
 
 export default mongoose.model('Order', orderSchema);
-

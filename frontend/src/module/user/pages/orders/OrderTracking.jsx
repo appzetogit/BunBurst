@@ -240,7 +240,6 @@ export default function OrderTracking() {
   const [error, setError] = useState(null)
 
   const [showConfirmation, setShowConfirmation] = useState(confirmed)
-  const [orderStatus, setOrderStatus] = useState('placed')
   const [estimatedTime, setEstimatedTime] = useState(29)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
@@ -317,13 +316,6 @@ export default function OrderTracking() {
           deliveryState: apiOrder.deliveryState || prev?.deliveryState
         }))
 
-        // Sync UI status label
-        if (newOrderStatus === 'cancelled') setOrderStatus('cancelled')
-        else if (newOrderStatus === 'delivered') setOrderStatus('delivered')
-        else if (newOrderStatus === 'out_for_delivery') setOrderStatus('on_way')
-        else if (newOrderStatus === 'ready') setOrderStatus('pickup')
-        else if (newOrderStatus === 'preparing') setOrderStatus('preparing')
-
       } catch (err) {
         // Silently ignore 429 / network errors â€” interval will retry next tick
         if (err?.response?.status !== 429) {
@@ -365,12 +357,6 @@ export default function OrderTracking() {
           console.log('âš ï¸ Context order missing cafeId, will fetch from API');
         }
         setOrder(contextOrder)
-
-        if (contextOrder.status === 'cancelled') setOrderStatus('cancelled');
-        else if (contextOrder.status === 'preparing') setOrderStatus('preparing');
-        else if (contextOrder.status === 'ready') setOrderStatus('pickup');
-        else if (contextOrder.status === 'out_for_delivery') setOrderStatus('on_way');
-        else if (contextOrder.status === 'delivered') setOrderStatus('delivered');
 
         setLoading(false)
         // do not return so SWR background fetch runs
@@ -481,18 +467,6 @@ export default function OrderTracking() {
 
           setOrder(transformedOrder)
 
-          // Update orderStatus based on API order status
-          if (apiOrder.status === 'cancelled') {
-            setOrderStatus('cancelled');
-          } else if (apiOrder.status === 'preparing') {
-            setOrderStatus('preparing');
-          } else if (apiOrder.status === 'ready') {
-            setOrderStatus('pickup');
-          } else if (apiOrder.status === 'out_for_delivery') {
-            setOrderStatus('on_way');
-          } else if (apiOrder.status === 'delivered') {
-            setOrderStatus('delivered');
-          }
         } else {
           throw new Error('Order not found')
         }
@@ -514,7 +488,6 @@ export default function OrderTracking() {
     if (confirmed) {
       const timer1 = setTimeout(() => {
         setShowConfirmation(false)
-        setOrderStatus(prev => prev === 'placed' ? 'preparing' : prev)
       }, 3000)
       return () => clearTimeout(timer1)
     }
@@ -534,11 +507,6 @@ export default function OrderTracking() {
       const { message, title, status, estimatedDeliveryTime } = event.detail;
 
       console.log('ðŸ“¢ Order status notification received:', { message, status });
-
-      // Update order status in UI
-      if (status === 'out_for_delivery') {
-        setOrderStatus('on_way');
-      }
 
       // Show notification toast
       if (message) {
@@ -575,8 +543,8 @@ export default function OrderTracking() {
       return;
     }
 
-    if (order.status === 'delivered') {
-      toast.error('Cannot cancel a delivered order');
+    if (order.status === 'delivered' || order.status === 'picked_up' || order.status === 'out_for_delivery' || order.status === 'rejected') {
+      toast.error('Cannot cancel an order that is already picked up, out for delivery or delivered');
       return;
     }
 
@@ -609,10 +577,6 @@ export default function OrderTracking() {
         if (orderResponse.data?.success && orderResponse.data.data?.order) {
           const apiOrder = orderResponse.data.data.order;
           setOrder(apiOrder);
-          // Update orderStatus to cancelled
-          if (apiOrder.status === 'cancelled') {
-            setOrderStatus('cancelled');
-          }
         }
       } else {
         toast.error(response.data?.message || 'Failed to cancel order');
@@ -703,19 +667,6 @@ export default function OrderTracking() {
           tracking: apiOrder.tracking || {}
         }
         setOrder(transformedOrder)
-
-        // Update order status for UI
-        if (apiOrder.status === 'cancelled') {
-          setOrderStatus('cancelled');
-        } else if (apiOrder.status === 'preparing') {
-          setOrderStatus('preparing')
-        } else if (apiOrder.status === 'ready') {
-          setOrderStatus('pickup')
-        } else if (apiOrder.status === 'out_for_delivery') {
-          setOrderStatus('pickup')
-        } else if (apiOrder.status === 'delivered') {
-          setOrderStatus('delivered')
-        }
       }
     } catch (err) {
       console.error('Error refreshing order:', err)
@@ -751,40 +702,32 @@ export default function OrderTracking() {
     )
   }
 
-  const statusConfig = {
-    placed: {
-      title: "Order placed",
-      subtitle: "Food preparation will begin shortly",
-      color: "bg-[#e53935]"
-    },
-    preparing: {
-      title: "Preparing your order",
-      subtitle: `Arriving in ${estimatedTime} mins`,
-      color: "bg-[#e53935]"
-    },
-    pickup: {
-      title: "Order picked up",
-      subtitle: `Arriving in ${estimatedTime} mins`,
-      color: "bg-[#e53935]"
-    },
-    on_way: {
-      title: "Order on the way",
-      subtitle: `Arriving in ${estimatedTime} mins`,
-      color: "bg-[#e53935]"
-    },
-    delivered: {
-      title: "Order delivered",
-      subtitle: "Enjoy your meal!",
-      color: "bg-[#e53935]"
-    },
-    cancelled: {
-      title: "Order cancelled",
-      subtitle: "This order has been cancelled",
-      color: "bg-[#e53935]"
-    }
+  const orderType = String(order?.orderType || "DELIVERY").toUpperCase()
+  const backendStatus = (order?.status || "pending").toString().toLowerCase()
+
+  const pickupStatusConfig = {
+    pending: { title: "Order placed", subtitle: "Waiting for acceptance", color: "bg-[#e53935]" },
+    confirmed: { title: "Order accepted", subtitle: "Order accepted", color: "bg-[#e53935]" },
+    preparing: { title: "Preparing your order", subtitle: "Preparing your order", color: "bg-[#e53935]" },
+    ready_for_pickup: { title: "Your order is ready for pickup", subtitle: "Ready for pickup", color: "bg-[#16a34a]" },
+    picked_up: { title: "Order picked up", subtitle: "Your order has been collected successfully", color: "bg-[#0f172a]" },
+    cancelled: { title: "Order cancelled", subtitle: "This order has been cancelled", color: "bg-[#e53935]" },
   }
 
-  const currentStatus = statusConfig[orderStatus] || statusConfig.placed
+  const deliveryStatusConfig = {
+    pending: { title: "Order placed", subtitle: "Food preparation will begin shortly", color: "bg-[#e53935]" },
+    confirmed: { title: "Order accepted", subtitle: "Food preparation will begin shortly", color: "bg-[#e53935]" },
+    preparing: { title: "Preparing your order", subtitle: `Arriving in ${estimatedTime} mins`, color: "bg-[#e53935]" },
+    ready: { title: "Order ready", subtitle: `Arriving in ${estimatedTime} mins`, color: "bg-[#e53935]" },
+    out_for_delivery: { title: "Order on the way", subtitle: `Arriving in ${estimatedTime} mins`, color: "bg-[#e53935]" },
+    delivered: { title: "Order delivered", subtitle: "Enjoy your meal!", color: "bg-[#e53935]" },
+    cancelled: { title: "Order cancelled", subtitle: "This order has been cancelled", color: "bg-[#e53935]" },
+  }
+
+  const currentStatus =
+    orderType === "PICKUP"
+      ? (pickupStatusConfig[backendStatus] || { title: "Order update", subtitle: backendStatus, color: "bg-[#e53935]" })
+      : (deliveryStatusConfig[backendStatus] || { title: "Order update", subtitle: backendStatus, color: "bg-[#e53935]" })
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
       {/* Order Confirmed Modal */}
@@ -872,7 +815,7 @@ export default function OrderTracking() {
             transition={{ delay: 0.2 }}
           >
             <span className="text-sm">{currentStatus.subtitle}</span>
-            {orderStatus === 'preparing' && (
+            {backendStatus === 'preparing' && (
               <>
                 <span className="w-1 h-1 rounded-full bg-white" />
                 <span className="text-sm text-[#FFC400]">On time</span>
@@ -904,7 +847,9 @@ export default function OrderTracking() {
           const hasAcceptedPickup = order?.tracking?.outForDelivery?.status === true ||
             order?.tracking?.out_for_delivery?.status === true ||
             order?.status === 'out_for_delivery' ||
-            order?.status === 'ready'
+            order?.status === 'ready' ||
+            order?.status === 'ready_for_pickup' ||
+            order?.status === 'picked_up'
 
           if (!hasAcceptedPickup) {
             return (
@@ -1039,8 +984,12 @@ export default function OrderTracking() {
           </motion.button>
         </motion.div>
 
-        {/* Cancel Order Button - Hidden when order is delivered or cancelled */}
-        {order?.status !== 'delivered' && order?.status !== 'cancelled' && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
+        {/* Cancel Order Button - Hidden when order is picked up, delivered, cancelled or rejected */}
+        {order?.status !== 'delivered' && 
+         order?.status !== 'cancelled' && 
+         order?.status !== 'picked_up' && 
+         order?.status !== 'out_for_delivery' && 
+         order?.status !== 'rejected' && (
           <motion.div
             className="bg-white rounded-xl shadow-sm overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
