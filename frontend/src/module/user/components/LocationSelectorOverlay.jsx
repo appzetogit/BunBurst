@@ -12,6 +12,7 @@ import { locationAPI, userAPI } from "@/lib/api"
 import { Loader } from '@googlemaps/js-api-loader'
 
 // Google Maps implementation - Leaflet components removed
+const MAP_APIS_DISABLED = typeof window !== "undefined" && window.__mapApisDisabled === true
 
 // Google Maps implementation - removed Leaflet components
 
@@ -106,6 +107,11 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
   // Load Google Maps API key from backend
   useEffect(() => {
+    if (MAP_APIS_DISABLED) {
+      setGOOGLE_MAPS_API_KEY("")
+      return
+    }
+
     import('@/lib/utils/googleMapsApiKey.js').then(({ getGoogleMapsApiKey }) => {
       getGoogleMapsApiKey().then(key => {
         setGOOGLE_MAPS_API_KEY(key)
@@ -117,6 +123,8 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
   // Debug: Log API key status (only first few characters for security)
   useEffect(() => {
+    if (MAP_APIS_DISABLED) return
+
     if (GOOGLE_MAPS_API_KEY) {
       console.log("✅ Google Maps API Key loaded:", GOOGLE_MAPS_API_KEY.substring(0, 10) + "...")
     } else {
@@ -421,7 +429,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
   // Initialize Google Maps with Loader (ZOMATO-STYLE)
   useEffect(() => {
-    if (!showAddressForm || !mapContainerRef.current || !GOOGLE_MAPS_API_KEY) {
+    if (MAP_APIS_DISABLED || !showAddressForm || !mapContainerRef.current || !GOOGLE_MAPS_API_KEY) {
       return
     }
 
@@ -2147,22 +2155,23 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Map Section - Google Maps */}
+        {/* Map Section */}
         <div className="flex-shrink-0 relative" style={{ height: '40vh', minHeight: '300px' }}>
-          {/* Google Maps Container */}
-          <div
-            ref={mapContainerRef}
-            className="w-full h-full bg-muted"
-            style={{
-              width: '100%',
-              height: '100%',
-              minHeight: '300px',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              zIndex: 1
-            }}
-          />
+          {!MAP_APIS_DISABLED && (
+            <div
+              ref={mapContainerRef}
+              className="w-full h-full bg-muted"
+              style={{
+                width: '100%',
+                height: '100%',
+                minHeight: '300px',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                zIndex: 1
+              }}
+            />
+          )}
 
           {/* Loading State */}
           {mapLoading && (
@@ -2174,8 +2183,17 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* API Key Missing Error */}
-          {!GOOGLE_MAPS_API_KEY && !mapLoading && (
+          {MAP_APIS_DISABLED && !mapLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-20">
+              <div className="text-center p-4 max-w-xs">
+                <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-700 dark:text-gray-300">Map preview disabled for zero Google Maps billing</p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Use current location to fill the address without loading Google Maps or Places.</p>
+              </div>
+            </div>
+          )}
+
+          {!MAP_APIS_DISABLED && !GOOGLE_MAPS_API_KEY && !mapLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-20">
               <div className="text-center p-4">
                 <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
