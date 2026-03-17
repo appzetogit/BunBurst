@@ -10,16 +10,25 @@ let cachedApiKey = null;
 let apiKeyPromise = null;
 let warnedDisabled = false;
 
+function isGoogleMapsAllowedRoute() {
+  if (typeof window === 'undefined') return false;
+
+  const pathname = window.location?.pathname || '';
+  return pathname === '/delivery' ||
+    pathname.startsWith('/delivery/') ||
+    /^\/user\/orders\/[^/]+$/.test(pathname);
+}
+
 /**
  * Get Google Maps API Key
  * Checks runtime env (admin panel), then .env file, then backend API.
  * @returns {Promise<string>} Google Maps API Key or empty string
  */
 export async function getGoogleMapsApiKey() {
-  if (!MAP_APIS_ENABLED) {
+  if (!MAP_APIS_ENABLED || !isGoogleMapsAllowedRoute()) {
     if (!warnedDisabled) {
       warnedDisabled = true;
-      console.warn('Google Maps APIs are disabled. Skipping API key retrieval.');
+      console.warn('Google Maps APIs are disabled for this route. Skipping API key retrieval.');
     }
     return '';
   }
@@ -86,7 +95,7 @@ export function clearGoogleMapsApiKeyCache() {
 }
 
 /**
- * MAP_APIS_ENABLED — disabled to prevent any Google Maps API usage.
+ * MAP_APIS_ENABLED — only allow Google Maps where runtime explicitly needs it.
  * Kept for backward compatibility with any existing imports.
  */
 export const MAP_APIS_ENABLED = true;
