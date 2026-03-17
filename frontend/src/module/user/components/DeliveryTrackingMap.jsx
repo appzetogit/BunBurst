@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import { API_BASE_URL } from '@/lib/api/config';
 import bikeLogo from '@/assets/bikelogo.png';
 import { RouteBasedAnimationController, setMarkerRotation } from '@/module/user/utils/routeBasedAnimation';
-import { extractPolylineFromDirections, findNearestPointOnPolyline } from '@/module/delivery/utils/liveTrackingPolyline';
+import { decodePolyline, findNearestPointOnPolyline } from '@/module/delivery/utils/liveTrackingPolyline';
 import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey';
 import './DeliveryTrackingMap.css';
 
@@ -695,19 +695,26 @@ const DeliveryTrackingMap = ({
     // Listen for route initialization from backend
     socketRef.current.on(`route-initialized-${orderId}`, (data) => {
       console.log('🛣️ Route initialized from backend:', data);
-      if (data.points && Array.isArray(data.points) && data.points.length > 0) {
-        routePolylinePointsRef.current = data.points;
+      const incomingPoints = Array.isArray(data?.points) && data.points.length > 0
+        ? data.points
+        : (typeof data?.polyline === 'string' && data.polyline
+          ? decodePolyline(data.polyline)
+          : null);
+      const normalizedPoints = (incomingPoints || []).map(normalizeRoutePoint).filter(Boolean);
+
+      if (normalizedPoints.length > 1) {
+        routePolylinePointsRef.current = normalizedPoints;
 
         // Initialize animation controller if bike marker exists
         if (bikeMarkerRef.current && !animationControllerRef.current) {
           animationControllerRef.current = new RouteBasedAnimationController(
             bikeMarkerRef.current,
-            data.points
+            normalizedPoints
           );
           console.log('✅ Route-based animation controller initialized from backend route');
         } else if (animationControllerRef.current) {
           // Update existing controller with new polyline
-          animationControllerRef.current.updatePolyline(data.points);
+          animationControllerRef.current.updatePolyline(normalizedPoints);
         }
       }
     });

@@ -12,7 +12,9 @@ import { locationAPI, userAPI } from "@/lib/api"
 import { Loader } from '@googlemaps/js-api-loader'
 
 // Google Maps implementation - Leaflet components removed
-const MAP_APIS_DISABLED = typeof window !== "undefined" && window.__mapApisDisabled === true
+const MAP_APIS_DISABLED = typeof window !== "undefined" &&
+  window.__mapApisDisabled === true &&
+  window.location?.pathname !== "/"
 
 // Google Maps implementation - removed Leaflet components
 

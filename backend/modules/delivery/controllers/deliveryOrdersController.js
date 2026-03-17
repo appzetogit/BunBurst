@@ -10,6 +10,7 @@ import WalletTransaction from '../models/WalletTransaction.js';
 import CafeWallet from '../../cafe/models/CafeWallet.js';
 import { calculateRoute } from '../../order/services/routeCalculationService.js';
 import { notifyUserOrderStatusUpdate } from '../../order/services/userNotificationService.js';
+import { syncActiveOrderRoute } from '../../../config/firebaseRealtime.js';
 import mongoose from 'mongoose';
 import winston from 'winston';
 
@@ -644,6 +645,23 @@ export const acceptOrder = asyncHandler(async (req, res) => {
     console.log(`✅ Order ${order.orderId} accepted by delivery partner ${delivery._id}`);
     console.log(`📍 Route calculated: ${routeData.distance.toFixed(2)} km, ${routeData.duration.toFixed(1)} mins`);
 
+    try {
+      await syncActiveOrderRoute({
+        orderId: updatedOrder.orderId,
+        deliveryPartnerId: delivery._id?.toString?.() || delivery._id,
+        routePoints: routeToPickup.coordinates,
+        cafeLat,
+        cafeLng,
+        customerLat,
+        customerLng,
+        distance: routeToPickup.distance,
+        duration: routeToPickup.duration,
+        status: 'en_route_to_pickup'
+      });
+    } catch (firebaseSyncError) {
+      console.warn(`⚠️ Failed syncing pickup route to Firebase: ${firebaseSyncError.message}`);
+    }
+
     // Notify user about delivery partner assignment
     try {
       await notifyUserOrderStatusUpdate(updatedOrder, 'assigned');
@@ -1145,6 +1163,23 @@ export const confirmOrderId = asyncHandler(async (req, res) => {
 
     console.log(`✅ Order ID confirmed for order ${order.orderId}`);
     console.log(`📍 Route to delivery calculated: ${routeData.distance.toFixed(2)} km, ${routeData.duration.toFixed(1)} mins`);
+
+    try {
+      await syncActiveOrderRoute({
+        orderId: updatedOrder.orderId,
+        deliveryPartnerId: delivery._id?.toString?.() || delivery._id,
+        routePoints: routeData.coordinates,
+        cafeLat: order.cafeId?.location?.coordinates?.[1],
+        cafeLng: order.cafeId?.location?.coordinates?.[0],
+        customerLat,
+        customerLng,
+        distance: routeData.distance,
+        duration: routeData.duration,
+        status: 'en_route_to_delivery'
+      });
+    } catch (firebaseSyncError) {
+      console.warn(`⚠️ Failed syncing delivery route to Firebase: ${firebaseSyncError.message}`);
+    }
 
     // Send response first, then handle socket notification asynchronously
     const responseData = {

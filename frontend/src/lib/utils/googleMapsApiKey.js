@@ -14,7 +14,8 @@ function isGoogleMapsAllowedRoute() {
   if (typeof window === 'undefined') return false;
 
   const pathname = window.location?.pathname || '';
-  return pathname === '/delivery' ||
+  return pathname === '/' ||
+    pathname === '/delivery' ||
     pathname.startsWith('/delivery/') ||
     /^\/user\/orders\/[^/]+$/.test(pathname);
 }

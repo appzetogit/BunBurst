@@ -190,12 +190,14 @@ export const initializeRoute = asyncHandler(async (req, res) => {
         orderId,
         deliveryPartnerId: order.deliveryPartnerId?.toString?.() || order.deliveryPartnerId || null,
         polyline: route.polyline,
+        routePoints: route.points,
         cafeLat: cafeCoords.lat,
         cafeLng: cafeCoords.lng,
         customerLat: customerCoords.lat,
         customerLng: customerCoords.lng,
         distance: typeof route.totalDistance === 'number' ? Math.round((route.totalDistance / 1000) * 1000) / 1000 : undefined,
-        duration: typeof route.duration === 'number' ? Math.round((route.duration / 60) * 1000) / 1000 : undefined
+        duration: typeof route.duration === 'number' ? Math.round((route.duration / 60) * 1000) / 1000 : undefined,
+        status: order.deliveryState?.currentPhase || 'assigned'
       });
     } catch (firebaseSyncError) {
       console.warn(`⚠️ Failed syncing route polyline to Firebase: ${firebaseSyncError.message}`);
