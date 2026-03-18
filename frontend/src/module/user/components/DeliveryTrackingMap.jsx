@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import { API_BASE_URL } from '@/lib/api/config';
 import bikeLogo from '@/assets/bikelogo.png';
 import { RouteBasedAnimationController, setMarkerRotation } from '@/module/user/utils/routeBasedAnimation';
-import { extractPolylineFromDirections, findNearestPointOnPolyline } from '@/module/delivery/utils/liveTrackingPolyline';
+import { decodePolyline, findNearestPointOnPolyline } from '@/module/delivery/utils/liveTrackingPolyline';
 import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey';
 import './DeliveryTrackingMap.css';
 
@@ -48,7 +48,6 @@ const DeliveryTrackingMap = ({
   const routeCacheRef = useRef(new Map()); // Cache for local polyline routes
   const lastRouteRequestRef = useRef({ start: null, end: null, timestamp: 0 });
   const routeRequestIdRef = useRef(0);
-  const directionsServiceRef = useRef(null);
 
   const backendUrl = API_BASE_URL.replace('/api', '');
   const [GOOGLE_MAPS_API_KEY, setGOOGLE_MAPS_API_KEY] = useState("");
@@ -64,8 +63,77 @@ const DeliveryTrackingMap = ({
     })
   }, [])
 
-  // Draw route using Google Directions (road path) with fallback to interpolated line.
-  const drawRoute = useCallback((start, end) => {
+  const normalizeRoutePoint = useCallback((point) => {
+    if (!point) return null;
+
+    if (Array.isArray(point) && point.length >= 2) {
+      const first = Number(point[0]);
+      const second = Number(point[1]);
+      if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
+
+      if (Math.abs(first) <= 90 && Math.abs(second) <= 180) {
+        return { lat: first, lng: second };
+      }
+
+      if (Math.abs(first) <= 180 && Math.abs(second) <= 90) {
+        return { lat: second, lng: first };
+      }
+
+      return null;
+    }
+
+    const lat = Number(point.lat ?? point.latitude);
+    const lng = Number(point.lng ?? point.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    return { lat, lng };
+  }, []);
+
+  const getStoredRoutePoints = useCallback((activeOrder, phase) => {
+    if (!activeOrder) return null;
+
+    const routeCandidates = [];
+    const isDeliveryPhase =
+      phase === 'at_pickup' ||
+      phase === 'en_route_to_delivery' ||
+      activeOrder?.deliveryState?.status === 'order_confirmed' ||
+      activeOrder?.deliveryState?.status === 'en_route_to_delivery' ||
+      activeOrder?.status === 'out_for_delivery';
+
+    if (isDeliveryPhase) {
+      routeCandidates.push(activeOrder?.deliveryState?.routeToDelivery);
+      routeCandidates.push(activeOrder?.routeToDelivery);
+      routeCandidates.push(activeOrder?.deliveryRoute);
+    } else {
+      routeCandidates.push(activeOrder?.deliveryState?.routeToPickup);
+      routeCandidates.push(activeOrder?.routeToPickup);
+      routeCandidates.push(activeOrder?.pickupRoute);
+    }
+
+    routeCandidates.push(activeOrder?.route);
+    routeCandidates.push(activeOrder?.polyline);
+
+    for (const candidate of routeCandidates) {
+      const rawPoints =
+        candidate?.points ||
+        candidate?.polylinePoints ||
+        candidate?.path ||
+        candidate?.coordinates ||
+        candidate;
+
+      if (!Array.isArray(rawPoints) || rawPoints.length < 2) continue;
+
+      const normalized = rawPoints.map(normalizeRoutePoint).filter(Boolean);
+      if (normalized.length >= 2) {
+        return normalized;
+      }
+    }
+
+    return null;
+  }, [normalizeRoutePoint]);
+
+  // Draw route from stored polyline data or local interpolation only.
+  const drawRoute = useCallback((start, end, preferredPoints = null) => {
     if (!mapInstance.current || !window.google?.maps) return;
 
     // Validate coordinates before drawing route
@@ -96,25 +164,6 @@ const DeliveryTrackingMap = ({
     }
 
     const roundCoord = (coord) => Math.round(coord * 10000) / 10000;
-    const normalizePoint = (point) => {
-      if (!point) return null;
-
-      if (Array.isArray(point) && point.length >= 2) {
-        const a = Number(point[0]);
-        const b = Number(point[1]);
-        if (Number.isFinite(a) && Number.isFinite(b)) {
-          if (Math.abs(a) <= 90 && Math.abs(b) <= 180) return { lat: a, lng: b };
-          if (Math.abs(a) <= 180 && Math.abs(b) <= 90) return { lat: b, lng: a };
-        }
-        return null;
-      }
-
-      const lat = Number(point.lat ?? point.latitude);
-      const lng = Number(point.lng ?? point.longitude);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-      if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-      return { lat, lng };
-    };
 
     const buildInterpolatedPoints = () => {
       const distanceMeters = calculateHaversineDistance(startLat, startLng, endLat, endLng);
@@ -132,7 +181,7 @@ const DeliveryTrackingMap = ({
     };
 
     const renderRoutePath = (rawPoints) => {
-      const points = (rawPoints || []).map(normalizePoint).filter(Boolean);
+      const points = (rawPoints || []).map(normalizeRoutePoint).filter(Boolean);
       if (points.length < 2) return false;
 
       routePolylinePointsRef.current = points;
@@ -209,48 +258,14 @@ const DeliveryTrackingMap = ({
       timestamp: now
     };
 
-    const requestId = ++routeRequestIdRef.current;
+    routeRequestIdRef.current += 1;
 
-    const fallbackToInterpolated = () => {
-      if (requestId !== routeRequestIdRef.current) return;
-      renderRoutePath(buildInterpolatedPoints());
-    };
-
-    try {
-      if (!directionsServiceRef.current) {
-        directionsServiceRef.current = new window.google.maps.DirectionsService();
-      }
-
-      directionsServiceRef.current.route(
-        {
-          origin: { lat: startLat, lng: startLng },
-          destination: { lat: endLat, lng: endLng },
-          travelMode: window.google.maps.TravelMode.DRIVING,
-          provideRouteAlternatives: false
-        },
-        (result, status) => {
-          if (requestId !== routeRequestIdRef.current) return;
-
-          if (status === 'OK' && result?.routes?.[0]) {
-            const route = result.routes[0];
-            const overviewPoints = Array.isArray(route.overview_path)
-              ? route.overview_path.map((point) => ({ lat: point.lat(), lng: point.lng() }))
-              : [];
-
-            if (!renderRoutePath(overviewPoints)) {
-              fallbackToInterpolated();
-            }
-            return;
-          }
-
-          fallbackToInterpolated();
-        }
-      );
-    } catch (error) {
-      console.warn('Directions API failed, using fallback polyline:', error);
-      fallbackToInterpolated();
+    if (Array.isArray(preferredPoints) && preferredPoints.length >= 2 && renderRoutePath(preferredPoints)) {
+      return;
     }
-  }, []);
+
+    renderRoutePath(buildInterpolatedPoints());
+  }, [normalizeRoutePoint]);
 
   // Check if delivery partner is assigned (memoized to avoid dependency issues)
   // MUST be defined BEFORE any useEffect that uses it
@@ -297,7 +312,8 @@ const DeliveryTrackingMap = ({
     if (currentPhase === 'en_route_to_pickup' || status === 'accepted') {
       return {
         start: { lat: deliveryBoyLocation.lat, lng: deliveryBoyLocation.lng },
-        end: cafeCoords
+        end: cafeCoords,
+        routePoints: getStoredRoutePoints(order, currentPhase)
       };
     }
 
@@ -305,7 +321,8 @@ const DeliveryTrackingMap = ({
     if (currentPhase === 'at_pickup' || status === 'reached_pickup' || status === 'order_confirmed') {
       return {
         start: cafeCoords,
-        end: customerCoords
+        end: customerCoords,
+        routePoints: getStoredRoutePoints(order, currentPhase)
       };
     }
 
@@ -313,13 +330,18 @@ const DeliveryTrackingMap = ({
     if (currentPhase === 'en_route_to_delivery' || status === 'en_route_to_delivery' || order.status === 'out_for_delivery') {
       return {
         start: { lat: deliveryBoyLocation.lat, lng: deliveryBoyLocation.lng },
-        end: customerCoords
+        end: customerCoords,
+        routePoints: getStoredRoutePoints(order, currentPhase)
       };
     }
 
     // Default: Show cafe to customer
-    return { start: cafeCoords, end: customerCoords };
-  }, [order, deliveryBoyLocation, cafeCoords, customerCoords]);
+    return {
+      start: cafeCoords,
+      end: customerCoords,
+      routePoints: getStoredRoutePoints(order, currentPhase)
+    };
+  }, [order, deliveryBoyLocation, cafeCoords, customerCoords, getStoredRoutePoints]);
 
   // Move bike smoothly with rotation
   const moveBikeSmoothly = useCallback((lat, lng, heading) => {
@@ -673,19 +695,26 @@ const DeliveryTrackingMap = ({
     // Listen for route initialization from backend
     socketRef.current.on(`route-initialized-${orderId}`, (data) => {
       console.log('🛣️ Route initialized from backend:', data);
-      if (data.points && Array.isArray(data.points) && data.points.length > 0) {
-        routePolylinePointsRef.current = data.points;
+      const incomingPoints = Array.isArray(data?.points) && data.points.length > 0
+        ? data.points
+        : (typeof data?.polyline === 'string' && data.polyline
+          ? decodePolyline(data.polyline)
+          : null);
+      const normalizedPoints = (incomingPoints || []).map(normalizeRoutePoint).filter(Boolean);
+
+      if (normalizedPoints.length > 1) {
+        routePolylinePointsRef.current = normalizedPoints;
 
         // Initialize animation controller if bike marker exists
         if (bikeMarkerRef.current && !animationControllerRef.current) {
           animationControllerRef.current = new RouteBasedAnimationController(
             bikeMarkerRef.current,
-            data.points
+            normalizedPoints
           );
           console.log('✅ Route-based animation controller initialized from backend route');
         } else if (animationControllerRef.current) {
           // Update existing controller with new polyline
-          animationControllerRef.current.updatePolyline(data.points);
+          animationControllerRef.current.updatePolyline(normalizedPoints);
         }
       }
     });
@@ -1118,7 +1147,7 @@ const DeliveryTrackingMap = ({
     const route = getRouteToShow();
     if (route.start && route.end) {
       lastRouteUpdateRef.current = now;
-      drawRoute(route.start, route.end);
+      drawRoute(route.start, route.end, route.routePoints);
       console.log('🔄 Route updated:', {
         phase: order?.deliveryState?.currentPhase,
         status: order?.deliveryState?.status,

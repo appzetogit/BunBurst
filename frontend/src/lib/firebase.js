@@ -5,6 +5,16 @@ import { getPublicEnvValue } from './utils/publicEnv.js';
 const envFromRuntimeOrBuild = (key, fallback = '') =>
   getPublicEnvValue(key, import.meta.env[key] || fallback);
 
+const isValidFirebaseDatabaseUrl = (value) => {
+  if (typeof value !== 'string' || value.trim() === '') return false;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'https:' && /(\.firebaseio\.com|\.firebasedatabase\.app)$/i.test(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
 // Validate Firebase configuration
 const requiredFields = ['apiKey', 'authDomain', 'projectId', 'appId', 'messagingSenderId'];
 let lastMissingFieldsLogKey = '';
@@ -12,13 +22,14 @@ export let isFirebaseConfigAvailable = false;
 export let isUsingFallbackFirebaseConfig = false;
 
 function getFirebaseConfig() {
+  const rawDatabaseUrl = envFromRuntimeOrBuild('VITE_FIREBASE_DATABASE_URL');
   return {
     apiKey: envFromRuntimeOrBuild('VITE_FIREBASE_API_KEY'),
     authDomain: envFromRuntimeOrBuild('VITE_FIREBASE_AUTH_DOMAIN'),
     projectId: envFromRuntimeOrBuild('VITE_FIREBASE_PROJECT_ID'),
     appId: envFromRuntimeOrBuild('VITE_FIREBASE_APP_ID'),
     messagingSenderId: envFromRuntimeOrBuild('VITE_FIREBASE_MESSAGING_SENDER_ID'),
-    databaseURL: envFromRuntimeOrBuild('VITE_FIREBASE_DATABASE_URL'),
+    ...(isValidFirebaseDatabaseUrl(rawDatabaseUrl) ? { databaseURL: rawDatabaseUrl.trim() } : {}),
     storageBucket: envFromRuntimeOrBuild('VITE_FIREBASE_STORAGE_BUCKET'),
     measurementId: envFromRuntimeOrBuild('VITE_FIREBASE_MEASUREMENT_ID')
   };
@@ -26,6 +37,15 @@ function getFirebaseConfig() {
 
 export function getFirebaseVapidKey() {
   return envFromRuntimeOrBuild('VITE_FIREBASE_VAPID_KEY');
+}
+
+export function getFirebaseDatabaseUrl() {
+  const databaseUrl = envFromRuntimeOrBuild('VITE_FIREBASE_DATABASE_URL');
+  return isValidFirebaseDatabaseUrl(databaseUrl) ? databaseUrl.trim() : '';
+}
+
+export function isFirebaseRealtimeDatabaseConfigured() {
+  return Boolean(getFirebaseDatabaseUrl());
 }
 
 function resolveFirebaseConfigStatus() {

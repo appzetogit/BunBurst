@@ -1,10 +1,11 @@
 import { getDatabase, ref, set, serverTimestamp } from "firebase/database"
-import { ensureFirebaseInitialized, firebaseApp } from "./firebase"
+import { ensureFirebaseInitialized, firebaseApp, isFirebaseRealtimeDatabaseConfigured } from "./firebase"
 
 let warnedUnavailable = false
 
 const canUseRealtimeDb = () => {
   if (typeof window === "undefined") return false
+  if (!isFirebaseRealtimeDatabaseConfigured()) return false
   const initialized = ensureFirebaseInitialized()
   if (!initialized || !firebaseApp) return false
   try {

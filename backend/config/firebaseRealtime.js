@@ -191,16 +191,18 @@ export async function syncActiveOrderRoute({
   orderId,
   deliveryPartnerId,
   polyline,
+  routePoints,
   cafeLat,
   cafeLng,
   customerLat,
   customerLng,
   distance,
-  duration
+  duration,
+  status = 'assigned'
 }) {
   const db = getFirebaseRealtimeDb();
   if (!db || !orderId) return false;
-  if (shouldSkipWrite(writeThrottle.activeOrderRoute, orderId, 'assigned')) {
+  if (shouldSkipWrite(writeThrottle.activeOrderRoute, orderId, status)) {
     return true;
   }
 
@@ -210,13 +212,14 @@ export async function syncActiveOrderRoute({
   activeOrderCreatedAtCache.set(orderId, createdAt);
 
   const payload = {
-    status: 'assigned',
+    status,
     created_at: createdAt,
     last_updated: now
   };
 
   if (deliveryPartnerId) payload.boy_id = deliveryPartnerId;
   if (polyline) payload.polyline = polyline;
+  if (Array.isArray(routePoints) && routePoints.length > 0) payload.route_points = routePoints;
   if (typeof cafeLat === 'number') payload.cafe_lat = cafeLat;
   if (typeof cafeLng === 'number') payload.cafe_lng = cafeLng;
   if (typeof customerLat === 'number') payload.customer_lat = customerLat;

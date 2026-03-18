@@ -8364,7 +8364,6 @@ export default function DeliveryHome() {
         <>
           {/* Map View - Shows map with Hotspot or Select drop mode */}
           <div className="relative flex-1 overflow-hidden pb-16 md:pb-0" style={{ minHeight: 0, pointerEvents: 'auto' }}>
-            {/* Google Maps Container */}
             <div
               ref={mapContainerRef}
               className="w-full h-full"

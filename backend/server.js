@@ -595,6 +595,20 @@ io.on('connection', (socket) => {
         const activeOrderRealtime = await getActiveOrderLocationRealtime(orderId);
         if (
           activeOrderRealtime &&
+          (Array.isArray(activeOrderRealtime.route_points) && activeOrderRealtime.route_points.length > 1 ||
+            typeof activeOrderRealtime.polyline === 'string')
+        ) {
+          socket.emit(`route-initialized-${orderId}`, {
+            polyline: activeOrderRealtime.polyline || null,
+            points: Array.isArray(activeOrderRealtime.route_points) ? activeOrderRealtime.route_points : null,
+            totalDistance: activeOrderRealtime.distance || null,
+            duration: activeOrderRealtime.duration || null,
+            status: activeOrderRealtime.status || null,
+            source: 'firebase_active_order'
+          });
+        }
+        if (
+          activeOrderRealtime &&
           typeof activeOrderRealtime.boy_lat === 'number' &&
           typeof activeOrderRealtime.boy_lng === 'number'
         ) {
@@ -652,6 +666,20 @@ io.on('connection', (socket) => {
 
     try {
       const activeOrderRealtime = await getActiveOrderLocationRealtime(orderId);
+      if (
+        activeOrderRealtime &&
+        (Array.isArray(activeOrderRealtime.route_points) && activeOrderRealtime.route_points.length > 1 ||
+          typeof activeOrderRealtime.polyline === 'string')
+      ) {
+        socket.emit(`route-initialized-${orderId}`, {
+          polyline: activeOrderRealtime.polyline || null,
+          points: Array.isArray(activeOrderRealtime.route_points) ? activeOrderRealtime.route_points : null,
+          totalDistance: activeOrderRealtime.distance || null,
+          duration: activeOrderRealtime.duration || null,
+          status: activeOrderRealtime.status || null,
+          source: 'firebase_active_order'
+        });
+      }
       if (
         activeOrderRealtime &&
         typeof activeOrderRealtime.boy_lat === 'number' &&

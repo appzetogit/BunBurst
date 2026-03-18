@@ -19,7 +19,7 @@ class GoogleMapsService {
     if (!this.apiKey) {
       this.apiKey = await getGoogleMapsApiKey();
       if (!this.apiKey) {
-        console.warn('⚠️ Google Maps API key not found in database. Please set it in Admin → System → Environment Variables');
+        console.warn('âš ï¸ Google Maps API key not found in database. Please set it in Admin â†’ System â†’ Environment Variables');
       }
     }
     return this.apiKey;
@@ -41,7 +41,7 @@ class GoogleMapsService {
     const apiKey = await this.getApiKey();
     if (!apiKey) {
       // Fallback to haversine distance calculation if API key not available
-      console.warn('⚠️ Google Maps API key not available, using fallback calculation');
+      console.warn('âš ï¸ Google Maps API key not available, using fallback calculation');
       return this.calculateHaversineDistance(origin, destination);
     }
 
@@ -66,7 +66,7 @@ class GoogleMapsService {
       const response = await axios.get(this.baseUrl, { params });
 
       if (response.data.status !== 'OK') {
-        console.error('❌ Google Maps API Error:', response.data.status, response.data.error_message);
+        console.error('âŒ Google Maps API Error:', response.data.status, response.data.error_message);
         // Fallback to haversine
         return this.calculateHaversineDistance(origin, destination);
       }
@@ -74,7 +74,7 @@ class GoogleMapsService {
       const element = response.data.rows[0].elements[0];
 
       if (element.status !== 'OK') {
-        console.error('❌ Google Maps Element Error:', element.status);
+        console.error('âŒ Google Maps Element Error:', element.status);
         return this.calculateHaversineDistance(origin, destination);
       }
 
@@ -110,8 +110,7 @@ class GoogleMapsService {
         }
       };
     } catch (error) {
-      console.error('❌ Error calling Google Maps API:', error.message);
-      // Fallback to haversine calculation
+      console.error('âŒ Error calling Google Maps API:', error.message);
       return this.calculateHaversineDistance(origin, destination);
     }
   }
@@ -167,4 +166,3 @@ class GoogleMapsService {
 }
 
 export default new GoogleMapsService();
-
