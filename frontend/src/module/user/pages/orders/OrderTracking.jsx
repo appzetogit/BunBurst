@@ -214,6 +214,7 @@ export default function OrderTracking() {
   const { profile, getDefaultAddress } = useProfile()
   const { openLocationSelector } = useLocationSelector()
   const { location: userLiveLocation } = useUserLocation()
+  const getOrderByIdRef = useRef(getOrderById)
 
   const [selectedAddressLabel, setSelectedAddressLabel] = useState(() => {
     return localStorage.getItem("userDeliveryAddressLabel") || "Location"
@@ -255,6 +256,10 @@ export default function OrderTracking() {
   useEffect(() => { orderRef.current = order }, [order])
 
   // Poll for order status updates
+  useEffect(() => {
+    getOrderByIdRef.current = getOrderById
+  }, [getOrderById])
+
   useEffect(() => {
     if (!orderId) return
 
@@ -313,7 +318,8 @@ export default function OrderTracking() {
           } : prev?.deliveryPartner,
           deliveryPartnerId: apiOrder.deliveryPartnerId?._id || apiOrder.deliveryPartnerId || apiOrder.assignmentInfo?.deliveryPartnerId || prev?.deliveryPartnerId,
           assignmentInfo: apiOrder.assignmentInfo || prev?.assignmentInfo,
-          deliveryState: apiOrder.deliveryState || prev?.deliveryState
+          deliveryState: apiOrder.deliveryState || prev?.deliveryState,
+          adminAcceptance: apiOrder.adminAcceptance || prev?.adminAcceptance
         }))
 
       } catch (err) {
@@ -343,7 +349,7 @@ export default function OrderTracking() {
   useEffect(() => {
     const fetchOrder = async () => {
       // First try to get from context (localStorage)
-      const contextOrder = getOrderById(orderId)
+      const contextOrder = getOrderByIdRef.current?.(orderId)
       if (contextOrder) {
         // Ensure cafe location is available in context order
         if (!contextOrder.cafeLocation?.coordinates && contextOrder.cafeId?.location?.coordinates) {
@@ -432,6 +438,7 @@ export default function OrderTracking() {
             userId: apiOrder.userId || null, // Include user data for phone number
             userName: apiOrder.userName || apiOrder.userId?.name || apiOrder.userId?.fullName || '',
             userPhone: apiOrder.userPhone || apiOrder.userId?.phone || '',
+            adminAcceptance: apiOrder.adminAcceptance || null,
             address: {
               street: apiOrder.address?.street || '',
               city: apiOrder.address?.city || '',
@@ -481,7 +488,7 @@ export default function OrderTracking() {
     if (orderId) {
       fetchOrder()
     }
-  }, [orderId, getOrderById])
+  }, [orderId])
 
   // Simulate order status progression
   useEffect(() => {
@@ -630,16 +637,17 @@ export default function OrderTracking() {
           }
         }
 
-        const transformedOrder = {
-          id: apiOrder.orderId || apiOrder._id,
-          cafe: apiOrder.cafeName || 'Cafe',
-          cafeId: apiOrder.cafeId || null, // Include cafeId for location access
-          userId: apiOrder.userId || null, // Include user data for phone number
-          userName: apiOrder.userName || apiOrder.userId?.name || apiOrder.userId?.fullName || '',
-          userPhone: apiOrder.userPhone || apiOrder.userId?.phone || '',
-          address: {
-            street: apiOrder.address?.street || '',
-            city: apiOrder.address?.city || '',
+          const transformedOrder = {
+            id: apiOrder.orderId || apiOrder._id,
+            cafe: apiOrder.cafeName || 'Cafe',
+            cafeId: apiOrder.cafeId || null, // Include cafeId for location access
+            userId: apiOrder.userId || null, // Include user data for phone number
+            userName: apiOrder.userName || apiOrder.userId?.name || apiOrder.userId?.fullName || '',
+            userPhone: apiOrder.userPhone || apiOrder.userId?.phone || '',
+            adminAcceptance: apiOrder.adminAcceptance || null,
+            address: {
+              street: apiOrder.address?.street || '',
+              city: apiOrder.address?.city || '',
             state: apiOrder.address?.state || '',
             zipCode: apiOrder.address?.zipCode || '',
             additionalDetails: apiOrder.address?.additionalDetails || '',
@@ -675,6 +683,29 @@ export default function OrderTracking() {
     }
   }
 
+  const orderType = String(order?.orderType || "DELIVERY").toUpperCase()
+  const backendStatus = (order?.status || "pending").toString().toLowerCase()
+  const adminAccepted = order?.adminAcceptance?.status === true
+  const pendingOverrideStatuses = [
+    'pending',
+    'confirmed',
+    'preparing',
+    'ready',
+    'assigned',
+    'out_for_delivery'
+  ]
+  const effectiveStatus = (!adminAccepted && pendingOverrideStatuses.includes(backendStatus))
+    ? 'pending'
+    : backendStatus
+
+  // Hide "Order Confirmed" modal if admin hasn't accepted yet
+  useEffect(() => {
+    if (!confirmed) return
+    if (!adminAccepted && pendingOverrideStatuses.includes(backendStatus)) {
+      setShowConfirmation(false)
+    }
+  }, [confirmed, adminAccepted, backendStatus])
+
   // Loading state
   if (loading) {
     return (
@@ -702,9 +733,6 @@ export default function OrderTracking() {
     )
   }
 
-  const orderType = String(order?.orderType || "DELIVERY").toUpperCase()
-  const backendStatus = (order?.status || "pending").toString().toLowerCase()
-
   const pickupStatusConfig = {
     pending: { title: "Order placed", subtitle: "Waiting for acceptance", color: "bg-[#e53935]" },
     confirmed: { title: "Order accepted", subtitle: "Order accepted", color: "bg-[#e53935]" },
@@ -715,7 +743,7 @@ export default function OrderTracking() {
   }
 
   const deliveryStatusConfig = {
-    pending: { title: "Order placed", subtitle: "Food preparation will begin shortly", color: "bg-[#e53935]" },
+    pending: { title: "Order placed", subtitle: "Waiting for acceptance", color: "bg-[#e53935]" },
     confirmed: { title: "Order accepted", subtitle: "Food preparation will begin shortly", color: "bg-[#e53935]" },
     preparing: { title: "Preparing your order", subtitle: `Arriving in ${estimatedTime} mins`, color: "bg-[#e53935]" },
     ready: { title: "Order ready", subtitle: `Arriving in ${estimatedTime} mins`, color: "bg-[#e53935]" },
@@ -726,8 +754,8 @@ export default function OrderTracking() {
 
   const currentStatus =
     orderType === "PICKUP"
-      ? (pickupStatusConfig[backendStatus] || { title: "Order update", subtitle: backendStatus, color: "bg-[#e53935]" })
-      : (deliveryStatusConfig[backendStatus] || { title: "Order update", subtitle: backendStatus, color: "bg-[#e53935]" })
+      ? (pickupStatusConfig[effectiveStatus] || { title: "Order update", subtitle: effectiveStatus, color: "bg-[#e53935]" })
+      : (deliveryStatusConfig[effectiveStatus] || { title: "Order update", subtitle: effectiveStatus, color: "bg-[#e53935]" })
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
       {/* Order Confirmed Modal */}
