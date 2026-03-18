@@ -670,12 +670,16 @@ Order again from this cafe in the ${companyName} app.`
         ) : (
           paginatedOrders.map((order) => {
             // Check payment method - COD/wallet orders have 'pending' status which is normal
-            const isCodOrWallet = order.payment?.method === 'cash' || 
-                                 order.payment?.method === 'cod' || 
-                                 order.payment?.method === 'wallet' ||
-                                 order.paymentMethod === 'cash' ||
-                                 order.paymentMethod === 'cod' ||
-                                 order.paymentMethod === 'wallet'
+            const rawPaymentMethod = order.payment?.method || order.paymentMethod
+            const normalizedPaymentMethod = String(rawPaymentMethod || '').toLowerCase()
+            const isCodOrWallet =
+              normalizedPaymentMethod === 'cash' ||
+              normalizedPaymentMethod === 'cod' ||
+              normalizedPaymentMethod === 'wallet'
+
+            // "Online" for refund messaging: anything that is not COD/cash/wallet and has a method value
+            // (e.g., razorpay, online, upi, card, netbanking, etc.)
+            const isOnlinePayment = Boolean(normalizedPaymentMethod) && !isCodOrWallet
             
             // Payment failed only for online payments (razorpay) that actually failed
             // Don't show payment failed for COD/wallet or cancelled orders
@@ -965,7 +969,9 @@ Order again from this cafe in the ${companyName} app.`
                         </div>
                         <span className="text-xs font-semibold text-red-500">Cafe Cancelled</span>
                       </div>
-                      <p className="text-xs text-gray-600 ml-7">Refund will be processed in 24-48 hours</p>
+                      {isOnlinePayment && (
+                        <p className="text-xs text-gray-600 ml-7">Refund will be processed in 24-48 hours</p>
+                      )}
                     </div>
                   ) : paymentFailed ? (
                     <div className="flex items-center gap-2">

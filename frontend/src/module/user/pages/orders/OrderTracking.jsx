@@ -991,35 +991,37 @@ export default function OrderTracking() {
             title={`${order?.userName || order?.userId?.fullName || order?.userId?.name || profile?.fullName || profile?.name || 'Customer'} (You)`}
             subtitle={order?.userPhone || order?.userId?.phone || profile?.phone || defaultAddress?.phone || 'Phone number not available'}
           />
-          <SectionItem
-            icon={HomeIcon}
-            title={`Delivery at ${selectedAddressLabel || 'Location'}`}
-            showArrow={false}
-            subtitle={(() => {
-              if (order?.address?.formattedAddress && order.address.formattedAddress !== "Select location") return order.address.formattedAddress
-              if (userLiveLocation?.formattedAddress && userLiveLocation.formattedAddress !== "Select location") return userLiveLocation.formattedAddress
-              if (order?.address) {
-                const parts = []
-                if (order.address.street) parts.push(order.address.street)
-                if (order.address.additionalDetails) parts.push(order.address.additionalDetails)
-                if (order.address.city) parts.push(order.address.city)
-                if (order.address.state) parts.push(order.address.state)
-                if (order.address.zipCode) parts.push(order.address.zipCode)
-                if (parts.length > 0) return parts.join(', ')
-              }
-              if (defaultAddress?.formattedAddress && defaultAddress.formattedAddress !== "Select location") return defaultAddress.formattedAddress
-              if (defaultAddress) {
-                const parts = []
-                if (defaultAddress.street) parts.push(defaultAddress.street)
-                if (defaultAddress.additionalDetails) parts.push(defaultAddress.additionalDetails)
-                if (defaultAddress.city) parts.push(defaultAddress.city)
-                if (defaultAddress.state) parts.push(defaultAddress.state)
-                if (defaultAddress.zipCode) parts.push(defaultAddress.zipCode)
-                if (parts.length > 0) return parts.join(', ')
-              }
-              return 'Add delivery address'
-            })()}
-          />
+          {orderType !== "PICKUP" && (
+            <SectionItem
+              icon={HomeIcon}
+              title={`Delivery at ${selectedAddressLabel || 'Location'}`}
+              showArrow={false}
+              subtitle={(() => {
+                if (order?.address?.formattedAddress && order.address.formattedAddress !== "Select location") return order.address.formattedAddress
+                if (userLiveLocation?.formattedAddress && userLiveLocation.formattedAddress !== "Select location") return userLiveLocation.formattedAddress
+                if (order?.address) {
+                  const parts = []
+                  if (order.address.street) parts.push(order.address.street)
+                  if (order.address.additionalDetails) parts.push(order.address.additionalDetails)
+                  if (order.address.city) parts.push(order.address.city)
+                  if (order.address.state) parts.push(order.address.state)
+                  if (order.address.zipCode) parts.push(order.address.zipCode)
+                  if (parts.length > 0) return parts.join(', ')
+                }
+                if (defaultAddress?.formattedAddress && defaultAddress.formattedAddress !== "Select location") return defaultAddress.formattedAddress
+                if (defaultAddress) {
+                  const parts = []
+                  if (defaultAddress.street) parts.push(defaultAddress.street)
+                  if (defaultAddress.additionalDetails) parts.push(defaultAddress.additionalDetails)
+                  if (defaultAddress.city) parts.push(defaultAddress.city)
+                  if (defaultAddress.state) parts.push(defaultAddress.state)
+                  if (defaultAddress.zipCode) parts.push(defaultAddress.zipCode)
+                  if (parts.length > 0) return parts.join(', ')
+                }
+                return 'Add delivery address'
+              })()}
+            />
+          )}
           {/* Delivery instructions removed as requested */}
         </motion.div>
 
