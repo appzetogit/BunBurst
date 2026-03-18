@@ -11,13 +11,7 @@ let apiKeyPromise = null;
 let warnedDisabled = false;
 
 function isGoogleMapsAllowedRoute() {
-  if (typeof window === 'undefined') return false;
-
-  const pathname = window.location?.pathname || '';
-  return pathname === '/' ||
-    pathname === '/delivery' ||
-    pathname.startsWith('/delivery/') ||
-    /^\/user\/orders\/[^/]+$/.test(pathname);
+  return true;
 }
 
 /**
@@ -29,7 +23,7 @@ export async function getGoogleMapsApiKey() {
   if (!MAP_APIS_ENABLED || !isGoogleMapsAllowedRoute()) {
     if (!warnedDisabled) {
       warnedDisabled = true;
-      console.warn('Google Maps APIs are disabled for this route. Skipping API key retrieval.');
+      console.warn('Google Maps APIs are disabled. Skipping API key retrieval.');
     }
     return '';
   }

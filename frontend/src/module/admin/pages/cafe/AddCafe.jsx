@@ -30,6 +30,7 @@ export default function AddCafe() {
   const [loadingZones, setLoadingZones] = useState(false)
   const [zones, setZones] = useState([])
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState("")
+  const [googleMapsApiKeyLoaded, setGoogleMapsApiKeyLoaded] = useState(false)
   const [mapLoading, setMapLoading] = useState(true)
   const [mapError, setMapError] = useState("")
   const [step, setStep] = useState(1)
@@ -674,6 +675,8 @@ export default function AddCafe() {
         setGoogleMapsApiKey(key || "")
       } catch (error) {
         console.error("Error loading Google Maps API key:", error)
+      } finally {
+        setGoogleMapsApiKeyLoaded(true)
       }
     }
     loadMapsApiKey()
@@ -787,6 +790,7 @@ export default function AddCafe() {
 
   useEffect(() => {
     if (loadingConfig) return
+    if (!googleMapsApiKeyLoaded) return
     if (step !== 1) return
     if (!mapRef.current) return
 
@@ -903,7 +907,7 @@ export default function AddCafe() {
     return () => {
       cancelled = true
     }
-  }, [googleMapsApiKey, step, loadingConfig])
+  }, [googleMapsApiKey, googleMapsApiKeyLoaded, step, loadingConfig])
 
   useEffect(() => {
     if (step !== 1) return
