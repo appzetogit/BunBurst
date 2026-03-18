@@ -43,6 +43,12 @@ export default function SystemAddons() {
     
     // Google Maps
     VITE_GOOGLE_MAPS_API_KEY: "",
+
+    // OLA Maps
+    OLA_MAPS_API_KEY: "",
+    OLA_MAPS_PROJECT_ID: "",
+    OLA_MAPS_CLIENT_ID: "",
+    OLA_MAPS_CLIENT_SECRET: "",
   })
 
   // Load environment variables on component mount
@@ -271,6 +277,21 @@ export default function SystemAddons() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <InputField label="Google Maps API Key" fieldKey="VITE_GOOGLE_MAPS_API_KEY" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] p-6">
+            <h2 className="text-xl font-bold text-[#1E1E1E] mb-4 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-[#FFF8E1] border border-[#FFC400] flex items-center justify-center">
+                <Key className="w-4 h-4 text-[#e53935]" />
+              </div>
+              OLA Maps Configuration
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InputField label="OLA Maps API Key" fieldKey="OLA_MAPS_API_KEY" />
+              <InputField label="OLA Maps Project ID" fieldKey="OLA_MAPS_PROJECT_ID" />
+              <InputField label="OLA Maps Client ID" fieldKey="OLA_MAPS_CLIENT_ID" />
+              <InputField label="OLA Maps Client Secret" fieldKey="OLA_MAPS_CLIENT_SECRET" type="password" />
             </div>
           </div>
         </div>

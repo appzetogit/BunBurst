@@ -1,5 +1,6 @@
 import axios from 'axios';
 import winston from 'winston';
+import { getEnvVar } from '../../../shared/utils/envService.js';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -10,6 +11,43 @@ const logger = winston.createLogger({
     })
   ]
 });
+
+const REVERSE_GEOCODE_CACHE_TTL_MS = 10 * 60 * 1000;
+const NEARBY_SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
+const reverseGeocodeCache = new Map();
+const nearbySearchCache = new Map();
+
+function buildCoordinateCacheKey(lat, lng, precision = 4) {
+  return `${Number(lat).toFixed(precision)},${Number(lng).toFixed(precision)}`;
+}
+
+function getCachedEntry(cache, key, ttlMs) {
+  const entry = cache.get(key);
+  if (!entry) {
+    return null;
+  }
+
+  if (Date.now() - entry.timestamp > ttlMs) {
+    cache.delete(key);
+    return null;
+  }
+
+  return entry.value;
+}
+
+function setCachedEntry(cache, key, value, ttlMs) {
+  cache.set(key, {
+    value,
+    timestamp: Date.now()
+  });
+
+  const cutoff = Date.now() - ttlMs;
+  for (const [entryKey, entry] of cache.entries()) {
+    if (entry.timestamp < cutoff) {
+      cache.delete(entryKey);
+    }
+  }
+}
 
 /**
  * Reverse geocode coordinates to address using OLA Maps API
@@ -35,10 +73,15 @@ export const reverseGeocode = async (req, res) => {
       });
     }
 
-    const apiKey = process.env.OLA_MAPS_API_KEY;
-    const projectId = process.env.OLA_MAPS_PROJECT_ID;
-    const clientId = process.env.OLA_MAPS_CLIENT_ID;
-    const clientSecret = process.env.OLA_MAPS_CLIENT_SECRET;
+    const apiKey = await getEnvVar('OLA_MAPS_API_KEY');
+    const projectId = await getEnvVar('OLA_MAPS_PROJECT_ID');
+    const clientId = await getEnvVar('OLA_MAPS_CLIENT_ID');
+    const cacheKey = buildCoordinateCacheKey(latNum, lngNum);
+    const cachedResponse = getCachedEntry(reverseGeocodeCache, cacheKey, REVERSE_GEOCODE_CACHE_TTL_MS);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     try {
       let response = null;
@@ -256,11 +299,13 @@ export const reverseGeocode = async (req, res) => {
               }]
             };
 
-            return res.json({
+            const responsePayload = {
               success: true,
               data: transformedData,
               source: 'fallback'
-            });
+            };
+            setCachedEntry(reverseGeocodeCache, cacheKey, responsePayload, REVERSE_GEOCODE_CACHE_TTL_MS);
+            return res.json(responsePayload);
           } catch (fallbackError) {
             // Even fallback failed, return minimal data
             logger.error('Fallback geocoding also failed', {
@@ -285,11 +330,13 @@ export const reverseGeocode = async (req, res) => {
               }]
             };
 
-            return res.json({
+            const responsePayload = {
               success: true,
               data: minimalData,
               source: 'coordinates_only'
-            });
+            };
+            setCachedEntry(reverseGeocodeCache, cacheKey, responsePayload, REVERSE_GEOCODE_CACHE_TTL_MS);
+            return res.json(responsePayload);
           }
         } catch (fallbackOuterError) {
           // Outer fallback error handler
@@ -315,11 +362,13 @@ export const reverseGeocode = async (req, res) => {
             }]
           };
 
-          return res.json({
+          const responsePayload = {
             success: true,
             data: minimalData,
             source: 'coordinates_only'
-          });
+          };
+          setCachedEntry(reverseGeocodeCache, cacheKey, responsePayload, REVERSE_GEOCODE_CACHE_TTL_MS);
+          return res.json(responsePayload);
         }
       }
 
@@ -466,11 +515,13 @@ export const reverseGeocode = async (req, res) => {
           }
         }
 
-        return res.json({
+        const responsePayload = {
           success: true,
           data: processedData,
           source: 'olamaps'
-        });
+        };
+        setCachedEntry(reverseGeocodeCache, cacheKey, responsePayload, REVERSE_GEOCODE_CACHE_TTL_MS);
+        return res.json(responsePayload);
       }
 
       // If we reach here, all methods failed and fallback should have been used
@@ -493,11 +544,13 @@ export const reverseGeocode = async (req, res) => {
         }]
       };
 
-      return res.json({
+      const responsePayload = {
         success: true,
         data: minimalData,
         source: 'coordinates_only'
-      });
+      };
+      setCachedEntry(reverseGeocodeCache, cacheKey, responsePayload, REVERSE_GEOCODE_CACHE_TTL_MS);
+      return res.json(responsePayload);
     } catch (apiError) {
       logger.error('Location service error (all methods failed)', {
         error: apiError.message,
@@ -560,7 +613,13 @@ export const getNearbyLocations = async (req, res) => {
       });
     }
 
-    const apiKey = process.env.OLA_MAPS_API_KEY;
+    const apiKey = await getEnvVar('OLA_MAPS_API_KEY');
+    const nearbyCacheKey = `${buildCoordinateCacheKey(latNum, lngNum)}|${Math.round(radiusNum)}|${String(query || '').trim().toLowerCase()}`;
+    const cachedNearbyResponse = getCachedEntry(nearbySearchCache, nearbyCacheKey, NEARBY_SEARCH_CACHE_TTL_MS);
+
+    if (cachedNearbyResponse) {
+      return res.json(cachedNearbyResponse);
+    }
 
     let nearbyPlaces = [];
 
@@ -607,13 +666,15 @@ export const getNearbyLocations = async (req, res) => {
 
           nearbyPlaces.sort((a, b) => a.distanceMeters - b.distanceMeters);
 
-          return res.json({
+          const responsePayload = {
             success: true,
             data: {
               locations: nearbyPlaces,
               source: 'olamaps'
             }
-          });
+          };
+          setCachedEntry(nearbySearchCache, nearbyCacheKey, responsePayload, NEARBY_SEARCH_CACHE_TTL_MS);
+          return res.json(responsePayload);
         }
       } catch (olaError) {
         logger.warn('OLA Maps nearby search failed', {
@@ -623,13 +684,15 @@ export const getNearbyLocations = async (req, res) => {
     }
 
     // Return empty results if all APIs fail
-    return res.json({
+    const responsePayload = {
       success: true,
       data: {
         locations: [],
         source: 'none'
       }
-    });
+    };
+    setCachedEntry(nearbySearchCache, nearbyCacheKey, responsePayload, NEARBY_SEARCH_CACHE_TTL_MS);
+    return res.json(responsePayload);
   } catch (error) {
     logger.error('Get nearby locations error', {
       error: error.message,

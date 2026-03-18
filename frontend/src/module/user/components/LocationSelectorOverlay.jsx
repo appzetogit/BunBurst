@@ -107,19 +107,25 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
     }
   }, [isOpen, showAddressForm])
 
-  // Load Google Maps API key from backend
+  // Only allow Google Maps while the address form map is actually open.
   useEffect(() => {
-    if (MAP_APIS_DISABLED) {
+    if (!isOpen || !showAddressForm || MAP_APIS_DISABLED) {
+      window.__allowGoogleMapsAddressSelection = false
       setGOOGLE_MAPS_API_KEY("")
       return
     }
 
+    window.__allowGoogleMapsAddressSelection = true
     import('@/lib/utils/googleMapsApiKey.js').then(({ getGoogleMapsApiKey }) => {
       getGoogleMapsApiKey().then(key => {
         setGOOGLE_MAPS_API_KEY(key)
       })
     })
-  }, [])
+
+    return () => {
+      window.__allowGoogleMapsAddressSelection = false
+    }
+  }, [isOpen, showAddressForm])
   const reverseGeocodeTimeoutRef = useRef(null) // Debounce timeout for reverse geocoding
   const lastReverseGeocodeCoordsRef = useRef(null) // Track last coordinates to avoid duplicate calls
 
@@ -1520,14 +1526,14 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
   }
 
   const handleMapMoveEnd = async (lat, lng) => {
-    // Round coordinates to 6 decimal places (about 10cm precision) to avoid duplicate calls
-    const roundedLat = parseFloat(lat.toFixed(6))
-    const roundedLng = parseFloat(lng.toFixed(6))
+    // Round coordinates to 5 decimal places (~1.1m precision) to merge tiny map movements
+    const roundedLat = parseFloat(lat.toFixed(5))
+    const roundedLng = parseFloat(lng.toFixed(5))
 
     // Check if this is the same location as last call
     if (lastReverseGeocodeCoordsRef.current) {
-      const lastLat = parseFloat(lastReverseGeocodeCoordsRef.current.lat.toFixed(6))
-      const lastLng = parseFloat(lastReverseGeocodeCoordsRef.current.lng.toFixed(6))
+      const lastLat = parseFloat(lastReverseGeocodeCoordsRef.current.lat.toFixed(5))
+      const lastLng = parseFloat(lastReverseGeocodeCoordsRef.current.lng.toFixed(5))
       if (lastLat === roundedLat && lastLng === roundedLng) {
         console.log("⏭️ Skipping reverse geocode - same coordinates as last call")
         return
@@ -1539,7 +1545,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       clearTimeout(reverseGeocodeTimeoutRef.current)
     }
 
-    // Debounce: Wait 300ms before making the API call
+    // Debounce longer to avoid repeated reverse-geocoding while the user is still moving the map
     reverseGeocodeTimeoutRef.current = setTimeout(async () => {
       // Update last coordinates
       lastReverseGeocodeCoordsRef.current = { lat: roundedLat, lng: roundedLng }
@@ -1660,7 +1666,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       } finally {
         setLoadingAddress(false)
       }
-    }, 300) // 300ms debounce delay
+    }, 900) // 900ms debounce delay
   }
 
   const handleUseCurrentLocationForAddress = async () => {

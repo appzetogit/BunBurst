@@ -14,10 +14,13 @@ function isGoogleMapsAllowedRoute() {
   if (typeof window === 'undefined') return false;
 
   const pathname = window.location?.pathname || '';
-  return pathname === '/' ||
+  const addressSelectionEnabled = window.__allowGoogleMapsAddressSelection === true;
+
+  return addressSelectionEnabled ||
     pathname === '/delivery' ||
     pathname.startsWith('/delivery/') ||
-    /^\/user\/orders\/[^/]+$/.test(pathname);
+    /^\/user\/orders\/[^/]+$/.test(pathname) ||
+    /^\/orders\/[^/]+$/.test(pathname);
 }
 
 /**

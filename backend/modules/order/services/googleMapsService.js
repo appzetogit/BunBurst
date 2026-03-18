@@ -7,9 +7,12 @@ import { getGoogleMapsApiKey } from '../../../shared/utils/envService.js';
  */
 class GoogleMapsService {
   constructor() {
-    this.apiKey = null; // Will be loaded from database when needed
+    this.apiKey = null;
     this.baseUrl = 'https://maps.googleapis.com/maps/api/distancematrix/json';
     this.googleDistanceMatrixEnabled = process.env.ENABLE_GOOGLE_DISTANCE_MATRIX === 'true';
+    this.cache = new Map();
+    this.inFlightRequests = new Map();
+    this.cacheTtlMs = 5 * 60 * 1000;
   }
 
   /**
@@ -19,7 +22,7 @@ class GoogleMapsService {
     if (!this.apiKey) {
       this.apiKey = await getGoogleMapsApiKey();
       if (!this.apiKey) {
-        console.warn('⚠️ Google Maps API key not found in database. Please set it in Admin → System → Environment Variables');
+        console.warn('Google Maps API key not found in database. Please set it in Admin -> System -> Environment Variables');
       }
     }
     return this.apiKey;
@@ -40,80 +43,92 @@ class GoogleMapsService {
 
     const apiKey = await this.getApiKey();
     if (!apiKey) {
-      // Fallback to haversine distance calculation if API key not available
-      console.warn('⚠️ Google Maps API key not available, using fallback calculation');
+      console.warn('Google Maps API key not available, using fallback calculation');
       return this.calculateHaversineDistance(origin, destination);
     }
+
+    const cacheKey = this.buildCacheKey(origin, destination, mode, trafficModel);
+    const cached = this.getCachedValue(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    if (this.inFlightRequests.has(cacheKey)) {
+      return this.inFlightRequests.get(cacheKey);
+    }
+
+    const requestPromise = this.fetchTravelTime(origin, destination, mode, trafficModel, apiKey);
+    this.inFlightRequests.set(cacheKey, requestPromise);
 
     try {
-      const originStr = `${origin.latitude},${origin.longitude}`;
-      const destStr = `${destination.latitude},${destination.longitude}`;
-
-      const params = {
-        origins: originStr,
-        destinations: destStr,
-        mode: mode,
-        key: apiKey,
-        units: 'metric',
-        departure_time: 'now' // For traffic-aware routing
-      };
-
-      // Add traffic model for driving mode
-      if (mode === 'driving') {
-        params.traffic_model = trafficModel;
-      }
-
-      const response = await axios.get(this.baseUrl, { params });
-
-      if (response.data.status !== 'OK') {
-        console.error('❌ Google Maps API Error:', response.data.status, response.data.error_message);
-        // Fallback to haversine
-        return this.calculateHaversineDistance(origin, destination);
-      }
-
-      const element = response.data.rows[0].elements[0];
-
-      if (element.status !== 'OK') {
-        console.error('❌ Google Maps Element Error:', element.status);
-        return this.calculateHaversineDistance(origin, destination);
-      }
-
-      // Extract distance in km
-      const distance = element.distance.value / 1000; // Convert meters to km
-
-      // Extract duration in minutes
-      let duration = element.duration.value / 60; // Convert seconds to minutes
-
-      // Check if traffic duration is available (for driving mode)
-      let trafficLevel = 'low';
-      if (element.duration_in_traffic) {
-        const trafficDuration = element.duration_in_traffic.value / 60; // minutes
-        const trafficMultiplier = trafficDuration / duration;
-        
-        if (trafficMultiplier >= 1.4) {
-          trafficLevel = 'high';
-        } else if (trafficMultiplier >= 1.2) {
-          trafficLevel = 'medium';
-        }
-        
-        duration = trafficDuration; // Use traffic-aware duration
-      }
-
-      return {
-        distance: parseFloat(distance.toFixed(2)),
-        duration: Math.ceil(duration), // Round up to nearest minute
-        trafficLevel,
-        raw: {
-          distance: element.distance,
-          duration: element.duration,
-          durationInTraffic: element.duration_in_traffic
-        }
-      };
+      const result = await requestPromise;
+      this.setCachedValue(cacheKey, result);
+      return result;
     } catch (error) {
-      console.error('❌ Error calling Google Maps API:', error.message);
-      // Fallback to haversine calculation
+      console.error('Error calling Google Maps API:', error.message);
+      return this.calculateHaversineDistance(origin, destination);
+    } finally {
+      this.inFlightRequests.delete(cacheKey);
+    }
+  }
+
+  async fetchTravelTime(origin, destination, mode, trafficModel, apiKey) {
+    const originStr = `${origin.latitude},${origin.longitude}`;
+    const destStr = `${destination.latitude},${destination.longitude}`;
+
+    const params = {
+      origins: originStr,
+      destinations: destStr,
+      mode,
+      key: apiKey,
+      units: 'metric',
+      departure_time: 'now'
+    };
+
+    if (mode === 'driving') {
+      params.traffic_model = trafficModel;
+    }
+
+    const response = await axios.get(this.baseUrl, { params });
+
+    if (response.data.status !== 'OK') {
+      console.error('Google Maps API Error:', response.data.status, response.data.error_message);
       return this.calculateHaversineDistance(origin, destination);
     }
+
+    const element = response.data?.rows?.[0]?.elements?.[0];
+    if (!element || element.status !== 'OK') {
+      console.error('Google Maps Element Error:', element?.status || 'UNKNOWN');
+      return this.calculateHaversineDistance(origin, destination);
+    }
+
+    const distance = element.distance.value / 1000;
+    let duration = element.duration.value / 60;
+
+    let trafficLevel = 'low';
+    if (element.duration_in_traffic) {
+      const trafficDuration = element.duration_in_traffic.value / 60;
+      const trafficMultiplier = trafficDuration / duration;
+
+      if (trafficMultiplier >= 1.4) {
+        trafficLevel = 'high';
+      } else if (trafficMultiplier >= 1.2) {
+        trafficLevel = 'medium';
+      }
+
+      duration = trafficDuration;
+    }
+
+    return {
+      distance: parseFloat(distance.toFixed(2)),
+      duration: Math.ceil(duration),
+      trafficLevel,
+      raw: {
+        distance: element.distance,
+        duration: element.duration,
+        durationInTraffic: element.duration_in_traffic
+      }
+    };
   }
 
   /**
@@ -123,33 +138,68 @@ class GoogleMapsService {
    * @returns {Object} - { distance (km), duration (minutes), trafficLevel }
    */
   calculateHaversineDistance(origin, destination) {
-    const R = 6371; // Earth's radius in km
+    const R = 6371;
     const dLat = this.toRad(destination.latitude - origin.latitude);
     const dLon = this.toRad(destination.longitude - origin.longitude);
-    
-    const a = 
+
+    const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(this.toRad(origin.latitude)) * Math.cos(this.toRad(destination.latitude)) *
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
-
-    // Estimate duration: assume average speed of 30 km/h in city
-    const duration = Math.ceil((distance / 30) * 60); // Convert to minutes
+    const duration = Math.ceil((distance / 30) * 60);
 
     return {
       distance: parseFloat(distance.toFixed(2)),
       duration,
-      trafficLevel: 'low' // Can't determine traffic without API
+      trafficLevel: 'low'
     };
   }
 
-  /**
-   * Convert degrees to radians
-   */
   toRad(degrees) {
     return degrees * (Math.PI / 180);
+  }
+
+  buildCacheKey(origin, destination, mode, trafficModel) {
+    const normalize = (value) => Number(value).toFixed(4);
+    return [
+      normalize(origin.latitude),
+      normalize(origin.longitude),
+      normalize(destination.latitude),
+      normalize(destination.longitude),
+      mode,
+      trafficModel
+    ].join('|');
+  }
+
+  getCachedValue(key) {
+    const entry = this.cache.get(key);
+    if (!entry) {
+      return null;
+    }
+
+    if (Date.now() - entry.timestamp > this.cacheTtlMs) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.value;
+  }
+
+  setCachedValue(key, value) {
+    this.cache.set(key, {
+      value,
+      timestamp: Date.now()
+    });
+
+    const cutoff = Date.now() - this.cacheTtlMs;
+    for (const [entryKey, entry] of this.cache.entries()) {
+      if (entry.timestamp < cutoff) {
+        this.cache.delete(entryKey);
+      }
+    }
   }
 
   /**
@@ -159,12 +209,9 @@ class GoogleMapsService {
    * @returns {Promise<Array>} - Array of travel time results
    */
   async getBatchTravelTimes(origin, destinations) {
-    const promises = destinations.map(dest => 
-      this.getTravelTime(origin, dest)
-    );
+    const promises = destinations.map((dest) => this.getTravelTime(origin, dest));
     return Promise.all(promises);
   }
 }
 
 export default new GoogleMapsService();
-
