@@ -1622,6 +1622,11 @@ export const adminAPI = {
   },
 
   // Pickup order status updates
+  markOrderPreparing: (orderId) => {
+    return apiClient.patch(
+      API_ENDPOINTS.ADMIN.ORDERS_PREPARING.replace(":orderId", orderId),
+    );
+  },
   markOrderReadyForPickup: (orderId) => {
     return apiClient.patch(
       API_ENDPOINTS.ADMIN.ORDERS_READY_FOR_PICKUP.replace(":orderId", orderId),

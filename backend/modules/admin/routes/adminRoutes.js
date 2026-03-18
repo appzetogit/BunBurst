@@ -203,6 +203,7 @@ import {
   acceptOrderByAdmin,
   manualAssignOrder,
   markOrderReadyForPickup,
+  markOrderPreparing,
   markOrderPickedUp,
   updatePaymentCollectionStatus,
 } from "../controllers/orderController.js";
@@ -458,6 +459,7 @@ router.get("/orders/cafe-report", getCafeReport);
 router.patch("/orders/:orderId/accept", acceptOrderByAdmin);
 router.post("/orders/:orderId/assign", manualAssignOrder);
 router.patch("/orders/:orderId/ready-for-pickup", markOrderReadyForPickup);
+router.patch("/orders/:orderId/preparing", markOrderPreparing);
 router.patch("/orders/:orderId/picked-up", markOrderPickedUp);
 router.patch("/orders/:orderId/payment-collection", updatePaymentCollectionStatus);
 

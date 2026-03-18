@@ -179,10 +179,31 @@ export function ProfileProvider({ children }) {
 
   // Address functions - memoized with useCallback
   const addAddress = useCallback(async (address) => {
+    const isAuthenticated =
+      localStorage.getItem("user_authenticated") === "true" ||
+      localStorage.getItem("user_accessToken") ||
+      localStorage.getItem("accessToken")
+
+    if (!isAuthenticated) {
+      const localAddress = {
+        ...address,
+        id: `local_${Date.now()}`,
+        location: {
+          coordinates: [address?.longitude, address?.latitude],
+        },
+      }
+      setAddresses((prev) => {
+        const updated = [...prev, localAddress]
+        localStorage.setItem("userAddresses", JSON.stringify(updated))
+        return updated
+      })
+      return localAddress
+    }
+
     try {
       const response = await userAPI.addAddress(address)
       const newAddress = response?.data?.data?.address || response?.data?.address
-      
+
       if (newAddress) {
         setAddresses((prev) => {
           const updated = [...prev, newAddress]
@@ -198,10 +219,34 @@ export function ProfileProvider({ children }) {
   }, [])
 
   const updateAddress = useCallback(async (id, updatedAddress) => {
+    const isAuthenticated =
+      localStorage.getItem("user_authenticated") === "true" ||
+      localStorage.getItem("user_accessToken") ||
+      localStorage.getItem("accessToken")
+
+    if (!isAuthenticated) {
+      const localUpdated = {
+        ...updatedAddress,
+        id,
+        location: {
+          coordinates: [updatedAddress?.longitude, updatedAddress?.latitude],
+        },
+      }
+      setAddresses((prev) => {
+        const exists = prev.some((addr) => addr.id === id)
+        const updated = exists
+          ? prev.map((addr) => (addr.id === id ? { ...addr, ...localUpdated } : addr))
+          : [...prev, localUpdated]
+        localStorage.setItem("userAddresses", JSON.stringify(updated))
+        return updated
+      })
+      return localUpdated
+    }
+
     try {
       const response = await userAPI.updateAddress(id, updatedAddress)
       const updatedAddr = response?.data?.data?.address || response?.data?.address
-      
+
       if (updatedAddr) {
         setAddresses((prev) => {
           const updated = prev.map((addr) => (addr.id === id ? { ...updatedAddr, id } : addr))

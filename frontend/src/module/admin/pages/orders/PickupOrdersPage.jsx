@@ -56,6 +56,26 @@ export default function PickupOrdersPage() {
     fetchOrders()
   }, [])
 
+  const handleAccept = async (order) => {
+    try {
+      await adminAPI.acceptOrder(order.id || order._id || order.orderId)
+      toast.success(`Order ${order.orderId} accepted successfully`)
+      fetchOrders()
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to accept order")
+    }
+  }
+
+  const handleMarkPreparing = async (order) => {
+    try {
+      await adminAPI.markOrderPreparing(order.id || order._id || order.orderId)
+      toast.success(`Order ${order.orderId} marked as preparing`)
+      fetchOrders()
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update order status")
+    }
+  }
+
   const handleMarkReady = async (order) => {
     try {
       await adminAPI.markOrderReadyForPickup(order.id || order._id || order.orderId)
@@ -89,10 +109,16 @@ export default function PickupOrdersPage() {
     }
   }
 
-  // Keep UI in sync with backend-enforced transitions:
-  // confirmed/preparing -> ready_for_pickup -> picked_up
-  const canMarkReady = (status) => ["confirmed", "preparing"].includes(status)
-  const canMarkPickedUp = (status) => ["ready_for_pickup"].includes(status)
+  // Transitions: 
+  // No Admin Acceptance -> Accept Order
+  // Accepted (Confirmed) -> Preparing
+  // Preparing -> Ready for Pickup
+  // Ready for Pickup -> Picked Up (Completed)
+  
+  const canAccept = (order) => !order.adminAcceptance?.status
+  const canMarkPreparing = (order) => order.adminAcceptance?.status && order.status === "confirmed"
+  const canMarkReady = (order) => order.status === "preparing"
+  const canMarkPickedUp = (order) => order.status === "ready_for_pickup"
 
   return (
     <div className="p-4 lg:p-6 bg-[#F5F5F5] min-h-screen">
@@ -123,8 +149,9 @@ export default function PickupOrdersPage() {
                   <th className="px-4 py-3">Customer</th>
                   <th className="px-4 py-3">Cafe</th>
                   <th className="px-4 py-3">Total</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Actions</th>
+                  <th className="px-4 py-3 text-center">Order Status</th>
+                  <th className="px-4 py-3 text-center">Payment Status</th>
+                  <th className="px-4 py-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,7 +159,9 @@ export default function PickupOrdersPage() {
                   const status = order.status
                   const paymentMethod = order.payment?.method || order.paymentMethod
                   const isCod = order.paymentType === "Cash on Delivery" || paymentMethod === "cash" || paymentMethod === "cod"
+                  const isOnline = order.paymentType === "Online" || paymentMethod === "razorpay" || paymentMethod === "online"
                   const canUpdatePayment = isCod && status === "picked_up"
+                  
                   return (
                     <tr key={order.id || order._id || order.orderId} className="border-t border-[#F5F5F5]">
                       <td className="px-4 py-3 text-[#1E1E1E] font-medium">{order.orderId}</td>
@@ -142,50 +171,86 @@ export default function PickupOrdersPage() {
                       </td>
                       <td className="px-4 py-3 text-[#1E1E1E]">{order.cafe || "-"}</td>
                       <td className="px-4 py-3 text-[#1E1E1E]">₹{order.totalAmount || order.total || order.pricing?.total || "0"}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-center">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#FFC400] text-[#1E1E1E]">
                           {order.orderStatus || statusLabel(status)}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleMarkReady(order)}
-                            disabled={status === "picked_up" || !canMarkReady(status)}
-                            className="px-3 py-1.5 text-xs rounded-md border border-[#e53935] text-white bg-[#e53935] hover:bg-[#d32f2f] disabled:opacity-50 disabled:cursor-not-allowed"
+                      <td className="px-4 py-3 text-center">
+                        {canUpdatePayment ? (
+                          <select
+                            value={order.paymentCollectionStatus || ""}
+                            onChange={(e) => handlePaymentCollectionStatus(order, e.target.value)}
+                            className="text-xs px-2 py-1 rounded-md border border-[#F5F5F5] text-[#1E1E1E] bg-white focus:border-[#e53935] focus:outline-none"
                           >
-                            Ready for Pickup
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMarkPickedUp(order)}
-                            disabled={status === "picked_up" || !canMarkPickedUp(status)}
-                            className="px-3 py-1.5 text-xs rounded-md border border-[#e53935] text-white bg-[#e53935] hover:bg-[#d32f2f] disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Picked Up
-                          </button>
-                        </div>
-                        {canUpdatePayment && (
-                          <div className="flex gap-2 mt-2">
-                            <button
-                              type="button"
-                              onClick={() => handlePaymentCollectionStatus(order, "Collected")}
+                            <option value="" disabled>Select Status</option>
+                            <option
+                              value="Collected"
                               disabled={order.paymentCollectionStatus === "Collected"}
-                              className="px-3 py-1.5 text-xs rounded-md border border-[#e53935] text-white bg-[#e53935] hover:bg-[#d32f2f] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Payment Completed
-                            </button>
+                              Payment Collected
+                            </option>
+                            <option
+                              value="Not Collected"
+                              disabled={order.paymentCollectionStatus === "Not Collected" || order.paymentCollectionStatus === "Collected"}
+                            >
+                              Payment Not Collected
+                            </option>
+                          </select>
+                        ) : (
+                          <span className={`text-xs font-medium ${isOnline ? 'text-green-600' : 'text-[#1E1E1E]'}`}>
+                            {isOnline ? "Paid (Online)" : (order.paymentCollectionStatus || "Not Collected")}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex gap-2 justify-center">
+                          {canAccept(order) && (
                             <button
                               type="button"
-                              onClick={() => handlePaymentCollectionStatus(order, "Not Collected")}
-                              disabled={order.paymentCollectionStatus === "Not Collected"}
-                              className="px-3 py-1.5 text-xs rounded-md border border-[#e53935] text-white bg-[#e53935] hover:bg-[#d32f2f] disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => handleAccept(order)}
+                              className="px-3 py-1.5 text-xs rounded-md border border-[#e53935] text-white bg-[#e53935] hover:bg-[#d32f2f]"
                             >
-                              Payment Not Completed
+                              Accept Order
                             </button>
-                          </div>
-                        )}
+                          )}
+                          
+                          {canMarkPreparing(order) && (
+                            <button
+                              type="button"
+                              onClick={() => handleMarkPreparing(order)}
+                              className="px-3 py-1.5 text-xs rounded-md border border-[#e53935] text-white bg-[#e53935] hover:bg-[#d32f2f]"
+                            >
+                              Preparing
+                            </button>
+                          )}
+
+                          {canMarkReady(order) && (
+                            <button
+                              type="button"
+                              onClick={() => handleMarkReady(order)}
+                              className="px-3 py-1.5 text-xs rounded-md border border-[#e53935] text-white bg-[#e53935] hover:bg-[#d32f2f]"
+                            >
+                              Ready for Pickup
+                            </button>
+                          )}
+
+                          {canMarkPickedUp(order) && (
+                            <button
+                              type="button"
+                              onClick={() => handleMarkPickedUp(order)}
+                              className="px-3 py-1.5 text-xs rounded-md border border-[#e53935] text-white bg-[#e53935] hover:bg-[#d32f2f]"
+                            >
+                              Completed
+                            </button>
+                          )}
+
+                          {status === "picked_up" && (
+                            <span className="text-xs text-green-600 font-medium py-1.5">
+                              Picked Up
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )

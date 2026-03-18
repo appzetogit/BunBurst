@@ -334,6 +334,7 @@ export const API_ENDPOINTS = {
     ORDERS_TRANSACTION_REPORT: "/admin/orders/transaction-report",
     ORDERS_CAFE_REPORT: "/admin/orders/cafe-report",
     ORDERS_ACCEPT: "/admin/orders/:orderId/accept",
+    ORDERS_PREPARING: "/admin/orders/:orderId/preparing",
     ORDERS_READY_FOR_PICKUP: "/admin/orders/:orderId/ready-for-pickup",
     ORDERS_PICKED_UP: "/admin/orders/:orderId/picked-up",
     ORDERS_PAYMENT_COLLECTION: "/admin/orders/:orderId/payment-collection",

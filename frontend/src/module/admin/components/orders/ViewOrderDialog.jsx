@@ -576,6 +576,17 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                     <p className="text-sm font-medium text-[#1E1E1E]">{order.deliveryType}</p>
                   </div>
                 )}
+                {(order.orderType === "PICKUP" || order.deliveryType === "Pickup") && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      Order Type
+                    </p>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#FFF8E1] text-[#1E1E1E] border border-[#FFC400]">
+                      Pickup Order
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -993,8 +1004,8 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
               </div>
             </div>
 
-            {/* Delivery Address */}
-            {order.address && (
+            {/* Delivery Address - Hide for Pickup */}
+            {order.address && (order.orderType !== "PICKUP" && order.deliveryType !== "Pickup") && (
               <div className="border-t border-[#F5F5F5] pt-4">
                 <h3 className="text-sm font-semibold text-[#1E1E1E] mb-4 flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
@@ -1016,51 +1027,53 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
               </div>
             )}
 
-            {/* Delivery Partner Information */}
-            <div className="border-t border-[#F5F5F5] pt-4">
-              <h3 className="text-sm font-semibold text-[#1E1E1E] mb-4 flex items-center gap-2">
-                <Truck className="w-4 h-4" />
-                Delivery Partner
-              </h3>
-              {deliveryPartnerName || deliveryPartnerPhone ? (
-                <div className="bg-[#F5F5F5] p-4 rounded-lg flex items-center justify-between gap-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-                    {deliveryPartnerName && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Name</p>
-                        <p className="text-sm font-medium text-[#1E1E1E]">{deliveryPartnerName}</p>
-                      </div>
-                    )}
-                    {deliveryPartnerPhone && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Phone</p>
-                        <p className="text-sm font-medium text-[#1E1E1E]">{deliveryPartnerPhone}</p>
-                      </div>
+            {/* Delivery Partner Information - Hide for Pickup */}
+            {(order.orderType !== "PICKUP" && order.deliveryType !== "Pickup") && (
+              <div className="border-t border-[#F5F5F5] pt-4">
+                <h3 className="text-sm font-semibold text-[#1E1E1E] mb-4 flex items-center gap-2">
+                  <Truck className="w-4 h-4" />
+                  Delivery Partner
+                </h3>
+                {deliveryPartnerName || deliveryPartnerPhone ? (
+                  <div className="bg-[#F5F5F5] p-4 rounded-lg flex items-center justify-between gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                      {deliveryPartnerName && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Name</p>
+                          <p className="text-sm font-medium text-[#1E1E1E]">{deliveryPartnerName}</p>
+                        </div>
+                      )}
+                      {deliveryPartnerPhone && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider">Phone</p>
+                          <p className="text-sm font-medium text-[#1E1E1E]">{deliveryPartnerPhone}</p>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      disabled
+                      className="px-3 py-1.5 bg-[#F5F5F5] text-[#1E1E1E] text-xs font-medium rounded border border-[#E0E0E0] cursor-default"
+                    >
+                      Assigned
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-[#F5F5F5] p-4 rounded-lg flex items-center justify-between">
+                    <p className="text-sm text-[#1E1E1E] italic">No delivery partner assigned</p>
+                    {/* Allow assignment if status is not final/cancelled */}
+                    {!['delivered', 'cancelled', 'scheduled', 'dine_in', 'refunded'].includes((order.status || '').toLowerCase()) && (
+                      <button
+                        onClick={() => setShowAssignDialog(true)}
+                        className="px-3 py-1.5 bg-[#e53935] text-white text-xs font-medium rounded hover:bg-[#d32f2f] disabled:opacity-50"
+                      >
+                        Assign Delivery Partner
+                      </button>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    disabled
-                    className="px-3 py-1.5 bg-[#F5F5F5] text-[#1E1E1E] text-xs font-medium rounded border border-[#E0E0E0] cursor-default"
-                  >
-                    Assigned
-                  </button>
-                </div>
-              ) : (
-                <div className="bg-[#F5F5F5] p-4 rounded-lg flex items-center justify-between">
-                  <p className="text-sm text-[#1E1E1E] italic">No delivery partner assigned</p>
-                  {/* Allow assignment if status is not final/cancelled */}
-                  {!['delivered', 'cancelled', 'scheduled', 'dine_in', 'refunded'].includes((order.status || '').toLowerCase()) && (
-                    <button
-                      onClick={() => setShowAssignDialog(true)}
-                      className="px-3 py-1.5 bg-[#e53935] text-white text-xs font-medium rounded hover:bg-[#d32f2f] disabled:opacity-50"
-                    >
-                      Assign Delivery Partner
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Pricing Breakdown */}
             <div className="border-t border-[#F5F5F5] pt-4">

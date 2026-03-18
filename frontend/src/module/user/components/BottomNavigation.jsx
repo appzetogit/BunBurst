@@ -14,9 +14,9 @@ export default function BottomNavigation() {
 
   return (
     <div
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] pb-[max(16px,env(safe-area-inset-bottom,16px))]"
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] pb-[env(safe-area-inset-bottom,0px)]"
     >
-      <div className="flex items-center justify-around h-[76px] sm:h-[84px] px-2 pt-2">
+      <div className="flex items-center justify-around h-[64px] px-2">
         {/* Explore Tab */}
         <Link
           to="/user"
@@ -56,28 +56,6 @@ export default function BottomNavigation() {
             />
           )}
         </Link>
-
-        {/* Dining Tab (Disabled) */}
-        {/*
-          <Link
-            to="/user/dining"
-            className={`flex flex-col items-center justify-center gap-1 min-w-[70px] py-1 transition-all duration-300 relative ${isDining
-              ? "text-accent"
-              : "text-muted-foreground"
-              }`}
-          >
-            <UtensilsCrossed className={`h-6 w-6 transition-transform duration-300 ${isDining ? "text-accent fill-accent/10 scale-110" : "text-muted-foreground"}`} strokeWidth={isDining ? 2.5 : 2} />
-            <span className={`text-[10px] sm:text-xs font-bold transition-all duration-300 ${isDining ? "text-accent" : "text-muted-foreground"}`}>
-              Dining
-            </span>
-            {isDining && (
-              <motion.div
-                layoutId="navTab"
-                className="absolute -top-[1px] left-4 right-4 h-1 bg-accent rounded-b-xl shadow-md shadow-accent/40"
-              />
-            )}
-          </Link>
-        */}
 
         {/* My Orders Tab */}
         <Link

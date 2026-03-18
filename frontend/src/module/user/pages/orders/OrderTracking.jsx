@@ -293,16 +293,20 @@ export default function OrderTracking() {
 
         // Re-fetch and update order (same logic as initial fetch)
         let cafeCoords = null;
-        if (apiOrder.cafeId?.location?.coordinates?.length >= 2) {
-          cafeCoords = apiOrder.cafeId.location.coordinates;
-        } else if (apiOrder.cafeId?.location?.latitude && apiOrder.cafeId?.location?.longitude) {
-          cafeCoords = [apiOrder.cafeId.location.longitude, apiOrder.cafeId.location.latitude];
+        let cafeAddress = 'Local Area';
+        if (apiOrder.cafeId?.location) {
+          const loc = apiOrder.cafeId.location;
+          if (loc.coordinates?.length >= 2) cafeCoords = loc.coordinates;
+          else if (loc.latitude && loc.longitude) cafeCoords = [loc.longitude, loc.latitude];
+          
+          cafeAddress = loc.formattedAddress || loc.address || [loc.addressLine1, loc.city].filter(Boolean).join(', ') || 'Local Area';
         } else if (typeof apiOrder.cafeId === 'string') {
           try {
             const res = await cafeAPI.getCafeById(apiOrder.cafeId);
             const cafe = res?.data?.data?.cafe;
-            if (cafe?.location?.coordinates?.length >= 2) {
-              cafeCoords = cafe.location.coordinates;
+            if (cafe?.location) {
+              if (cafe.location.coordinates?.length >= 2) cafeCoords = cafe.location.coordinates;
+              cafeAddress = cafe.location.formattedAddress || cafe.location.address || [cafe.location.addressLine1, cafe.location.city].filter(Boolean).join(', ') || 'Local Area';
             }
           } catch { /* silently ignore */ }
         }
@@ -311,6 +315,7 @@ export default function OrderTracking() {
           ...prev,
           ...apiOrder,
           cafeLocation: cafeCoords ? { coordinates: cafeCoords } : prev?.cafeLocation,
+          cafeAddress: cafeAddress || prev?.cafeAddress,
           deliveryPartner: apiOrder.deliveryPartnerId ? {
             name: apiOrder.deliveryPartnerId.name || 'Delivery Partner',
             phone: apiOrder.deliveryPartnerId.phone || '',
@@ -390,42 +395,48 @@ export default function OrderTracking() {
             fullCafeId: apiOrder.cafeId
           });
 
-          // Extract cafe location coordinates with multiple fallbacks
+          // Extract cafe location coordinates and address with multiple fallbacks
           let cafeCoords = null;
+          let cafeAddress = 'Local Area';
 
-          // Priority 1: cafeId.location.coordinates (GeoJSON format: [lng, lat])
-          if (apiOrder.cafeId?.location?.coordinates &&
-            Array.isArray(apiOrder.cafeId.location.coordinates) &&
-            apiOrder.cafeId.location.coordinates.length >= 2) {
-            cafeCoords = apiOrder.cafeId.location.coordinates;
-            console.log('âœ… Found coordinates in cafeId.location.coordinates:', cafeCoords);
-          }
-          // Priority 2: cafeId.location with latitude/longitude properties
-          else if (apiOrder.cafeId?.location?.latitude && apiOrder.cafeId?.location?.longitude) {
-            cafeCoords = [apiOrder.cafeId.location.longitude, apiOrder.cafeId.location.latitude];
-            console.log('âœ… Found coordinates in cafeId.location (lat/lng):', cafeCoords);
+          // Priority 1: cafeId.location (GeoJSON format: [lng, lat])
+          if (apiOrder.cafeId?.location) {
+            const loc = apiOrder.cafeId.location;
+            if (loc.coordinates?.length >= 2) {
+              cafeCoords = loc.coordinates;
+            } else if (loc.latitude && loc.longitude) {
+              cafeCoords = [loc.longitude, loc.latitude];
+            }
+            cafeAddress = loc.formattedAddress || loc.address || [loc.addressLine1, loc.city].filter(Boolean).join(', ') || 'Local Area';
           }
           // Priority 3: Check if cafeId is a string ID and fetch cafe details
-          else if (typeof apiOrder.cafeId === 'string') {
-            console.log('âš ï¸ cafeId is a string ID, fetching cafe details...', apiOrder.cafeId);
-            try {
-              const cafeResponse = await cafeAPI.getCafeById(apiOrder.cafeId);
-              if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
-                const cafe = cafeResponse.data.data.cafe;
-                if (cafe.location?.coordinates && Array.isArray(cafe.location.coordinates) && cafe.location.coordinates.length >= 2) {
-                  cafeCoords = cafe.location.coordinates;
-                  console.log('âœ… Fetched cafe coordinates from API:', cafeCoords);
+          if (!cafeCoords || cafeAddress === 'Local Area') {
+            const cafeIdToFetch = typeof apiOrder.cafeId === 'string' ? apiOrder.cafeId : apiOrder.cafeId?._id;
+            if (cafeIdToFetch) {
+              try {
+                const cafeResponse = await cafeAPI.getCafeById(cafeIdToFetch);
+                if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
+                  const cafe = cafeResponse.data.data.cafe;
+                  if (cafe.location) {
+                    if (!cafeCoords && cafe.location.coordinates?.length >= 2) {
+                      cafeCoords = cafe.location.coordinates;
+                    }
+                    if (cafeAddress === 'Local Area') {
+                      cafeAddress = cafe.location.formattedAddress || cafe.location.address || [cafe.location.addressLine1, cafe.location.city].filter(Boolean).join(', ') || 'Local Area';
+                    }
+                  }
                 }
+              } catch (err) {
+                console.error('Error fetching cafe details:', err);
               }
-            } catch (err) {
-              console.error('âŒ Error fetching cafe details:', err);
             }
           }
           // Priority 4: Check nested cafe data
-          else if (apiOrder.cafe?.location?.coordinates) {
+          if (!cafeCoords && apiOrder.cafe?.location?.coordinates) {
             cafeCoords = apiOrder.cafe.location.coordinates;
-            console.log('âœ… Found coordinates in cafe.location.coordinates:', cafeCoords);
           }
+          console.log('Found coordinates:', cafeCoords);
+
 
           console.log('ðŸ“ Final cafe coordinates:', cafeCoords);
           console.log('ðŸ“ Customer coordinates:', apiOrder.address?.location?.coordinates);
@@ -454,6 +465,7 @@ export default function OrderTracking() {
             cafeLocation: {
               coordinates: cafeCoords
             },
+            cafeAddress: cafeAddress,
             items: apiOrder.items?.map(item => ({
               name: item.name,
               quantity: item.quantity,
@@ -603,37 +615,39 @@ export default function OrderTracking() {
       if (response.data?.success && response.data.data?.order) {
         const apiOrder = response.data.data.order
 
-        // Extract cafe location coordinates with multiple fallbacks
+        // Extract cafe location coordinates and address with multiple fallbacks
         let cafeCoords = null;
+        let cafeAddress = 'Local Area';
 
-        // Priority 1: cafeId.location.coordinates (GeoJSON format: [lng, lat])
-        if (apiOrder.cafeId?.location?.coordinates &&
-          Array.isArray(apiOrder.cafeId.location.coordinates) &&
-          apiOrder.cafeId.location.coordinates.length >= 2) {
-          cafeCoords = apiOrder.cafeId.location.coordinates;
+        if (apiOrder.cafeId?.location) {
+          const loc = apiOrder.cafeId.location;
+          if (loc.coordinates?.length >= 2) {
+            cafeCoords = loc.coordinates;
+          } else if (loc.latitude && loc.longitude) {
+            cafeCoords = [loc.longitude, loc.latitude];
+          }
+          cafeAddress = loc.formattedAddress || loc.address || [loc.addressLine1, loc.city].filter(Boolean).join(', ') || 'Local Area';
         }
-        // Priority 2: cafeId.location with latitude/longitude properties
-        else if (apiOrder.cafeId?.location?.latitude && apiOrder.cafeId?.location?.longitude) {
-          cafeCoords = [apiOrder.cafeId.location.longitude, apiOrder.cafeId.location.latitude];
-        }
-        // Priority 3: Check nested cafe data
-        else if (apiOrder.cafe?.location?.coordinates) {
-          cafeCoords = apiOrder.cafe.location.coordinates;
-        }
-        // Priority 4: Check if cafeId is a string ID and fetch cafe details
-        else if (typeof apiOrder.cafeId === 'string') {
-          console.log('âš ï¸ cafeId is a string ID, fetching cafe details...', apiOrder.cafeId);
-          try {
-            const cafeResponse = await cafeAPI.getCafeById(apiOrder.cafeId);
-            if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
-              const cafe = cafeResponse.data.data.cafe;
-              if (cafe.location?.coordinates && Array.isArray(cafe.location.coordinates) && cafe.location.coordinates.length >= 2) {
-                cafeCoords = cafe.location.coordinates;
-                console.log('âœ… Fetched cafe coordinates from API:', cafeCoords);
+        
+        if (!cafeCoords || cafeAddress === 'Local Area') {
+          const cafeIdToFetch = typeof apiOrder.cafeId === 'string' ? apiOrder.cafeId : apiOrder.cafeId?._id;
+          if (cafeIdToFetch) {
+            try {
+              const cafeResponse = await cafeAPI.getCafeById(cafeIdToFetch);
+              if (cafeResponse?.data?.success && cafeResponse.data.data?.cafe) {
+                const cafe = cafeResponse.data.data.cafe;
+                if (cafe.location) {
+                  if (!cafeCoords && cafe.location.coordinates?.length >= 2) {
+                    cafeCoords = cafe.location.coordinates;
+                  }
+                  if (cafeAddress === 'Local Area') {
+                    cafeAddress = cafe.location.formattedAddress || cafe.location.address || [cafe.location.addressLine1, cafe.location.city].filter(Boolean).join(', ') || 'Local Area';
+                  }
+                }
               }
+            } catch (err) {
+              console.error('Error fetching cafe details:', err);
             }
-          } catch (err) {
-            console.error('âŒ Error fetching cafe details:', err);
           }
         }
 
@@ -660,6 +674,7 @@ export default function OrderTracking() {
           cafeLocation: {
             coordinates: cafeCoords
           },
+          cafeAddress: cafeAddress,
           items: apiOrder.items?.map(item => ({
             name: item.name,
             quantity: item.quantity,
@@ -734,30 +749,59 @@ export default function OrderTracking() {
   }
 
   const pickupStatusConfig = {
-    pending: { title: "Order placed", subtitle: "Waiting for acceptance", color: "bg-[#e53935]" },
-    confirmed: { title: "Order accepted", subtitle: "Order accepted", color: "bg-[#e53935]" },
-    preparing: { title: "Preparing your order", subtitle: "Preparing your order", color: "bg-[#e53935]" },
-    ready_for_pickup: { title: "Your order is ready for pickup", subtitle: "Ready for pickup", color: "bg-[#16a34a]" },
-    picked_up: { title: "Order picked up", subtitle: "Your order has been collected successfully", color: "bg-[#0f172a]" },
-    cancelled: { title: "Order cancelled", subtitle: "This order has been cancelled", color: "bg-[#e53935]" },
+    pending: { title: "Order placed", subtitle: "Waiting for acceptance", theme: "red" },
+    confirmed: { title: "Order accepted", subtitle: "Order accepted", theme: "red" },
+    preparing: { title: "Preparing your order", subtitle: "Preparing your order", theme: "red" },
+    ready_for_pickup: { title: "Your order is ready for pickup", subtitle: "Ready for pickup", theme: "red" },
+    picked_up: { title: "Order picked up", subtitle: "Your order has been collected successfully", theme: "red" },
+    cancelled: { title: "Order cancelled", subtitle: "This order has been cancelled", theme: "red" },
   }
 
   const deliveryStatusConfig = {
-    pending: { title: "Order placed", subtitle: "Waiting for acceptance", color: "bg-[#e53935]" },
-    confirmed: { title: "Order accepted", subtitle: "Food preparation will begin shortly", color: "bg-[#e53935]" },
-    preparing: { title: "Preparing your order", subtitle: `Arriving in ${estimatedTime} mins`, color: "bg-[#e53935]" },
-    ready: { title: "Order ready", subtitle: `Arriving in ${estimatedTime} mins`, color: "bg-[#e53935]" },
-    out_for_delivery: { title: "Order on the way", subtitle: `Arriving in ${estimatedTime} mins`, color: "bg-[#e53935]" },
-    delivered: { title: "Order delivered", subtitle: "Enjoy your meal!", color: "bg-[#e53935]" },
-    cancelled: { title: "Order cancelled", subtitle: "This order has been cancelled", color: "bg-[#e53935]" },
+    pending: { title: "Order placed", subtitle: "Waiting for acceptance", theme: "red" },
+    confirmed: { title: "Order accepted", subtitle: "Food preparation will begin shortly", theme: "red" },
+    preparing: { title: "Preparing your order", subtitle: `Arriving in ${estimatedTime} mins`, theme: "red" },
+    ready: { title: "Order ready", subtitle: `Arriving in ${estimatedTime} mins`, theme: "red" },
+    out_for_delivery: { title: "Order on the way", subtitle: `Arriving in ${estimatedTime} mins`, theme: "red" },
+    delivered: { title: "Order delivered", subtitle: "Enjoy your meal!", theme: "red" },
+    cancelled: { title: "Order cancelled", subtitle: "This order has been cancelled", theme: "red" },
   }
 
   const currentStatus =
     orderType === "PICKUP"
-      ? (pickupStatusConfig[effectiveStatus] || { title: "Order update", subtitle: effectiveStatus, color: "bg-[#e53935]" })
-      : (deliveryStatusConfig[effectiveStatus] || { title: "Order update", subtitle: effectiveStatus, color: "bg-[#e53935]" })
+      ? (pickupStatusConfig[effectiveStatus] || { title: "Order update", subtitle: effectiveStatus, theme: "red" })
+      : (deliveryStatusConfig[effectiveStatus] || { title: "Order update", subtitle: effectiveStatus, theme: "red" })
+
+  const themeMap = {
+    red: {
+      primary: "#e53935",
+      primaryDark: "#c62828",
+      page: "#fff5f5",
+      soft: "#fff1f1",
+      softBorder: "#f8d7da",
+      accent: "#7f1d1d",
+    },
+    green: {
+      primary: "#16a34a",
+      primaryDark: "#15803d",
+      page: "#f0fdf4",
+      soft: "#ecfdf3",
+      softBorder: "#bbf7d0",
+      accent: "#14532d",
+    },
+    slate: {
+      primary: "#0f172a",
+      primaryDark: "#0b1220",
+      page: "#f8fafc",
+      soft: "#f1f5f9",
+      softBorder: "#e2e8f0",
+      accent: "#0f172a",
+    },
+  }
+
+  const theme = themeMap[currentStatus.theme] || themeMap.red
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
+    <div className="min-h-screen dark:bg-[#0a0a0a]" style={{ backgroundColor: theme.page }}>
       {/* Order Confirmed Modal */}
       <AnimatePresence>
         {showConfirmation && (
@@ -796,7 +840,10 @@ export default function OrderTracking() {
                 transition={{ delay: 1.5 }}
                 className="mt-8"
               >
-                <div className="w-8 h-8 border-2 border-[#e53935] border-t-transparent rounded-full animate-spin mx-auto" />
+                <div
+                  className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto"
+                  style={{ borderColor: theme.primary }}
+                />
                 <p className="text-sm text-gray-500 mt-3">Loading order details...</p>
               </motion.div>
             </motion.div>
@@ -806,7 +853,8 @@ export default function OrderTracking() {
 
       {/* Red Header */}
       <motion.div
-        className={`${currentStatus.color} text-white sticky top-0 z-40`}
+        className="text-white sticky top-0 z-40"
+        style={{ backgroundColor: theme.primary }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -888,7 +936,10 @@ export default function OrderTracking() {
                 transition={{ delay: 0.3 }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#FFF8E1] flex items-center justify-center overflow-hidden">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden"
+                    style={{ backgroundColor: theme.soft }}
+                  >
                     <img src={circleIcon} alt="Food cooking" className="w-full h-full object-cover" />
                   </div>
                   <p className="font-semibold text-[#1E1E1E]">Food is Cooking</p>
@@ -901,12 +952,13 @@ export default function OrderTracking() {
 
         {/* Delivery Details Banner */}
         <motion.div
-          className="bg-[#FFF8E1] rounded-xl p-4 text-center border border-[#F5F5F5]"
+          className="rounded-xl p-4 text-center border"
+          style={{ backgroundColor: theme.soft, borderColor: theme.softBorder, color: theme.accent }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.65 }}
         >
-          <p className="text-[#1E1E1E] font-medium">All your delivery details in one place 👇</p>
+          <p className="font-medium">All your delivery details in one place 👇</p>
         </motion.div>
 
         {/* Contact & Address Section */}
@@ -924,7 +976,8 @@ export default function OrderTracking() {
               rightContent={
                 <a
                   href={`tel:${order.deliveryPartner.phone}`}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-[#e53935] text-white hover:bg-[#c62828] transition-colors"
+                  className="flex items-center justify-center w-10 h-10 rounded-full text-white transition-colors hover:opacity-90"
+                  style={{ backgroundColor: theme.primary }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Phone className="w-5 h-5" />
@@ -983,7 +1036,7 @@ export default function OrderTracking() {
             </div>
             <div className="flex-1">
               <p className="font-semibold text-[#1E1E1E]">{order.cafe}</p>
-              <p className="text-sm text-gray-500">{order.address?.city || 'Local Area'}</p>
+              <p className="text-sm text-gray-500">{order.cafeAddress || 'Local Area'}</p>
             </div>
           </div>
 
@@ -1065,7 +1118,8 @@ export default function OrderTracking() {
               <Button
                 onClick={handleConfirmCancel}
                 disabled={isCancelling || !cancellationReason.trim()}
-                className="flex-1 bg-[#e53935] hover:bg-[#c62828] text-white"
+                className="flex-1 text-white hover:opacity-90"
+                style={{ backgroundColor: theme.primary }}
               >
                 {isCancelling ? (
                   <>

@@ -753,6 +753,58 @@ export const acceptOrderByAdmin = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Mark order as preparing (admin)
+ * PATCH /api/admin/orders/:orderId/preparing
+ */
+export const markOrderPreparing = asyncHandler(async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    let order = null;
+    if (mongoose.Types.ObjectId.isValid(orderId) && orderId.length === 24) {
+      order = await Order.findById(orderId);
+    }
+    if (!order) {
+      order = await Order.findOne({ orderId: orderId });
+    }
+    if (!order) {
+      return errorResponse(res, 404, 'Order not found');
+    }
+
+    if (['cancelled', 'delivered', 'picked_up'].includes(order.status)) {
+      return errorResponse(res, 400, `Order cannot be updated. Current status: ${order.status}`);
+    }
+
+    if (order.status === 'preparing') {
+      return successResponse(res, 200, 'Order is already marked as preparing', { order });
+    }
+
+    // Enforce transitions: confirmed -> preparing
+    if (order.status !== 'confirmed') {
+      return errorResponse(
+        res,
+        400,
+        `Invalid status transition. Current status: ${order.status}. Only accepted (confirmed) orders can be marked as preparing.`,
+      );
+    }
+
+    order.status = 'preparing';
+    await order.save();
+
+    try {
+      await notifyUserOrderStatusUpdate(order, 'preparing');
+    } catch (notifyError) {
+      console.warn('Failed to notify user for preparing:', notifyError?.message);
+    }
+
+    return successResponse(res, 200, 'Order marked as preparing', { order });
+  } catch (error) {
+    console.error('Error updating order to preparing:', error);
+    return errorResponse(res, 500, 'Failed to update order status');
+  }
+});
+
+/**
  * Get orders searching for deliveryman (ready orders without delivery partner)
  * GET /api/admin/orders/searching-deliveryman
  * Query params: page, limit, search
