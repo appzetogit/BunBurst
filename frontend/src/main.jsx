@@ -15,7 +15,7 @@ loadBusinessSettings().catch(() => {
 // Global flag to track Google Maps loading state
 window.__googleMapsLoading = window.__googleMapsLoading || false;
 window.__googleMapsLoaded = window.__googleMapsLoaded || false;
-window.__mapApisDisabled = true;
+window.__mapApisDisabled = window.__mapApisDisabled || false;
 window.__googleMapsLoading = false;
 window.__googleMapsLoaded = false;
 

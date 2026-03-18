@@ -1,6 +1,30 @@
 import axios from 'axios';
 import winston from 'winston';
 
+const REVERSE_GEOCODE_CACHE_TTL_MS = 5 * 60 * 1000;
+const reverseGeocodeCache = new Map();
+
+function getReverseGeocodeCacheKey(lat, lng, precision = 5) {
+  return `${Number(lat).toFixed(precision)},${Number(lng).toFixed(precision)}`;
+}
+
+function getCachedReverseGeocode(cacheKey) {
+  const cached = reverseGeocodeCache.get(cacheKey);
+  if (!cached) return null;
+  if ((Date.now() - cached.timestamp) > REVERSE_GEOCODE_CACHE_TTL_MS) {
+    reverseGeocodeCache.delete(cacheKey);
+    return null;
+  }
+  return cached.payload;
+}
+
+function cacheReverseGeocode(cacheKey, payload) {
+  reverseGeocodeCache.set(cacheKey, {
+    payload,
+    timestamp: Date.now()
+  });
+}
+
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
@@ -34,6 +58,17 @@ export const reverseGeocode = async (req, res) => {
         message: 'Invalid latitude or longitude'
       });
     }
+
+    const cacheKey = getReverseGeocodeCacheKey(latNum, lngNum);
+    const cachedPayload = getCachedReverseGeocode(cacheKey);
+    if (cachedPayload) {
+      return res.json(cachedPayload);
+    }
+
+    const respondWithCache = (payload) => {
+      cacheReverseGeocode(cacheKey, payload);
+      return res.json(payload);
+    };
 
     const apiKey = process.env.OLA_MAPS_API_KEY;
     const projectId = process.env.OLA_MAPS_PROJECT_ID;
@@ -256,7 +291,7 @@ export const reverseGeocode = async (req, res) => {
               }]
             };
 
-            return res.json({
+            return respondWithCache({
               success: true,
               data: transformedData,
               source: 'fallback'
@@ -285,7 +320,7 @@ export const reverseGeocode = async (req, res) => {
               }]
             };
 
-            return res.json({
+            return respondWithCache({
               success: true,
               data: minimalData,
               source: 'coordinates_only'
@@ -315,7 +350,7 @@ export const reverseGeocode = async (req, res) => {
             }]
           };
 
-          return res.json({
+          return respondWithCache({
             success: true,
             data: minimalData,
             source: 'coordinates_only'
@@ -466,7 +501,7 @@ export const reverseGeocode = async (req, res) => {
           }
         }
 
-        return res.json({
+        return respondWithCache({
           success: true,
           data: processedData,
           source: 'olamaps'
@@ -493,7 +528,7 @@ export const reverseGeocode = async (req, res) => {
         }]
       };
 
-      return res.json({
+      return respondWithCache({
         success: true,
         data: minimalData,
         source: 'coordinates_only'

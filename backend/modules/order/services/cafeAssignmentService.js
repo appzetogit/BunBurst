@@ -40,23 +40,23 @@ function isPointInZone(lat, lng, zoneCoordinates) {
     const coordJ = zoneCoordinates[j];
     
     const xi = typeof coordI === 'object' 
-      ? (coordI.latitude || coordI.lat) 
+      ? (coordI.longitude ?? coordI.lng) 
       : (Array.isArray(coordI) ? coordI[0] : null);
     const yi = typeof coordI === 'object' 
-      ? (coordI.longitude || coordI.lng) 
+      ? (coordI.latitude ?? coordI.lat) 
       : (Array.isArray(coordI) ? coordI[1] : null);
     const xj = typeof coordJ === 'object' 
-      ? (coordJ.latitude || coordJ.lat) 
+      ? (coordJ.longitude ?? coordJ.lng) 
       : (Array.isArray(coordJ) ? coordJ[0] : null);
     const yj = typeof coordJ === 'object' 
-      ? (coordJ.longitude || coordJ.lng) 
+      ? (coordJ.latitude ?? coordJ.lat) 
       : (Array.isArray(coordJ) ? coordJ[1] : null);
     
     if (xi === null || yi === null || xj === null || yj === null) continue;
     
     // Ray casting: check if ray from point crosses edge
-    const intersect = ((yi > lng) !== (yj > lng)) && 
-                     (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
+    const intersect = ((yi > lat) !== (yj > lat)) && 
+                     (lng < ((xj - xi) * (lat - yi)) / ((yj - yi) || 1e-12) + xi);
     if (intersect) inside = !inside;
   }
   return inside;

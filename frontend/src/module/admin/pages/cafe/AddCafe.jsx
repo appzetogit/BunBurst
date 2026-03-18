@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Building2, Info, Tag, Upload, Calendar, FileText, MapPin, X, Image as ImageIcon, Clock, Loader2 } from "lucide-react"
-import { Loader } from "@googlemaps/js-api-loader"
-
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { adminAPI, uploadAPI } from "@/lib/api"
 import { getGoogleMapsApiKey } from "@/lib/utils/googleMapsApiKey"
+import { loadGoogleMaps } from "@/lib/utils/googleMapsLoader"
 import { toast } from "sonner"
 
 const cuisinesOptions = [
@@ -887,12 +886,7 @@ export default function AddCafe() {
           return
         }
 
-        const loader = new Loader({
-          apiKey: googleMapsApiKey,
-          version: "weekly",
-          libraries: ["geometry", "marker"],
-        })
-        const google = await loader.load()
+        const google = await loadGoogleMaps({ libraries: ["geometry", "marker"] })
         mountMap(google)
       } catch (error) {
         console.error("Error initializing map:", error)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { locationAPI } from "@/lib/api"
+import { reverseGeocodeWithCache } from "@/lib/utils/reverseGeocodeCache"
 
 /**
  * useLocation - Clean, Production-Ready Location Hook
@@ -122,7 +122,7 @@ export function useLocationSimple() {
    */
   const reverseGeocode = async (latitude, longitude) => {
     try {
-      const response = await locationAPI.reverseGeocode(latitude, longitude)
+      const response = await reverseGeocodeWithCache(latitude, longitude)
 
       // Check if API call was successful
       if (!response?.data?.success) {

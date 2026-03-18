@@ -1,4 +1,4 @@
-import { getDatabase, ref, set, serverTimestamp } from "firebase/database"
+import { getDatabase, ref, set, serverTimestamp, onValue } from "firebase/database"
 import { ensureFirebaseInitialized, firebaseApp, isFirebaseRealtimeDatabaseConfigured } from "./firebase"
 
 let warnedUnavailable = false
@@ -148,4 +148,33 @@ export const writeCafeLocation = async ({
   } catch (error) {
     console.warn("Failed to write cafe location to Firebase RTDB:", error?.message || error)
   }
+}
+
+export const subscribeActiveOrderRealtime = (orderId, onUpdate) => {
+  if (!orderId || typeof onUpdate !== "function") {
+    return () => {}
+  }
+
+  if (!canUseRealtimeDb()) {
+    if (!warnedUnavailable) {
+      warnedUnavailable = true
+      console.warn("Firebase Realtime Database is not available. Skipping active order subscription.")
+    }
+    return () => {}
+  }
+
+  const db = getDatabase(firebaseApp)
+  const activeOrderRef = ref(db, `active_orders/${orderId}`)
+  const unsubscribe = onValue(
+    activeOrderRef,
+    (snapshot) => {
+      onUpdate(snapshot.val() || null)
+    },
+    (error) => {
+      console.warn("Failed to subscribe to active order in Firebase RTDB:", error?.message || error)
+      onUpdate(null)
+    }
+  )
+
+  return unsubscribe
 }

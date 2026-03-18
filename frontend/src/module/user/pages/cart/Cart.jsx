@@ -1072,7 +1072,11 @@ export default function Cart() {
       } catch (error) {
         if (cancelled) return
         if (error.code !== 'ERR_NETWORK' && error.response?.status !== 404) {
-          console.error("Error calculating pricing:", error)
+          console.error("Error calculating pricing:", {
+            message: error.response?.data?.message || error.message,
+            status: error.response?.status,
+            data: error.response?.data
+          })
         }
         setPricing(null)
       } finally {
@@ -2077,7 +2081,7 @@ export default function Cart() {
               {orderType === "DELIVERY" ? (
                 <div
                   className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={openLocationSelector}
+                  onClick={() => openLocationSelector({ initialView: "map" })}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 md:gap-4 w-full">

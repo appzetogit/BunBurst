@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { MapPin, ArrowLeft, Search } from "lucide-react"
 import { adminAPI } from "@/lib/api"
 import { getGoogleMapsApiKey } from "@/lib/utils/googleMapsApiKey"
-import { Loader } from "@googlemaps/js-api-loader"
+import { loadGoogleMaps as loadGoogleMapsSdk } from "@/lib/utils/googleMapsLoader"
 
 export default function AllZonesMap() {
   const navigate = useNavigate()
@@ -112,13 +112,7 @@ export default function AllZonesMap() {
 
       // If Google Maps is not loaded yet and we have an API key, use Loader as fallback
       if (apiKey) {
-        const loader = new Loader({
-          apiKey: apiKey,
-          version: "weekly",
-          libraries: ["places", "drawing", "geometry"]
-        })
-
-        const google = await loader.load()
+        const google = await loadGoogleMapsSdk({ libraries: ["places", "drawing", "geometry"] })
         initializeMap(google)
       } else {
         setMapLoading(false)

@@ -88,7 +88,9 @@ export default function SystemAddons() {
         // Clear Google Maps API key cache after saving
         try {
           const { clearGoogleMapsApiKeyCache } = await import('@/lib/utils/googleMapsApiKey.js');
+          const { clearGoogleMapsLoaderCache } = await import('@/lib/utils/googleMapsLoader.js');
           clearGoogleMapsApiKeyCache();
+          clearGoogleMapsLoaderCache();
         } catch (cacheError) {
           console.warn("Failed to clear cache:", cacheError);
         }

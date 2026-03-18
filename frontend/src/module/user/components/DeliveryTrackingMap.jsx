@@ -778,15 +778,10 @@ const DeliveryTrackingMap = ({
           console.log('⏳ Google Maps not loaded from main.jsx, loading manually...');
           try {
             const { getGoogleMapsApiKey } = await import('@/lib/utils/googleMapsApiKey.js');
-            const { Loader } = await import('@googlemaps/js-api-loader');
             const apiKey = await getGoogleMapsApiKey();
             if (apiKey) {
-              const loader = new Loader({
-                apiKey: apiKey,
-                version: "weekly",
-                libraries: []
-              });
-              await loader.load();
+              const { loadGoogleMaps } = await import('@/lib/utils/googleMapsLoader.js');
+              await loadGoogleMaps({ libraries: [] });
               console.log('✅ Google Maps loaded manually');
             } else {
               console.error('❌ No Google Maps API key found');

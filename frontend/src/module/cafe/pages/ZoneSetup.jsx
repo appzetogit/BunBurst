@@ -4,7 +4,7 @@ import { MapPin, Search, Save, Loader2, ArrowLeft } from "lucide-react"
 import CafeNavbar from "../components/CafeNavbar"
 import { cafeAPI } from "@/lib/api"
 import { getGoogleMapsApiKey } from "@/lib/utils/googleMapsApiKey"
-import { Loader } from "@googlemaps/js-api-loader"
+import { loadGoogleMaps as loadGoogleMapsSdk } from "@/lib/utils/googleMapsLoader"
 
 export default function ZoneSetup() {
   const navigate = useNavigate()
@@ -13,8 +13,6 @@ export default function ZoneSetup() {
   const markerRef = useRef(null)
   const autocompleteInputRef = useRef(null)
   const autocompleteRef = useRef(null)
-  
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState("")
   const [mapLoading, setMapLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [cafeData, setCafeData] = useState(null)
@@ -129,8 +127,6 @@ export default function ZoneSetup() {
         return
       }
       
-      setGoogleMapsApiKey(apiKey)
-      
       // Wait for Google Maps to be loaded from main.jsx if it's loading
       let retries = 0
       const maxRetries = 100 // Wait up to 10 seconds
@@ -166,13 +162,7 @@ export default function ZoneSetup() {
       // If Google Maps is not loaded yet and we have an API key, use Loader as fallback
       if (apiKey) {
         console.log("📍 Google Maps not loaded from main.jsx, loading with Loader...")
-        const loader = new Loader({
-          apiKey: apiKey,
-          version: "weekly",
-          libraries: ["places"]
-        })
-
-        const google = await loader.load()
+        const google = await loadGoogleMapsSdk({ libraries: ["places"] })
         console.log("✅ Google Maps loaded via Loader, initializing map...")
         initializeMap(google)
       } else {

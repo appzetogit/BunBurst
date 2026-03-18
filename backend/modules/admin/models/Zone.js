@@ -142,13 +142,15 @@ zoneSchema.methods.containsPoint = function(latitude, longitude) {
   // Simple point-in-polygon check using ray casting algorithm
   const coords = this.boundary.coordinates[0];
   let inside = false;
+  const pointLat = Number(latitude);
+  const pointLng = Number(longitude);
   
   for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
     const xi = coords[i][0], yi = coords[i][1];
     const xj = coords[j][0], yj = coords[j][1];
     
-    const intersect = ((yi > longitude) !== (yj > longitude)) &&
-      (longitude < (xj - xi) * (longitude - yi) / (yj - yi) + xi);
+    const intersect = ((yi > pointLat) !== (yj > pointLat)) &&
+      (pointLng < ((xj - xi) * (pointLat - yi)) / ((yj - yi) || 1e-12) + xi);
     
     if (intersect) inside = !inside;
   }

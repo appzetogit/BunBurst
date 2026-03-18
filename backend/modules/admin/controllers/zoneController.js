@@ -375,15 +375,15 @@ export const detectUserZone = asyncHandler(async (req, res) => {
         for (let i = 0, j = zone.coordinates.length - 1; i < zone.coordinates.length; j = i++) {
           const coordI = zone.coordinates[i];
           const coordJ = zone.coordinates[j];
-          const xi = typeof coordI === 'object' ? (coordI.latitude || coordI.lat) : null;
-          const yi = typeof coordI === 'object' ? (coordI.longitude || coordI.lng) : null;
-          const xj = typeof coordJ === 'object' ? (coordJ.latitude || coordJ.lat) : null;
-          const yj = typeof coordJ === 'object' ? (coordJ.longitude || coordJ.lng) : null;
+          const xi = typeof coordI === 'object' ? (coordI.longitude ?? coordI.lng) : null;
+          const yi = typeof coordI === 'object' ? (coordI.latitude ?? coordI.lat) : null;
+          const xj = typeof coordJ === 'object' ? (coordJ.longitude ?? coordJ.lng) : null;
+          const yj = typeof coordJ === 'object' ? (coordJ.latitude ?? coordJ.lat) : null;
           
           if (xi === null || yi === null || xj === null || yj === null) continue;
           
-          const intersect = ((yi > userLng) !== (yj > userLng)) && 
-                           (userLat < (xj - xi) * (userLng - yi) / (yj - yi) + xi);
+          const intersect = ((yi > userLat) !== (yj > userLat)) && 
+                           (userLng < ((xj - xi) * (userLat - yi)) / ((yj - yi) || 1e-12) + xi);
           if (intersect) inside = !inside;
         }
         isInZone = inside;

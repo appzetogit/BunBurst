@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { useLocation as useGeoLocation } from "../hooks/useLocation"
 import { useProfile } from "../context/ProfileContext"
 import { toast } from "sonner"
-import { locationAPI, userAPI } from "@/lib/api"
-import { Loader } from '@googlemaps/js-api-loader'
+import { userAPI } from "@/lib/api"
+import { loadGoogleMaps } from '@/lib/utils/googleMapsLoader'
+import { reverseGeocodeWithCache } from '@/lib/utils/reverseGeocodeCache'
 
 // Google Maps implementation - Leaflet components removed
 const MAP_APIS_DISABLED = typeof window !== "undefined" &&
@@ -43,7 +44,7 @@ const getAddressIcon = (address) => {
   return Home
 }
 
-export default function LocationSelectorOverlay({ isOpen, onClose }) {
+export default function LocationSelectorOverlay({ isOpen, onClose, initialView = "list" }) {
   const navigate = useNavigate()
   const inputRef = useRef(null)
   const [searchValue, setSearchValue] = useState("")
@@ -73,6 +74,15 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
   const locationUpdateTimeoutRef = useRef(null) // Timeout for location updates
   const [currentAddress, setCurrentAddress] = useState("")
   const [GOOGLE_MAPS_API_KEY, setGOOGLE_MAPS_API_KEY] = useState(null)
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowAddressForm(false)
+      return
+    }
+
+    setShowAddressForm(initialView === "map")
+  }, [initialView, isOpen])
 
   useEffect(() => {
     if (!isOpen) {
@@ -440,13 +450,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
     const initializeGoogleMap = async () => {
       try {
-        const loader = new Loader({
-          apiKey: GOOGLE_MAPS_API_KEY,
-          version: "weekly",
-          libraries: []
-        })
-
-        const google = await loader.load()
+        const google = await loadGoogleMaps({ libraries: [] })
 
         if (!isMounted || !mapContainerRef.current) return
 
@@ -1568,7 +1572,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         let postalCode = ""
         let pointOfInterest = ""
         let premise = ""
-        const response = await locationAPI.reverseGeocode(roundedLat, roundedLng)
+        const response = await reverseGeocodeWithCache(roundedLat, roundedLng, { precision: 6 })
         const backendData = response?.data?.data
         const result = backendData?.results?.[0] || backendData?.result?.[0] || null
 
