@@ -1732,6 +1732,30 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
       console.log("📍 Location timestamp:", locationData.timestamp || new Date().toISOString())
       setMapPosition([lat, lng])
 
+      if (locationData?.formattedAddress && locationData.formattedAddress !== "Select location") {
+        const normalizedFormattedAddress = locationData.formattedAddress.endsWith(', India')
+          ? locationData.formattedAddress.replace(', India', '').trim()
+          : locationData.formattedAddress
+
+        setCurrentAddress(normalizedFormattedAddress)
+        setAddressFormData(prev => ({
+          ...prev,
+          street: locationData.street || locationData.address || prev.street,
+          city: locationData.city || prev.city,
+          state: locationData.state || prev.state,
+          zipCode: locationData.postalCode || prev.zipCode,
+          additionalDetails: normalizedFormattedAddress || prev.additionalDetails,
+          phone: userProfile?.phone || prev.phone || "",
+        }))
+
+        setManualLocation({
+          ...locationData,
+          latitude: lat,
+          longitude: lng,
+          formattedAddress: normalizedFormattedAddress,
+        })
+      }
+
       // Update Google Maps to new location
       if (googleMapRef.current && window.google && window.google.maps) {
         try {

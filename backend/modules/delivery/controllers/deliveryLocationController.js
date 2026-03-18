@@ -7,7 +7,8 @@ import Joi from 'joi';
 import winston from 'winston';
 import {
   syncDeliveryPartnerPresence,
-  syncActiveOrderLocation
+  syncActiveOrderLocation,
+  syncDeliveryLocationRealtime
 } from '../../../config/firebaseRealtime.js';
 
 const logger = winston.createLogger({
@@ -30,13 +31,27 @@ const updateLocationSchema = Joi.object({
   longitude: Joi.number().min(-180).max(180).optional(),
   isOnline: Joi.boolean().optional(),
   activeOrderId: Joi.string().optional(),
-  activeOrderStatus: Joi.string().optional()
+  activeOrderStatus: Joi.string().optional(),
+  accuracy: Joi.number().optional().allow(null),
+  heading: Joi.number().optional().allow(null),
+  speed: Joi.number().optional().allow(null),
+  source: Joi.string().trim().max(50).optional()
 }).min(1); // At least one field must be provided
 
 export const updateLocation = asyncHandler(async (req, res) => {
   try {
     const delivery = req.delivery;
-    const { latitude, longitude, isOnline, activeOrderId, activeOrderStatus } = req.body;
+    const {
+      latitude,
+      longitude,
+      isOnline,
+      activeOrderId,
+      activeOrderStatus,
+      accuracy,
+      heading,
+      speed,
+      source
+    } = req.body;
 
     // Manual validation: at least one field must be provided
     const hasLatitude = latitude !== undefined && latitude !== null;
@@ -113,6 +128,20 @@ export const updateLocation = asyncHandler(async (req, res) => {
         latitude: resolvedLatitude,
         longitude: resolvedLongitude
       });
+
+      if (typeof resolvedLatitude === 'number' && typeof resolvedLongitude === 'number') {
+        await syncDeliveryLocationRealtime({
+          deliveryPartnerId: updatedDelivery._id.toString(),
+          latitude: resolvedLatitude,
+          longitude: resolvedLongitude,
+          accuracy,
+          heading,
+          speed,
+          isOnline: resolvedOnlineStatus,
+          orderId: activeOrderId || null,
+          source: source || 'backend-sync'
+        });
+      }
 
       if (activeOrderId && typeof resolvedLatitude === 'number' && typeof resolvedLongitude === 'number') {
         await syncActiveOrderLocation({

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
+import io from "socket.io-client"
 import Lenis from "lenis"
 import { toast } from "sonner"
 import {
@@ -52,7 +53,7 @@ import { useDeliveryNotifications } from "../hooks/useDeliveryNotifications"
 import { getGoogleMapsApiKey, MAP_APIS_ENABLED } from "@/lib/utils/googleMapsApiKey"
 import { useCompanyName } from "@/lib/hooks/useCompanyName"
 import { loadGoogleMaps } from "@/lib/utils/googleMapsLoader"
-import { writeDeliveryLocation, subscribeActiveOrderRealtime } from "@/lib/firebaseRealtime"
+import { subscribeActiveOrderRealtime } from "@/lib/firebaseRealtime"
 import {
   decodePolyline,
   extractPolylineFromDirections,
@@ -358,6 +359,61 @@ function getFirebaseRoutePhaseTarget(selectedCafe, activeOrderRealtime) {
   return null
 }
 
+function getRoutePhaseTargetWithFallback(selectedCafe, activeOrderRealtime) {
+  const firebaseTarget = getFirebaseRoutePhaseTarget(selectedCafe, activeOrderRealtime)
+  if (firebaseTarget) return firebaseTarget
+
+  const currentPhase = selectedCafe?.deliveryPhase || selectedCafe?.deliveryState?.currentPhase || ''
+  const status = selectedCafe?.status || selectedCafe?.orderStatus || selectedCafe?.deliveryState?.status || ''
+  const isDeliveryPhase =
+    currentPhase === 'en_route_to_delivery' ||
+    currentPhase === 'picked_up' ||
+    currentPhase === 'at_delivery' ||
+    status === 'out_for_delivery' ||
+    status === 'order_confirmed'
+
+  if (isDeliveryPhase) {
+    const customerLat = toFiniteCoordinate(selectedCafe?.customerLat)
+    const customerLng = toFiniteCoordinate(selectedCafe?.customerLng)
+    if (customerLat !== null && customerLng !== null) {
+      return {
+        lat: customerLat,
+        lng: customerLng,
+        type: 'customer'
+      }
+    }
+  }
+
+  const cafeLat = toFiniteCoordinate(selectedCafe?.lat)
+  const cafeLng = toFiniteCoordinate(selectedCafe?.lng)
+  if (cafeLat !== null && cafeLng !== null) {
+    return {
+      lat: cafeLat,
+      lng: cafeLng,
+      type: 'cafe'
+    }
+  }
+
+  return null
+}
+
+function getMainMapDestinationMarkerData(selectedCafe, activeOrderRealtime) {
+  const target = getRoutePhaseTargetWithFallback(selectedCafe, activeOrderRealtime)
+  if (!target) return null
+
+  const title =
+    target.type === 'customer'
+      ? (selectedCafe?.customerName || 'Customer')
+      : (selectedCafe?.name || 'Cafe')
+
+  return {
+    lat: target.lat,
+    lng: target.lng,
+    type: target.type,
+    title
+  }
+}
+
 function getFirebaseRiderPosition(activeOrderRealtime, riderLocation, lastLocation) {
   const firebaseLat = toFiniteCoordinate(activeOrderRealtime?.boy_lat)
   const firebaseLng = toFiniteCoordinate(activeOrderRealtime?.boy_lng)
@@ -374,6 +430,173 @@ function getFirebaseRiderPosition(activeOrderRealtime, riderLocation, lastLocati
   }
 
   return null
+}
+
+function getDeliveryPhase(orderLike) {
+  return orderLike?.deliveryPhase ||
+    orderLike?.deliveryState?.currentPhase ||
+    ''
+}
+
+function getDeliveryStatus(orderLike) {
+  return orderLike?.orderStatus ||
+    orderLike?.status ||
+    orderLike?.deliveryState?.status ||
+    ''
+}
+
+function shouldShowPickupSlider(orderLike) {
+  const phase = getDeliveryPhase(orderLike)
+  const status = getDeliveryStatus(orderLike)
+
+  const isDelivered =
+    status === 'delivered' ||
+    status === 'completed' ||
+    phase === 'completed' ||
+    phase === 'delivered' ||
+    phase === 'en_route_to_delivery' ||
+    phase === 'picked_up' ||
+    phase === 'en_route_to_drop' ||
+    phase === 'at_delivery'
+
+  if (isDelivered) {
+    return false
+  }
+
+  return (
+    phase === 'en_route_to_pickup' ||
+    phase === 'at_pickup' ||
+    status === 'ready' ||
+    status === 'preparing' ||
+    status === 'accepted'
+  )
+}
+
+function shouldShowOrderIdSlider(orderLike) {
+  const phase = getDeliveryPhase(orderLike)
+  const status = getDeliveryStatus(orderLike)
+
+  return (
+    phase === 'at_pickup' ||
+    orderLike?.deliveryState?.status === 'reached_pickup' ||
+    status === 'reached_pickup'
+  )
+}
+
+function normalizeActiveCafeInfo(cafeInfo, remoteOrder) {
+  if (!cafeInfo) {
+    return null
+  }
+
+  const remoteCafeLocation = remoteOrder?.cafeId?.location || remoteOrder?.cafe?.location
+  const remoteCafeCoords = extractLatLng(remoteCafeLocation)
+  const remoteCustomerCoords = remoteOrder?.address?.location?.coordinates
+  const remotePhase =
+    remoteOrder?.deliveryState?.currentPhase ||
+    cafeInfo?.deliveryState?.currentPhase ||
+    cafeInfo?.deliveryPhase ||
+    ''
+  const remoteStatus =
+    remoteOrder?.status ||
+    cafeInfo?.orderStatus ||
+    cafeInfo?.status ||
+    ''
+
+  return {
+    ...cafeInfo,
+    lat: toFiniteCoordinate(cafeInfo?.lat) ?? remoteCafeCoords.lat,
+    lng: toFiniteCoordinate(cafeInfo?.lng) ?? remoteCafeCoords.lng,
+    customerLat: toFiniteCoordinate(cafeInfo?.customerLat) ?? toFiniteCoordinate(remoteCustomerCoords?.[1]),
+    customerLng: toFiniteCoordinate(cafeInfo?.customerLng) ?? toFiniteCoordinate(remoteCustomerCoords?.[0]),
+    customerName: cafeInfo?.customerName || remoteOrder?.userId?.name,
+    customerPhone: cafeInfo?.customerPhone || remoteOrder?.userId?.phone,
+    customerAddress: cafeInfo?.customerAddress || remoteOrder?.address?.formattedAddress,
+    orderStatus: remoteStatus,
+    status: remoteStatus,
+    deliveryPhase: remotePhase,
+    deliveryState: {
+      ...(cafeInfo?.deliveryState || {}),
+      ...(remoteOrder?.deliveryState || {}),
+      currentPhase: remotePhase
+    }
+  }
+}
+
+function normalizeRoutePoint(point) {
+  if (Array.isArray(point) && point.length >= 2) {
+    const lat = toFiniteCoordinate(point[0])
+    const lng = toFiniteCoordinate(point[1])
+    if (lat !== null && lng !== null) {
+      return { lat, lng }
+    }
+  }
+
+  if (point && typeof point === 'object') {
+    const lat = toFiniteCoordinate(point.lat ?? point.latitude)
+    const lng = toFiniteCoordinate(point.lng ?? point.longitude)
+    if (lat !== null && lng !== null) {
+      return { lat, lng }
+    }
+  }
+
+  return null
+}
+
+function normalizeRoutePoints(routePoints = []) {
+  return (Array.isArray(routePoints) ? routePoints : [])
+    .map(normalizeRoutePoint)
+    .filter(Boolean)
+}
+
+function createDirectionsResultFromPath(pathPoints = []) {
+  if (!window.google?.maps || pathPoints.length < 2) {
+    return null
+  }
+
+  const bounds = new window.google.maps.LatLngBounds()
+  let totalDistanceMeters = 0
+
+  pathPoints.forEach((point, index) => {
+    bounds.extend(point)
+    if (index > 0) {
+      const prev = pathPoints[index - 1]
+      totalDistanceMeters += calculateDistance(prev.lat, prev.lng, point.lat, point.lng)
+    }
+  })
+
+  const durationSeconds = Math.max(60, Math.round((totalDistanceMeters / 1000) / 22 * 3600))
+
+  return {
+    request: {
+      origin: pathPoints[0],
+      destination: pathPoints[pathPoints.length - 1],
+      travelMode: 'DRIVING',
+      source: 'firebase_route_points'
+    },
+    routes: [
+      {
+        bounds,
+        overview_path: pathPoints,
+        polylinePoints: pathPoints,
+        legs: [
+          {
+            start_location: pathPoints[0],
+            end_location: pathPoints[pathPoints.length - 1],
+            distance: {
+              value: Math.round(totalDistanceMeters),
+              text: totalDistanceMeters < 1000
+                ? `${Math.round(totalDistanceMeters)} m`
+                : `${(totalDistanceMeters / 1000).toFixed(2)} km`
+            },
+            duration: {
+              value: durationSeconds,
+              text: `${Math.ceil(durationSeconds / 60)} mins`
+            }
+          }
+        ]
+      }
+    ]
+  }
 }
 
 async function getGoogleMapConstructor() {
@@ -529,6 +752,7 @@ export default function DeliveryHome() {
   // Map refs and state (Ola Maps removed)
   const mapContainerRef = useRef(null)
   const directionsMapContainerRef = useRef(null)
+  const liveTrackingSocketRef = useRef(null)
   const watchPositionIdRef = useRef(null) // Store watchPosition ID for cleanup
   const lastLocationRef = useRef(null) // Store last location for heading calculation
   const bikeMarkerRef = useRef(null) // Store bike marker instance
@@ -536,10 +760,6 @@ export default function DeliveryHome() {
   const routePolylineRef = useRef(null) // Store route polyline instance (legacy - for fallback)
   const routeHistoryRef = useRef([]) // Store route history for traveled path
   const isOnlineRef = useRef(false) // Store online status for use in callbacks
-  const deliveryPartnerIdRef = useRef(null) // Delivery partner id for RTDB writes
-  const lastRealtimeSentAtRef = useRef(0)
-  const lastRealtimeLocationRef = useRef(null)
-
   // Stable tracking system - Rapido/Uber style
   const locationHistoryRef = useRef([]) // Store last 5 valid GPS points for smoothing
   const lastValidLocationRef = useRef(null) // Last valid smoothed location
@@ -568,6 +788,7 @@ export default function DeliveryHome() {
   const [mapLoading, setMapLoading] = useState(false)
   const [directionsMapLoading, setDirectionsMapLoading] = useState(false)
   const isInitializingMapRef = useRef(false)
+  const socketBaseUrl = useMemo(() => API_BASE_URL.replace('/api', ''), [])
 
   // Safety timeout: hide "Loading map..." overlay after max 2 seconds
   useEffect(() => {
@@ -578,38 +799,83 @@ export default function DeliveryHome() {
     return () => clearTimeout(timer)
   }, [mapLoading])
 
-  const pushRealtimeLocation = (payload) => {
-    if (!payload || !deliveryPartnerIdRef.current) return
-    const { lat, lng } = payload
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return
+  const buildRealtimeLocationMeta = (payload = {}) => {
+    const activeOrderId =
+      activeOrder?.orderId ||
+      activeOrder?._id ||
+      activeOrder?.id ||
+      activeOrder?.cafeInfo?.orderId ||
+      activeOrder?.cafeInfo?.id ||
+      null
 
-    const now = Date.now()
-    const lastSentAt = lastRealtimeSentAtRef.current || 0
-    const lastLocation = lastRealtimeLocationRef.current
-    const timeSinceLast = now - lastSentAt
+    const activeOrderStatus =
+      activeOrder?.deliveryPhase ||
+      activeOrder?.deliveryState?.currentPhase ||
+      activeOrder?.status ||
+      activeOrder?.orderStatus ||
+      activeOrder?.deliveryState?.status ||
+      'on_the_way'
 
-    let movedEnough = true
-    if (lastLocation && Number.isFinite(lastLocation.lat) && Number.isFinite(lastLocation.lng)) {
-      const distanceMeters = calculateDistance(lastLocation.lat, lastLocation.lng, lat, lng)
-      movedEnough = distanceMeters >= 50
+    return {
+      accuracy: payload.accuracy ?? null,
+      heading: payload.heading ?? null,
+      speed: payload.speed ?? null,
+      source: payload.source || 'gps',
+      activeOrderId,
+      activeOrderStatus
     }
-
-    if (timeSinceLast < 5000 && !movedEnough) return
-
-    lastRealtimeSentAtRef.current = now
-    lastRealtimeLocationRef.current = { lat, lng }
-
-    const trail = Array.isArray(routeHistoryRef.current)
-      ? routeHistoryRef.current.slice(-20)
-      : []
-
-    writeDeliveryLocation({
-      deliveryPartnerId: deliveryPartnerIdRef.current,
-      ...payload,
-      isOnline: isOnlineRef.current,
-      trail
-    })
   }
+
+  const emitSocketLocationUpdate = useCallback((payload = {}) => {
+    const socket = liveTrackingSocketRef.current
+    if (!socket?.connected) return
+
+    const activeOrderId =
+      activeOrder?.orderId ||
+      activeOrder?._id ||
+      activeOrder?.id ||
+      activeOrder?.cafeInfo?.orderId ||
+      activeOrder?.cafeInfo?.id
+
+    const lat = Number(payload.lat)
+    const lng = Number(payload.lng)
+    if (!activeOrderId || !Number.isFinite(lat) || !Number.isFinite(lng)) return
+
+    socket.emit('update-location', {
+      orderId: activeOrderId,
+      lat,
+      lng,
+      heading: payload.heading ?? 0,
+      status:
+        activeOrder?.deliveryPhase ||
+        activeOrder?.deliveryState?.currentPhase ||
+        activeOrder?.status ||
+        activeOrder?.orderStatus ||
+        activeOrder?.deliveryState?.status ||
+        'on_the_way',
+      timestamp: Date.now()
+    })
+  }, [activeOrder])
+
+  useEffect(() => {
+    const socket = io(socketBaseUrl, {
+      path: '/socket.io/',
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionDelay: 500,
+      reconnectionAttempts: 10,
+      timeout: 5000
+    })
+
+    liveTrackingSocketRef.current = socket
+
+    return () => {
+      if (liveTrackingSocketRef.current) {
+        liveTrackingSocketRef.current.disconnect()
+        liveTrackingSocketRef.current = null
+      }
+    }
+  }, [socketBaseUrl])
 
   // Seeded random number generator for consistent hotspots
   const createSeededRandom = (seed) => {
@@ -1910,8 +2176,18 @@ export default function DeliveryHome() {
               const [lat, lng] = lastValidLocationRef.current;
               if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
 
-                pushRealtimeLocation({ lat, lng, accuracy, heading: position.coords.heading ?? null, speed: position.coords.speed ?? null, source: "gps" })
-                deliveryAPI.updateLocation(lat, lng, true)
+                emitSocketLocationUpdate({ lat, lng, heading: position.coords.heading ?? null })
+                deliveryAPI.updateLocation(
+                  lat,
+                  lng,
+                  true,
+                  buildRealtimeLocationMeta({
+                    accuracy,
+                    heading: position.coords.heading ?? null,
+                    speed: position.coords.speed ?? null,
+                    source: "gps"
+                  })
+                )
                   .then(() => {
                     window.lastLocationSentTime = now;
 
@@ -1988,8 +2264,18 @@ export default function DeliveryHome() {
             // Send location every 3 seconds even if not smoothed
             if (timeSinceLastSend >= LOCATION_PUSH_INTERVAL_MS) {
               if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                pushRealtimeLocation({ lat, lng, accuracy, heading: position.coords.heading ?? null, speed: position.coords.speed ?? null, source: "gps" })
-                deliveryAPI.updateLocation(lat, lng, true)
+                emitSocketLocationUpdate({ lat, lng, heading: position.coords.heading ?? null })
+                deliveryAPI.updateLocation(
+                  lat,
+                  lng,
+                  true,
+                  buildRealtimeLocationMeta({
+                    accuracy,
+                    heading: position.coords.heading ?? null,
+                    speed: position.coords.speed ?? null,
+                    source: "gps"
+                  })
+                )
                   .then(() => {
                     window.lastLocationSentTime = now;
                     window.lastSentLocation = newLocation;
@@ -2102,8 +2388,18 @@ export default function DeliveryHome() {
             if (smoothedLat >= -90 && smoothedLat <= 90 && smoothedLng >= -180 && smoothedLng <= 180) {
 
 
-              pushRealtimeLocation({ lat: smoothedLat, lng: smoothedLng, accuracy, heading, speed: position.coords.speed ?? null, source: "gps-smoothed" })
-              deliveryAPI.updateLocation(smoothedLat, smoothedLng, true)
+              emitSocketLocationUpdate({ lat: smoothedLat, lng: smoothedLng, heading })
+              deliveryAPI.updateLocation(
+                smoothedLat,
+                smoothedLng,
+                true,
+                buildRealtimeLocationMeta({
+                  accuracy,
+                  heading,
+                  speed: position.coords.speed ?? null,
+                  source: "gps-smoothed"
+                })
+              )
                 .then(() => {
                   window.lastLocationSentTime = now;
                   window.lastSentLocation = smoothedLocation; // Store last sent location
@@ -2489,8 +2785,19 @@ export default function DeliveryHome() {
             let routeCoordinates = null;
             let directionsResultForMap = null;
 
-            // Route drawing is now driven by Firebase active order coordinates + live rider location.
-            // We intentionally avoid any local/OSRM/Google route generation here.
+            if (Array.isArray(routeData?.coordinates) && routeData.coordinates.length > 1) {
+              routeCoordinates = routeData.coordinates
+              const normalizedPath = normalizeRoutePoints(routeData.coordinates)
+              if (normalizedPath.length > 1 && window.google?.maps) {
+                directionsResultForMap = createDirectionsResultFromPath(normalizedPath)
+                if (directionsResultForMap) {
+                  setDirectionsResponse(directionsResultForMap)
+                  directionsResponseRef.current = directionsResultForMap
+                  updateLiveTrackingPolyline(directionsResultForMap, currentLocation)
+                }
+              }
+              setRoutePolyline(routeData.coordinates)
+            }
 
             // Close popup and show route on main map (not full-screen directions map)
             setShowNewOrderPopup(false);
@@ -4587,11 +4894,6 @@ export default function DeliveryHome() {
         const response = await deliveryAPI.getProfile()
         if (response?.data?.success && response?.data?.data?.profile) {
           const profile = response.data.data.profile
-          const profileId = profile?._id || profile?.id || profile?.deliveryPartnerId
-          if (profileId) {
-            deliveryPartnerIdRef.current = String(profileId)
-          }
-
           // Store delivery partner status first
           if (profile?.status) {
             setDeliveryStatus(profile.status)
@@ -5317,35 +5619,36 @@ export default function DeliveryHome() {
         }
       }
 
-      // Check cafe marker
-      if (selectedCafe && selectedCafe.lat && selectedCafe.lng) {
+      // Check destination marker (cafe before pickup, customer after pickup)
+      const destinationMarkerData = getMainMapDestinationMarkerData(selectedCafe, activeOrderRealtime)
+      if (destinationMarkerData) {
         if (cafeMarkerRef.current) {
           const markerMap = cafeMarkerRef.current.getMap();
           if (markerMap === null || markerMap !== window.deliveryMapInstance) {
-            console.warn('?? Cafe marker lost map reference, re-adding...');
-            const cafeLocation = {
-              lat: selectedCafe.lat,
-              lng: selectedCafe.lng
+            console.warn('?? Destination marker lost map reference, re-adding...');
+            const destinationLocation = {
+              lat: destinationMarkerData.lat,
+              lng: destinationMarkerData.lng
             };
 
             cafeMarkerRef.current.setMap(window.deliveryMapInstance);
-            cafeMarkerRef.current.setPosition(cafeLocation);
-            cafeMarkerRef.current.setIcon(getDestinationMarkerIcon('cafe'));
-            cafeMarkerRef.current.setTitle(selectedCafe.name || 'Cafe');
+            cafeMarkerRef.current.setPosition(destinationLocation);
+            cafeMarkerRef.current.setIcon(getDestinationMarkerIcon(destinationMarkerData.type));
+            cafeMarkerRef.current.setTitle(destinationMarkerData.title);
           }
         } else {
           // Marker doesn't exist, create it
-          console.warn('?? Cafe marker missing, creating...');
-          const cafeLocation = {
-            lat: selectedCafe.lat,
-            lng: selectedCafe.lng
+          console.warn('?? Destination marker missing, creating...');
+          const destinationLocation = {
+            lat: destinationMarkerData.lat,
+            lng: destinationMarkerData.lng
           };
 
           cafeMarkerRef.current = new window.google.maps.Marker({
-            position: cafeLocation,
+            position: destinationLocation,
             map: window.deliveryMapInstance,
-            icon: getDestinationMarkerIcon('cafe'),
-            title: selectedCafe.name || 'Cafe',
+            icon: getDestinationMarkerIcon(destinationMarkerData.type),
+            title: destinationMarkerData.title,
             zIndex: 10
           });
         }
@@ -5353,19 +5656,22 @@ export default function DeliveryHome() {
     }, 2000); // Check every 2 seconds
 
     return () => clearInterval(checkInterval);
-  }, [riderLocation, selectedCafe, showHomeSections])
+  }, [riderLocation, selectedCafe, activeOrderRealtime, showHomeSections])
 
-  // Create cafe marker when selectedCafe changes
+  // Create destination marker when order phase/destination changes
   useEffect(() => {
-    if (!window.deliveryMapInstance || !selectedCafe || !selectedCafe.lat || !selectedCafe.lng) {
+    if (!window.deliveryMapInstance || !selectedCafe) {
       return;
     }
 
+    const destinationMarkerData = getMainMapDestinationMarkerData(selectedCafe, activeOrderRealtime)
+    if (!destinationMarkerData) return
+
     // Only create marker if it doesn't exist or is on wrong map
     if (!cafeMarkerRef.current || cafeMarkerRef.current.getMap() !== window.deliveryMapInstance) {
-      const cafeLocation = {
-        lat: selectedCafe.lat,
-        lng: selectedCafe.lng
+      const destinationLocation = {
+        lat: destinationMarkerData.lat,
+        lng: destinationMarkerData.lng
       };
 
       // Remove old marker if exists
@@ -5375,10 +5681,10 @@ export default function DeliveryHome() {
 
       // Create new cafe marker
       cafeMarkerRef.current = new window.google.maps.Marker({
-        position: cafeLocation,
+        position: destinationLocation,
         map: window.deliveryMapInstance,
-        icon: getDestinationMarkerIcon('cafe'),
-        title: selectedCafe.name || 'Cafe',
+        icon: getDestinationMarkerIcon(destinationMarkerData.type),
+        title: destinationMarkerData.title,
         animation: window.google.maps.Animation.DROP,
         zIndex: 10
       });
@@ -5387,12 +5693,30 @@ export default function DeliveryHome() {
     } else {
       // Update position if marker exists
       cafeMarkerRef.current.setPosition({
-        lat: selectedCafe.lat,
-        lng: selectedCafe.lng
+        lat: destinationMarkerData.lat,
+        lng: destinationMarkerData.lng
       });
-      cafeMarkerRef.current.setTitle(selectedCafe.name || 'Cafe');
+      cafeMarkerRef.current.setIcon(getDestinationMarkerIcon(destinationMarkerData.type));
+      cafeMarkerRef.current.setTitle(destinationMarkerData.title);
     }
-  }, [selectedCafe?.lat, selectedCafe?.lng, selectedCafe?.name])
+  }, [
+    selectedCafe?.id,
+    selectedCafe?.orderId,
+    selectedCafe?.lat,
+    selectedCafe?.lng,
+    selectedCafe?.customerLat,
+    selectedCafe?.customerLng,
+    selectedCafe?.deliveryPhase,
+    selectedCafe?.deliveryState?.currentPhase,
+    selectedCafe?.status,
+    selectedCafe?.orderStatus,
+    selectedCafe?.name,
+    selectedCafe?.customerName,
+    activeOrderRealtime?.cafe_lat,
+    activeOrderRealtime?.cafe_lng,
+    activeOrderRealtime?.customer_lat,
+    activeOrderRealtime?.customer_lng
+  ])
 
   useEffect(() => {
     const realtimeOrderId =
@@ -5598,14 +5922,24 @@ export default function DeliveryHome() {
       return
     }
 
-    const destination = getFirebaseRoutePhaseTarget(selectedCafe, activeOrderRealtime)
+    const destination = getRoutePhaseTargetWithFallback(selectedCafe, activeOrderRealtime)
     const riderPosition = getFirebaseRiderPosition(activeOrderRealtime, riderLocation, lastLocationRef.current)
 
     if (!destination || !riderPosition) {
       return
     }
 
-    calculateRouteWithDirectionsAPI(riderPosition, destination)
+    const firebaseRoutePoints = normalizeRoutePoints(activeOrderRealtime?.route_points)
+    const firebaseRouteResult =
+      firebaseRoutePoints.length > 1
+        ? createDirectionsResultFromPath(firebaseRoutePoints)
+        : null
+
+    const routePromise = firebaseRouteResult
+      ? Promise.resolve(firebaseRouteResult)
+      : calculateRouteWithDirectionsAPI(riderPosition, destination)
+
+    routePromise
       .then((result) => {
         if (!result) return
 
@@ -5623,10 +5957,14 @@ export default function DeliveryHome() {
 
         setDirectionsResponse(result)
         directionsResponseRef.current = result
-        setRoutePolyline([
-          [riderPosition[0], riderPosition[1]],
-          [destination.lat, destination.lng]
-        ])
+        setRoutePolyline(
+          firebaseRoutePoints.length > 1
+            ? firebaseRoutePoints.map((point) => [point.lat, point.lng])
+            : [
+              [riderPosition[0], riderPosition[1]],
+              [destination.lat, destination.lng]
+            ]
+        )
         setShowRoutePath(true)
         updateLiveTrackingPolyline(result, riderPosition)
       })
@@ -5646,6 +5984,7 @@ export default function DeliveryHome() {
     activeOrderRealtime?.cafe_lng,
     activeOrderRealtime?.customer_lat,
     activeOrderRealtime?.customer_lng,
+    activeOrderRealtime?.route_points,
     riderLocation?.[0],
     riderLocation?.[1],
     calculateRouteWithDirectionsAPI,
@@ -5982,7 +6321,7 @@ export default function DeliveryHome() {
         if (distance > 50 && timeSinceLastRecalc > 30000 && selectedCafe) {
 
           lastRouteRecalculationRef.current = Date.now();
-          const firebaseDestination = getFirebaseRoutePhaseTarget(selectedCafe, activeOrderRealtime)
+          const firebaseDestination = getRoutePhaseTargetWithFallback(selectedCafe, activeOrderRealtime)
           if (!firebaseDestination) {
             return
           }
@@ -6156,6 +6495,7 @@ export default function DeliveryHome() {
         }
 
         const activeOrderData = JSON.parse(savedOrder);
+        let remoteOrder = null
 
 
         // Get order ID from saved data
@@ -6182,7 +6522,7 @@ export default function DeliveryHome() {
 
           // Correctly extract order object from API response
           // The controller returns { order: ... } inside data
-          const remoteOrder = orderResponse.data?.data?.order || orderResponse.data?.order || orderResponse.data?.data;
+          remoteOrder = orderResponse.data?.data?.order || orderResponse.data?.order || orderResponse.data?.data;
 
           if (remoteOrder) {
             const status = remoteOrder.status;
@@ -6229,7 +6569,22 @@ export default function DeliveryHome() {
 
         // Restore selectedCafe state
         if (activeOrderData.cafeInfo) {
-          setSelectedCafe(activeOrderData.cafeInfo);
+          const normalizedCafeInfo = normalizeActiveCafeInfo(activeOrderData.cafeInfo, remoteOrder)
+          setSelectedCafe(normalizedCafeInfo);
+          acceptedOrderIdsRef.current.add(orderId)
+
+          localStorage.setItem('deliveryActiveOrder', JSON.stringify({
+            ...activeOrderData,
+            cafeInfo: normalizedCafeInfo
+          }));
+
+          if (shouldShowOrderIdSlider(normalizedCafeInfo)) {
+            setShowreachedPickupPopup(false)
+            setShowOrderIdConfirmationPopup(true)
+          } else if (shouldShowPickupSlider(normalizedCafeInfo)) {
+            setShowOrderIdConfirmationPopup(false)
+            setShowreachedPickupPopup(true)
+          }
 
         }
 
@@ -6248,8 +6603,12 @@ export default function DeliveryHome() {
             // Try to recalculate with Directions API first (if flag indicates we had Directions API before)
             if (activeOrderData.hasDirectionsAPI) {
 
-              const firebaseDestination = getFirebaseRoutePhaseTarget(selectedCafe || activeOrderData.cafeInfo, activeOrderRealtime)
-              if (!firebaseDestination) {
+              const firebaseDestination = getRoutePhaseTargetWithFallback(selectedCafe || activeOrderData.cafeInfo, activeOrderRealtime)
+                if (!firebaseDestination) {
+                if (activeOrderData.routeCoordinates && activeOrderData.routeCoordinates.length > 0) {
+                  setRoutePolyline(activeOrderData.routeCoordinates)
+                  setShowRoutePath(true)
+                }
                 return
               }
 
@@ -6270,6 +6629,7 @@ export default function DeliveryHome() {
                   // Fallback to coordinates if Directions API fails
                   if (activeOrderData.routeCoordinates && activeOrderData.routeCoordinates.length > 0) {
                     setRoutePolyline(activeOrderData.routeCoordinates);
+                    setShowRoutePath(true)
 
                   }
                 }
@@ -6278,17 +6638,20 @@ export default function DeliveryHome() {
                 // Fallback to coordinates
                 if (activeOrderData.routeCoordinates && activeOrderData.routeCoordinates.length > 0) {
                   setRoutePolyline(activeOrderData.routeCoordinates);
+                  setShowRoutePath(true)
 
                 }
               });
             } else if (activeOrderData.routeCoordinates && activeOrderData.routeCoordinates.length > 0) {
               // Use saved coordinates if we don't have Directions API flag
               setRoutePolyline(activeOrderData.routeCoordinates);
+              setShowRoutePath(true)
 
             }
           } else if (activeOrderData.routeCoordinates && activeOrderData.routeCoordinates.length > 0) {
             // Fallback: Use coordinates if cafe info or rider location not available
             setRoutePolyline(activeOrderData.routeCoordinates);
+            setShowRoutePath(true)
 
           }
         };
@@ -7010,8 +7373,11 @@ export default function DeliveryHome() {
       deliveryPhase === 'en_route_to_delivery' ||
       deliveryPhase === 'picked_up';
 
-    // Check if we have customer location
-    const hasCustomerLocation = selectedCafe?.customerLat && selectedCafe?.customerLng;
+    // Check if we have customer location (prefer selectedCafe, fallback to activeOrderRealtime)
+    const hasCustomerLocation = Boolean(
+      hasValidCoordinates(selectedCafe?.customerLat, selectedCafe?.customerLng) ||
+      hasValidCoordinates(activeOrderRealtime?.customer_lat, activeOrderRealtime?.customer_lng)
+    )
 
     // Only switch route if order is picked up and we have customer location
     if (isPickedUp && hasCustomerLocation && riderLocation && riderLocation.length === 2) {

@@ -85,7 +85,7 @@ export const writeUserLocation = async ({
   }
 
   const db = getDatabase(firebaseApp)
-  const locationRef = ref(db, `user_locations/${userId}`)
+  const locationRef = ref(db, `users/${userId}`)
 
   const payload = {
     lat,

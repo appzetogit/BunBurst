@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react"
 import { userAPI } from "@/lib/api"
 import { writeUserLocation } from "@/lib/firebaseRealtime"
+import { reverseGeocodeWithCache } from "@/lib/utils/reverseGeocodeCache"
 
 const LocationContext = createContext(null)
 
@@ -74,6 +75,10 @@ export function LocationProvider({ children }) {
         state: locationData.state || "",
         area: locationData.area || "",
         formattedAddress: locationData.formattedAddress || locationData.address || "",
+        accuracy: locationData.accuracy ?? null,
+        postalCode: locationData.postalCode || locationData.zipCode || "",
+        street: locationData.street || "",
+        streetNumber: locationData.streetNumber || "",
       }
 
       await userAPI.updateLocation(locationPayload)
@@ -90,7 +95,7 @@ export function LocationProvider({ children }) {
           area: locationPayload.area,
           city: locationPayload.city,
           state: locationPayload.state,
-          source: "address",
+          source: locationData.source || "address",
         })
       }
     } catch (err) {
@@ -101,7 +106,7 @@ export function LocationProvider({ children }) {
   }, [])
 
   /* ===================== LOCATION FETCHING ===================== */
-  const getLocation = useCallback(async (forceFresh = false) => {
+  const getLocation = useCallback(async (forceFresh = false, updateDB = true) => {
     try {
       setLoading(true)
 
@@ -118,25 +123,67 @@ export function LocationProvider({ children }) {
         })
       })
 
-      const { latitude, longitude } = position.coords
+      const { latitude, longitude, accuracy } = position.coords
+
+      let resolvedAddress = ""
+      let resolvedCity = ""
+      let resolvedState = ""
+      let resolvedArea = ""
+      let resolvedStreet = ""
+      let resolvedPostalCode = ""
+
+      try {
+        const response = await reverseGeocodeWithCache(latitude, longitude, { precision: 6 })
+        const backendData = response?.data?.data
+        const result = backendData?.results?.[0] || backendData?.result?.[0] || null
+        const addressComponents = result?.address_components || {}
+
+        resolvedAddress = result?.formatted_address || result?.formattedAddress || ""
+        resolvedCity = addressComponents.city || ""
+        resolvedState = addressComponents.state || ""
+        resolvedArea = addressComponents.area || ""
+
+        if (resolvedAddress && resolvedAddress.endsWith(", India")) {
+          resolvedAddress = resolvedAddress.replace(", India", "").trim()
+        }
+
+        if (!resolvedStreet && resolvedAddress) {
+          const parts = resolvedAddress.split(",").map((part) => part.trim()).filter(Boolean)
+          resolvedStreet = parts[0] || ""
+          const maybePostal = parts.find((part) => /\b\d{6}\b/.test(part))
+          resolvedPostalCode = maybePostal?.match(/\b\d{6}\b/)?.[0] || ""
+        }
+      } catch (reverseGeocodeError) {
+        console.warn("Reverse geocoding failed for current location:", reverseGeocodeError?.message || reverseGeocodeError)
+      }
+
+      const fallbackFormattedAddress =
+        resolvedAddress ||
+        location?.formattedAddress ||
+        location?.address ||
+        `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
 
       const newLocation = {
         latitude,
         longitude,
-        // No reverse geocoding on homepage flow.
-        // Keep previously known labels if available, otherwise leave empty.
-        city: location?.city || "",
-        state: location?.state || "",
-        address: location?.address || "",
-        area: location?.area || "",
-        formattedAddress: location?.formattedAddress || "",
+        accuracy: Number.isFinite(accuracy) ? accuracy : null,
+        city: resolvedCity || location?.city || "",
+        state: resolvedState || location?.state || "",
+        address: resolvedStreet || resolvedArea || location?.address || fallbackFormattedAddress,
+        area: resolvedArea || location?.area || "",
+        street: resolvedStreet || location?.street || "",
+        postalCode: resolvedPostalCode || location?.postalCode || "",
+        formattedAddress: fallbackFormattedAddress,
+        source: "gps",
+        timestamp: new Date().toISOString(),
       }
 
       setLocation(newLocation)
       setPermissionGranted(true)
 
-      // Update DB in background
-      updateLocationInDB(newLocation)
+      if (updateDB) {
+        updateLocationInDB(newLocation)
+      }
 
       return newLocation
     } catch (err) {
