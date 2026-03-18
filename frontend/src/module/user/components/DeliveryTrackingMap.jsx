@@ -50,7 +50,18 @@ const DeliveryTrackingMap = ({
   const routeRequestIdRef = useRef(0);
 
   const backendUrl = API_BASE_URL.replace('/api', '');
+  const [GOOGLE_MAPS_API_KEY, setGOOGLE_MAPS_API_KEY] = useState("");
   const SOCKET_LOCATION_REQUEST_INTERVAL_MS = 3000;
+
+  // Load Google Maps API key from backend
+  useEffect(() => {
+    if (!MAP_APIS_ENABLED) return
+    import('@/lib/utils/googleMapsApiKey.js').then(({ getGoogleMapsApiKey }) => {
+      getGoogleMapsApiKey().then(key => {
+        setGOOGLE_MAPS_API_KEY(key)
+      })
+    })
+  }, [])
 
   const normalizeRoutePoint = useCallback((point) => {
     if (!point) return null;

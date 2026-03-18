@@ -129,28 +129,6 @@ const environmentVariableSchema = new mongoose.Schema(
       default: '',
       trim: true
     },
-
-    // OLA Maps
-    OLA_MAPS_API_KEY: {
-      type: String,
-      default: '',
-      trim: true
-    },
-    OLA_MAPS_PROJECT_ID: {
-      type: String,
-      default: '',
-      trim: true
-    },
-    OLA_MAPS_CLIENT_ID: {
-      type: String,
-      default: '',
-      trim: true
-    },
-    OLA_MAPS_CLIENT_SECRET: {
-      type: String,
-      default: '',
-      trim: true
-    },
     
     // Metadata
     lastUpdatedBy: {
@@ -202,9 +180,7 @@ environmentVariableSchema.methods.toEnvObject = function() {
     'SMTP_USER',
     'SMTP_PASS',
     'SMSINDIAHUB_API_KEY',
-    'VITE_GOOGLE_MAPS_API_KEY',
-    'OLA_MAPS_API_KEY',
-    'OLA_MAPS_CLIENT_SECRET'
+    'VITE_GOOGLE_MAPS_API_KEY'
   ];
   
   sensitiveFields.forEach(field => {
@@ -236,9 +212,7 @@ environmentVariableSchema.pre('save', function(next) {
     'SMTP_USER',
     'SMTP_PASS',
     'SMSINDIAHUB_API_KEY',
-    'VITE_GOOGLE_MAPS_API_KEY',
-    'OLA_MAPS_API_KEY',
-    'OLA_MAPS_CLIENT_SECRET'
+    'VITE_GOOGLE_MAPS_API_KEY'
   ];
   
   // Process each field safely
