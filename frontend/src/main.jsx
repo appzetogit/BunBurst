@@ -165,6 +165,21 @@ if (!rootElement) {
 ; (async () => {
   try {
     await loadPublicEnvVariables()
+
+    const runtimeEnv = typeof window !== 'undefined' ? (window.__PUBLIC_ENV__ || {}) : {}
+    const normalizeFlag = (value, fallback) => {
+      if (typeof value === 'boolean') return value
+      if (typeof value === 'number') return value !== 0
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase()
+        if (['1', 'true', 'yes', 'on', 'enabled'].includes(normalized)) return true
+        if (['0', 'false', 'no', 'off', 'disabled'].includes(normalized)) return false
+      }
+      return fallback
+    }
+
+    const mapApisEnabled = normalizeFlag(runtimeEnv.VITE_MAP_APIS_ENABLED, true)
+    window.__mapApisDisabled = !mapApisEnabled
   } catch {
     // continue app boot even if runtime env fetch fails
   }

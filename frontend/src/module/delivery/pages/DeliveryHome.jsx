@@ -5046,6 +5046,13 @@ export default function DeliveryHome() {
 
     // Load Google Maps if not already loaded
     const loadGoogleMapsIfNeeded = async () => {
+      let hasInitializedMap = false;
+      const initializeGoogleMapOnce = async () => {
+        if (hasInitializedMap) return;
+        hasInitializedMap = true;
+        await initializeGoogleMap();
+      };
+
       if (!MAP_APIS_ENABLED) {
         setMapLoading(false)
         return
@@ -5055,7 +5062,7 @@ export default function DeliveryHome() {
 
         // Wait a bit to ensure ref is available
         await new Promise(resolve => setTimeout(resolve, 100));
-        initializeGoogleMap();
+        await initializeGoogleMapOnce();
         return;
       }
 
@@ -5073,7 +5080,7 @@ export default function DeliveryHome() {
 
         if (window.google && window.google.maps) {
 
-          await initializeGoogleMap();
+          await initializeGoogleMapOnce();
           return;
         }
       }
@@ -5089,7 +5096,7 @@ export default function DeliveryHome() {
 
             window.__googleMapsLoaded = true;
             window.__googleMapsLoading = false;
-            await initializeGoogleMap();
+            await initializeGoogleMapOnce();
           } else {
             console.error('? No Google Maps API key found');
             window.__googleMapsLoading = false;
@@ -5113,10 +5120,11 @@ export default function DeliveryHome() {
 
         if (window.google && window.google.maps) {
 
-          await initializeGoogleMap();
+          await initializeGoogleMapOnce();
         } else {
           console.error('? Google Maps failed to load');
           setMapLoading(false);
+          return;
         }
       }
 
@@ -5139,7 +5147,7 @@ export default function DeliveryHome() {
         if (!window.google.maps.MapTypeId) {
           console.warn('?? MapTypeId not available, will use string fallback');
         }
-        await initializeGoogleMap();
+        await initializeGoogleMapOnce();
       } else {
         console.error('? Google Maps API still not available or not fully loaded');
         console.error('? API status:', {

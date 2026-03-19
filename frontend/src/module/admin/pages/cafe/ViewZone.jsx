@@ -78,7 +78,7 @@ export default function ViewZone() {
       }
 
       if (apiKey) {
-        const google = await loadGoogleMapsSdk({ libraries: ["places", "drawing", "geometry"] })
+        const google = await loadGoogleMapsSdk({ libraries: ["drawing", "geometry"] })
         // Wait a bit for DOM to be ready
         setTimeout(() => {
           initializeMap(google)

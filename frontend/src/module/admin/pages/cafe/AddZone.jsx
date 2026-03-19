@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { MapPin, ArrowLeft, Save, X, Hand, Shapes, Search } from "lucide-react"
+import { MapPin, ArrowLeft, Save, X, Hand, Shapes } from "lucide-react"
 import { adminAPI } from "@/lib/api"
 import { getGoogleMapsApiKey } from "@/lib/utils/googleMapsApiKey"
 import { loadGoogleMaps as loadGoogleMapsSdk } from "@/lib/utils/googleMapsLoader"
@@ -29,10 +29,7 @@ export default function AddZone() {
   
   const [coordinates, setCoordinates] = useState([])
   const [isDrawing, setIsDrawing] = useState(false)
-  const [locationSearch, setLocationSearch] = useState("")
   const [existingZones, setExistingZones] = useState([])
-  const autocompleteInputRef = useRef(null)
-  const autocompleteRef = useRef(null)
   const existingZonesPolygonsRef = useRef([])
 
   useEffect(() => {
@@ -51,30 +48,6 @@ export default function AddZone() {
       mapInstanceRef.current.setZoom(5)
     }
   }, [formData.country])
-
-  // Initialize Places Autocomplete when map is loaded
-  useEffect(() => {
-    if (!mapLoading && mapInstanceRef.current && autocompleteInputRef.current && window.google?.maps?.places && !autocompleteRef.current) {
-      const autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current, {
-        types: ['geocode', 'establishment'],
-        componentRestrictions: { country: 'in' } // Restrict to India
-      })
-      
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace()
-        if (place.geometry && place.geometry.location && mapInstanceRef.current) {
-          const location = place.geometry.location
-          mapInstanceRef.current.setCenter(location)
-          mapInstanceRef.current.setZoom(15) // Zoom in when location is selected
-          
-          // Set the search input value
-          setLocationSearch(place.formatted_address || place.name || "")
-        }
-      })
-      
-      autocompleteRef.current = autocomplete
-    }
-  }, [mapLoading])
 
   // Draw existing polygon when in edit mode and coordinates are loaded
   useEffect(() => {
@@ -156,7 +129,8 @@ export default function AddZone() {
 
       // If Google Maps is not loaded yet and we have an API key, use Loader as fallback
       if (apiKey) {
-        const google = await loadGoogleMapsSdk({ libraries: ["places", "drawing", "geometry"] })
+        const libraries = ["drawing", "geometry"]
+        const google = await loadGoogleMapsSdk({ libraries })
         initializeMap(google)
       } else {
         setMapLoading(false)
@@ -786,17 +760,9 @@ export default function AddZone() {
               </div>
 
               <div className="mb-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    ref={autocompleteInputRef}
-                    type="text"
-                    placeholder="Search location on map..."
-                    value={locationSearch}
-                    onChange={(e) => setLocationSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                <p className="text-xs text-slate-600 mb-2">
+                  Pinpoint manually: use "Start Drawing" and mark zone points on the map.
+                </p>
                 {coordinates.length > 0 && (
                   <p className="text-xs text-slate-600 mt-2">
                     Points drawn: <strong>{coordinates.length}</strong>

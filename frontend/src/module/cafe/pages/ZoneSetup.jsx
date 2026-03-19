@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { MapPin, Search, Save, Loader2, ArrowLeft } from "lucide-react"
+import { MapPin, Save, Loader2, ArrowLeft } from "lucide-react"
 import CafeNavbar from "../components/CafeNavbar"
 import { cafeAPI } from "@/lib/api"
+import { writeCafeLocation } from "@/lib/firebaseRealtime"
+import { reverseGeocodeWithCache } from "@/lib/utils/reverseGeocodeCache"
 import { getGoogleMapsApiKey } from "@/lib/utils/googleMapsApiKey"
 import { loadGoogleMaps as loadGoogleMapsSdk } from "@/lib/utils/googleMapsLoader"
 
@@ -11,12 +13,9 @@ export default function ZoneSetup() {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const markerRef = useRef(null)
-  const autocompleteInputRef = useRef(null)
-  const autocompleteRef = useRef(null)
   const [mapLoading, setMapLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [cafeData, setCafeData] = useState(null)
-  const [locationSearch, setLocationSearch] = useState("")
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [selectedAddress, setSelectedAddress] = useState("")
 
@@ -25,41 +24,21 @@ export default function ZoneSetup() {
     loadGoogleMaps()
   }, [])
 
-  // Initialize Places Autocomplete when map is loaded
-  useEffect(() => {
-    if (!mapLoading && mapInstanceRef.current && autocompleteInputRef.current && window.google?.maps?.places && !autocompleteRef.current) {
-      const autocomplete = new window.google.maps.places.Autocomplete(autocompleteInputRef.current, {
-        types: ['geocode', 'establishment'],
-        componentRestrictions: { country: 'in' } // Restrict to India
-      })
-      
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace()
-        if (place.geometry && place.geometry.location && mapInstanceRef.current) {
-          const location = place.geometry.location
-          const lat = location.lat()
-          const lng = location.lng()
-          
-          // Center map on selected location
-          mapInstanceRef.current.setCenter(location)
-          mapInstanceRef.current.setZoom(17) // Zoom in when location is selected
-          
-          // Set the search input value
-          const address = place.formatted_address || place.name || ""
-          setLocationSearch(address)
-          setSelectedAddress(address)
-          
-          // Update marker position
-          updateMarker(lat, lng, address)
-          
-          // Set selected location
-          setSelectedLocation({ lat, lng, address })
-        }
-      })
-      
-      autocompleteRef.current = autocomplete
+  const resolveAddressFromCoordinates = async (lat, lng) => {
+    try {
+      const response = await reverseGeocodeWithCache(lat, lng, { precision: 6 })
+      const backendData = response?.data?.data
+      const result = backendData?.results?.[0] || backendData?.result?.[0] || null
+      const formattedAddress = result?.formatted_address || result?.formattedAddress || ""
+      if (formattedAddress) {
+        return formattedAddress
+      }
+    } catch (error) {
+      console.warn("Reverse geocoding failed in ZoneSetup:", error?.message || error)
     }
-  }, [mapLoading])
+
+    return `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+  }
 
   // Load existing cafe location when data is fetched
   useEffect(() => {
@@ -83,7 +62,6 @@ export default function ZoneSetup() {
         mapInstanceRef.current.setZoom(17)
         
         const address = location.formattedAddress || location.address || formatAddress(location) || ""
-        setLocationSearch(address)
         setSelectedAddress(address)
         setSelectedLocation({ lat, lng, address })
         
@@ -162,7 +140,7 @@ export default function ZoneSetup() {
       // If Google Maps is not loaded yet and we have an API key, use Loader as fallback
       if (apiKey) {
         console.log("📍 Google Maps not loaded from main.jsx, loading with Loader...")
-        const google = await loadGoogleMapsSdk({ libraries: ["places"] })
+        const google = await loadGoogleMapsSdk({ libraries: [] })
         console.log("✅ Google Maps loaded via Loader, initializing map...")
         initializeMap(google)
       } else {
@@ -211,28 +189,14 @@ export default function ZoneSetup() {
       console.log("✅ Map initialized successfully")
 
       // Add click listener to place marker
-      map.addListener('click', (event) => {
+      map.addListener('click', async (event) => {
         const lat = event.latLng.lat()
         const lng = event.latLng.lng()
-        
-        // Reverse geocode to get address
-        const geocoder = new google.maps.Geocoder()
-        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-          if (status === 'OK' && results && results.length > 0) {
-            const address = results[0].formatted_address
-            setLocationSearch(address)
-            setSelectedAddress(address)
-            setSelectedLocation({ lat, lng, address })
-            updateMarker(lat, lng, address)
-          } else {
-            // If geocoding fails, still allow pinning
-            const address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-            setLocationSearch(address)
-            setSelectedAddress(address)
-            setSelectedLocation({ lat, lng, address })
-            updateMarker(lat, lng, address)
-          }
-        })
+
+        const address = await resolveAddressFromCoordinates(lat, lng)
+        setSelectedAddress(address)
+        setSelectedLocation({ lat, lng, address })
+        updateMarker(lat, lng, address)
       })
 
       setMapLoading(false)
@@ -276,25 +240,13 @@ export default function ZoneSetup() {
     })
 
     // Update location when marker is dragged
-    marker.addListener('dragend', (event) => {
+    marker.addListener('dragend', async (event) => {
       const newLat = event.latLng.lat()
       const newLng = event.latLng.lng()
-      
-      // Reverse geocode new position
-      const geocoder = new window.google.maps.Geocoder()
-      geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results, status) => {
-        if (status === 'OK' && results && results.length > 0) {
-          const newAddress = results[0].formatted_address
-          setLocationSearch(newAddress)
-          setSelectedAddress(newAddress)
-          setSelectedLocation({ lat: newLat, lng: newLng, address: newAddress })
-        } else {
-          const newAddress = `${newLat.toFixed(6)}, ${newLng.toFixed(6)}`
-          setLocationSearch(newAddress)
-          setSelectedAddress(newAddress)
-          setSelectedLocation({ lat: newLat, lng: newLng, address: newAddress })
-        }
-      })
+
+      const newAddress = await resolveAddressFromCoordinates(newLat, newLng)
+      setSelectedAddress(newAddress)
+      setSelectedLocation({ lat: newLat, lng: newLng, address: newAddress })
     })
 
     markerRef.current = marker
@@ -345,7 +297,21 @@ export default function ZoneSetup() {
       })
 
       if (response?.data?.data?.cafe) {
-        setCafeData(response.data.data.cafe)
+        const savedCafe = response.data.data.cafe
+        setCafeData(savedCafe)
+
+        const cafeId = savedCafe?._id || cafeData?._id || null
+        if (cafeId && Number.isFinite(lat) && Number.isFinite(lng)) {
+          writeCafeLocation({
+            cafeId,
+            lat,
+            lng,
+            address,
+            formattedAddress: address,
+            source: "zone_setup",
+          })
+        }
+
         alert("Location saved successfully!")
         
         // Refresh the page to update navbar
@@ -386,20 +352,9 @@ export default function ZoneSetup() {
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* Location Actions */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                ref={autocompleteInputRef}
-                type="text"
-                value={locationSearch}
-                onChange={(e) => setLocationSearch(e.target.value)}
-                placeholder="Search for your cafe location..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-            </div>
             <button
               onClick={handleSaveLocation}
               disabled={!selectedLocation || saving}
@@ -434,7 +389,6 @@ export default function ZoneSetup() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <h3 className="text-sm font-semibold text-blue-900 mb-2">How to set your location:</h3>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-            <li>Search for your location using the search bar above, or</li>
             <li>Click anywhere on the map to place a pin at that location</li>
             <li>You can drag the pin to adjust the exact position</li>
             <li>Click "Save Location" to save your cafe location</li>
