@@ -141,15 +141,8 @@ export default function UserRouter() {
           <Route path="/search" element={<SearchResults />} />
           <Route path="/product/:id" element={<ProductDetail />} />
 
-          {/* Cart - Protected */}
-          <Route
-            path="/cart"
-            element={
-              <ProtectedRoute requiredRole="user" loginPath="/user/auth/sign-in">
-                <Cart />
-              </ProtectedRoute>
-            }
-          />
+          {/* Cart - /cart is public to allow guest carts, but /checkout remains protected */}
+          <Route path="/cart" element={<Cart />} />
           <Route
             path="/cart/checkout"
             element={

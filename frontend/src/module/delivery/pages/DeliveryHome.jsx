@@ -767,9 +767,8 @@ export default function DeliveryHome() {
   const smoothedLocationRef = useRef(null) // Current smoothed location
   const markerAnimationRef = useRef(null) // Track ongoing marker animation
   const zonesPolygonsRef = useRef([]) // Store zone polygons
-  // Google Maps Directions API refs
-  const directionsServiceRef = useRef(null) // Directions Service instance
-  const directionsRendererRef = useRef(null) // Directions Renderer instance
+  // Route display refs (local haversine polyline — no Google Directions API)
+  const directionsRendererRef = useRef(null) // Legacy ref kept for cleanup code
   const directionsMapInstanceRef = useRef(null) // Directions map instance
   const cafeMarkerRef = useRef(null) // Cafe marker on directions map
   const directionsBikeMarkerRef = useRef(null) // Bike marker on directions map
@@ -5751,8 +5750,8 @@ export default function DeliveryHome() {
   }, [selectedCafe?.id, selectedCafe?.orderId, activeOrder?.id, activeOrder?.orderId])
 
   // Build a direct route only from live/Firebase lat-lng coordinates.
-  // No Google Directions, OSRM, or backend route geometry is used here.
-  const calculateRouteWithDirectionsAPI = useCallback(async (origin, destination) => {
+  // 100% local haversine — no Google Directions API, OSRM, or backend route geometry.
+  const calculateRouteLocally = useCallback(async (origin, destination) => {
     try {
       if (!origin || !Array.isArray(origin) || origin.length < 2 || !destination) {
         return null;
@@ -5945,7 +5944,7 @@ export default function DeliveryHome() {
 
     const routePromise = firebaseRouteResult
       ? Promise.resolve(firebaseRouteResult)
-      : calculateRouteWithDirectionsAPI(riderPosition, destination)
+      : calculateRouteLocally(riderPosition, destination)
 
     routePromise
       .then((result) => {
@@ -5995,7 +5994,7 @@ export default function DeliveryHome() {
     activeOrderRealtime?.route_points,
     riderLocation?.[0],
     riderLocation?.[1],
-    calculateRouteWithDirectionsAPI,
+    calculateRouteLocally,
     updateLiveTrackingPolyline
   ])
 
@@ -6051,7 +6050,7 @@ export default function DeliveryHome() {
     lastRiderPositionRef.current = { lat: newLat, lng: newLng };
   }, []);
 
-  // Initialize Directions Map with Google Maps Directions API (Zomato-style)
+  // Initialize Directions Map with local route calculation (Zomato-style UI, no Directions API)
   useEffect(() => {
     if (!showDirectionsMap || !selectedCafe) {
       setDirectionsMapLoading(false)
@@ -6129,49 +6128,11 @@ export default function DeliveryHome() {
         const destinationName = firebaseDestination.type === 'customer'
           ? (selectedCafe.customerName || 'Customer')
           : (selectedCafe.name || 'Cafe');
-
-
-
-
-
-        // Create map instance
-        const map = new MapCtor(directionsMapContainerRef.current, {
-          center: { lat: currentLocation[0], lng: currentLocation[1] },
-          zoom: 18,
-          minZoom: 10, // Minimum zoom level (city/area view)
-          maxZoom: 21, // Maximum zoom level - allow full zoom
-          mapTypeId: window.google.maps.MapTypeId?.ROADMAP || 'roadmap',
-          disableDefaultUI: false,
-          zoomControl: true,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false
-        });
-
-        directionsMapInstanceRef.current = map;
-
-        // Initialize Directions Service
-        if (!directionsServiceRef.current) {
-          directionsServiceRef.current = null;
-        }
-
-        // Initialize Directions Renderer
-        if (!directionsRendererRef.current) {
-          // Don't create DirectionsRenderer with map - it adds dots
-          // We'll extract route path and use custom polyline instead
-          directionsRendererRef.current = null;
-          // Explicitly don't set map - we use custom polyline instead
-        } else {
-          // Don't set map - we use custom polyline instead
-          // directionsRendererRef.current.setMap(map);
-        }
-
-        // Calculate route using Directions API
-        const routeResult = await calculateRouteWithDirectionsAPI(currentLocation, destinationLocation);
+        // Calculate route using local haversine logic
+        const routeResult = await calculateRouteLocally(currentLocation, destinationLocation);
 
         if (routeResult) {
-          // Don't create main route polyline - only live tracking polyline will be shown
-          // Remove old custom polyline if exists (cleanup)
+          // Cleanup existing polylines
           try {
             if (routePolylineRef.current) {
               routePolylineRef.current.setMap(null);
@@ -6280,7 +6241,7 @@ export default function DeliveryHome() {
       }
     };
     // Only re-initialize if showDirectionsMap, selectedCafe.id, or navigationMode changes
-    // Don't include calculateRouteWithDirectionsAPI to prevent unnecessary re-renders
+    // Don't include calculateRouteLocally to prevent unnecessary re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showDirectionsMap, selectedCafe?.id, navigationMode, selectedCafe?.customerLat, selectedCafe?.customerLng, riderLocation])
 
@@ -6334,7 +6295,7 @@ export default function DeliveryHome() {
             return
           }
 
-          calculateRouteWithDirectionsAPI(
+          calculateRouteLocally(
             [newPosition.lat, newPosition.lng],
             { lat: firebaseDestination.lat, lng: firebaseDestination.lng }
           ).then(result => {
@@ -6620,7 +6581,7 @@ export default function DeliveryHome() {
                 return
               }
 
-              calculateRouteWithDirectionsAPI(
+              calculateRouteLocally(
                 riderLocation,
                 { lat: firebaseDestination.lat, lng: firebaseDestination.lng }
               ).then(result => {
@@ -6678,7 +6639,7 @@ export default function DeliveryHome() {
 
     restoreActiveOrder();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Run only on mount - calculateRouteWithDirectionsAPI is stable
+  }, []) // Run only on mount - calculateRouteLocally is stable
 
   // Ensure polyline is displayed when map becomes ready and there's an active route
   useEffect(() => {
@@ -7407,7 +7368,7 @@ export default function DeliveryHome() {
           return
         }
 
-        calculateRouteWithDirectionsAPI(
+        calculateRouteLocally(
           riderLocation,
           { lat: firebaseDestination.lat, lng: firebaseDestination.lng }
         ).then(directionsResult => {
@@ -7475,7 +7436,7 @@ export default function DeliveryHome() {
     selectedCafe?.customerLat,
     selectedCafe?.customerLng,
     riderLocation,
-    calculateRouteWithDirectionsAPI,
+    calculateRouteLocally,
     updateLiveTrackingPolyline
   ]);
 

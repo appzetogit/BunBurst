@@ -16,13 +16,8 @@ export default function AddToCartButton({ item, className = "" }) {
     e.preventDefault()
     e.stopPropagation()
 
-    if (!isModuleAuthenticated('user')) {
-      toast.error("Please login to add items to cart")
-      navigate('/user/auth/sign-in', { state: { from: location.pathname } })
-      return
-    }
-
     addToCart(item)
+    toast.success("Added to cart")
   }
 
   const handleIncrease = (e) => {

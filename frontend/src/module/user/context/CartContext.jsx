@@ -68,31 +68,13 @@ export function CartProvider({ children }) {
     }
   }, [cart])
 
-  // Clear cart on logout so next login always starts with an empty cart.
+  // Keep track of auth status for reference, but don't clear the cart.
   useEffect(() => {
     const handleAuthChange = () => {
-      const isAuthenticatedNow = isUserAuthenticated()
-      const wasAuthenticated = wasAuthenticatedRef.current
-      const hasStoredCart = !!localStorage.getItem("cart")
-
-      if (!isAuthenticatedNow && (wasAuthenticated || hasStoredCart)) {
-        setCart([])
-        try {
-          localStorage.removeItem("cart")
-        } catch {
-          // ignore storage errors
-        }
-      }
-
-      wasAuthenticatedRef.current = isAuthenticatedNow
+      wasAuthenticatedRef.current = isUserAuthenticated()
     }
-
     window.addEventListener("userAuthChanged", handleAuthChange)
-    handleAuthChange()
-
-    return () => {
-      window.removeEventListener("userAuthChanged", handleAuthChange)
-    }
+    return () => window.removeEventListener("userAuthChanged", handleAuthChange)
   }, [])
 
   const addToCart = (item, sourcePosition = null) => {

@@ -86,17 +86,19 @@ export function OrdersProvider({ children }) {
     }
   }, [refetchOrders])
 
-  const createOrder = (orderData) => {
-    // Backward compatible: keep a local placeholder (optimistic UI),
-    // but never treat it as the source of truth for status.
-    const newOrder = {
-      id: `LOCAL-${Date.now()}`,
-      ...orderData,
-      status: orderData?.status || "pending",
-      createdAt: orderData?.createdAt || new Date().toISOString(),
+  const createOrder = async (orderData) => {
+    try {
+      const response = await orderAPI.createOrder(orderData)
+      const newOrder = response?.data?.data?.order || response?.data?.order
+      if (newOrder) {
+        mergeOrders([newOrder])
+        return normalizeOrderId(newOrder)
+      }
+      throw new Error("Failed to create order")
+    } catch (error) {
+      console.error("Error creating order:", error)
+      throw error
     }
-    setOrders((prev) => [newOrder, ...(prev || [])])
-    return newOrder.id
   }
 
   const getOrderById = (orderId) => {
