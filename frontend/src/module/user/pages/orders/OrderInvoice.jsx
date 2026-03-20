@@ -229,6 +229,11 @@ export default function OrderInvoice() {
                               />
                               <div className="min-w-0 flex-1">
                                 <span className="font-medium block">{item.name}</span>
+                                {(item.variantName || item.variant?.name) && (
+                                  <span className="text-muted-foreground text-xs block">
+                                    {(item.variantName || item.variant?.name)}
+                                  </span>
+                                )}
                                 <span className="text-muted-foreground sm:hidden text-xs">
                                   Qty: {item.quantity} × ${item.price.toFixed(2)}
                                 </span>
@@ -292,3 +297,4 @@ export default function OrderInvoice() {
     </AnimatedPage>
   )
 }
+

@@ -1660,6 +1660,9 @@ function generateDigitalBillHtml(order) {
     });
 
     const itemsHtml = (order.items || []).map(item => {
+      const variantText = item.variantName
+        ? `<br><span style="font-size: 12px; color: #666;">Variant: ${item.variantName}</span>`
+        : '';
       const addonText = item.addons && item.addons.length > 0
         ? `<br><span style="font-size: 12px; color: #666;">Addons: ${item.addons.map(a => a.name).join(', ')}</span>`
         : '';
@@ -1667,6 +1670,7 @@ function generateDigitalBillHtml(order) {
         <tr style="border-bottom: 1px solid #eee;">
           <td style="padding: 10px;">
             <div style="font-weight: 500;">${item.name}</div>
+            ${variantText}
             ${addonText}
           </td>
           <td style="padding: 10px; text-align: center;">${item.quantity}</td>

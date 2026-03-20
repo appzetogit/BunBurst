@@ -63,6 +63,7 @@ export default function CafeDetails() {
   const [showManageCollections, setShowManageCollections] = useState(false)
   const [showItemDetail, setShowItemDetail] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [selectedVariants, setSelectedVariants] = useState([])
   const [showFilterSheet, setShowFilterSheet] = useState(false)
   const [showLocationSheet, setShowLocationSheet] = useState(false)
   const [showCafeInfoSheet, setShowCafeInfoSheet] = useState(false)
@@ -94,6 +95,7 @@ export default function CafeDetails() {
   const [itemAddons, setItemAddons] = useState([])
   const [selectedAddons, setSelectedAddons] = useState([])
   const [loadingAddons, setLoadingAddons] = useState(false)
+  const [variantQuantities, setVariantQuantities] = useState({})
 
   // Cafe data state
   const [cafe, setCafe] = useState(null)
@@ -105,6 +107,145 @@ export default function CafeDetails() {
   const isVegFoodType = (foodType) => {
     const normalized = String(foodType || "").trim().toLowerCase()
     return normalized === "veg" || normalized === "pure veg" || normalized === "vegan"
+  }
+
+  const getItemVariations = (item) => {
+    if (!item) return []
+    const variations = item.variations || item.variants || []
+    return Array.isArray(variations) ? variations.filter(Boolean) : []
+  }
+
+  const getVariantId = (variant) => {
+    const rawId = variant?.id ?? variant?._id ?? null
+    if (!rawId) return null
+    if (typeof rawId === "string" || typeof rawId === "number") return String(rawId)
+    if (typeof rawId === "object") {
+      if (rawId.$oid) return String(rawId.$oid)
+      if (typeof rawId.toString === "function") {
+        const text = rawId.toString()
+        if (text && text !== "[object Object]") return String(text)
+      }
+    }
+    return null
+  }
+
+  const getVariantKey = (variant) => {
+    if (!variant) return null
+    const directId = getVariantId(variant)
+    if (directId) return String(directId)
+    const name = typeof variant.name === "string" ? variant.name.trim().toLowerCase().replace(/\s+/g, "-") : ""
+    const price = typeof variant.price === "number" ? String(variant.price) : ""
+    if (name && price) return `${name}-${price}`
+    if (name) return name
+    if (price) return `price-${price}`
+    return null
+  }
+
+  const getVariantMatchKey = (variant) => {
+    return (
+      getVariantKey(variant) ||
+      (typeof variant?.name === "string" ? variant.name.trim().toLowerCase() : "") ||
+      null
+    )
+  }
+
+  const toggleVariantSelection = (variant) => {
+    const matchKey = getVariantMatchKey(variant)
+    if (!matchKey) return
+    setSelectedVariants(prev => {
+      const isSelected = prev.some(v => getVariantMatchKey(v) === matchKey)
+      if (isSelected) {
+        setVariantQuantities(current => {
+          const next = { ...current }
+          delete next[matchKey]
+          return next
+        })
+        return prev.filter(v => getVariantMatchKey(v) !== matchKey)
+      }
+      setVariantQuantities(current => ({
+        ...current,
+        [matchKey]: current[matchKey] || 1,
+      }))
+      return [...prev, variant]
+    })
+  }
+
+  const isVariantOutOfStock = (variant) => {
+    if (!variant) return false
+    const stockValue = typeof variant.stock === "string" ? variant.stock.trim().toLowerCase() : variant.stock
+    return stockValue === 0 || stockValue === "0" || stockValue === "out of stock"
+  }
+
+  const buildCartItemId = (itemId, addons = [], variant = null) => {
+    const variantKey = getVariantKey(variant)
+    const addonsKey = addons.length > 0
+      ? addons.map(a => a._id || a.id).sort().join("-")
+      : null
+    const parts = [itemId]
+    if (variantKey) parts.push(`variant-${variantKey}`)
+    if (addonsKey) parts.push(`addons-${addonsKey}`)
+    return parts.join("-")
+  }
+
+  const getVariantQuantity = (variant) => {
+    const matchKey = getVariantMatchKey(variant)
+    if (!matchKey) return 0
+    return variantQuantities[matchKey] || 0
+  }
+
+  const incrementVariantQuantity = (variant) => {
+    const matchKey = getVariantMatchKey(variant)
+    if (!matchKey || isVariantOutOfStock(variant)) return
+
+    setSelectedVariants(prev => {
+      const isSelected = prev.some(v => getVariantMatchKey(v) === matchKey)
+      return isSelected ? prev : [...prev, variant]
+    })
+
+    setVariantQuantities(prev => ({
+      ...prev,
+      [matchKey]: (prev[matchKey] || 0) + 1,
+    }))
+  }
+
+  const decrementVariantQuantity = (variant) => {
+    const matchKey = getVariantMatchKey(variant)
+    if (!matchKey) return
+    const currentQuantity = getVariantQuantity(variant)
+    if (currentQuantity <= 0) return
+
+    if (currentQuantity === 1) {
+      setVariantQuantities(prev => {
+        const next = { ...prev }
+        delete next[matchKey]
+        return next
+      })
+      setSelectedVariants(prev => prev.filter(v => getVariantMatchKey(v) !== matchKey))
+      return
+    }
+
+    setVariantQuantities(prev => ({
+      ...prev,
+      [matchKey]: currentQuantity - 1,
+    }))
+  }
+
+  const getPreferredVariantForItem = (item) => {
+    const variations = getItemVariations(item)
+    if (variations.length === 0) return null
+    const cartVariantKeys = cart
+      .filter(cartItem => (cartItem.baseItemId || cartItem.id) === item.id)
+      .map(cartItem => cartItem.variantKey || cartItem.variantId || null)
+      .filter(Boolean)
+    const uniqueVariantKeys = [...new Set(cartVariantKeys)]
+    if (uniqueVariantKeys.length === 1) {
+      const match = variations.find(v => getVariantKey(v) === uniqueVariantKeys[0] || getVariantId(v) === uniqueVariantKeys[0])
+      return match || variations[0]
+    }
+    if (uniqueVariantKeys.length === 0) {
+      return variations[0]
+    }
+    return null
   }
 
   useEffect(() => {
@@ -785,7 +926,8 @@ export default function CafeDetails() {
     const cartQuantities = {}
     cart.forEach((item) => {
       if (item.cafe === cafe.name) {
-        cartQuantities[item.id] = item.quantity || 0
+        const baseId = item.baseItemId || item.id
+        cartQuantities[baseId] = (cartQuantities[baseId] || 0) + (item.quantity || 0)
       }
     })
     setQuantities(cartQuantities)
@@ -793,7 +935,7 @@ export default function CafeDetails() {
   }, [cafe?.name, cart])
 
   // Helper function to update item quantity in both local state and cart
-  const updateItemQuantity = (item, newQuantity, event = null, addons = []) => {
+  const updateItemQuantity = (item, newQuantity, event = null, addons = [], variant = null) => {
     // Check authentication
     if (!isModuleAuthenticated('user')) {
       toast.error("Please login to add items to cart")
@@ -808,15 +950,23 @@ export default function CafeDetails() {
     }
 
     // Generate a unique ID if there are addons
-    const cartItemId = addons.length > 0
-      ? `${item.id}-${addons.map(a => a._id || a.id).sort().join('-')}`
-      : item.id
+    const cartItemId = buildCartItemId(item.id, addons, variant)
 
     // Update local state (only for the base item to show quantity badge in list)
-    setQuantities((prev) => ({
-      ...prev,
-      [item.id]: newQuantity,
-    }))
+    setQuantities((prev) => {
+      const baseItemId = item.id
+      const otherVariantsTotal = cart.reduce((sum, cartItem) => {
+        const cartBaseId = cartItem.baseItemId || cartItem.id
+        if (cartBaseId !== baseItemId) return sum
+        if (cartItem.id === cartItemId) return sum
+        return sum + (cartItem.quantity || 0)
+      }, 0)
+      const nextTotal = newQuantity > 0 ? otherVariantsTotal + newQuantity : otherVariantsTotal
+      return {
+        ...prev,
+        [baseItemId]: nextTotal,
+      }
+    })
 
     // CRITICAL: Validate cafe data before adding to cart
     if (!cafe || !cafe.name) {
@@ -835,12 +985,21 @@ export default function CafeDetails() {
 
     // Prepare cart item with all required properties
     const addonsPrice = addons.reduce((sum, addon) => sum + (addon.price || 0), 0)
+    const variantId = getVariantId(variant)
+    const variantKey = getVariantKey(variant)
+    const variantPrice = typeof variant?.price === "number" ? variant.price : null
+    const basePrice = variantPrice !== null ? variantPrice : item.price
     const cartItem = {
       id: cartItemId,
       baseItemId: item.id, // Store original ID
       name: item.name,
-      price: item.price + addonsPrice,
-      basePrice: item.price,
+      price: basePrice + addonsPrice,
+      basePrice: basePrice,
+      variantId: variantId,
+      variantKey: variantKey,
+      variantName: variant?.name || null,
+      variantPrice: basePrice,
+      variant: variantId ? { id: variantId, name: variant?.name || "", price: basePrice } : null,
       addons: addons.map(a => ({ addonId: a._id || a.id, name: a.name, price: a.price })), // Keep for backward compatibility
       selectedAddons: addons.map(a => ({ addonId: a._id || a.id, name: a.name, price: a.price })), // New field as requested
       image: item.image,
@@ -1105,11 +1264,39 @@ export default function CafeDetails() {
 
   // Handle item card click
   const handleItemClick = (item) => {
+    const variations = getItemVariations(item)
+    const initialVariantQuantities = {}
+    const initiallySelectedVariants = []
+
+    variations.forEach((variant) => {
+      const cartItemId = buildCartItemId(item.id, [], variant)
+      const existingCartItem = getCartItem(cartItemId)
+      const quantity = existingCartItem?.quantity || 0
+      if (quantity > 0) {
+        const matchKey = getVariantMatchKey(variant)
+        if (matchKey) {
+          initialVariantQuantities[matchKey] = quantity
+          initiallySelectedVariants.push(variant)
+        }
+      }
+    })
+
+    if (variations.length > 0 && initiallySelectedVariants.length === 0) {
+      const defaultVariant = variations[0]
+      const defaultMatchKey = getVariantMatchKey(defaultVariant)
+      if (defaultMatchKey) {
+        initialVariantQuantities[defaultMatchKey] = 1
+        initiallySelectedVariants.push(defaultVariant)
+      }
+    }
+
     setSelectedItem({
       ...item,
       isVeg: item.isVeg !== undefined ? item.isVeg : isVegFoodType(item.foodType),
     })
-    setItemDetailQuantity(Math.max(1, quantities[item.id] || 1))
+    setSelectedVariants(initiallySelectedVariants)
+    setVariantQuantities(initialVariantQuantities)
+    setItemDetailQuantity(1)
     setSelectedAddons([]) // Reset selected addons when opening item
     setShowItemDetail(true)
   }
@@ -1136,8 +1323,20 @@ export default function CafeDetails() {
     } else if (!showItemDetail) {
       setItemAddons([])
       setSelectedAddons([])
+      setSelectedVariants([])
+      setVariantQuantities({})
     }
   }, [showItemDetail, selectedItem])
+
+  useEffect(() => {
+    if (!showItemDetail || !selectedItem) return
+    if (getItemVariations(selectedItem).length > 0) return
+    if (selectedVariants.length !== 1) return
+    const primaryVariant = selectedVariants[0]
+    const cartItemId = buildCartItemId(selectedItem.id, selectedAddons, primaryVariant)
+    const existingCartItem = getCartItem(cartItemId)
+    setItemDetailQuantity(Math.max(1, existingCartItem?.quantity || 1))
+  }, [showItemDetail, selectedItem, selectedVariants, selectedAddons, getCartItem])
 
   const toggleAddon = (addon) => {
     setSelectedAddons(prev => {
@@ -1152,9 +1351,31 @@ export default function CafeDetails() {
 
   const calculateTotalPrice = () => {
     if (!selectedItem) return 0
-    const basePrice = selectedItem.price || 0
     const addonsPrice = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-    return (basePrice + addonsPrice) * Math.max(1, itemDetailQuantity)
+    const hasVariantSelections = selectedVariants.some(variant => getVariantQuantity(variant) > 0)
+
+    if (hasVariantSelections) {
+      return selectedVariants.reduce((sum, variant) => {
+        const quantity = getVariantQuantity(variant)
+        if (quantity <= 0) return sum
+        const variantPrice = typeof variant?.price === "number" ? variant.price : null
+        const basePrice = variantPrice !== null ? variantPrice : (selectedItem.price || 0)
+        return sum + ((basePrice + addonsPrice) * quantity)
+      }, 0)
+    }
+
+    const selectedBase = selectedVariants.length > 0
+      ? selectedVariants.reduce((sum, variant) => {
+          const variantPrice = typeof variant?.price === "number" ? variant.price : null
+          const basePrice = variantPrice !== null ? variantPrice : (selectedItem.price || 0)
+          return sum + basePrice
+        }, 0)
+      : (selectedItem.price || 0)
+    const variantsCount = selectedVariants.length > 0 ? selectedVariants.length : 1
+    const perUnitTotal = selectedVariants.length > 0
+      ? (selectedBase + addonsPrice * variantsCount)
+      : (selectedBase + addonsPrice)
+    return perUnitTotal * Math.max(1, itemDetailQuantity)
   }
 
   // Helper function to calculate final price after discount
@@ -1366,6 +1587,11 @@ export default function CafeDetails() {
 
   // Only show grayscale when user is out of service (not based on cafe availability)
   const shouldShowGrayscale = isOutOfService
+  const selectedVariantOutOfStock = selectedVariants.some(v => isVariantOutOfStock(v))
+  const isDetailOutOfStock = selectedItem
+    ? (isItemOutOfStock(selectedItem) || selectedVariantOutOfStock)
+    : false
+  const selectedItemVariations = getItemVariations(selectedItem)
 
   return (
     <>
@@ -1661,6 +1887,9 @@ export default function CafeDetails() {
                       <div className="space-y-0">
                         {sortMenuItems(filterMenuItems(section.items)).map((item) => {
                           const quantity = quantities[item.id] || 0
+                          const variations = getItemVariations(item)
+                          const hasVariations = variations.length > 0
+                          const preferredVariant = getPreferredVariantForItem(item)
                           // Determine veg/non-veg based on foodType
                           const isVeg = isVegFoodType(item.foodType)
                           const isOutOfStock = isItemOutOfStock(item)
@@ -1778,7 +2007,17 @@ export default function CafeDetails() {
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         if (!shouldShowGrayscale && !isOutOfStock) {
-                                          updateItemQuantity(item, Math.max(0, quantity - 1), e)
+                                          if (hasVariations && !preferredVariant) {
+                                            handleItemClick(item)
+                                          } else {
+                                            updateItemQuantity(
+                                              item,
+                                              Math.max(0, quantity - 1),
+                                              e,
+                                              [],
+                                              preferredVariant
+                                            )
+                                          }
                                         }
                                       }}
                                       disabled={shouldShowGrayscale || isOutOfStock}
@@ -1791,7 +2030,11 @@ export default function CafeDetails() {
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         if (!shouldShowGrayscale && !isOutOfStock) {
-                                          updateItemQuantity(item, quantity + 1, e)
+                                          if (hasVariations && !preferredVariant) {
+                                            handleItemClick(item)
+                                          } else {
+                                            updateItemQuantity(item, quantity + 1, e, [], preferredVariant)
+                                          }
                                         }
                                       }}
                                       disabled={shouldShowGrayscale || isOutOfStock}
@@ -1809,7 +2052,7 @@ export default function CafeDetails() {
                                     onClick={(e) => {
                                       e.stopPropagation()
                                       if (!shouldShowGrayscale && !isOutOfStock) {
-                                        if (item.categoryId) {
+                                        if (hasVariations || item.categoryId) {
                                           handleItemClick(item)
                                         } else {
                                           updateItemQuantity(item, 1, e)
@@ -1885,6 +2128,9 @@ export default function CafeDetails() {
                                 <div className="space-y-0">
                                   {sortMenuItems(filterMenuItems(subsection.items)).map((item) => {
                                     const quantity = quantities[item.id] || 0
+                                    const variations = getItemVariations(item)
+                                    const hasVariations = variations.length > 0
+                                    const preferredVariant = getPreferredVariantForItem(item)
                                     // Determine veg/non-veg based on foodType
                                     const isVeg = isVegFoodType(item.foodType)
                                     const isOutOfStock = isItemOutOfStock(item)
@@ -1994,29 +2240,43 @@ export default function CafeDetails() {
                                                 : 'border-green-600 text-green-600 hover:bg-green-50'
                                                 }`}
                                             >
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation()
-                                                  if (!shouldShowGrayscale && !isOutOfStock) {
-                                                    updateItemQuantity(item, Math.max(0, quantity - 1), e)
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                if (!shouldShowGrayscale && !isOutOfStock) {
+                                                  if (hasVariations && !preferredVariant) {
+                                                    handleItemClick(item)
+                                                  } else {
+                                                    updateItemQuantity(
+                                                      item,
+                                                      Math.max(0, quantity - 1),
+                                                      e,
+                                                      [],
+                                                      preferredVariant
+                                                    )
                                                   }
-                                                }}
-                                                disabled={shouldShowGrayscale || isOutOfStock}
-                                                className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
-                                              >
+                                                }
+                                              }}
+                                              disabled={shouldShowGrayscale || isOutOfStock}
+                                              className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                            >
                                                 <Minus size={14} />
                                               </button>
                                               <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation()
-                                                  if (!shouldShowGrayscale && !isOutOfStock) {
-                                                    updateItemQuantity(item, quantity + 1, e)
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                if (!shouldShowGrayscale && !isOutOfStock) {
+                                                  if (hasVariations && !preferredVariant) {
+                                                    handleItemClick(item)
+                                                  } else {
+                                                    updateItemQuantity(item, quantity + 1, e, [], preferredVariant)
                                                   }
-                                                }}
-                                                disabled={shouldShowGrayscale || isOutOfStock}
-                                                className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
-                                              >
+                                                }
+                                              }}
+                                              disabled={shouldShowGrayscale || isOutOfStock}
+                                              className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                            >
                                                 <Plus size={14} className="stroke-[3px]" />
                                               </button>
                                             </motion.div>
@@ -2026,15 +2286,15 @@ export default function CafeDetails() {
                                               initial={{ opacity: 0, scale: 0.9 }}
                                               animate={{ opacity: 1, scale: 1 }}
                                               transition={{ duration: 0.3, type: "spring", damping: 20, stiffness: 300 }}
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                if (!shouldShowGrayscale && !isOutOfStock) {
-                                                  if (item.categoryId) {
-                                                    handleItemClick(item)
-                                                  } else {
-                                                    updateItemQuantity(item, 1, e)
-                                                  }
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              if (!shouldShowGrayscale && !isOutOfStock) {
+                                                if (hasVariations || item.categoryId) {
+                                                  handleItemClick(item)
+                                                } else {
+                                                  updateItemQuantity(item, 1, e)
                                                 }
+                                              }
                                               }}
                                               disabled={shouldShowGrayscale || isOutOfStock}
                                               className={`absolute bottom-1 left-1/2 -translate-x-1/2 bg-white border font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-colors ${shouldShowGrayscale || isOutOfStock
@@ -2775,6 +3035,101 @@ export default function CafeDetails() {
                       {selectedItem.description}
                     </p>
 
+                    {selectedItemVariations.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-200 mb-2">Choose size</p>
+                        <div className="space-y-2">
+                          {selectedItemVariations.map((variant) => {
+                            const variantId = getVariantId(variant)
+                            const variantKey = getVariantKey(variant)
+                            const isSelected = selectedVariants.some(v => getVariantMatchKey(v) === getVariantMatchKey(variant))
+                            const isVariantSoldOut = isVariantOutOfStock(variant)
+                            const variantQuantity = getVariantQuantity(variant)
+                            const variantPrice = typeof variant?.price === "number"
+                              ? variant.price
+                              : (selectedItem.price || 0)
+
+                            return (
+                              <div
+                                key={variantKey || variantId || variant.name}
+                                role="button"
+                                tabIndex={isVariantSoldOut ? -1 : 0}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (!isVariantSoldOut) {
+                                    toggleVariantSelection(variant)
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if ((e.key === "Enter" || e.key === " ") && !isVariantSoldOut) {
+                                    e.preventDefault()
+                                    toggleVariantSelection(variant)
+                                  }
+                                }}
+                                className={`w-full text-left border rounded-lg px-3 py-2 flex items-center justify-between transition-colors ${
+                                  isSelected
+                                    ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a]"
+                                } ${isVariantSoldOut ? "opacity-50 cursor-not-allowed" : "hover:border-red-400"}`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className={`h-4 w-4 rounded-[4px] border flex items-center justify-center ${
+                                    isSelected ? "border-red-500 bg-red-500" : "border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1a1a1a]"
+                                  }`}>
+                                    {isSelected && <Check className="h-3 w-3 text-white" />}
+                                  </div>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">{variant.name}</span>
+                                  {isVariantSoldOut && (
+                                    <span className="text-xs text-red-500">Out of stock</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    decrementVariantQuantity(variant)
+                                  }}
+                                  disabled={isVariantSoldOut || variantQuantity <= 0}
+                                  className={`h-7 w-7 rounded-full border flex items-center justify-center ${
+                                    isVariantSoldOut || variantQuantity <= 0
+                                      ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                                      : "border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  }`}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </button>
+                                <span className="min-w-[16px] text-sm font-semibold text-gray-900 dark:text-white text-center">
+                                  {variantQuantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    incrementVariantQuantity(variant)
+                                  }}
+                                  disabled={isVariantSoldOut}
+                                  className={`h-7 w-7 rounded-full border flex items-center justify-center ${
+                                    isVariantSoldOut
+                                      ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                                      : "border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  }`}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              </div>
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  ₹{Math.round(variantPrice)}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Highly Reordered Progress Bar */}
                     {selectedItem.customisable && (
                       <div className="flex items-center gap-2 mb-4">
@@ -2804,62 +3159,76 @@ export default function CafeDetails() {
                   {/* Bottom Action Bar */}
                   <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4 bg-white dark:bg-[#1a1a1a]">
                     <div className="flex items-center gap-4">
-                      {/* Quantity Selector */}
-                      <div className={`flex items-center gap-3 border-2 rounded-lg px-3 h-[44px] bg-white dark:bg-[#2a2a2a] ${shouldShowGrayscale || isItemOutOfStock(selectedItem)
-                        ? 'border-gray-300 dark:border-gray-700 opacity-50'
-                        : 'border-gray-300 dark:border-gray-700'
-                        }`}>
-                        <button
-                          onClick={(e) => {
-                            if (!shouldShowGrayscale && !isItemOutOfStock(selectedItem)) {
-                              setItemDetailQuantity((prev) => Math.max(1, prev - 1))
-                            }
-                          }}
-                          disabled={itemDetailQuantity <= 1 || shouldShowGrayscale || isItemOutOfStock(selectedItem)}
-                          className={`${shouldShowGrayscale || isItemOutOfStock(selectedItem)
-                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed'
-                            }`}
-                        >
-                          <Minus className="h-5 w-5" />
-                        </button>
-                        <span className={`text-lg font-semibold min-w-[2rem] text-center ${shouldShowGrayscale || isItemOutOfStock(selectedItem)
-                          ? 'text-gray-400 dark:text-gray-600'
-                          : 'text-gray-900 dark:text-white'
+                      {selectedItemVariations.length === 0 && (
+                        <div className={`flex items-center gap-3 border-2 rounded-lg px-3 h-[44px] bg-white dark:bg-[#2a2a2a] ${shouldShowGrayscale || isDetailOutOfStock
+                          ? 'border-gray-300 dark:border-gray-700 opacity-50'
+                          : 'border-gray-300 dark:border-gray-700'
                           }`}>
-                          {itemDetailQuantity}
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            if (!shouldShowGrayscale && !isItemOutOfStock(selectedItem)) {
-                              setItemDetailQuantity((prev) => prev + 1)
+                          <button
+                            onClick={(e) => {
+                              if (!shouldShowGrayscale && !isDetailOutOfStock) {
+                                setItemDetailQuantity((prev) => Math.max(1, prev - 1))
+                              }
+                            }}
+                            disabled={itemDetailQuantity <= 1 || shouldShowGrayscale || isDetailOutOfStock}
+                            className={`${shouldShowGrayscale || isDetailOutOfStock
+                              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed'
+                              }`}
+                          >
+                            <Minus className="h-5 w-5" />
+                          </button>
+                          <span className={`text-lg font-semibold min-w-[2rem] text-center ${shouldShowGrayscale || isDetailOutOfStock
+                            ? 'text-gray-400 dark:text-gray-600'
+                            : 'text-gray-900 dark:text-white'
+                            }`}>
+                            {itemDetailQuantity}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              if (!shouldShowGrayscale && !isDetailOutOfStock) {
+                                setItemDetailQuantity((prev) => prev + 1)
+                              }
+                            }}
+                            disabled={shouldShowGrayscale || isDetailOutOfStock}
+                            className={shouldShowGrayscale || isDetailOutOfStock
+                              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                             }
-                          }}
-                          disabled={shouldShowGrayscale || isItemOutOfStock(selectedItem)}
-                          className={shouldShowGrayscale || isItemOutOfStock(selectedItem)
-                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                          }
-                        >
-                          <Plus className="h-5 w-5" />
-                        </button>
-                      </div>
+                          >
+                            <Plus className="h-5 w-5" />
+                          </button>
+                        </div>
+                      )}
 
                       {/* Add Item Button */}
                       <Button
-                        className={`flex-1 h-[44px] rounded-lg font-semibold flex items-center justify-center gap-2 ${shouldShowGrayscale || isItemOutOfStock(selectedItem)
+                        className={`flex-1 h-[44px] rounded-lg font-semibold flex items-center justify-center gap-2 ${shouldShowGrayscale || isDetailOutOfStock
                           ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-600 cursor-not-allowed opacity-50'
                           : 'bg-red-500 hover:bg-red-600 text-white'
                           }`}
                         onClick={(e) => {
-                          if (!shouldShowGrayscale && !isItemOutOfStock(selectedItem)) {
-                            updateItemQuantity(selectedItem, itemDetailQuantity, e, selectedAddons)
+                          if (!shouldShowGrayscale && !isDetailOutOfStock) {
+                            const variantsToAdd = selectedItemVariations.length > 0
+                              ? selectedVariants.filter(variant => getVariantQuantity(variant) > 0)
+                              : [null]
+                            const hasVariantsToAdd = variantsToAdd && variantsToAdd.length > 0
+                            if (selectedItemVariations.length > 0 && !hasVariantsToAdd) return
+                            variantsToAdd.forEach((variant, index) => {
+                              updateItemQuantity(
+                                selectedItem,
+                                selectedItemVariations.length > 0 ? getVariantQuantity(variant) : itemDetailQuantity,
+                                index === 0 ? e : null,
+                                selectedAddons,
+                                variant
+                              )
+                            })
                             setShowItemDetail(false)
                           }
                         }}
-                        disabled={shouldShowGrayscale || isItemOutOfStock(selectedItem)}
+                        disabled={shouldShowGrayscale || isDetailOutOfStock}
                       >
-                        {isItemOutOfStock(selectedItem) ? (
+                        {isDetailOutOfStock ? (
                           <span>OUT OF STOCK</span>
                         ) : (
                           <>

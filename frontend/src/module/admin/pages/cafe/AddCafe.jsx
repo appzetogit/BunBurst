@@ -50,6 +50,12 @@ export default function AddCafe() {
   const zonePolygonRef = useRef(null)
   const hasLoadedDraftRef = useRef(false)
 
+  const normalizeCuisines = (value) => {
+    if (Array.isArray(value)) return value.filter(Boolean)
+    if (typeof value === "string" && value.trim()) return [value.trim()]
+    return []
+  }
+
   const formatCafeName = (value) => {
     if (!value) return ""
     const cleaned = String(value)
@@ -357,7 +363,6 @@ export default function AddCafe() {
     estimatedDeliveryTime: "25-30 mins",
     featuredDish: "",
     featuredPrice: "249",
-    offer: "",
     diningSettings: {
       isEnabled: false,
       maxGuests: 6,
@@ -521,7 +526,7 @@ export default function AddCafe() {
             setStep2({
               menuImages: (data.menuImages || data.onboarding?.step2?.menuImageUrls || []).slice(0, 1),
               profileImage: data.profileImage || data.onboarding?.step2?.profileImageUrl || null,
-              cuisines: data.cuisines || data.onboarding?.step2?.cuisines || [],
+              cuisines: normalizeCuisines(data.cuisines || data.onboarding?.step2?.cuisines),
               openingTime:
                 data.deliveryTimings?.openingTime ||
                 data.onboarding?.step2?.deliveryTimings?.openingTime ||
@@ -624,7 +629,6 @@ export default function AddCafe() {
                 "25-30 mins",
               featuredDish: data.featuredDish || data.onboarding?.step4?.featuredDish || "",
               featuredPrice: data.featuredPrice || data.onboarding?.step4?.featuredPrice || "249",
-              offer: data.offer || data.onboarding?.step4?.offer || "",
               diningSettings: data.diningSettings || {
                 isEnabled: false,
                 maxGuests: 6,
@@ -1064,7 +1068,6 @@ export default function AddCafe() {
     if (!step4.featuredPrice || isNaN(parseFloat(step4.featuredPrice)) || parseFloat(step4.featuredPrice) <= 0) {
       errors.push("Featured dish price is required and must be greater than 0")
     }
-    if (!step4.offer?.trim()) errors.push("Special offer/promotion is required")
     return errors
   }
 
@@ -1191,7 +1194,7 @@ export default function AddCafe() {
         // Step 2
         menuImages: menuImagesData,
         profileImage: profileImageData,
-        cuisines: step2.cuisines,
+        cuisines: normalizeCuisines(step2.cuisines),
         openingTime: step2.openingTime,
         closingTime: step2.closingTime,
         openDays: step2.openDays,
@@ -1215,7 +1218,6 @@ export default function AddCafe() {
         estimatedDeliveryTime: step4.estimatedDeliveryTime,
         featuredDish: step4.featuredDish,
         featuredPrice: parseFloat(step4.featuredPrice) || 249,
-        offer: step4.offer,
         // Auth
         email: auth.email || null,
         phone: auth.phone || null,
@@ -1529,7 +1531,7 @@ export default function AddCafe() {
   const renderStep2 = () => (
     <div className="space-y-6">
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-5">
-        <h2 className="text-lg font-semibold text-black">Menu & photos</h2>
+        <h2 className="text-lg font-semibold text-black">Thumbnail image</h2>
         <div className="space-y-2">
           <Label className="text-xs font-medium text-gray-700">Menu images*</Label>
           <div className="mt-1 border border-dashed border-gray-300 rounded-md bg-gray-50/70 px-4 py-3">
@@ -1607,20 +1609,21 @@ export default function AddCafe() {
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-5">
         <div>
-          <Label className="text-xs text-gray-700">Select cuisines (up to 3)*</Label>
+          <Label className="text-xs text-gray-700">Select cuisines*</Label>
           <div className="mt-2 flex flex-wrap gap-2">
             {cuisinesOptions.map((cuisine) => {
-              const active = step2.cuisines.includes(cuisine)
+              const selectedCuisines = normalizeCuisines(step2.cuisines)
+              const active = selectedCuisines.includes(cuisine)
               return (
                 <button
                   key={cuisine}
                   type="button"
                   onClick={() => {
                     setStep2((prev) => {
-                      const exists = prev.cuisines.includes(cuisine)
-                      if (exists) return { ...prev, cuisines: prev.cuisines.filter((c) => c !== cuisine) }
-                      if (prev.cuisines.length >= 3) return prev
-                      return { ...prev, cuisines: [...prev.cuisines, cuisine] }
+                      const nextCuisines = normalizeCuisines(prev.cuisines)
+                      const exists = nextCuisines.includes(cuisine)
+                      if (exists) return { ...prev, cuisines: nextCuisines.filter((c) => c !== cuisine) }
+                      return { ...prev, cuisines: [...nextCuisines, cuisine] }
                     })
                   }}
                   className={`px-3 py-1.5 text-xs rounded-full ${active ? "bg-black text-white" : "bg-gray-100 text-gray-800"}`}
@@ -1952,10 +1955,6 @@ export default function AddCafe() {
         <div>
           <Label className="text-xs text-gray-700">Featured Dish Price (₹)*</Label>
           <Input type="number" value={step4.featuredPrice || ""} onChange={(e) => setStep4({ ...step4, featuredPrice: e.target.value })} className="mt-1 bg-white text-sm" placeholder="e.g., 249" min="0" />
-        </div>
-        <div>
-          <Label className="text-xs text-gray-700">Special Offer/Promotion*</Label>
-          <Input value={step4.offer || ""} onChange={(e) => setStep4({ ...step4, offer: e.target.value })} className="mt-1 bg-white text-sm" placeholder="e.g., Flat ₹50 OFF above ₹199" />
         </div>
       </section>
 

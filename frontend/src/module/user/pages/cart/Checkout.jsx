@@ -53,7 +53,10 @@ export default function Checkout() {
           price: item.price,
           quantity: item.quantity,
           image: item.image,
-          addons: item.addons || []
+          addons: item.addons || [],
+          variantId: item.variantId || item.variant?.id || null,
+          variantName: item.variantName || item.variant?.name || null,
+          variantPrice: item.variantPrice || item.variant?.price || item.basePrice || item.price || null
         })),
         address: defaultAddress,
         paymentMethod: defaultPayment,
@@ -249,6 +252,11 @@ export default function Checkout() {
                         />
                         <div className="flex-1">
                           <p className="font-medium text-sm md:text-base dark:text-gray-200">{item.name}</p>
+                          {(item.variantName || item.variant?.name) && (
+                            <p className="text-xs text-muted-foreground">
+                              {(item.variantName || item.variant?.name)}
+                            </p>
+                          )}
                           <p className="text-xs md:text-sm text-muted-foreground">
                             ₹{(item.price * 83).toFixed(0)} × {item.quantity}
                           </p>
@@ -295,3 +303,4 @@ export default function Checkout() {
     </AnimatedPage>
   )
 }
+

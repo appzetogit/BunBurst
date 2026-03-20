@@ -32,7 +32,16 @@ const orderItemSchema = new mongoose.Schema({
     addonId: String,
     name: String,
     price: Number
-  }]
+  }],
+  variantId: {
+    type: String
+  },
+  variantName: {
+    type: String
+  },
+  variantPrice: {
+    type: Number
+  }
 }, { _id: true });
 
 const orderSchema = new mongoose.Schema({

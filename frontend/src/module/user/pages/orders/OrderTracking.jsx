@@ -469,7 +469,10 @@ export default function OrderTracking() {
             items: apiOrder.items?.map(item => ({
               name: item.name,
               quantity: item.quantity,
-              price: item.price
+              price: item.price,
+              variantId: item.variantId || item.variant?.id || null,
+              variantName: item.variantName || item.variant?.name || null,
+              variantPrice: item.variantPrice || item.variant?.price || null
             })) || [],
             total: apiOrder.pricing?.total || 0,
             status: apiOrder.status || 'pending',
@@ -678,7 +681,10 @@ export default function OrderTracking() {
           items: apiOrder.items?.map(item => ({
             name: item.name,
             quantity: item.quantity,
-            price: item.price
+            price: item.price,
+            variantId: item.variantId || item.variant?.id || null,
+            variantName: item.variantName || item.variant?.name || null,
+            variantPrice: item.variantPrice || item.variant?.price || null
           })) || [],
           total: apiOrder.pricing?.total || 0,
           status: apiOrder.status || 'pending',
@@ -1057,7 +1063,10 @@ export default function OrderTracking() {
                       <span className="w-4 h-4 rounded border border-[#FFC400] flex items-center justify-center">
                         <span className="w-2 h-2 rounded-full bg-[#FFC400]" />
                       </span>
-                      <span>{item.quantity} x {item.name}</span>
+                      <span>
+                        {item.quantity} x {item.name}
+                        {item.variantName ? ` (${item.variantName})` : ""}
+                      </span>
                     </div>
                   ))}
                 </div>

@@ -265,7 +265,9 @@ export default function UserOrderDetails() {
 
       // 4. Items Table
       const tableData = items.map(item => [
-        item.name || 'Item',
+        (item.variantName || item.variant?.name)
+          ? `${item.name || 'Item'} (${item.variantName || item.variant?.name})`
+          : (item.name || 'Item'),
         String(item.quantity || item.qty || 1),
         `INR ${Number(item.price || 0).toFixed(2)}`,
         `INR ${Number((item.price || 0) * (item.quantity || item.qty || 1)).toFixed(2)}`
@@ -434,6 +436,7 @@ export default function UserOrderDetails() {
                 </div>
                 <span className="text-sm text-gray-700 font-medium">
                   {item.quantity || item.qty || 1} x {item.name}
+                  {(item.variantName || item.variant?.name) ? ` (${item.variantName || item.variant?.name})` : ""}
                 </span>
                 {item.addons && item.addons.length > 0 && (
                   <div className="text-[10px] text-gray-500 ml-5 mt-0.5">

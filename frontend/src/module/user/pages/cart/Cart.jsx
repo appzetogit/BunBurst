@@ -1250,7 +1250,10 @@ export default function Cart() {
         image: item.image || "",
         description: item.description || "",
         isVeg: item.isVeg !== false,
-        addons: item.selectedAddons || item.addons || []
+        addons: item.selectedAddons || item.addons || [],
+        variantId: item.variantId || item.variant?.id || null,
+        variantName: item.variantName || item.variant?.name || null,
+        variantPrice: item.variantPrice || item.variant?.price || item.basePrice || item.price || null
       }))
 
       console.log("?? Order items to send:", orderItems)
@@ -1766,6 +1769,11 @@ export default function Cart() {
 
                         <div className="flex-1 min-w-0">
                           <p className="text-sm md:text-base font-medium text-foreground leading-tight">{item.name}</p>
+                          {(item.variantName || item.variant?.name) && (
+                            <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">
+                              {(item.variantName || item.variant?.name)}
+                            </p>
+                          )}
                           {(item.selectedAddons || item.addons) && (item.selectedAddons || item.addons).length > 0 && (
                             <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">
                               {(item.selectedAddons || item.addons).map(a => a.name).join(", ")}

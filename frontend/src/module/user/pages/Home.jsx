@@ -186,7 +186,7 @@ export default function Home() {
   const [prevVegMode, setPrevVegMode] = useState(vegMode)
   const [showVegModePopup, setShowVegModePopup] = useState(false)
   const [showSwitchOffPopup, setShowSwitchOffPopup] = useState(false)
-  const [vegModeOption, setVegModeOption] = useState("all") // "all" or "pure-veg"
+  const [vegModeOption, setVegModeOption] = useState("all") // "all" or "veg"
   const [isApplyingVegMode, setIsApplyingVegMode] = useState(false)
   const [isSwitchingOffVegMode, setIsSwitchingOffVegMode] = useState(false)
   const [popupPosition, setPopupPosition] = useState({ top: 0, right: 0 })
@@ -560,10 +560,12 @@ export default function Home() {
 
       // Dietary Preference filter
       // In veg mode:
-      // - "all" should show veg dishes from all cafes
-      // - "pure-veg" should filter to pure veg cafes only
+      // - "all" should keep all cafes visible
+      // - "veg" should filter to veg cafes only
       if (vegMode) {
-        params.dietaryPreference = vegModeOption === 'pure-veg' ? 'pure-veg' : 'veg'
+        if (vegModeOption === 'veg') {
+          params.dietaryPreference = 'veg'
+        }
       }
 
       // Optional: Add zoneId if available (for sorting/filtering, but show all cafes)
@@ -778,8 +780,8 @@ export default function Home() {
 
   const isCafeAllowedByVegMode = (cafe) => {
     if (!vegMode) return true
+    if (vegModeOption === "all") return true
     const type = normalizeRestaurantType(cafe?.restaurantType)
-    if (vegModeOption === "pure-veg") return type === "pureveg"
     return type !== "nonveg"
   }
 
@@ -1139,31 +1141,6 @@ export default function Home() {
               overflowY: "hidden",
             }}
           >
-            {/* Special Offer Badge - New Asset Logo */}
-            <motion.div
-              className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer group"
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4 }}
-              whileHover={{ scale: 1.05, y: -5 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/user/under-250")}
-            >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-sm border border-border relative">
-                <OptimizedImage
-                  src={mealDealLogo}
-                  alt="Menu"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, 96px"
-                  objectFit="cover"
-                  placeholder="blur"
-                />
-              </div>
-              <span className="text-xs sm:text-sm font-medium text-foreground/80 text-center w-16 sm:w-20 truncate">
-                Menu
-              </span>
-            </motion.div>
             {loadingRealCategories ? (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -2132,31 +2109,31 @@ export default function Home() {
                   </span>
                 </label>
 
-                {/* Pure Veg cafes only */}
+                {/* Veg cafes only */}
                 <label
                   className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  onClick={() => setVegModeOption("pure-veg")}
+                  onClick={() => setVegModeOption("veg")}
                 >
                   <div className="relative flex items-center justify-center">
                     <input
                       type="radio"
                       name="vegModeOption"
-                      value="pure-veg"
-                      checked={vegModeOption === "pure-veg"}
-                      onChange={() => setVegModeOption("pure-veg")}
+                      value="veg"
+                      checked={vegModeOption === "veg"}
+                      onChange={() => setVegModeOption("veg")}
                       className="sr-only"
                     />
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${vegModeOption === "pure-veg"
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${vegModeOption === "veg"
                       ? "border-green-600 dark:border-green-500 bg-green-600 dark:bg-green-500"
                       : "border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a]"
                       }`}>
-                      {vegModeOption === "pure-veg" && (
+                      {vegModeOption === "veg" && (
                         <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-white" />
                       )}
                     </div>
                   </div>
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    Pure Veg cafes only
+                    Veg cafes only
                   </span>
                 </label>
               </div>

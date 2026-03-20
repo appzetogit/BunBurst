@@ -316,6 +316,9 @@ export default function Orders() {
                 image: item.image || null,
                 description: item.description || null,
                 isVeg: item.isVeg !== undefined ? item.isVeg : (item.category === 'veg' || item.type === 'veg'),
+                variantId: item.variantId || item.variant?.id || null,
+                variantName: item.variantName || item.variant?.name || null,
+                variantPrice: item.variantPrice || item.variant?.price || null,
                 _id: item._id || item.id,
                 id: item.id || item._id
               })),
@@ -776,6 +779,7 @@ Order again from this cafe in the ${companyName} app.`
                     order.items.map((item, idx) => {
                       const isVeg = item.isVeg !== undefined ? item.isVeg : (item.category === 'veg' || item.type === 'veg')
                       const itemName = item.name || item.foodName || 'Item'
+                      const itemVariant = item.variantName || item.variant?.name || ""
                       const itemQuantity = item.quantity || 1
                       const itemPrice = item.price || 0
                       const itemTotal = itemQuantity * itemPrice
@@ -805,7 +809,7 @@ Order again from this cafe in the ${companyName} app.`
                               </div>
                               <div className="flex-1 min-w-0">
                                 <span className="text-sm text-gray-800 font-medium block">
-                                  {itemQuantity} x {itemName}
+                                  {itemQuantity} x {itemName}{itemVariant ? ` (${itemVariant})` : ""}
                                 </span>
                                 {item.description && (
                                   <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>
