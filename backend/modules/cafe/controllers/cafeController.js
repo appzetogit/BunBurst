@@ -958,9 +958,12 @@ export const getCafesWithDishesUnder250 = async (req, res) => {
     };
 
     // Helper function to filter items under ₹250
+    const filterAvailableItems = (items) => {
+      return items.filter(item => item.isAvailable !== false);
+    };
+
     const filterItemsUnder250 = (items) => {
-      return items.filter(item => {
-        if (item.isAvailable === false) return false;
+      return filterAvailableItems(items).filter(item => {
         const finalPrice = getFinalPrice(item);
         return finalPrice <= MAX_PRICE;
       });
@@ -979,11 +982,19 @@ export const getCafesWithDishesUnder250 = async (req, res) => {
           return null; // Skip cafes without menus
         }
 
-        // Collect all dishes under ₹250 from all sections
+        // Collect all available dishes for display, while keeping a separate
+        // under-250 list to decide whether the cafe belongs on this route.
+        const allAvailableDishes = [];
         const dishesUnder250 = [];
 
         menu.sections.forEach(section => {
           if (section.isEnabled === false) return;
+
+          const availableSectionItems = filterAvailableItems(section.items || []);
+          allAvailableDishes.push(...availableSectionItems.map(item => ({
+            ...item,
+            sectionName: section.name
+          })));
 
           // Filter direct items in section
           const sectionItems = filterItemsUnder250(section.items || []);
@@ -994,6 +1005,13 @@ export const getCafesWithDishesUnder250 = async (req, res) => {
 
           // Filter items in subsections
           (section.subsections || []).forEach(subsection => {
+            const availableSubsectionItems = filterAvailableItems(subsection.items || []);
+            allAvailableDishes.push(...availableSubsectionItems.map(item => ({
+              ...item,
+              sectionName: section.name,
+              subsectionName: subsection.name
+            })));
+
             const subsectionItems = filterItemsUnder250(subsection.items || []);
             dishesUnder250.push(...subsectionItems.map(item => ({
               ...item,
@@ -1019,7 +1037,7 @@ export const getCafesWithDishesUnder250 = async (req, res) => {
               : "Multi-cuisine",
             price: cafe.priceRange || "$$",
             image: cafe.profileImage?.url || cafe.menuImages?.[0]?.url || "",
-            menuItems: dishesUnder250.map(item => ({
+            menuItems: allAvailableDishes.map(item => ({
               id: item.id,
               name: item.name,
               price: getFinalPrice(item),
