@@ -771,7 +771,49 @@ export default function SignIn() {
   }
 
   const handleGoogleSignIn = async () => {
-    await handleSocialSignIn(googleProvider, "Google")
+    // Check if running inside Flutter InAppWebView (mobile app)
+    if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+      setApiError("")
+      setIsLoading(true)
+      redirectHandledRef.current = false
+
+      try {
+        // Call native Android Google Account Sign-In via Flutter bridge
+        const result = await window.flutter_inappwebview.callHandler("nativeGoogleSignIn")
+
+        if (result && result.success && result.idToken) {
+          // Sign in to Firebase using the ID token from Flutter
+          const { GoogleAuthProvider, signInWithCredential } = await import("firebase/auth")
+          ensureFirebaseInitialized()
+
+          const credential = GoogleAuthProvider.credential(result.idToken)
+          const userCredential = await signInWithCredential(firebaseAuth, credential)
+
+          if (userCredential?.user) {
+            await processSignedInUser(userCredential.user, "flutter-native")
+          } else {
+            throw new Error("No user returned from Firebase credential sign-in.")
+          }
+        } else {
+          // User cancelled or Flutter bridge returned an error
+          console.log("Flutter native Google sign-in cancelled or failed:", result)
+          setIsLoading(false)
+          if (result && !result.success) {
+            setApiError("Google sign-in was cancelled. Please try again.")
+          }
+        }
+      } catch (error) {
+        console.error("Flutter bridge / Firebase credential error:", error)
+        setIsLoading(false)
+        redirectHandledRef.current = false
+        setApiError(
+          error?.message || "Google sign-in failed via app. Please try again."
+        )
+      }
+    } else {
+      // Fallback: normal browser — use existing Firebase popup/redirect flow
+      await handleSocialSignIn(googleProvider, "Google")
+    }
   }
 
   const handleFacebookSignIn = async () => {

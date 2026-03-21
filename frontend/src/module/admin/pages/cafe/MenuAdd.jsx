@@ -15,7 +15,7 @@ import {
     Trash2,
     Minus
 } from "lucide-react"
-import { adminAPI, cafeAPI, uploadAPI } from "@/lib/api"
+import { adminAPI, uploadAPI } from "@/lib/api"
 import { toast } from "sonner"
 
 export default function MenuAdd() {
@@ -31,9 +31,6 @@ export default function MenuAdd() {
     const [selectedSection, setSelectedSection] = useState(null)
     const [expandedSections, setExpandedSections] = useState({})
     const [saving, setSaving] = useState(false)
-    const [showNewCategoryInput, setShowNewCategoryInput] = useState(false)
-    const [newCategoryName, setNewCategoryName] = useState("")
-    const [creatingCategory, setCreatingCategory] = useState(false)
     const [editingDish, setEditingDish] = useState(null) // { dish, section }
     const [deletingDish, setDeletingDish] = useState(false)
     const dishSectionRef = useRef(null)
@@ -69,6 +66,18 @@ export default function MenuAdd() {
         return text.replace(/\b([a-z])/g, (match) => match.toUpperCase())
     }
 
+    const getCategoryKey = (category) =>
+        String(category?._id || category?.id || "")
+
+    const findGlobalCategoryById = (id) =>
+        globalCategories.find((cat) => getCategoryKey(cat) === String(id))
+
+    const findGlobalCategoryByName = (name) =>
+        globalCategories.find((cat) =>
+            normalizeSearchValue(cat?.name) === normalizeSearchValue(name) &&
+            normalizeSearchValue(name).length > 0
+        )
+
     // Preparation time options
     const preparationTimeOptions = [
         "10-20 mins",
@@ -85,7 +94,11 @@ export default function MenuAdd() {
         image: "",
         images: [],
         price: 0,
-        categoryId: "",
+        selectedCategoryId: "",
+        /* add-ons category correlation disabled
+        addonCategoryId: "",
+        useManualAddonCategory: false,
+        */
         foodType: "Non-Veg",
         category: "",
         description: "",
@@ -97,11 +110,63 @@ export default function MenuAdd() {
         variants: [], // Array of variants: [{ id, name, price, stock }]
     })
 
+    const getEmptyDishForm = (overrides = {}) => ({
+        name: "",
+        image: "",
+        images: [],
+        price: 0,
+        selectedCategoryId: "",
+        /* add-ons category correlation disabled
+        addonCategoryId: "",
+        useManualAddonCategory: false,
+        */
+        foodType: "Non-Veg",
+        category: "",
+        description: "",
+        preparationTime: "",
+        isAvailable: true,
+        isRecommended: false,
+        stock: true,
+        hasVariants: false,
+        variants: [],
+        ...overrides,
+    })
+
     // Fetch cafes and global categories
     useEffect(() => {
         fetchCafes()
         fetchGlobalCategories()
     }, [])
+
+    useEffect(() => {
+        if (!showAddDishModal || globalCategories.length === 0) return
+
+        setFormData((prev) => {
+            if (prev.selectedCategoryId || !prev.category) return prev
+            const matchedCategory = findGlobalCategoryByName(prev.category)
+            if (!matchedCategory) return prev
+
+            return {
+                ...prev,
+                selectedCategoryId: getCategoryKey(matchedCategory),
+            }
+        })
+    }, [globalCategories, showAddDishModal])
+
+    useEffect(() => {
+        if (!showAddDishModal) return
+
+        const originalBodyOverflow = document.body.style.overflow
+        const originalHtmlOverflow = document.documentElement.style.overflow
+
+        document.body.style.overflow = "hidden"
+        document.documentElement.style.overflow = "hidden"
+
+        return () => {
+            document.body.style.overflow = originalBodyOverflow
+            document.documentElement.style.overflow = originalHtmlOverflow
+        }
+    }, [showAddDishModal])
 
     const fetchGlobalCategories = async () => {
         try {
@@ -221,24 +286,12 @@ export default function MenuAdd() {
     const handleAddDish = (section) => {
         setSelectedSection(section)
         setEditingDish(null)
-        setFormData({
-            name: "",
-            image: "",
-            images: [],
-            price: 0,
-            categoryId: "",
-            foodType: "Non-Veg",
-            category: section.name,
-            description: "",
-            preparationTime: "",
-            isAvailable: true,
-            isRecommended: false,
-            stock: true,
-            hasVariants: false,
-            variants: [],
-        })
-        setShowNewCategoryInput(false)
-        setNewCategoryName("")
+        const matchedCategory = findGlobalCategoryByName(section?.name || "")
+        const matchedCategoryId = matchedCategory ? getCategoryKey(matchedCategory) : ""
+        setFormData(getEmptyDishForm({
+            category: matchedCategory?.name || "",
+            selectedCategoryId: matchedCategoryId,
+        }))
         setShowAddDishModal(true)
     }
 
@@ -276,14 +329,27 @@ export default function MenuAdd() {
         setSelectedSection(section)
         setEditingDish({ dish, section })
         const hasVariants = Array.isArray(dish.variations) && dish.variations.length > 0
-        setFormData({
+        const matchedCategoryByName = findGlobalCategoryByName(dish.category || section.name)
+        const matchedCategoryById = findGlobalCategoryById(dish.categoryId)
+        const selectedCategory = matchedCategoryByName || matchedCategoryById
+        const selectedCategoryId = selectedCategory ? getCategoryKey(selectedCategory) : ""
+        /* add-ons category correlation disabled
+        const addonCategoryId = matchedCategoryById ? getCategoryKey(matchedCategoryById) : ""
+        const useManualAddonCategory = Boolean(addonCategoryId && selectedCategoryId && addonCategoryId !== selectedCategoryId)
+        */
+
+        setFormData(getEmptyDishForm({
             name: dish.name || "",
             image: dish.image || "",
             images: Array.isArray(dish.images) ? dish.images : (dish.image ? [dish.image] : []),
             price: dish.price || 0,
-            categoryId: dish.categoryId || "",
+            selectedCategoryId,
+            /* add-ons category correlation disabled
+            addonCategoryId: useManualAddonCategory ? addonCategoryId : "",
+            useManualAddonCategory,
+            */
             foodType: dish.foodType || "Non-Veg",
-            category: dish.category || section.name,
+            category: selectedCategory?.name || dish.category || "",
             description: dish.description || "",
             preparationTime: dish.preparationTime || "",
             isAvailable: dish.isAvailable !== false,
@@ -300,9 +366,7 @@ export default function MenuAdd() {
                 price: v.price || 0,
                 stock: v.stock || "Unlimited",
             })) : [],
-        })
-        setShowNewCategoryInput(false)
-        setNewCategoryName("")
+        }))
         setShowAddDishModal(true)
     }
 
@@ -349,54 +413,6 @@ export default function MenuAdd() {
             toast.error(error.response?.data?.message || "Failed to delete dish")
         } finally {
             setDeletingDish(false)
-        }
-    }
-
-    const handleCreateCategory = async () => {
-        if (!newCategoryName.trim()) {
-            toast.error("Please enter a category name")
-            return
-        }
-
-        if (!selectedCafe?._id) {
-            toast.error("Please select a cafe first")
-            return
-        }
-
-        try {
-            setCreatingCategory(true)
-            // Create new section in menu
-            const currentMenu = menu || { sections: [] }
-            const newSection = {
-                id: `section-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                name: newCategoryName.trim(),
-                items: [],
-                subsections: [],
-                isEnabled: true,
-                order: currentMenu.sections.length,
-            }
-
-            const updatedSections = [...(currentMenu.sections || []), newSection]
-
-            // Update menu with new section using admin API
-            const updateResponse = await adminAPI.updateCafeMenu(selectedCafe._id, {
-                sections: updatedSections
-            })
-
-            if (updateResponse.data?.success) {
-                toast.success("Category created successfully")
-                setFormData({ ...formData, category: newCategoryName.trim() })
-                setShowNewCategoryInput(false)
-                setNewCategoryName("")
-                fetchMenu() // Refresh menu to get new section
-            } else {
-                toast.error("Failed to create category")
-            }
-        } catch (error) {
-            console.error("Error creating category:", error)
-            toast.error(error.response?.data?.message || "Failed to create category")
-        } finally {
-            setCreatingCategory(false)
         }
     }
 
@@ -451,10 +467,17 @@ export default function MenuAdd() {
             }
         }
 
-        if (!formData.category) {
-            toast.error("Please select or create a category")
+        if (!formData.selectedCategoryId) {
+            toast.error("Please select a category")
             return
         }
+
+        /* add-ons category correlation disabled
+        if (formData.useManualAddonCategory && !formData.addonCategoryId) {
+            toast.error("Please select add-on category correlation")
+            return
+        }
+        */
 
         if (!selectedCafe?._id) {
             toast.error("Please select a cafe")
@@ -466,6 +489,13 @@ export default function MenuAdd() {
 
             // Prepare dish data
             const existingDish = editingDish ? editingDish.dish : null
+            const selectedCategory = findGlobalCategoryById(formData.selectedCategoryId)
+            const dishCategoryName = selectedCategory?.name || formData.category || ""
+            /* add-ons category correlation disabled
+            const correlatedAddonCategoryId = formData.useManualAddonCategory
+                ? formData.addonCategoryId
+                : formData.selectedCategoryId
+            */
 
             // Prepare variations array
             const variations = formData.hasVariants && formData.variants.length > 0
@@ -492,8 +522,9 @@ export default function MenuAdd() {
                 discountType: existingDish?.discountType || "Percent",
                 discountAmount: existingDish?.discountAmount || 0,
                 foodType: formData.foodType,
-                category: formData.category,
-                categoryId: formData.categoryId || null,
+                category: dishCategoryName,
+                // add-ons category correlation disabled
+                categoryId: formData.selectedCategoryId || null,
                 description: formData.description || "",
                 availabilityTimeStart: existingDish?.availabilityTimeStart || "12:01 AM",
                 availabilityTimeEnd: existingDish?.availabilityTimeEnd || "11:57 PM",
@@ -541,11 +572,11 @@ export default function MenuAdd() {
                 })
             } else {
                 // Adding new dish
-                // Find section by name (category) and add item
-                // If section doesn't exist, create it
+                // Add the new dish to the selected section.
+                // If there is no existing section yet, create the first one using the selected category.
                 let sectionFound = false
                 updatedSections = currentMenu.sections.map(section => {
-                    if (section.name === formData.category || section.id === selectedSection?.id) {
+                    if (section.id === selectedSection?.id) {
                         sectionFound = true
                         return {
                             ...section,
@@ -559,7 +590,7 @@ export default function MenuAdd() {
                 if (!sectionFound) {
                     const newSection = {
                         id: `section-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                        name: formData.category,
+                        name: selectedSection?.name || dishCategoryName,
                         items: [dishData],
                         subsections: [],
                         isEnabled: true,
@@ -581,24 +612,14 @@ export default function MenuAdd() {
                     setEditingDish(null)
                     fetchMenu() // Refresh menu
                     // Reset form
-                    setFormData({
-                        name: "",
-                        image: "",
-                        images: [],
-                        price: 0,
-                        foodType: "Non-Veg",
-                        category: formData.category, // Keep selected category
-                        categoryId: "",
-                        description: "",
-                        preparationTime: "",
-                        isAvailable: true,
-                        isRecommended: false,
-                        stock: true,
-                        hasVariants: false,
-                        variants: [],
-                    })
-                    setShowNewCategoryInput(false)
-                    setNewCategoryName("")
+                    setFormData(getEmptyDishForm({
+                        category: dishCategoryName,
+                        selectedCategoryId: formData.selectedCategoryId,
+                        /* add-ons category correlation disabled
+                        useManualAddonCategory: formData.useManualAddonCategory,
+                        addonCategoryId: formData.useManualAddonCategory ? formData.addonCategoryId : "",
+                        */
+                    }))
                 } else {
                     toast.error(editingDish ? "Failed to update dish" : "Failed to add dish")
                 }
@@ -799,23 +820,7 @@ export default function MenuAdd() {
                                             onClick={() => {
                                                 setSelectedSection(null)
                                                 setEditingDish(null)
-                                                setFormData({
-                                                    name: "",
-                                                    image: "",
-                                                    images: [],
-                                                    price: 0,
-                                                    foodType: "Non-Veg",
-                                                    category: "",
-                                                    description: "",
-                                                    preparationTime: "",
-                                                    isAvailable: true,
-                                                    isRecommended: false,
-                                                    stock: true,
-                                                    hasVariants: false,
-                                                    variants: [],
-                                                })
-                                                setShowNewCategoryInput(false)
-                                                setNewCategoryName("")
+                                                setFormData(getEmptyDishForm())
                                                 setShowAddDishModal(true)
                                             }}
                                             className="px-4 py-2 bg-[#e53935] text-white rounded-lg hover:bg-[#d32f2f] transition-colors text-sm flex items-center gap-2 mx-auto"
@@ -856,23 +861,7 @@ export default function MenuAdd() {
                                     setShowAddDishModal(false)
                                     setEditingDish(null)
                                     // Reset form when closing
-                                    setFormData({
-                                        name: "",
-                                        image: "",
-                                        images: [],
-                                        price: 0,
-                                        foodType: "Non-Veg",
-                                        category: "",
-                                        description: "",
-                                        preparationTime: "",
-                                        isAvailable: true,
-                                        isRecommended: false,
-                                        stock: true,
-                                        hasVariants: false,
-                                        variants: [],
-                                    })
-                                    setShowNewCategoryInput(false)
-                                    setNewCategoryName("")
+                                    setFormData(getEmptyDishForm())
                                 }}
                                 className="p-2 hover:bg-[#F5F5F5] rounded-lg transition-colors"
                             >
@@ -884,90 +873,84 @@ export default function MenuAdd() {
                             {/* Category Selection */}
                             <div>
                                 <h3 className="text-lg font-semibold text-[#1E1E1E] mb-4">Category</h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <select
-                                            value={formData.category}
-                                            onChange={(e) => {
-                                                if (e.target.value === "__new__") {
-                                                    setShowNewCategoryInput(true)
-                                                    setFormData({ ...formData, category: "" })
-                                                } else {
-                                                    setFormData({ ...formData, category: e.target.value })
-                                                    setShowNewCategoryInput(false)
-                                                }
-                                            }}
-                                            className="flex-1 px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
-                                        >
-                                            <option value="">Select Category</option>
-                                            {menu?.sections?.map((section) => (
-                                                <option key={section.id} value={section.name}>
-                                                    {section.name}
-                                                </option>
-                                            ))}
-                                            <option value="__new__">+ Create New Category</option>
-                                        </select>
-                                    </div>
-                                    {showNewCategoryInput && (
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="text"
-                                                value={newCategoryName}
-                                                onChange={(e) => setNewCategoryName(capitalizeWords(e.target.value))}
-                                                onBlur={(e) => setNewCategoryName(collapseSpaces(e.target.value))}
-                                                maxLength={60}
-                                                placeholder="Enter new category name"
-                                                className="flex-1 px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
-                                                onKeyPress={(e) => {
-                                                    if (e.key === "Enter") {
-                                                        e.preventDefault()
-                                                        handleCreateCategory()
-                                                    }
-                                                }}
-                                            />
-                                            <button
-                                                onClick={handleCreateCategory}
-                                                disabled={creatingCategory}
-                                                className="px-4 py-2 bg-[#e53935] text-white rounded-lg hover:bg-[#d32f2f] transition-colors disabled:opacity-50 flex items-center gap-2"
-                                            >
-                                                {creatingCategory ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <Plus className="w-4 h-4" />
-                                                )}
-                                                Create
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setShowNewCategoryInput(false)
-                                                    setNewCategoryName("")
-                                                }}
-                                                className="px-4 py-2 border border-[#F5F5F5] rounded-lg hover:bg-[#F5F5F5] transition-colors"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Global Category Association */}
-                            <div>
-                                <h3 className="text-lg font-semibold text-[#1E1E1E] mb-4">Add-on Category Correlation</h3>
-                                <p className="text-sm text-[#1E1E1E] mb-2">Select the global category to link add-ons for this dish</p>
                                 <select
-                                    value={formData.categoryId}
-                                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                                    value={formData.selectedCategoryId}
+                                    onChange={(e) => {
+                                        const nextCategory = findGlobalCategoryById(e.target.value)
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            selectedCategoryId: e.target.value,
+                                            category: nextCategory?.name || "",
+                                            /* add-ons category correlation disabled
+                                            addonCategoryId: prev.useManualAddonCategory
+                                                ? (prev.addonCategoryId || e.target.value)
+                                                : "",
+                                            */
+                                        }))
+                                    }}
                                     className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
                                 >
-                                    <option value="">Select Global Category</option>
-                                    {globalCategories.map((cat) => (
-                                        <option key={cat._id} value={cat._id}>
-                                            {cat.name}
-                                        </option>
-                                    ))}
+                                    <option value="">Select Category</option>
+                                    {globalCategories.map((cat) => {
+                                        const categoryKey = getCategoryKey(cat)
+                                        return (
+                                            <option key={categoryKey} value={categoryKey}>
+                                                {cat.name}
+                                            </option>
+                                        )
+                                    })}
                                 </select>
+                                <p className="text-sm text-[#1E1E1E]/70 mt-2">
+                                    Categories are managed from the admin categories dashboard.
+                                </p>
                             </div>
+
+                            {/* Add-ons category correlation disabled
+                            <div>
+                                <h3 className="text-lg font-semibold text-[#1E1E1E] mb-4">Add-on Category Correlation</h3>
+                                <p className="text-sm text-[#1E1E1E] mb-3">Select the global category to link add-ons for this dish</p>
+                                <label className="flex items-center gap-2 text-sm text-[#1E1E1E] mb-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.useManualAddonCategory}
+                                        onChange={(e) => {
+                                            const isChecked = e.target.checked
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                useManualAddonCategory: isChecked,
+                                                addonCategoryId: isChecked
+                                                    ? (prev.addonCategoryId || prev.selectedCategoryId)
+                                                    : "",
+                                            }))
+                                        }}
+                                        className="rounded border-[#D9D9D9] text-[#e53935] focus:ring-[#e53935]"
+                                    />
+                                    Create manual add-on category correlation
+                                </label>
+
+                                {formData.useManualAddonCategory ? (
+                                    <select
+                                        value={formData.addonCategoryId}
+                                        onChange={(e) => setFormData({ ...formData, addonCategoryId: e.target.value })}
+                                        className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
+                                    >
+                                        <option value="">Select Global Category</option>
+                                        {globalCategories.map((cat) => {
+                                            const categoryKey = getCategoryKey(cat)
+                                            return (
+                                                <option key={categoryKey} value={categoryKey}>
+                                                    {cat.name}
+                                                </option>
+                                            )
+                                        })}
+                                    </select>
+                                ) : (
+                                    <div className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg bg-[#FAFAFA] text-sm text-[#1E1E1E]/80">
+                                        {findGlobalCategoryById(formData.selectedCategoryId)?.name || "Select category first"}
+                                    </div>
+                                )}
+                            </div>
+                            */}
 
                             {/* Basic Information */}
                             <div>
@@ -1189,7 +1172,6 @@ export default function MenuAdd() {
                                             className="w-full px-4 py-2 border border-[#F5F5F5] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e53935]"
                                         >
                                             <option value="Veg">Veg</option>
-                                            <option value="Pure Veg">Pure veg</option>
                                             <option value="Non-Veg">Non-Veg</option>
                                         </select>
                                     </div>
@@ -1290,23 +1272,7 @@ export default function MenuAdd() {
                                     setShowAddDishModal(false)
                                     setEditingDish(null)
                                     // Reset form when canceling
-                                    setFormData({
-                                        name: "",
-                                        image: "",
-                                        images: [],
-                                        price: 0,
-                                        foodType: "Non-Veg",
-                                        category: "",
-                                        description: "",
-                                        preparationTime: "",
-                                        isAvailable: true,
-                                        isRecommended: false,
-                                        stock: true,
-                                        hasVariants: false,
-                                        variants: [],
-                                    })
-                                    setShowNewCategoryInput(false)
-                                    setNewCategoryName("")
+                                    setFormData(getEmptyDishForm())
                                 }}
                                 className="px-4 py-2 border border-[#F5F5F5] rounded-lg hover:bg-[#F5F5F5] transition-colors"
                             >

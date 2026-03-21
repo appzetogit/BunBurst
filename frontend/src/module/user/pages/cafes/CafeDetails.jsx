@@ -51,6 +51,7 @@ import { isModuleAuthenticated } from "@/lib/utils/auth"
 export default function CafeDetails() {
   const { slug } = useParams()
   const navigate = useNavigate()
+  const shouldShowInlineViewCartButton = slug === "man-cafe"
   const [searchParams] = useSearchParams()
   const showOnlyUnder250 = searchParams.get('under250') === 'true'
   const { addToCart, updateQuantity, removeFromCart, getCartItem, cart } = useCart()
@@ -936,12 +937,7 @@ export default function CafeDetails() {
 
   // Helper function to update item quantity in both local state and cart
   const updateItemQuantity = (item, newQuantity, event = null, addons = [], variant = null) => {
-    // Check authentication
-    if (!isModuleAuthenticated('user')) {
-      toast.error("Please login to add items to cart")
-      navigate('/user/auth/sign-in', { state: { from: location.pathname } })
-      return
-    }
+    const isGuestUser = !isModuleAuthenticated('user')
 
     // CRITICAL: Check if user is in service zone or cafe is available
     if (isOutOfService) {
@@ -1998,50 +1994,54 @@ export default function CafeDetails() {
                                   <motion.div
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
-                                      ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
-                                      : 'border-green-600 text-green-600 hover:bg-green-50'
-                                      }`}
+                                    className="absolute -bottom-2 left-1/2 -translate-x-1/2"
                                   >
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        if (!shouldShowGrayscale && !isOutOfStock) {
-                                          if (hasVariations && !preferredVariant) {
-                                            handleItemClick(item)
-                                          } else {
-                                            updateItemQuantity(
-                                              item,
-                                              Math.max(0, quantity - 1),
-                                              e,
-                                              [],
-                                              preferredVariant
-                                            )
-                                          }
-                                        }
-                                      }}
-                                      disabled={shouldShowGrayscale || isOutOfStock}
-                                      className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                    <div
+                                      className={`bg-white border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
+                                        ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
+                                        : 'border-green-600 text-green-600 hover:bg-green-50'
+                                        }`}
                                     >
-                                      <Minus size={14} />
-                                    </button>
-                                    <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        if (!shouldShowGrayscale && !isOutOfStock) {
-                                          if (hasVariations && !preferredVariant) {
-                                            handleItemClick(item)
-                                          } else {
-                                            updateItemQuantity(item, quantity + 1, e, [], preferredVariant)
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          if (!shouldShowGrayscale && !isOutOfStock) {
+                                            if (hasVariations && !preferredVariant) {
+                                              handleItemClick(item)
+                                            } else {
+                                              updateItemQuantity(
+                                                item,
+                                                Math.max(0, quantity - 1),
+                                                e,
+                                                [],
+                                                preferredVariant
+                                              )
+                                            }
                                           }
-                                        }
-                                      }}
-                                      disabled={shouldShowGrayscale || isOutOfStock}
-                                      className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
-                                    >
-                                      <Plus size={14} className="stroke-[3px]" />
-                                    </button>
+                                        }}
+                                        disabled={shouldShowGrayscale || isOutOfStock}
+                                        className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                      >
+                                        <Minus size={14} />
+                                      </button>
+                                      <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          if (!shouldShowGrayscale && !isOutOfStock) {
+                                            if (hasVariations && !preferredVariant) {
+                                              handleItemClick(item)
+                                            } else {
+                                              updateItemQuantity(item, quantity + 1, e, [], preferredVariant)
+                                            }
+                                          }
+                                        }}
+                                        disabled={shouldShowGrayscale || isOutOfStock}
+                                        className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                      >
+                                        <Plus size={14} className="stroke-[3px]" />
+                                      </button>
+                                    </div>
                                   </motion.div>
                                 ) : (
                                   <motion.button
@@ -2235,50 +2235,54 @@ export default function CafeDetails() {
                                             <motion.div
                                               initial={{ opacity: 0, scale: 0.8 }}
                                               animate={{ opacity: 1, scale: 1 }}
-                                              className={`absolute bottom-1 left-1/2 -translate-x-1/2 bg-white border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
-                                                ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
-                                                : 'border-green-600 text-green-600 hover:bg-green-50'
-                                                }`}
+                                              className="absolute bottom-1 left-1/2 -translate-x-1/2"
                                             >
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                if (!shouldShowGrayscale && !isOutOfStock) {
-                                                  if (hasVariations && !preferredVariant) {
-                                                    handleItemClick(item)
-                                                  } else {
-                                                    updateItemQuantity(
-                                                      item,
-                                                      Math.max(0, quantity - 1),
-                                                      e,
-                                                      [],
-                                                      preferredVariant
-                                                    )
-                                                  }
-                                                }
-                                              }}
-                                              disabled={shouldShowGrayscale || isOutOfStock}
-                                              className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
-                                            >
-                                                <Minus size={14} />
-                                              </button>
-                                              <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                if (!shouldShowGrayscale && !isOutOfStock) {
-                                                  if (hasVariations && !preferredVariant) {
-                                                    handleItemClick(item)
-                                                  } else {
-                                                    updateItemQuantity(item, quantity + 1, e, [], preferredVariant)
-                                                  }
-                                                }
-                                              }}
-                                              disabled={shouldShowGrayscale || isOutOfStock}
-                                              className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
-                                            >
-                                                <Plus size={14} className="stroke-[3px]" />
-                                              </button>
+                                              <div
+                                                className={`bg-white border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
+                                                  ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
+                                                  : 'border-green-600 text-green-600 hover:bg-green-50'
+                                                  }`}
+                                              >
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    if (!shouldShowGrayscale && !isOutOfStock) {
+                                                      if (hasVariations && !preferredVariant) {
+                                                        handleItemClick(item)
+                                                      } else {
+                                                        updateItemQuantity(
+                                                          item,
+                                                          Math.max(0, quantity - 1),
+                                                          e,
+                                                          [],
+                                                          preferredVariant
+                                                        )
+                                                      }
+                                                    }
+                                                  }}
+                                                  disabled={shouldShowGrayscale || isOutOfStock}
+                                                  className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                                >
+                                                  <Minus size={14} />
+                                                </button>
+                                                <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    if (!shouldShowGrayscale && !isOutOfStock) {
+                                                      if (hasVariations && !preferredVariant) {
+                                                        handleItemClick(item)
+                                                      } else {
+                                                        updateItemQuantity(item, quantity + 1, e, [], preferredVariant)
+                                                      }
+                                                    }
+                                                  }}
+                                                  disabled={shouldShowGrayscale || isOutOfStock}
+                                                  className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                                >
+                                                  <Plus size={14} className="stroke-[3px]" />
+                                                </button>
+                                              </div>
                                             </motion.div>
                                           ) : (
                                             <motion.button

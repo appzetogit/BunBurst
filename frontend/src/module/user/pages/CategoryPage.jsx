@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, Star, Clock, Search, SlidersHorizontal, ChevronDown, Bookmark, BadgePercent, MapPin, ArrowDownUp, Timer, IndianRupee, UtensilsCrossed, ShieldCheck, X, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { foodImages } from "@/constants/images"
 import api from "@/lib/api"
 import { cafeAPI, adminAPI } from "@/lib/api"
+import { useCart } from "../context/CartContext"
 import { useProfile } from "../context/ProfileContext"
 import { useLocation } from "../hooks/useLocation"
 import { useZone } from "../hooks/useZone"
@@ -26,9 +28,62 @@ const filterOptions = [
 
 // Mock data removed - using backend data only
 
+const getCafeDeduplicationKey = (cafe) =>
+  String(cafe?.cafeId || cafe?.id || cafe?.slug || cafe?.name || "")
+
+const dedupeCafeCards = (cafes) => {
+  const uniqueCafes = new Map()
+
+  cafes.forEach((cafe) => {
+    const cafeKey = getCafeDeduplicationKey(cafe)
+    if (!cafeKey) {
+      return
+    }
+
+    const currentDish = cafe.categoryDish
+      ? {
+          itemId: cafe.categoryDish.itemId || cafe.dishId || cafe.id,
+          name: cafe.categoryDishName || cafe.categoryDish.name,
+          price: cafe.categoryDishPrice ?? cafe.categoryDish.price ?? 0,
+          image: cafe.categoryDishImage || cafe.categoryDish.image || null,
+          foodType: cafe.categoryDish.foodType || null,
+        }
+      : null
+
+    if (!uniqueCafes.has(cafeKey)) {
+      uniqueCafes.set(cafeKey, {
+        ...cafe,
+        id: cafe.cafeId || cafe.id,
+        matchedDishes: currentDish
+          ? [currentDish]
+          : (Array.isArray(cafe.matchedDishes) ? cafe.matchedDishes : []),
+      })
+      return
+    }
+
+    if (!currentDish) {
+      return
+    }
+
+    const existingCafe = uniqueCafes.get(cafeKey)
+    const existingDishes = Array.isArray(existingCafe.matchedDishes) ? existingCafe.matchedDishes : []
+    const currentDishKey = String(currentDish.itemId || `${currentDish.name}-${currentDish.price}`)
+    const alreadyAdded = existingDishes.some(
+      (dish) => String(dish.itemId || `${dish.name}-${dish.price}`) === currentDishKey
+    )
+
+    if (!alreadyAdded) {
+      existingCafe.matchedDishes = [...existingDishes, currentDish]
+    }
+  })
+
+  return Array.from(uniqueCafes.values())
+}
+
 export default function CategoryPage() {
   const { category } = useParams()
   const navigate = useNavigate()
+  const { addToCart } = useCart()
   const { vegMode } = useProfile()
   const { location } = useLocation()
   const { zoneId, isOutOfService } = useZone(location)
@@ -42,6 +97,7 @@ export default function CategoryPage() {
   const [activeFilterTab, setActiveFilterTab] = useState('sort')
   const [activeScrollSection, setActiveScrollSection] = useState('sort')
   const [isLoadingFilterResults, setIsLoadingFilterResults] = useState(false)
+  const [expandedCafeId, setExpandedCafeId] = useState(null)
   const filterSectionRefs = useRef({})
   const rightContentRef = useRef(null)
   const categoryScrollRef = useRef(null)
@@ -211,6 +267,47 @@ export default function CategoryPage() {
     return allDishes.length > 0 ? allDishes[0] : null
   }
 
+  const getPreviewDishesFromMenu = (menu, options = {}) => {
+    const { limit = Infinity, vegOnly = false } = options
+
+    if (!menu || !Array.isArray(menu.sections)) {
+      return []
+    }
+
+    const previewDishes = []
+
+    for (const section of menu.sections) {
+      const sectionItems = Array.isArray(section.items) ? section.items : []
+
+      for (const item of sectionItems) {
+        if (vegOnly && item.foodType !== "Veg") {
+          continue
+        }
+
+        const originalPrice = item.originalPrice || item.price || 0
+        const discountPercent = item.discountPercent || 0
+        const finalPrice = discountPercent > 0
+          ? Math.round(originalPrice * (1 - discountPercent / 100))
+          : originalPrice
+
+        previewDishes.push({
+          name: item.name,
+          price: finalPrice,
+          image: item.image?.url || item.image || section.image?.url || section.image || null,
+          originalPrice,
+          itemId: item._id || item.id || `${item.name}-${finalPrice}`,
+          foodType: item.foodType || null,
+        })
+
+        if (previewDishes.length >= limit) {
+          return previewDishes
+        }
+      }
+    }
+
+    return previewDishes
+  }
+
   // Fetch cafes from API
   useEffect(() => {
     const fetchCafes = async () => {
@@ -291,6 +388,7 @@ export default function CategoryPage() {
                   : (cafe.profileImage?.url ? [cafe.profileImage.url] : []))
 
               const image = allImages[0] || null
+              const profileImage = cafe.profileImage?.url || cafe.profileImage || null
               const cafeId = cafe.cafeId || cafe._id
 
               let featuredDish = cafe.featuredDish || null
@@ -307,6 +405,7 @@ export default function CategoryPage() {
                 rating: cafe.rating || null,
                 deliveryTime: deliveryTime,
                 distance: distance,
+                profileImage: profileImage,
                 image: image,
                 images: allImages,
                 priceRange: cafe.priceRange || null,
@@ -466,6 +565,58 @@ export default function CategoryPage() {
       }
       return newSet
     })
+  }
+
+  const handleCategoryDishAddToCart = (event, dish, cafe) => {
+    event.stopPropagation()
+
+    if (selectedCategory === 'all') {
+      return
+    }
+
+    if (!cafe?.name) {
+      toast.error("Cafe information is missing. Please refresh the page.")
+      return
+    }
+
+    const validCafeId = cafe?.cafeId || cafe?._id || cafe?.id
+    if (!validCafeId) {
+      toast.error("Cafe information is missing. Please refresh the page.")
+      return
+    }
+
+    const itemId = dish?.itemId || `${validCafeId}-${dish?.name || "dish"}`
+    const rect = event.currentTarget.getBoundingClientRect()
+    const sourcePosition = {
+      viewportX: rect.left + rect.width / 2,
+      viewportY: rect.top + rect.height / 2,
+      scrollX: window.pageXOffset || window.scrollX || 0,
+      scrollY: window.pageYOffset || window.scrollY || 0,
+      itemId,
+    }
+
+    const cartItem = {
+      id: itemId,
+      baseItemId: itemId,
+      name: dish?.name,
+      price: Number(dish?.price || 0),
+      basePrice: Number(dish?.price || 0),
+      image: dish?.image || null,
+      cafe: cafe.name,
+      cafeId: validCafeId,
+      category: dish?.category || selectedCategory || null,
+      categoryName: dish?.category || selectedCategory || null,
+      description: dish?.description || `${dish?.name || "Dish"} from ${cafe.name}`,
+      originalPrice: dish?.originalPrice || null,
+      isVeg: dish?.foodType ? String(dish.foodType).toLowerCase() === "veg" : undefined,
+      foodType: dish?.foodType || null,
+    }
+
+    try {
+      addToCart(cartItem, sourcePosition)
+    } catch (error) {
+      toast.error(error?.message || "Error adding item to cart")
+    }
   }
 
   // Filter cafes based on active filters and selected category
@@ -662,8 +813,14 @@ export default function CategoryPage() {
       )
     }
 
-    return filtered
+    return dedupeCafeCards(filtered)
   }, [selectedCategory, activeFilters, searchQuery, cafesData, categoryKeywords, vegMode])
+
+  useEffect(() => {
+    if (expandedCafeId && !filteredAllCafes.some((cafe) => cafe.id === expandedCafeId)) {
+      setExpandedCafeId(null)
+    }
+  }, [filteredAllCafes, expandedCafeId])
 
   // Get unique cuisines from cafe data for filters
   const availableCuisines = useMemo(() => {
@@ -789,49 +946,10 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {false && (
       <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:flex-wrap gap-2 px-4 md:px-6 py-3">
-            {/* Row 1 */}
-            <div
-              className="flex items-center gap-2 overflow-x-auto md:overflow-x-visible scrollbar-hide pb-1 md:pb-0"
-              style={{
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              }}
-            >
-              <Button
-                variant="outline"
-                onClick={() => setIsFilterOpen(true)}
-                className="h-7 md:h-8 px-2.5 md:px-3 rounded-md flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all bg-card border border-border hover:bg-muted"
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span className="text-xs md:text-sm font-bold text-foreground">Filters</span>
-              </Button>
-              {[
-                { id: 'under-30-mins', label: 'Under 30 mins' },
-                { id: 'delivery-under-45', label: 'Under 45 mins' },
-                { id: 'rating-4-plus', label: 'Rating 4.0+' },
-                { id: 'rating-45-plus', label: 'Rating 4.5+' },
-              ].map((filter) => {
-                const isActive = activeFilters.has(filter.id)
-                return (
-                  <Button
-                    key={filter.id}
-                    variant="outline"
-                    onClick={() => toggleFilter(filter.id)}
-                    className={`h-7 md:h-8 px-2.5 md:px-3 rounded-md flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${isActive
-                      ? 'bg-primary text-primary-foreground border border-primary hover:bg-primary/90'
-                      : 'bg-card border border-border hover:bg-muted text-muted-foreground'
-                      }`}
-                  >
-                    <span className={`text-xs md:text-sm font-bold ${isActive ? 'text-primary-foreground' : 'text-foreground'}`}>{filter.label}</span>
-                  </Button>
-                )
-              })}
-            </div>
-
             {/* Row 2 */}
             <div
               className="flex items-center gap-2 overflow-x-auto md:overflow-x-visible scrollbar-hide pb-1 md:pb-0"
@@ -867,12 +985,13 @@ export default function CategoryPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Content */}
       <div className="px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-6 md:py-8 lg:py-10 space-y-6 md:space-y-8 lg:space-y-10">
         <div className="max-w-7xl mx-auto">
-          {/* RECOMMENDED FOR YOU Section - Hide when "All" category is selected */}
-          {filteredRecommended.length > 0 && selectedCategory !== 'all' && (
+          {/* RECOMMENDED FOR YOU Section */}
+          {false && filteredRecommended.length > 0 && selectedCategory === 'all' && (
             <section>
               <h2 className="text-xs sm:text-sm md:text-base font-semibold text-muted-foreground tracking-widest uppercase mb-4 md:mb-6">
                 RECOMMENDED FOR YOU
@@ -966,7 +1085,7 @@ export default function CategoryPage() {
           {/* ALL CAFES Section */}
           <section className="relative">
             <h2 className="text-xs sm:text-sm md:text-base font-semibold text-muted-foreground tracking-widest uppercase mb-4 md:mb-6">
-              ALL CAFES
+              RECOMMENDED FOR YOU
             </h2>
 
             {/* Loading Overlay */}
@@ -983,23 +1102,26 @@ export default function CategoryPage() {
             <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6 xl:gap-7 items-stretch ${isLoadingFilterResults ? 'opacity-50' : 'opacity-100'} transition-opacity duration-300`}>
               {filteredAllCafes.map((cafe) => {
                 const cafeSlug = cafe.name.toLowerCase().replace(/\s+/g, "-")
-                const isFavorite = favorites.has(cafe.id)
+                const matchedDishes = selectedCategory === 'all'
+                  ? getPreviewDishesFromMenu(cafe.menu, { vegOnly: vegMode })
+                  : (Array.isArray(cafe.matchedDishes) ? cafe.matchedDishes : [])
+                const hasDynamicRating = cafe.rating !== null && cafe.rating !== undefined && cafe.rating !== ""
+                const isCategoryCafeCard = matchedDishes.length > 0
+                const isExpanded = expandedCafeId === cafe.id
+                const cardHeroImage = cafe.profileImage || cafe.image
 
-                return (
-                  <Link key={cafe.id} to={`/user/cafes/${cafeSlug}`} className="h-full flex">
-                    <Card className={`overflow-hidden cursor-pointer gap-0 border-0 group bg-card shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-md h-full flex flex-col w-full ${shouldShowGrayscale ? 'grayscale opacity-75' : ''
-                      }`}>
-                      {/* Image Section */}
-                      <div className="relative h-44 sm:h-52 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-md flex-shrink-0">
-                        {/* Use category dish image if available, otherwise cafe image */}
-                        {cafe.categoryDishImage ? (
+                const cardContent = (
+                  <Card className={`overflow-hidden cursor-pointer gap-0 border border-[#f3d8ad] group bg-gradient-to-b from-[#fffaf4] via-white to-[#fff8ef] shadow-[0_16px_40px_rgba(222,116,34,0.14)] hover:shadow-[0_20px_48px_rgba(222,116,34,0.2)] transition-all duration-300 py-0 rounded-[22px] h-full flex flex-col w-full ${shouldShowGrayscale ? 'grayscale opacity-75' : ''
+                    }`}>
+                    {/* Image Section */}
+                      <div className="relative h-44 sm:h-52 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-[22px] flex-shrink-0">
+                        {cardHeroImage ? (
                           <img
-                            src={cafe.categoryDishImage}
-                            alt={cafe.categoryDishName || cafe.name}
+                            src={cardHeroImage}
+                            alt={cafe.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             onError={(e) => {
-                              // Fallback to cafe image if dish image fails
-                              if (cafe.image) {
+                              if (cafe.image && cardHeroImage !== cafe.image) {
                                 e.target.src = cafe.image
                               } else {
                                 // Show emoji placeholder
@@ -1030,74 +1152,145 @@ export default function CategoryPage() {
                             🍽️
                           </div>
                         )}
-
-                        {/* Category Dish Badge - Top Left (shows category dish if available, otherwise featured dish) */}
-                        {(cafe.categoryDishName || cafe.featuredDish) && (
-                          <div className="absolute top-3 left-3">
-                            <div className="bg-background/80 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-xs sm:text-sm md:text-base font-medium">
-                              {cafe.categoryDishName || cafe.featuredDish} · ₹{cafe.categoryDishPrice || cafe.featuredPrice}
-                            </div>
-                          </div>
-                        )}
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
 
                         {/* Ad Badge */}
                         {cafe.isAd && (
-                          <div className="absolute top-3 right-14 bg-background/80 backdrop-blur-sm text-foreground text-[10px] md:text-xs px-2 py-0.5 rounded">
+                          <div className="absolute top-3 right-14 bg-white/90 backdrop-blur-sm text-[#9a3412] text-[10px] md:text-xs px-2 py-0.5 rounded-full border border-[#f3d8ad] shadow-sm">
                             Ad
                           </div>
                         )}
 
-                        {/* Bookmark Icon - Top Right */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-3 right-3 h-9 w-9 md:h-10 md:w-10 bg-card/90 backdrop-blur-sm rounded-lg hover:bg-card transition-colors"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            toggleFavorite(cafe.id)
-                          }}
-                        >
-                          <Bookmark className={`h-5 w-5 md:h-6 md:w-6 ${isFavorite ? "fill-foreground text-foreground" : "text-muted-foreground"}`} strokeWidth={2} />
-                        </Button>
                       </div>
 
                       {/* Content Section */}
-                      <CardContent className="p-3 sm:p-4 md:p-5 lg:p-6 gap-0 flex-1 flex flex-col">
-                        {/* Cafe Name & Rating */}
-                        <div className="flex items-start justify-between gap-2 mb-2 lg:mb-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-md md:text-xl lg:text-2xl font-bold text-foreground line-clamp-1 lg:line-clamp-2">
-                              {cafe.name}
-                            </h3>
-                          </div>
-                          <div className="flex-shrink-0 bg-primary text-primary-foreground px-2 md:px-3 lg:px-4 py-1 lg:py-1.5 rounded-lg flex items-center gap-1">
-                            <span className="text-sm md:text-base lg:text-lg font-bold">{cafe.rating}</span>
-                            <Star className="h-3 w-3 md:h-4 md:w-4 lg:h-5 lg:w-5 fill-primary-foreground text-primary-foreground" />
-                          </div>
-                        </div>
-
-                        {/* Delivery Time & Distance */}
-                        <div className="flex items-center gap-1 text-sm md:text-base lg:text-lg text-muted-foreground mb-2 lg:mb-3">
-                          <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
-                          <span className="font-medium">{cafe.deliveryTime || 'Not available'}</span>
-                          {cafe.distance && (
-                            <>
-                              <span className="mx-1">|</span>
-                              <span className="font-medium">{cafe.distance}</span>
-                            </>
+                      <CardContent className="p-3 sm:p-4 md:p-5 lg:p-6 gap-0 flex-1 flex flex-col bg-[#f8f4ee]">
+                        <div className="rounded-[26px] border border-[#efe5d7] bg-white p-4 sm:p-5 shadow-[0_10px_30px_rgba(30,18,8,0.06)]">
+                          {isCategoryCafeCard && (
+                            <div className="flex items-start justify-between gap-3 border-b border-dashed border-[#eadfce] pb-4">
+                              <div className="min-w-0">
+                                <h3 className="text-lg sm:text-xl font-semibold text-[#24160b] line-clamp-1">
+                                  {cafe.name}
+                                </h3>
+                                <p className="mt-1 text-sm text-[#8b5e34] line-clamp-2">
+                                  {cafe.cuisine || 'Cafe details'}
+                                </p>
+                              </div>
+                              <div className="inline-flex items-center gap-1 rounded-full bg-[#fff5e9] px-3 py-1 text-xs font-semibold text-[#ba3f19] whitespace-nowrap">
+                                {isExpanded ? 'Hide dishes' : 'Show dishes'}
+                                <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              </div>
+                            </div>
                           )}
-                        </div>
 
-                        {/* Offer Badge */}
-                        {cafe.offer && (
-                          <div className="flex items-center gap-2 text-sm md:text-base lg:text-lg mt-auto">
-                            <BadgePercent className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-primary" strokeWidth={2} />
-                            <span className="text-muted-foreground font-medium">{cafe.offer}</span>
+                          <div className={`grid grid-cols-3 gap-3 ${isCategoryCafeCard ? 'pt-4' : 'border-b border-dashed border-[#eadfce] pb-4'}`}>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-[#b6a18a]">Rating</p>
+                              <div className="mt-1 inline-flex items-center gap-1 text-[#24160b]">
+                                <span className="text-base sm:text-lg font-bold">{hasDynamicRating ? cafe.rating : "N/A"}</span>
+                                {hasDynamicRating && (
+                                  <Star className="h-4 w-4 fill-[#f59e0b] text-[#f59e0b]" />
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-[#b6a18a]">Time</p>
+                              <div className="mt-1 inline-flex items-center gap-1.5 text-[#24160b]">
+                                <Clock className="h-4 w-4 text-[#8b5e34]" strokeWidth={1.8} />
+                                <span className="text-sm sm:text-base font-semibold">{cafe.deliveryTime || 'N/A'}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-[0.18em] text-[#b6a18a]">Dishes</p>
+                              <p className="mt-1 text-sm sm:text-base font-semibold text-[#24160b]">
+                                {matchedDishes.length}
+                              </p>
+                            </div>
+                          </div>
+
+                        {isCategoryCafeCard && isExpanded && matchedDishes.length > 0 && (
+                          <div className="pt-4">
+                            <p className="text-[10px] uppercase tracking-[0.22em] text-[#b6a18a] mb-3">
+                              Related Dishes
+                            </p>
+                            <div className="grid grid-cols-2 gap-3">
+                              {matchedDishes.map((dish, index) => (
+                                <div
+                                  key={`${dish.itemId || `${cafe.id}-matched`}-${index}`}
+                                  className={`overflow-hidden rounded-[22px] border border-[#f1e5d3] bg-[#fffaf4] shadow-[0_10px_24px_rgba(25,17,8,0.06)] ${selectedCategory !== 'all' ? 'cursor-pointer transition-transform hover:-translate-y-0.5' : ''}`}
+                                  onClick={selectedCategory !== 'all' ? (event) => handleCategoryDishAddToCart(event, dish, cafe) : undefined}
+                                >
+                                  <div className="relative aspect-[1.05] w-full overflow-hidden bg-[#f4eadc]">
+                                    {dish.image ? (
+                                      <img
+                                        src={dish.image}
+                                        alt={dish.name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          e.target.style.display = 'none'
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-5xl">
+                                        🍽️
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="p-3">
+                                    <p className="text-sm font-semibold text-[#2a180c] line-clamp-2">
+                                      {dish.name}
+                                    </p>
+                                    <div className="mt-2 flex items-center justify-between gap-2">
+                                      <span className="text-base font-bold text-[#ba3f19] whitespace-nowrap">
+                                        ₹{Number(dish.price || 0).toLocaleString('en-IN')}
+                                      </span>
+                                      {dish.foodType && (
+                                        <span className="inline-flex items-center rounded-full bg-[#f6fff0] px-2 py-0.5 text-[11px] text-[#5b7f2b] whitespace-nowrap border border-[#d9efb9]">
+                                          {dish.foodType}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="pt-4">
+                              <Link
+                                to={`/user/cafes/${cafeSlug}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center justify-center rounded-full border border-[#e6d2b4] bg-[#fff8ef] px-4 py-2 text-sm font-semibold text-[#9a3412] transition-colors hover:bg-[#fff1dd]"
+                              >
+                                Open cafe
+                              </Link>
+                            </div>
                           </div>
                         )}
+
+                        </div>
                       </CardContent>
                     </Card>
+                )
+
+                return isCategoryCafeCard ? (
+                  <div key={cafe.id} className="h-full flex">
+                    <div
+                      className="h-full w-full"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setExpandedCafeId((currentId) => currentId === cafe.id ? null : cafe.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setExpandedCafeId((currentId) => currentId === cafe.id ? null : cafe.id)
+                        }
+                      }}
+                    >
+                      {cardContent}
+                    </div>
+                  </div>
+                ) : (
+                  <Link key={cafe.id} to={`/user/cafes/${cafeSlug}`} className="h-full flex">
+                    {cardContent}
                   </Link>
                 )
               })}

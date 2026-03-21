@@ -67,14 +67,20 @@ class EmailService {
     } else {
       // Production SMTP configuration (use database values, fallback to env)
       const smtpHost = smtpCreds.host || process.env.SMTP_HOST;
-      const smtpPort = smtpCreds.port || process.env.SMTP_PORT || '587';
+      const rawPort = parseInt(smtpCreds.port || process.env.SMTP_PORT || '587', 10);
+      // Validate port — only accept known valid SMTP ports; default to 587 if invalid
+      const validSmtpPorts = [25, 465, 587];
+      const smtpPort = validSmtpPorts.includes(rawPort) ? rawPort : 587;
+      if (!validSmtpPorts.includes(rawPort)) {
+        logger.warn(`Invalid SMTP_PORT value "${smtpCreds.port || process.env.SMTP_PORT}". Falling back to port 587.`);
+      }
       const smtpUser = smtpCreds.user || process.env.SMTP_USER;
       const smtpPass = smtpCreds.pass || process.env.SMTP_PASS;
       
       this.transporter = nodemailer.createTransport({
         host: smtpHost,
-        port: parseInt(smtpPort),
-        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+        port: smtpPort,
+        secure: smtpPort === 465 || process.env.SMTP_SECURE === 'true', // auto-true for 465 (SSL)
         auth: {
           user: smtpUser,
           pass: smtpPass

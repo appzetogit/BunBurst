@@ -894,17 +894,20 @@ Order again from this cafe in the ${companyName} app.`
                           const isCod = order.payment?.method === 'cash' || order.payment?.method === 'cod'
                           const rawStatus = order.paymentCollectionStatus || order.payment?.status || order.paymentStatus
                           const normalized = String(rawStatus || '').toLowerCase()
+                          const isCompletedOrder =
+                            isDelivered ||
+                            ['delivered', 'completed', 'picked_up'].includes(String(order.originalStatus || order.status || '').toLowerCase()) ||
+                            Boolean(order.deliveredAt)
                           let displayStatus = rawStatus
 
                           if (isCod) {
-                            if (order.paymentCollectionStatus) {
-                              displayStatus = order.paymentCollectionStatus
-                            } else if (['completed', 'paid', 'success', 'succeeded', 'collected'].includes(normalized)) {
+                            if (
+                              isCompletedOrder ||
+                              ['completed', 'paid', 'success', 'succeeded', 'collected'].includes(normalized)
+                            ) {
                               displayStatus = 'Completed'
-                            } else if (normalized) {
-                              displayStatus = normalized === 'pending' ? 'Not Collected' : rawStatus
                             } else {
-                              displayStatus = 'Not Collected'
+                              displayStatus = 'Not Completed'
                             }
                           } else if (normalized) {
                             if (['completed', 'paid', 'success', 'succeeded'].includes(normalized)) {
@@ -924,7 +927,7 @@ Order again from this cafe in the ${companyName} app.`
                               ? 'bg-green-100 text-green-700'
                               : statusKey.includes('fail')
                               ? 'bg-red-100 text-red-700'
-                              : statusKey.includes('pending') || statusKey.includes('not collected')
+                              : statusKey.includes('pending') || statusKey.includes('not completed')
                               ? 'bg-yellow-100 text-yellow-700'
                               : 'bg-gray-100 text-gray-700'
 

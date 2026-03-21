@@ -14,6 +14,7 @@ import { useZone } from "../../hooks/useZone"
 import { orderAPI, cafeAPI, adminAPI, userAPI, API_ENDPOINTS, zoneAPI, couponAPI } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
 import { initRazorpayPayment } from "@/lib/utils/razorpay"
+import { isModuleAuthenticated } from "@/lib/utils/auth"
 import { toast } from "sonner"
 import { getCompanyNameAsync, getOrderingOptionsAsync } from "@/lib/utils/businessSettings"
 import { useLocationSelector } from "../../components/UserLayout"
@@ -219,6 +220,7 @@ const PickupSuccessCard = ({ cafeData, handleGoToOrders }) => (
 
 export default function Cart() {
   const navigate = useNavigate()
+  const isAuthenticatedUser = isModuleAuthenticated("user")
 
   // Defensive check: Ensure CartProvider is available
   let cartContext;
@@ -1093,6 +1095,12 @@ export default function Cart() {
   // Fetch wallet balance
   useEffect(() => {
     const fetchWalletBalance = async () => {
+      if (!isAuthenticatedUser) {
+        setWalletBalance(0)
+        setIsLoadingWallet(false)
+        return
+      }
+
       try {
         setIsLoadingWallet(true)
         const response = await userAPI.getWallet()
@@ -1107,7 +1115,7 @@ export default function Cart() {
       }
     }
     fetchWalletBalance()
-  }, [])
+  }, [isAuthenticatedUser])
 
   // Fetch fee settings on mount
   useEffect(() => {
