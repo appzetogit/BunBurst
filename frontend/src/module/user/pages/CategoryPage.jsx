@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, Star, Clock, Search, SlidersHorizontal, ChevronDown, Bookmark, BadgePercent, MapPin, ArrowDownUp, Timer, IndianRupee, UtensilsCrossed, ShieldCheck, X, Loader2 } from "lucide-react"
+import { ArrowLeft, Star, Clock, Search, SlidersHorizontal, ChevronDown, ChevronRight, Bookmark, BadgePercent, MapPin, ArrowDownUp, Timer, IndianRupee, UtensilsCrossed, ShieldCheck, X, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -83,7 +83,7 @@ const dedupeCafeCards = (cafes) => {
 export default function CategoryPage() {
   const { category } = useParams()
   const navigate = useNavigate()
-  const { addToCart } = useCart()
+  const { addToCart, itemCount, total, cart } = useCart()
   const { vegMode } = useProfile()
   const { location } = useLocation()
   const { zoneId, isOutOfService } = useZone(location)
@@ -1320,6 +1320,38 @@ export default function CategoryPage() {
           </section>
         </div>
       </div>
+
+      {/* Sticky View Cart Button */}
+      {itemCount > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4 pb-5 pointer-events-none">
+          <button
+            onClick={() => navigate('/cart')}
+            className="pointer-events-auto flex items-center gap-3 bg-[#1e7e34] hover:bg-[#176128] active:bg-[#125222] text-white pl-1.5 pr-3 py-1.5 rounded-full shadow-2xl transition-all duration-200"
+            style={{ boxShadow: '0 8px 32px rgba(30,126,52,0.5)' }}
+          >
+            {/* Circular food thumbnail */}
+            <span className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border-2 border-white/30 bg-white/20 flex items-center justify-center">
+              {cart[0]?.image ? (
+                <img
+                  src={cart[0].image}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = 'none' }}
+                />
+              ) : (
+                <span className="text-lg">🛒</span>
+              )}
+            </span>
+            {/* Text */}
+            <span className="flex flex-col items-start">
+              <span className="text-sm font-bold leading-tight">View cart</span>
+              <span className="text-xs opacity-80 leading-tight">{itemCount} item{itemCount !== 1 ? 's' : ''}</span>
+            </span>
+            {/* Chevron */}
+            <ChevronRight className="w-5 h-5 opacity-80 ml-1 flex-shrink-0" />
+          </button>
+        </div>
+      )}
 
       {/* Filter Modal - Bottom Sheet */}
       {typeof window !== "undefined" &&

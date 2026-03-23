@@ -94,6 +94,7 @@ const updateProfileSchema = Joi.object({
     publicId: Joi.string().trim().optional().allow(null, '')
   }).optional(),
   documents: Joi.object({
+    photo: Joi.string().uri().optional().allow(null, ''),
     bankDetails: Joi.object({
       accountHolderName: Joi.string().trim().min(2).max(100).optional().allow(null, ''),
       accountNumber: Joi.string().trim().min(9).max(18).optional().allow(null, ''),
@@ -130,22 +131,69 @@ export const updateProfile = asyncHandler(async (req, res) => {
       }
     }
 
-    // Handle nested documents.bankDetails update properly
     const setData = { ...updateData };
+    const unsetData = {};
+
+    // Handle nested documents.bankDetails update properly
     if (updateData.documents?.bankDetails) {
-      // Merge bankDetails with existing documents
+      // Merge bankDetails with existing documents using dot notation to avoid wiping other doc fields
       setData['documents.bankDetails'] = {
         ...delivery.documents?.bankDetails,
         ...updateData.documents.bankDetails
       };
-      // Remove the nested documents object to avoid conflicts
-      delete setData.documents;
+      // Remove the nested documents object from setData to avoid conflicts with dot notation
+      // This ensures only 'documents.bankDetails' is set, not the whole 'documents' object
+      if (setData.documents) {
+        delete setData.documents.bankDetails;
+        if (Object.keys(setData.documents).length === 0) {
+          delete setData.documents;
+        }
+      }
     }
+
+    // Handle documents.photo removal: if photo is empty/null, unset it using dot notation
+    // This avoids wiping other document fields (aadhar, pan, drivingLicense, bankDetails)
+    if (
+      updateData.documents?.photo !== undefined &&
+      (!updateData.documents.photo || String(updateData.documents.photo).trim() === '')
+    ) {
+      unsetData['documents.photo'] = '';
+      // Remove the nested documents object from setData to avoid conflicts with dot notation
+      if (setData.documents) {
+        delete setData.documents.photo;
+        if (Object.keys(setData.documents).length === 0) {
+          delete setData.documents;
+        }
+      }
+    } else if (updateData.documents?.photo) {
+      // If photo is provided and not empty, set it using dot notation
+      setData['documents.photo'] = updateData.documents.photo;
+      if (setData.documents) {
+        delete setData.documents.photo;
+        if (Object.keys(setData.documents).length === 0) {
+          delete setData.documents;
+        }
+      }
+    }
+
+    // Handle profile image removal: if url is empty/null, unset the entire profileImage field
+    if (
+      updateData.profileImage !== undefined &&
+      (!updateData.profileImage?.url || updateData.profileImage.url.trim() === '')
+    ) {
+      unsetData.profileImage = '';
+      delete setData.profileImage;
+    }
+
+    // Build the MongoDB update operation
+    const mongoUpdate = {};
+    if (Object.keys(setData).length > 0) mongoUpdate.$set = setData;
+    if (Object.keys(unsetData).length > 0) mongoUpdate.$unset = unsetData;
 
     // Update profile
     const updatedDelivery = await Delivery.findByIdAndUpdate(
       delivery._id,
-      { $set: setData },
+      mongoUpdate,
       { new: true, runValidators: true }
     ).select('-password -refreshToken');
 

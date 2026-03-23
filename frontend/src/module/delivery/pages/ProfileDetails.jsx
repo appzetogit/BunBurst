@@ -82,6 +82,7 @@ export default function ProfileDetails() {
   const [personalErrors, setPersonalErrors] = useState({})
   const [isUpdatingPersonalDetails, setIsUpdatingPersonalDetails] = useState(false)
   const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false)
+  const [isRemovingProfileImage, setIsRemovingProfileImage] = useState(false)
   const [bankDetails, setBankDetails] = useState({
     accountHolderName: "",
     accountNumber: "",
@@ -201,6 +202,44 @@ export default function ProfileDetails() {
     }
   }
 
+  const hasAnyPhoto = !!(profile?.profileImage?.url || profile?.documents?.photo)
+
+  const getInitials = (name = "") => {
+    const parts = name.trim().split(/\s+/).filter(Boolean)
+    if (parts.length === 0) return "?"
+    if (parts.length === 1) return parts[0][0].toUpperCase()
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }
+
+  const handleRemoveProfilePhoto = async () => {
+    if (!hasAnyPhoto) return
+    setIsRemovingProfileImage(true)
+    try {
+      // Clear both profileImage and documents.photo so no fallback photo lingers
+      const updateResponse = await deliveryAPI.updateProfile({
+        profileImage: { url: "", publicId: "" },
+        documents: { photo: "" }
+      })
+      const updatedProfile = updateResponse?.data?.data?.profile
+      if (updatedProfile) {
+        setProfile(updatedProfile)
+      } else {
+        setProfile(prev => ({
+          ...(prev || {}),
+          profileImage: { url: "", publicId: "" },
+          documents: { ...(prev?.documents || {}), photo: "" }
+        }))
+      }
+      toast.success("Profile photo removed successfully")
+      window.dispatchEvent(new Event("deliveryProfileRefresh"))
+    } catch (error) {
+      console.error("Error removing profile image:", error)
+      toast.error(error?.response?.data?.message || "Failed to remove profile photo")
+    } finally {
+      setIsRemovingProfileImage(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -220,22 +259,48 @@ export default function ProfileDetails() {
           <div className="w-full h-80 bg-gray-200 animate-pulse flex items-center justify-center">
             <div className="w-20 h-20 rounded-full bg-gray-300" />
           </div>
-        ) : (
+        ) : hasAnyPhoto ? (
           <img
-            src={profile?.profileImage?.url || profile?.documents?.photo || "https://i.pravatar.cc/400?img=12"}
+            src={profile?.profileImage?.url || profile?.documents?.photo}
             alt="Profile"
             className="w-full h-auto max-h-96 object-contain"
+            onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex') }}
           />
+        ) : (
+          <div className="flex items-center justify-center w-full min-h-[300px]">
+            <div
+              className="flex items-center justify-center rounded-full bg-[#e53935] text-white font-bold select-none"
+              style={{ width: 120, height: 120, fontSize: 44, letterSpacing: 2 }}
+            >
+              {getInitials(profile?.name)}
+            </div>
+          </div>
         )}
-        <div className="absolute bottom-4 right-4">
+        <div className="absolute bottom-4 right-4 flex flex-col items-end gap-2">
+          {hasAnyPhoto && (
+            <button
+              type="button"
+              onClick={handleRemoveProfilePhoto}
+              disabled={isRemovingProfileImage || isUploadingProfileImage}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-colors ${
+                isRemovingProfileImage || isUploadingProfileImage
+                  ? "bg-[#1E1E1E]/40 text-white cursor-not-allowed"
+                  : "bg-white text-[#e53935] border border-[#e53935] hover:bg-[#fff8f7]"
+              }`}
+            >
+              <X className="w-4 h-4" />
+              <span>{isRemovingProfileImage ? "Removing..." : "Remove Photo"}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => profileFileInputRef.current?.click()}
-            disabled={isUploadingProfileImage}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-colors ${isUploadingProfileImage
-              ? "bg-[#1E1E1E]/60 text-white cursor-not-allowed"
-              : "bg-[#e53935] text-white hover:bg-[#c62828]"
-              }`}
+            disabled={isUploadingProfileImage || isRemovingProfileImage}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-colors ${
+              isUploadingProfileImage || isRemovingProfileImage
+                ? "bg-[#1E1E1E]/60 text-white cursor-not-allowed"
+                : "bg-[#e53935] text-white hover:bg-[#c62828]"
+            }`}
           >
             <Camera className="w-4 h-4" />
             <span>{isUploadingProfileImage ? "Uploading..." : "Update Photo"}</span>
