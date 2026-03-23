@@ -70,7 +70,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
+export default function ViewOrderDialog({ isOpen, onOpenChange, order, onOrderUpdated }) {
   const [showAssignDialog, setShowAssignDialog] = useState(false)
   const [deliveryPartners, setDeliveryPartners] = useState([])
   const [selectedPartner, setSelectedPartner] = useState("")
@@ -91,6 +91,8 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
     resolvedOrder?.deliveryPartnerPhone ||
     resolvedOrder?.deliveryPartnerId?.phone ||
     null
+  const canManageDeliveryPartner =
+    !['delivered', 'cancelled', 'scheduled', 'dine_in', 'refunded'].includes((resolvedOrder?.status || '').toLowerCase())
 
   useEffect(() => {
     if (!isOpen) {
@@ -142,12 +144,14 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
         const refreshedOrder = refreshed?.data?.data?.order || refreshed?.data?.order || null
         if (refreshedOrder) {
           setDetailedOrder(refreshedOrder)
+          onOrderUpdated?.(refreshedOrder)
         }
       } catch (refreshError) {
         console.error("Failed to refresh order after assignment", refreshError)
       }
-      toast.success("Delivery partner assigned successfully")
+      toast.success(deliveryPartnerName ? "Delivery partner reassigned successfully" : "Delivery partner assigned successfully")
       setShowAssignDialog(false)
+      setSelectedPartner("")
     } catch (error) {
       console.error(error)
       toast.error(error.response?.data?.message || "Failed to assign delivery partner")
@@ -1050,19 +1054,33 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      disabled
-                      className="px-3 py-1.5 bg-[#F5F5F5] text-[#1E1E1E] text-xs font-medium rounded border border-[#E0E0E0] cursor-default"
-                    >
-                      Assigned
-                    </button>
+                    {canManageDeliveryPartner ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentPartnerId = resolvedOrder?.deliveryPartnerId?._id || resolvedOrder?.deliveryPartnerId || ""
+                          setSelectedPartner(currentPartnerId ? String(currentPartnerId) : "")
+                          setShowAssignDialog(true)
+                        }}
+                        className="px-3 py-1.5 bg-[#e53935] text-white text-xs font-medium rounded hover:bg-[#d32f2f]"
+                      >
+                        Reassign Delivery Partner
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="px-3 py-1.5 bg-[#F5F5F5] text-[#1E1E1E] text-xs font-medium rounded border border-[#E0E0E0] cursor-default"
+                      >
+                        Assigned
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="bg-[#F5F5F5] p-4 rounded-lg flex items-center justify-between">
                     <p className="text-sm text-[#1E1E1E] italic">No delivery partner assigned</p>
                     {/* Allow assignment if status is not final/cancelled */}
-                    {!['delivered', 'cancelled', 'scheduled', 'dine_in', 'refunded'].includes((order.status || '').toLowerCase()) && (
+                    {canManageDeliveryPartner && (
                       <button
                         onClick={() => setShowAssignDialog(true)}
                         className="px-3 py-1.5 bg-[#e53935] text-white text-xs font-medium rounded hover:bg-[#d32f2f] disabled:opacity-50"
@@ -1137,9 +1155,11 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
         <DialogContent className="max-w-md bg-white p-0">
           <DialogHeader className="px-6 pt-6 pb-2">
-            <DialogTitle className="text-lg font-semibold text-[#1E1E1E]">Assign Delivery Partner</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-[#1E1E1E]">
+              {deliveryPartnerName ? "Reassign Delivery Partner" : "Assign Delivery Partner"}
+            </DialogTitle>
             <DialogDescription className="text-sm text-[#1E1E1E] mt-1">
-              Assign a delivery partner for Order <span className="font-mono font-medium text-[#1E1E1E]">#{order.orderId}</span>
+              {deliveryPartnerName ? "Select a new" : "Assign a"} delivery partner for Order <span className="font-mono font-medium text-[#1E1E1E]">#{order.orderId}</span>
             </DialogDescription>
           </DialogHeader>
 

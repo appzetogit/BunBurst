@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { useLocation as useGeoLocation } from "../hooks/useLocation"
 import { useProfile } from "../context/ProfileContext"
 import { toast } from "sonner"
-import { locationAPI, userAPI } from "@/lib/api"
-import { Loader } from '@googlemaps/js-api-loader'
+import { userAPI } from "@/lib/api"
+import { loadGoogleMaps } from '@/lib/utils/googleMapsLoader'
+import { reverseGeocodeWithCache } from '@/lib/utils/reverseGeocodeCache'
 
 // Google Maps implementation - Leaflet components removed
 const MAP_APIS_DISABLED = typeof window !== "undefined" &&
@@ -43,7 +44,7 @@ const getAddressIcon = (address) => {
   return Home
 }
 
-export default function LocationSelectorOverlay({ isOpen, onClose }) {
+export default function LocationSelectorOverlay({ isOpen, onClose, initialView = "list" }) {
   const navigate = useNavigate()
   const inputRef = useRef(null)
   const [searchValue, setSearchValue] = useState("")
@@ -74,6 +75,15 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
   const locationUpdateTimeoutRef = useRef(null) // Timeout for location updates
   const [currentAddress, setCurrentAddress] = useState("")
   const [GOOGLE_MAPS_API_KEY, setGOOGLE_MAPS_API_KEY] = useState(null)
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowAddressForm(false)
+      return
+    }
+
+    setShowAddressForm(initialView === "map")
+  }, [initialView, isOpen])
 
   useEffect(() => {
     if (!isOpen) {
@@ -441,13 +451,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
     const initializeGoogleMap = async () => {
       try {
-        const loader = new Loader({
-          apiKey: GOOGLE_MAPS_API_KEY,
-          version: "weekly",
-          libraries: []
-        })
-
-        const google = await loader.load()
+        const google = await loadGoogleMaps({ libraries: [] })
 
         if (!isMounted || !mapContainerRef.current) return
 
@@ -670,6 +674,10 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
     return () => {
       isMounted = false
+      if (reverseGeocodeTimeoutRef.current) {
+        clearTimeout(reverseGeocodeTimeoutRef.current)
+        reverseGeocodeTimeoutRef.current = null
+      }
       // Cleanup geolocation watch
       if (watchPositionIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchPositionIdRef.current)
@@ -694,7 +702,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         }
       }
     }
-  }, [showAddressForm, GOOGLE_MAPS_API_KEY, location?.latitude, location?.longitude])
+  }, [showAddressForm, GOOGLE_MAPS_API_KEY])
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -1541,7 +1549,15 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       const lastLng = parseFloat(lastReverseGeocodeCoordsRef.current.lng.toFixed(6))
       if (lastLat === roundedLat && lastLng === roundedLng) {
         console.log("⏭️ Skipping reverse geocode - same coordinates as last call")
-        return
+        return {
+          latitude: roundedLat,
+          longitude: roundedLng,
+          street: addressFormData.street || "",
+          city: addressFormData.city || "",
+          state: addressFormData.state || "",
+          postalCode: addressFormData.zipCode || "",
+          formattedAddress: currentAddress || `${roundedLat.toFixed(6)}, ${roundedLng.toFixed(6)}`,
+        }
       }
     }
 
@@ -1551,123 +1567,139 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
     }
 
     // Debounce: Wait 300ms before making the API call
-    reverseGeocodeTimeoutRef.current = setTimeout(async () => {
-      // Update last coordinates
-      lastReverseGeocodeCoordsRef.current = { lat: roundedLat, lng: roundedLng }
+    return new Promise((resolve) => {
+      reverseGeocodeTimeoutRef.current = setTimeout(async () => {
+        reverseGeocodeTimeoutRef.current = null
+        // Update last coordinates
+        lastReverseGeocodeCoordsRef.current = { lat: roundedLat, lng: roundedLng }
 
       setLoadingAddress(true)
       try {
         console.log("🔍 [BILLING EVENT] Reverse geocoding for coordinates (Charged):", { lat: roundedLat, lng: roundedLng })
 
-        // Use backend reverse geocoding only.
-        // This keeps Google Places/Geocoding out of normal runtime flows.
-        let formattedAddress = ""
-        let city = ""
-        let state = ""
-        let area = ""
-        let street = ""
-        let streetNumber = ""
-        let postalCode = ""
-        let pointOfInterest = ""
-        let premise = ""
-        const response = await locationAPI.reverseGeocode(roundedLat, roundedLng)
-        const backendData = response?.data?.data
-        const result = backendData?.results?.[0] || backendData?.result?.[0] || null
+          // Use backend reverse geocoding only.
+          // This keeps Google Places/Geocoding out of normal runtime flows.
+          let formattedAddress = ""
+          let city = ""
+          let state = ""
+          let area = ""
+          let street = ""
+          let streetNumber = ""
+          let postalCode = ""
+          let pointOfInterest = ""
+          let premise = ""
+          const response = await reverseGeocodeWithCache(roundedLat, roundedLng, { precision: 6 })
+          const backendData = response?.data?.data
+          const result = backendData?.results?.[0] || backendData?.result?.[0] || null
 
-        if (result) {
-          formattedAddress = result.formatted_address || result.formattedAddress || ""
-          const addressComponents = result.address_components || {}
-          city = addressComponents.city || ""
-          state = addressComponents.state || ""
-          area = addressComponents.area || ""
-        }
+          if (result) {
+            formattedAddress = result.formatted_address || result.formattedAddress || ""
+            const addressComponents = result.address_components || {}
+            city = addressComponents.city || ""
+            state = addressComponents.state || ""
+            area = addressComponents.area || ""
+          }
 
-        if (formattedAddress || city || state) {
-          // Build complete address if we have components
-          if (!formattedAddress || formattedAddress.split(',').length < 3) {
-            // Build from components
-            const addressParts = []
-            if (pointOfInterest) addressParts.push(pointOfInterest)
-            if (premise && premise !== pointOfInterest) addressParts.push(premise)
-            if (streetNumber && street) addressParts.push(`${streetNumber} ${street}`)
-            else if (street) addressParts.push(street)
-            else if (area) addressParts.push(area)
-            if (city) addressParts.push(city)
-            if (state) {
-              if (postalCode) addressParts.push(`${state} ${postalCode}`)
-              else addressParts.push(state)
+          if (formattedAddress || city || state) {
+            if (!formattedAddress || formattedAddress.split(',').length < 3) {
+              const addressParts = []
+              if (pointOfInterest) addressParts.push(pointOfInterest)
+              if (premise && premise !== pointOfInterest) addressParts.push(premise)
+              if (streetNumber && street) addressParts.push(`${streetNumber} ${street}`)
+              else if (street) addressParts.push(street)
+              else if (area) addressParts.push(area)
+              if (city) addressParts.push(city)
+              if (state) {
+                if (postalCode) addressParts.push(`${state} ${postalCode}`)
+                else addressParts.push(state)
+              }
+              formattedAddress = addressParts.join(', ')
             }
-            formattedAddress = addressParts.join(', ')
-          }
 
-          // Set street from formatted address if not set
-          if (!street && formattedAddress) {
-            const parts = formattedAddress.split(',').map(p => p.trim()).filter(p => p.length > 0)
-            if (parts.length > 0) {
-              street = parts[0]
+            if (!street && formattedAddress) {
+              const parts = formattedAddress.split(',').map(p => p.trim()).filter(p => p.length > 0)
+              if (parts.length > 0) {
+                street = parts[0]
+              }
             }
-          }
 
-          // Set area if not set
-          if (!area) {
-            area = pointOfInterest || premise || street || ""
-          }
+            if (!area) {
+              area = pointOfInterest || premise || street || ""
+            }
 
-          // Remove "India" from formatted address if present
-          if (formattedAddress && formattedAddress.endsWith(', India')) {
-            formattedAddress = formattedAddress.replace(', India', '').trim()
-          }
+            if (formattedAddress && formattedAddress.endsWith(', India')) {
+              formattedAddress = formattedAddress.replace(', India', '').trim()
+            }
 
-          console.log("✅ Final extracted address components:", {
-            formattedAddress,
-            street,
-            city,
-            state,
-            area,
-            postalCode,
-            pointOfInterest,
-            premise
+            console.log("✅ Final extracted address components:", {
+              formattedAddress,
+              street,
+              city,
+              state,
+              area,
+              postalCode,
+              pointOfInterest,
+              premise
+            })
+
+            setCurrentAddress(formattedAddress || `${roundedLat.toFixed(6)}, ${roundedLng.toFixed(6)}`)
+
+            const fullAddressForField = formattedAddress ||
+              (pointOfInterest && city && state ? `${pointOfInterest}, ${city}, ${state}` : '') ||
+              (premise && city && state ? `${premise}, ${city}, ${state}` : '') ||
+              (street && city && state ? `${street}, ${city}, ${state}` : '') ||
+              (area && city && state ? `${area}, ${city}, ${state}` : '') ||
+              (city && state ? `${city}, ${state}` : '') ||
+              ''
+
+            setAddressFormData(prev => ({
+              ...prev,
+              street: street || prev.street,
+              city: city || prev.city,
+              state: state || prev.state,
+              zipCode: postalCode || prev.zipCode,
+              additionalDetails: fullAddressForField || prev.additionalDetails,
+            }))
+
+            resolve({
+              latitude: roundedLat,
+              longitude: roundedLng,
+              street: street || "",
+              city: city || "",
+              state: state || "",
+              area: area || "",
+              postalCode: postalCode || "",
+              formattedAddress: fullAddressForField || formattedAddress,
+            })
+          } else {
+            console.warn("⚠️ No address data found from Google Maps or backend")
+            const coordinateAddress = `${roundedLat.toFixed(6)}, ${roundedLng.toFixed(6)}`
+            setCurrentAddress(coordinateAddress)
+            resolve({
+              latitude: roundedLat,
+              longitude: roundedLng,
+              formattedAddress: coordinateAddress,
+            })
+          }
+        } catch (error) {
+          console.error("❌ Error reverse geocoding:", error)
+          console.error("Error details:", {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
           })
-
-          // Update current address display
-          setCurrentAddress(formattedAddress || `${roundedLat.toFixed(6)}, ${roundedLng.toFixed(6)}`)
-
-          // Update form data
-          // Store FULL formatted address in additionalDetails (Address details field) - this is what user sees
-          // This should be the complete address with all parts: POI, Building, Floor, Area, City, State, Pincode
-          const fullAddressForField = formattedAddress ||
-            (pointOfInterest && city && state ? `${pointOfInterest}, ${city}, ${state}` : '') ||
-            (premise && city && state ? `${premise}, ${city}, ${state}` : '') ||
-            (street && city && state ? `${street}, ${city}, ${state}` : '') ||
-            (area && city && state ? `${area}, ${city}, ${state}` : '') ||
-            (city && state ? `${city}, ${state}` : '') ||
-            ''
-
-          setAddressFormData(prev => ({
-            ...prev,
-            street: street || prev.street,
-            city: city || prev.city,
-            state: state || prev.state,
-            zipCode: postalCode || prev.zipCode,
-            additionalDetails: fullAddressForField || prev.additionalDetails, // Store FULL address in Address details field
-          }))
-        } else {
-          console.warn("⚠️ No address data found from Google Maps or backend")
-          setCurrentAddress(`${roundedLat.toFixed(6)}, ${roundedLng.toFixed(6)}`)
+          const coordinateAddress = `${roundedLat.toFixed(6)}, ${roundedLng.toFixed(6)}`
+          setCurrentAddress(coordinateAddress)
+          resolve({
+            latitude: roundedLat,
+            longitude: roundedLng,
+            formattedAddress: coordinateAddress,
+          })
+        } finally {
+          setLoadingAddress(false)
         }
-      } catch (error) {
-        console.error("❌ Error reverse geocoding:", error)
-        console.error("Error details:", {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status
-        })
-        setCurrentAddress(`${roundedLat.toFixed(6)}, ${roundedLng.toFixed(6)}`)
-        // Don't show error toast, just use coordinates
-      } finally {
-        setLoadingAddress(false)
-      }
-    }, 300) // 300ms debounce delay
+      }, 300)
+    })
   }
 
   const handleUseCurrentLocationForAddress = async () => {
@@ -1756,6 +1788,30 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       console.log("📍 Location timestamp:", locationData.timestamp || new Date().toISOString())
       setMapPosition([lat, lng])
 
+      if (locationData?.formattedAddress && locationData.formattedAddress !== "Select location") {
+        const normalizedFormattedAddress = locationData.formattedAddress.endsWith(', India')
+          ? locationData.formattedAddress.replace(', India', '').trim()
+          : locationData.formattedAddress
+
+        setCurrentAddress(normalizedFormattedAddress)
+        setAddressFormData(prev => ({
+          ...prev,
+          street: locationData.street || locationData.address || prev.street,
+          city: locationData.city || prev.city,
+          state: locationData.state || prev.state,
+          zipCode: locationData.postalCode || prev.zipCode,
+          additionalDetails: normalizedFormattedAddress || prev.additionalDetails,
+          phone: userProfile?.phone || prev.phone || "",
+        }))
+
+        setManualLocation({
+          ...locationData,
+          latitude: lat,
+          longitude: lng,
+          formattedAddress: normalizedFormattedAddress,
+        })
+      }
+
       // Update Google Maps to new location
       if (googleMapRef.current && window.google && window.google.maps) {
         try {
@@ -1830,22 +1886,38 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             console.log("✅ Created blue dot accuracy circle")
           }
 
-          // Wait for map to finish moving, then fetch address (reduced delay for faster response)
-          setTimeout(async () => {
-            await handleMapMoveEnd(lat, lng)
-            toast.success("Location updated!", { id: "current-location" })
-          }, 200)
+          const resolvedLocation = await handleMapMoveEnd(lat, lng)
+          if (resolvedLocation) {
+            setManualLocation({
+              ...locationData,
+              ...resolvedLocation,
+              latitude: lat,
+              longitude: lng,
+              accuracy: locationData?.accuracy ?? null,
+              source: "gps",
+              timestamp: locationData?.timestamp || new Date().toISOString(),
+            })
+          }
+          toast.success("Location updated!", { id: "current-location" })
 
         } catch (mapError) {
           console.error("❌ Error updating map location:", mapError)
           toast.error("Failed to update map location", { id: "current-location" })
         }
       } else {
-        // Map not initialized yet, just update position and fetch address (reduced delay)
-        setTimeout(async () => {
-          await handleMapMoveEnd(lat, lng)
-          toast.success("Location updated!", { id: "current-location" })
-        }, 200)
+        const resolvedLocation = await handleMapMoveEnd(lat, lng)
+        if (resolvedLocation) {
+          setManualLocation({
+            ...locationData,
+            ...resolvedLocation,
+            latitude: lat,
+            longitude: lng,
+            accuracy: locationData?.accuracy ?? null,
+            source: "gps",
+            timestamp: locationData?.timestamp || new Date().toISOString(),
+          })
+        }
+        toast.success("Location updated!", { id: "current-location" })
       }
     } catch (error) {
       console.error("❌ Error getting current location:", error)
@@ -1875,19 +1947,35 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                     blueDotCircleRef.current.setCenter({ lat: cachedLocation.latitude, lng: cachedLocation.longitude });
                   }
 
-                  setTimeout(async () => {
-                    await handleMapMoveEnd(cachedLocation.latitude, cachedLocation.longitude);
-                    toast.success("Using cached location", { id: "current-location" });
-                  }, 500);
+                  const resolvedLocation = await handleMapMoveEnd(cachedLocation.latitude, cachedLocation.longitude);
+                  if (resolvedLocation) {
+                    setManualLocation({
+                      ...cachedLocation,
+                      ...resolvedLocation,
+                      latitude: cachedLocation.latitude,
+                      longitude: cachedLocation.longitude,
+                      source: cachedLocation.source || "gps",
+                      timestamp: cachedLocation.timestamp || new Date().toISOString(),
+                    })
+                  }
+                  toast.success("Using cached location", { id: "current-location" });
                 } catch (mapErr) {
                   console.error("Error updating map with cached location:", mapErr);
                   toast.warning("Location request timed out. Please try again.", { id: "current-location" });
                 }
               } else {
-                setTimeout(async () => {
-                  await handleMapMoveEnd(cachedLocation.latitude, cachedLocation.longitude)
-                  toast.success("Using cached location", { id: "current-location" })
-                }, 300)
+                const resolvedLocation = await handleMapMoveEnd(cachedLocation.latitude, cachedLocation.longitude)
+                if (resolvedLocation) {
+                  setManualLocation({
+                    ...cachedLocation,
+                    ...resolvedLocation,
+                    latitude: cachedLocation.latitude,
+                    longitude: cachedLocation.longitude,
+                    source: cachedLocation.source || "gps",
+                    timestamp: cachedLocation.timestamp || new Date().toISOString(),
+                  })
+                }
+                toast.success("Using cached location", { id: "current-location" })
               }
               return
             }

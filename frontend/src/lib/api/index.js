@@ -1019,10 +1019,11 @@ export const deliveryAPI = {
   },
 
   // Update location
-  updateLocation: (latitude, longitude, isOnline = null) => {
+  updateLocation: (latitude, longitude, isOnline = null, extraData = {}) => {
     const payload = {
       latitude,
       longitude,
+      ...(extraData && typeof extraData === "object" ? extraData : {}),
     };
     if (typeof isOnline === "boolean") {
       payload.isOnline = isOnline;

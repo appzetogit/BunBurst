@@ -1,12 +1,12 @@
 import { useCallback, useRef, useEffect, useState } from 'react'
-import { GoogleMap, Marker, Polyline } from '@react-google-maps/api'
 import { motion } from 'framer-motion'
 import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey'
 
 /**
  * GoogleMapsTracking Component
  * 
- * Displays a Google Map with route tracking using Directions API in driving mode.
+ * Displays a Google Map with route tracking using local haversine polyline.
+ * Uses vanilla window.google.maps API (no @react-google-maps/api to avoid duplicate SDK loads).
  * 
  * Example usage for Delivery Partner accepting order:
  * 
@@ -19,28 +19,15 @@ import { MAP_APIS_ENABLED } from '@/lib/utils/googleMapsApiKey'
  *   routeOrigin={{ lat: deliveryBoyLat, lng: deliveryBoyLng }}
  *   routeDestination={{ lat: cafeLat, lng: cafeLng }}
  *   destinationName="Cafe Name"
- *   onRouteInfoUpdate={(info) => {
- *     *   }}
+ *   onRouteInfoUpdate={(info) => { }}
  *   lastUpdate={new Date()}
  * />
- * 
- * When delivery partner accepts order:
- * - Set showRoute={true}
- * - Set routeOrigin to delivery partner's current location
- * - Set routeDestination to cafe location
- * - The component will automatically calculate and display the driving route polyline
  */
 
 // Use direct public path which is more reliable in this setup
 const getDeliveryIconUrl = () => {
   return '/assets/deliveryboy/deliveryIcon.png'
 }
-
-const mapContainerStyle = {
-  width: '100%',
-  height: '22rem'
-}
-
 
 const haversineDistanceMeters = (a, b) => {
   const R = 6371000
@@ -88,6 +75,7 @@ export default function GoogleMapsTracking({
   onRouteInfoUpdate,
   lastUpdate
 }) {
+  const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
   const lastRouteCalcRef = useRef({ time: 0, origin: { lat: 0, lng: 0 } })
   const hasInitialBoundsFitted = useRef(false)
@@ -97,6 +85,27 @@ export default function GoogleMapsTracking({
   const [routeError, setRouteError] = useState(null)
   const [isGPSWeak, setIsGPSWeak] = useState(false)
   const [routePath, setRoutePath] = useState([])
+  const [isMapReady, setIsMapReady] = useState(false)
+
+  // Marker and polyline refs (vanilla Google Maps objects)
+  const customerMarkerRef = useRef(null)
+  const sellerMarkersRef = useRef([])
+  const deliveryMarkerRef = useRef(null)
+  const routePolylineRef = useRef(null)
+
+  // Animation refs
+  const [animatedDeliveryLocation, setAnimatedDeliveryLocation] = useState(deliveryLocation)
+  const animationRef = useRef(null)
+  const lastDeliveryLocationRef = useRef(deliveryLocation)
+
+  // Combine storeLocation with sellerLocations
+  const allSellers = storeLocation ? [storeLocation, ...sellerLocations] : sellerLocations
+
+  // Center will be updated dynamically based on deliveryLocation
+  const center = deliveryLocation || (allSellers.length > 0 ? {
+    lat: (allSellers[0].lat + customerLocation.lat) / 2,
+    lng: (allSellers[0].lng + customerLocation.lng) / 2
+  } : customerLocation)
 
   // Check for weak GPS signal (no updates for > 45 seconds)
   useEffect(() => {
@@ -104,10 +113,10 @@ export default function GoogleMapsTracking({
     const checkGPS = () => {
       const now = new Date().getTime();
       const lastTime = new Date(lastUpdate).getTime();
-      setIsGPSWeak(now - lastTime > 45000); // 45 seconds threshold
+      setIsGPSWeak(now - lastTime > 45000);
     };
-    const interval = setInterval(checkGPS, 10000); // Check every 10 seconds
-    checkGPS(); // Initial check
+    const interval = setInterval(checkGPS, 10000);
+    checkGPS();
     return () => clearInterval(interval);
   }, [lastUpdate]);
 
@@ -118,167 +127,291 @@ export default function GoogleMapsTracking({
     }
   }, [routeInfo, onRouteInfoUpdate]);
 
-  const isLoaded = MAP_APIS_ENABLED
-  const loadError = MAP_APIS_ENABLED ? null : new Error('Map APIs are disabled')
-
-  // Combine storeLocation with sellerLocations
-  const allSellers = storeLocation ? [storeLocation, ...sellerLocations] : sellerLocations;
-
-  // Center will be updated dynamically based on deliveryLocation
-  const center = deliveryLocation || (allSellers.length > 0 ? {
-    lat: (allSellers[0].lat + customerLocation.lat) / 2,
-    lng: (allSellers[0].lng + customerLocation.lng) / 2
-  } : customerLocation)
-
   // Helper function to limit zoom level when polyline is shown or during live tracking
   const limitZoomIfNeeded = useCallback((map) => {
     if (!map) return;
     const currentZoom = map.getZoom();
-    const MAX_ZOOM = 16; // Maximum zoom when polyline is shown or during live tracking
-
-    // Limit zoom if polyline is shown or during live tracking
+    const MAX_ZOOM = 16;
     if ((showRoute || isTracking) && currentZoom > MAX_ZOOM) {
       map.setZoom(MAX_ZOOM);
     }
   }, [showRoute, isTracking]);
 
-  // Auto-center and fit bounds when location or route changes
+  // Initialize vanilla Google Map (once)
   useEffect(() => {
-    if (!isLoaded || !mapRef.current || userHasInteracted || !window.google?.maps) return;
-    const bounds = new window.google.maps.LatLngBounds();
-    let hasPoints = false;
+    if (!MAP_APIS_ENABLED || !mapContainerRef.current || !window.google?.maps) return
+    if (mapRef.current) return // Already initialized
 
-    // Add delivery location (focus point)
-    if (deliveryLocation) {
-      bounds.extend(deliveryLocation);
-      hasPoints = true;
+    const map = new window.google.maps.Map(mapContainerRef.current, {
+      center: center,
+      zoom: 13,
+      zoomControl: false,
+      streetViewControl: false,
+      mapTypeControl: false,
+      fullscreenControl: false,
+      disableDefaultUI: true,
+      maxZoom: (showRoute || isTracking) ? 16 : 20,
+      styles: [
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }]
+        }
+      ]
+    })
+
+    mapRef.current = map
+
+    // Track user interaction with the map
+    let isProgrammaticChange = false
+    const trackInteraction = () => {
+      if (!isProgrammaticChange) {
+        setUserHasInteracted(true)
+      }
+    }
+    map.addListener('dragstart', trackInteraction)
+    map.addListener('zoom_changed', () => {
+      if (!isProgrammaticChange) {
+        limitZoomIfNeeded(map)
+        setTimeout(() => {
+          if (!isProgrammaticChange) {
+            trackInteraction()
+          }
+        }, 100)
+      }
+    })
+    map._setProgrammaticChange = (value) => {
+      isProgrammaticChange = value
     }
 
-    // Add route points if visible
-    if (showRoute && routeOrigin && routeDestination) {
-      bounds.extend(routeOrigin);
-      bounds.extend(routeDestination);
-      routeWaypoints.forEach(wp => bounds.extend(wp));
-      hasPoints = true;
+    setIsMapReady(true)
+
+    return () => {
+      // Cleanup markers and polyline
+      if (customerMarkerRef.current) customerMarkerRef.current.setMap(null)
+      sellerMarkersRef.current.forEach(m => m.setMap(null))
+      if (deliveryMarkerRef.current) deliveryMarkerRef.current.setMap(null)
+      if (routePolylineRef.current) routePolylineRef.current.setMap(null)
+      mapRef.current = null
+      setIsMapReady(false)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [MAP_APIS_ENABLED])
+
+  // Update maxZoom when showRoute/isTracking changes
+  useEffect(() => {
+    if (!mapRef.current) return
+    mapRef.current.setOptions({
+      maxZoom: (showRoute || isTracking) ? 16 : 20
+    })
+  }, [showRoute, isTracking])
+
+  // Update customer marker
+  useEffect(() => {
+    if (!isMapReady || !mapRef.current || !window.google?.maps) return
+    if (!customerLocation || (customerLocation.lat === 0 && customerLocation.lng === 0)) {
+      if (customerMarkerRef.current) {
+        customerMarkerRef.current.setMap(null)
+        customerMarkerRef.current = null
+      }
+      return
+    }
+
+    if (!customerMarkerRef.current) {
+      customerMarkerRef.current = new window.google.maps.Marker({
+        position: customerLocation,
+        map: mapRef.current,
+        icon: {
+          url: `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><text x="8" y="32" font-size="32">📍</text></svg>')}`,
+          scaledSize: new window.google.maps.Size(40, 40)
+        },
+        title: 'Delivery Address'
+      })
     } else {
-      // Add other locations if route not showing
+      customerMarkerRef.current.setPosition(customerLocation)
+      customerMarkerRef.current.setMap(mapRef.current)
+    }
+  }, [isMapReady, customerLocation?.lat, customerLocation?.lng])
+
+  // Update seller markers
+  useEffect(() => {
+    if (!isMapReady || !mapRef.current || !window.google?.maps) return
+
+    // Remove old seller markers
+    sellerMarkersRef.current.forEach(m => m.setMap(null))
+    sellerMarkersRef.current = []
+
+    allSellers.forEach((seller) => {
+      const isRouteTarget = showRoute && routeDestination?.lat === seller.lat
+      const marker = new window.google.maps.Marker({
+        position: seller,
+        map: mapRef.current,
+        icon: isRouteTarget ? {
+          path: window.google.maps.SymbolPath?.CIRCLE || 0,
+          scale: 10,
+          fillColor: '#ef4444',
+          fillOpacity: 1,
+          strokeWeight: 3,
+          strokeColor: '#ffffff',
+        } : {
+          url: `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><text x="8" y="32" font-size="32">🏪</text></svg>')}`,
+          scaledSize: new window.google.maps.Size(40, 40)
+        },
+        title: seller.name || "Seller Shop"
+      })
+      sellerMarkersRef.current.push(marker)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMapReady, allSellers.length, showRoute, routeDestination?.lat])
+
+  // Update delivery partner marker (animated)
+  useEffect(() => {
+    if (!isMapReady || !mapRef.current || !window.google?.maps || !animatedDeliveryLocation) return
+
+    if (!deliveryMarkerRef.current) {
+      deliveryMarkerRef.current = new window.google.maps.Marker({
+        position: animatedDeliveryLocation,
+        map: mapRef.current,
+        icon: {
+          url: getDeliveryIconUrl(),
+          scaledSize: new window.google.maps.Size(60, 60),
+          anchor: new window.google.maps.Point(30, 30)
+        },
+        title: 'Delivery Partner'
+      })
+    } else {
+      deliveryMarkerRef.current.setPosition(animatedDeliveryLocation)
+    }
+  }, [isMapReady, animatedDeliveryLocation?.lat, animatedDeliveryLocation?.lng])
+
+  // Update route polyline
+  useEffect(() => {
+    if (!isMapReady || !mapRef.current || !window.google?.maps) return
+
+    if (!showRoute || routePath.length < 2) {
+      if (routePolylineRef.current) {
+        routePolylineRef.current.setMap(null)
+        routePolylineRef.current = null
+      }
+      return
+    }
+
+    if (!routePolylineRef.current) {
+      routePolylineRef.current = new window.google.maps.Polyline({
+        path: routePath,
+        geodesic: true,
+        strokeColor: '#3b82f6',
+        strokeOpacity: 1,
+        strokeWeight: 6,
+        map: mapRef.current
+      })
+    } else {
+      routePolylineRef.current.setPath(routePath)
+      if (!routePolylineRef.current.getMap()) {
+        routePolylineRef.current.setMap(mapRef.current)
+      }
+    }
+  }, [isMapReady, showRoute, routePath])
+
+  // Auto-center and fit bounds when location or route changes
+  useEffect(() => {
+    if (!isMapReady || !mapRef.current || userHasInteracted || !window.google?.maps) return
+    const bounds = new window.google.maps.LatLngBounds()
+    let hasPoints = false
+
+    if (deliveryLocation) {
+      bounds.extend(deliveryLocation)
+      hasPoints = true
+    }
+
+    if (showRoute && routeOrigin && routeDestination) {
+      bounds.extend(routeOrigin)
+      bounds.extend(routeDestination)
+      routeWaypoints.forEach(wp => bounds.extend(wp))
+      hasPoints = true
+    } else {
       if (storeLocation) {
-        bounds.extend(storeLocation);
-        hasPoints = true;
+        bounds.extend(storeLocation)
+        hasPoints = true
       }
       sellerLocations.forEach(s => {
-        bounds.extend(s);
-        hasPoints = true;
-      });
-      bounds.extend(customerLocation);
-      hasPoints = true;
+        bounds.extend(s)
+        hasPoints = true
+      })
+      bounds.extend(customerLocation)
+      hasPoints = true
     }
 
     if (hasPoints) {
       if (mapRef.current._setProgrammaticChange) {
-        mapRef.current._setProgrammaticChange(true);
+        mapRef.current._setProgrammaticChange(true)
       }
-      // If in full screen or only have delivery location, focus on delivery boy
       if (deliveryLocation && (isFullScreen || !showRoute)) {
-        mapRef.current.panTo(deliveryLocation);
+        mapRef.current.panTo(deliveryLocation)
         if (!hasInitialBoundsFitted.current || isFullScreen) {
-          const targetZoom = isFullScreen ? 17 : 15;
-          // Limit zoom if polyline is shown or during live tracking
-          const MAX_ZOOM = 16;
-          mapRef.current.setZoom(isTracking || showRoute ? Math.min(targetZoom, MAX_ZOOM) : targetZoom);
-          hasInitialBoundsFitted.current = true;
+          const targetZoom = isFullScreen ? 17 : 15
+          const MAX_ZOOM = 16
+          mapRef.current.setZoom(isTracking || showRoute ? Math.min(targetZoom, MAX_ZOOM) : targetZoom)
+          hasInitialBoundsFitted.current = true
         }
       } else {
-        // Fit to include everything (route + locations)
         mapRef.current.fitBounds(bounds, {
           top: 50,
           bottom: 50,
           left: 50,
           right: 50
-        });
-        // Limit zoom after fitBounds if polyline is shown or during live tracking
+        })
         setTimeout(() => {
-          limitZoomIfNeeded(mapRef.current);
-        }, 100);
-        hasInitialBoundsFitted.current = true;
+          limitZoomIfNeeded(mapRef.current)
+        }, 100)
+        hasInitialBoundsFitted.current = true
       }
       if (mapRef.current._setProgrammaticChange) {
-        setTimeout(() => mapRef.current._setProgrammaticChange(false), 500);
+        setTimeout(() => mapRef.current._setProgrammaticChange(false), 500)
       }
     }
-  }, [isLoaded, deliveryLocation, showRoute, routeOrigin, routeDestination, routeWaypoints, storeLocation, sellerLocations, customerLocation, userHasInteracted, isFullScreen]);
+  }, [isMapReady, deliveryLocation, showRoute, routeOrigin, routeDestination, routeWaypoints, storeLocation, sellerLocations, customerLocation, userHasInteracted, isFullScreen])
 
   const handleRecenter = () => {
-    setUserHasInteracted(false);
-    hasInitialBoundsFitted.current = false;
+    setUserHasInteracted(false)
+    hasInitialBoundsFitted.current = false
     if (mapRef.current) {
       if (deliveryLocation && (isFullScreen || !showRoute)) {
-        mapRef.current.panTo(deliveryLocation);
-        const targetZoom = isFullScreen ? 17 : 15;
-        // Limit zoom if polyline is shown or during live tracking
-        const MAX_ZOOM = 16;
-        mapRef.current.setZoom(isTracking || showRoute ? Math.min(targetZoom, MAX_ZOOM) : targetZoom);
-        hasInitialBoundsFitted.current = true;
+        mapRef.current.panTo(deliveryLocation)
+        const targetZoom = isFullScreen ? 17 : 15
+        const MAX_ZOOM = 16
+        mapRef.current.setZoom(isTracking || showRoute ? Math.min(targetZoom, MAX_ZOOM) : targetZoom)
+        hasInitialBoundsFitted.current = true
       } else {
-        const bounds = new window.google.maps.LatLngBounds();
-        if (deliveryLocation) bounds.extend(deliveryLocation);
+        const bounds = new window.google.maps.LatLngBounds()
+        if (deliveryLocation) bounds.extend(deliveryLocation)
         if (showRoute && routeOrigin && routeDestination) {
-          bounds.extend(routeOrigin);
-          bounds.extend(routeDestination);
-          routeWaypoints.forEach(wp => bounds.extend(wp));
+          bounds.extend(routeOrigin)
+          bounds.extend(routeDestination)
+          routeWaypoints.forEach(wp => bounds.extend(wp))
         } else {
-          if (storeLocation) bounds.extend(storeLocation);
-          sellerLocations.forEach(s => bounds.extend(s));
-          bounds.extend(customerLocation);
+          if (storeLocation) bounds.extend(storeLocation)
+          sellerLocations.forEach(s => bounds.extend(s))
+          bounds.extend(customerLocation)
         }
-        mapRef.current.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
-        // Limit zoom after fitBounds if polyline is shown or during live tracking
+        mapRef.current.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 })
         setTimeout(() => {
-          limitZoomIfNeeded(mapRef.current);
-        }, 100);
-        hasInitialBoundsFitted.current = true;
+          limitZoomIfNeeded(mapRef.current)
+        }, 100)
+        hasInitialBoundsFitted.current = true
       }
     }
-  };
+  }
 
   const toggleFullScreen = () => {
-    setIsFullScreen(!isFullScreen);
-    // Reset interaction/bounds to force re-fit in new size
-    setUserHasInteracted(false);
-    hasInitialBoundsFitted.current = false;
-  };
+    setIsFullScreen(!isFullScreen)
+    setUserHasInteracted(false)
+    hasInitialBoundsFitted.current = false
+  }
 
-  const onLoad = useCallback((map) => {
-    mapRef.current = map
-    // Track user interaction with the map (pan, zoom, drag)
-    let isProgrammaticChange = false;
-    const trackInteraction = () => {
-      if (!isProgrammaticChange) {
-        setUserHasInteracted(true);
-      }
-    };
-    // Add event listeners to track user interaction
-    map.addListener('dragstart', trackInteraction);
-    map.addListener('zoom_changed', () => {
-      if (!isProgrammaticChange) {
-        // Limit zoom when polyline is shown or during live tracking
-        limitZoomIfNeeded(map);
-        setTimeout(() => {
-          if (!isProgrammaticChange) {
-            trackInteraction();
-          }
-        }, 100);
-      }
-    });
-    // Store the flag setter for use in route calculation
-    map._setProgrammaticChange = (value) => {
-      isProgrammaticChange = value;
-    };
-  }, [limitZoomIfNeeded])
-
-    // Calculate and display route locally with haversine + interpolated polyline
+  // Calculate and display route locally with haversine + interpolated polyline
   const calculateAndDisplayRoute = useCallback((origin, destination, waypoints = []) => {
-    if (!isLoaded || !mapRef.current || !window.google?.maps) {
+    if (!isMapReady || !mapRef.current || !window.google?.maps) {
       return
     }
 
@@ -331,39 +464,28 @@ export default function GoogleMapsTracking({
       durationValue: totalDurationSeconds,
       distanceValue: totalDistance,
     })
-  }, [isLoaded])
+  }, [isMapReady])
 
   // Handle route calculation when routeOrigin and routeDestination are provided
   useEffect(() => {
-    if (showRoute && routeOrigin && routeDestination && isLoaded && mapRef.current) {
-      // Recalculate route when origin, destination or waypoints change
+    if (showRoute && routeOrigin && routeDestination && isMapReady && mapRef.current) {
       calculateAndDisplayRoute(routeOrigin, routeDestination, routeWaypoints)
     } else if (!showRoute) {
       setRouteInfo(null)
       setRoutePath([])
     }
-  }, [showRoute, routeOrigin, routeDestination, routeWaypoints, isLoaded, calculateAndDisplayRoute])
+  }, [showRoute, routeOrigin, routeDestination, routeWaypoints, isMapReady, calculateAndDisplayRoute])
 
-  // Interpolation State
-  const [animatedDeliveryLocation, setAnimatedDeliveryLocation] = useState(deliveryLocation);
-  const animationRef = useRef(null);
-  const lastDeliveryLocationRef = useRef(deliveryLocation);
-
-  // Center is only for initial load, we use panTo/fitBounds for updates
-  const [initialCenter] = useState(center);
-
-  // Animation Logic
+  // Animation Logic for delivery location
   useEffect(() => {
     if (!deliveryLocation) return;
 
-    // If no previous location, snap to current (initial load)
     if (!lastDeliveryLocationRef.current) {
       setAnimatedDeliveryLocation(deliveryLocation);
       lastDeliveryLocationRef.current = deliveryLocation;
       return;
     }
 
-    // If location hasn't changed (deep check), do nothing
     if (deliveryLocation.lat === lastDeliveryLocationRef.current.lat &&
       deliveryLocation.lng === lastDeliveryLocationRef.current.lng) {
       return;
@@ -373,12 +495,12 @@ export default function GoogleMapsTracking({
     const targetLocation = deliveryLocation;
 
     const startTime = performance.now();
-    const duration = 3800; // Slightly less than 4s interval to ensure completion
+    const duration = 3800;
 
     const animate = (currentTime) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const ease = progress; // Linear for constant speed prediction
+      const ease = progress;
 
       const lat = startLocation.lat + (targetLocation.lat - startLocation.lat) * ease;
       const lng = startLocation.lng + (targetLocation.lng - startLocation.lng) * ease;
@@ -395,7 +517,6 @@ export default function GoogleMapsTracking({
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
     animationRef.current = requestAnimationFrame(animate);
 
-    // Update ref for next comparison
     lastDeliveryLocationRef.current = deliveryLocation;
 
     return () => {
@@ -407,19 +528,10 @@ export default function GoogleMapsTracking({
     ? "fixed inset-0 z-[100] bg-white w-screen h-screen flex flex-col"
     : "relative mx-4 mt-4 rounded-lg overflow-hidden shadow-sm";
 
-  if (loadError) {
+  if (!MAP_APIS_ENABLED) {
     return (
       <div className={containerClasses + " bg-red-50 border border-red-200 p-4 text-center"}>
-        <p className="text-red-800 text-sm">❌ Failed to load Google Maps</p>
-      </div>
-    )
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className={containerClasses + " bg-gray-100 p-8 text-center"}>
-        <div className="animate-spin text-2xl">🗺️</div>
-        <p className="text-gray-600 text-sm mt-2">Loading map...</p>
+        <p className="text-red-800 text-sm">❌ Map APIs are disabled</p>
       </div>
     )
   }
@@ -508,90 +620,11 @@ export default function GoogleMapsTracking({
         </div>
       )}
 
-      <GoogleMap
-        mapContainerStyle={isFullScreen ? { width: '100%', height: '100%' } : mapContainerStyle}
-        center={initialCenter}
-        zoom={13}
-        onLoad={onLoad}
-        options={{
-          zoomControl: false,
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: false,
-          disableDefaultUI: true,
-          maxZoom: (showRoute || isTracking) ? 16 : 20, // Limit max zoom when polyline is shown or during live tracking
-          styles: [
-            {
-              featureType: "poi",
-              elementType: "labels",
-              stylers: [{ visibility: "off" }]
-            }
-          ]
-        }}
-      >
-        {/* Customer Marker - Only show if valid location */}
-        {customerLocation && (customerLocation.lat !== 0 || customerLocation.lng !== 0) && (
-          <Marker
-            position={customerLocation}
-            icon={{
-              url: `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><text x="8" y="32" font-size="32">📍</text></svg>')}`,
-              scaledSize: window.google?.maps?.Size ? new window.google.maps.Size(40, 40) : undefined
-            }}
-            title="Delivery Address"
-          />
-        )}
-
-        {/* Seller Markers */}
-        {allSellers.map((seller, index) => (
-          <Marker
-            key={`seller-${index}`}
-            position={seller}
-            icon={showRoute && routeDestination?.lat === seller.lat ? {
-              path: window.google?.maps?.SymbolPath?.CIRCLE || 0,
-              scale: 10,
-              fillColor: '#ef4444',
-              fillOpacity: 1,
-              strokeWeight: 3,
-              strokeColor: '#ffffff',
-            } : {
-              url: `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><text x="8" y="32" font-size="32">🏪</text></svg>')}`,
-              scaledSize: window.google?.maps?.Size ? new window.google.maps.Size(40, 40) : undefined
-            }}
-            title={seller.name || "Seller Shop"}
-          />
-        ))}
-
-        {/* Delivery Partner Marker (Animated) */}
-        {animatedDeliveryLocation && (
-          <Marker
-            position={animatedDeliveryLocation}
-            icon={{
-              url: getDeliveryIconUrl(),
-              scaledSize: window.google?.maps?.Size ? new window.google.maps.Size(60, 60) : undefined,
-              anchor: window.google?.maps?.Point ? new window.google.maps.Point(30, 30) : undefined
-            }}
-            title="Delivery Partner"
-          />
-        )}
-
-        {showRoute && routePath.length > 1 && (
-          <Polyline
-            path={routePath}
-            options={{
-              strokeColor: '#3b82f6',
-              strokeOpacity: 1,
-              strokeWeight: 6,
-              geodesic: true
-            }}
-          />
-        )}
-      </GoogleMap>
+      {/* Map container */}
+      <div
+        ref={mapContainerRef}
+        style={isFullScreen ? { width: '100%', height: '100%' } : { width: '100%', height: '22rem' }}
+      />
     </div>
   )
 }
-
-
-
-
-
-

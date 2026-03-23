@@ -531,12 +531,104 @@ app.use((req, res, next) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
+function normalizeSocketRoutePoint(point) {
+  if (!point) return null;
+
+  if (Array.isArray(point) && point.length >= 2) {
+    const first = Number(point[0]);
+    const second = Number(point[1]);
+    if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
+
+    if (Math.abs(first) <= 90 && Math.abs(second) <= 180) {
+      return { lat: first, lng: second };
+    }
+
+    if (Math.abs(first) <= 180 && Math.abs(second) <= 90) {
+      return { lat: second, lng: first };
+    }
+
+    return null;
+  }
+
+  const lat = Number(point.lat ?? point.latitude);
+  const lng = Number(point.lng ?? point.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat, lng };
+}
+
+function trimRoutePointsForSocket(routePoints = [], currentPoint) {
+  if (!Array.isArray(routePoints) || routePoints.length < 2) return null;
+
+  const normalizedCurrent = normalizeSocketRoutePoint(currentPoint);
+  if (!normalizedCurrent) return null;
+
+  let nearestIndex = 0;
+  let nearestDistance = Infinity;
+
+  for (let i = 0; i < routePoints.length; i += 1) {
+    const routePoint = routePoints[i];
+    const distance = Math.abs(routePoint.lat - normalizedCurrent.lat) + Math.abs(routePoint.lng - normalizedCurrent.lng);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = i;
+    }
+  }
+
+  return [normalizedCurrent, ...routePoints.slice(nearestIndex + 1)];
+}
+
+function calculateRouteProgressForSocket(routePoints = [], currentPoint) {
+  if (!Array.isArray(routePoints) || routePoints.length < 2) return null;
+
+  const normalizedCurrent = normalizeSocketRoutePoint(currentPoint);
+  if (!normalizedCurrent) return null;
+
+  let nearestIndex = 0;
+  let nearestDistance = Infinity;
+
+  for (let i = 0; i < routePoints.length; i += 1) {
+    const routePoint = routePoints[i];
+    const distance = Math.abs(routePoint.lat - normalizedCurrent.lat) + Math.abs(routePoint.lng - normalizedCurrent.lng);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = i;
+    }
+  }
+
+  return routePoints.length > 1 ? nearestIndex / (routePoints.length - 1) : 0;
+}
+
+async function enrichSocketLocationPayload(orderId, payload) {
+  const activeOrderRealtime = await getActiveOrderLocationRealtime(orderId);
+  if (!activeOrderRealtime) return payload;
+
+  const routePoints = Array.isArray(activeOrderRealtime.route_points)
+    ? activeOrderRealtime.route_points.map(normalizeSocketRoutePoint).filter(Boolean)
+    : [];
+
+  const currentPoint = { lat: payload.lat, lng: payload.lng };
+  const remainingRoutePoints = trimRoutePointsForSocket(routePoints, currentPoint);
+  const progress = calculateRouteProgressForSocket(routePoints, currentPoint);
+
+  return {
+    ...payload,
+    progress: typeof progress === 'number' ? progress : payload.progress,
+    remainingRoutePoints: Array.isArray(remainingRoutePoints) && remainingRoutePoints.length > 1 ? remainingRoutePoints : null,
+    totalRoutePoints: routePoints.length > 1 ? routePoints : null,
+    polyline: activeOrderRealtime.polyline || null,
+    status: activeOrderRealtime.status || payload.status || null,
+    totalDistance: activeOrderRealtime.distance || null,
+    duration: activeOrderRealtime.duration || null
+  };
+}
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
   // Delivery boy sends location update
-  socket.on('update-location', (data) => {
+  socket.on('update-location', async (data) => {
     try {
       // Validate data
       if (!data.orderId || typeof data.lat !== 'number' || typeof data.lng !== 'number') {
@@ -554,8 +646,10 @@ io.on('connection', (socket) => {
         timestamp: Date.now()
       };
 
+      const enrichedLocationData = await enrichSocketLocationPayload(data.orderId, locationData);
+
       // Send to specific order room
-      io.to(`order:${data.orderId}`).emit(`location-receive-${data.orderId}`, locationData);
+      io.to(`order:${data.orderId}`).emit(`location-receive-${data.orderId}`, enrichedLocationData);
 
       // Best-effort Firebase sync (no throw on failure)
       syncActiveOrderLocation({
@@ -569,9 +663,10 @@ io.on('connection', (socket) => {
       });
 
       console.log(`📍 Location broadcasted to order room ${data.orderId}:`, {
-        lat: locationData.lat,
-        lng: locationData.lng,
-        heading: locationData.heading
+        lat: enrichedLocationData.lat,
+        lng: enrichedLocationData.lng,
+        heading: enrichedLocationData.heading,
+        hasRemainingRoutePoints: Array.isArray(enrichedLocationData.remainingRoutePoints)
       });
 
       console.log(`📍 Location update for order ${data.orderId}:`, {
@@ -612,13 +707,13 @@ io.on('connection', (socket) => {
           typeof activeOrderRealtime.boy_lat === 'number' &&
           typeof activeOrderRealtime.boy_lng === 'number'
         ) {
-          socket.emit(`current-location-${orderId}`, {
+          socket.emit(`current-location-${orderId}`, await enrichSocketLocationPayload(orderId, {
             orderId,
             lat: activeOrderRealtime.boy_lat,
             lng: activeOrderRealtime.boy_lng,
             heading: 0,
             timestamp: activeOrderRealtime.last_updated || Date.now()
-          });
+          }));
           return;
         }
 
@@ -651,7 +746,7 @@ io.on('connection', (socket) => {
           };
 
           // Send current location immediately
-          socket.emit(`current-location-${orderId}`, locationData);
+          socket.emit(`current-location-${orderId}`, await enrichSocketLocationPayload(orderId, locationData));
           console.log(`📍 Sent current location to customer for order ${orderId}`);
         }
       } catch (error) {
@@ -685,13 +780,13 @@ io.on('connection', (socket) => {
         typeof activeOrderRealtime.boy_lat === 'number' &&
         typeof activeOrderRealtime.boy_lng === 'number'
       ) {
-        socket.emit(`current-location-${orderId}`, {
+        socket.emit(`current-location-${orderId}`, await enrichSocketLocationPayload(orderId, {
           orderId,
           lat: activeOrderRealtime.boy_lat,
           lng: activeOrderRealtime.boy_lng,
           heading: 0,
           timestamp: activeOrderRealtime.last_updated || Date.now()
-        });
+        }));
         return;
       }
 
@@ -721,7 +816,7 @@ io.on('connection', (socket) => {
         };
 
         // Send current location immediately
-        socket.emit(`current-location-${orderId}`, locationData);
+        socket.emit(`current-location-${orderId}`, await enrichSocketLocationPayload(orderId, locationData));
         // console.log(`📍 Sent requested location for order ${orderId}`);
       }
     } catch (error) {

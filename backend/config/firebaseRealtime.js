@@ -11,6 +11,7 @@ const FIREBASE_READ_INTERVAL_MS = 10000; // 10 seconds
 
 const writeThrottle = {
   deliveryPartner: new Map(),
+  deliveryLocation: new Map(),
   activeOrderLocation: new Map(),
   activeOrderRoute: new Map(),
   userLocation: new Map(),
@@ -184,6 +185,42 @@ export async function syncDeliveryPartnerPresence({
   }
 
   await db.ref(`delivery_boys/${deliveryPartnerId}`).update(payload);
+  return true;
+}
+
+export async function syncDeliveryLocationRealtime({
+  deliveryPartnerId,
+  latitude,
+  longitude,
+  accuracy = null,
+  heading = null,
+  speed = null,
+  isOnline = null,
+  orderId = null,
+  source = 'gps'
+}) {
+  const db = getFirebaseRealtimeDb();
+  if (!db || !deliveryPartnerId) return false;
+  if (typeof latitude !== 'number' || !Number.isFinite(latitude)) return false;
+  if (typeof longitude !== 'number' || !Number.isFinite(longitude)) return false;
+  if (shouldSkipWrite(writeThrottle.deliveryLocation, deliveryPartnerId, isOnline ? 'online' : 'offline')) {
+    return true;
+  }
+
+  const payload = {
+    lat: latitude,
+    lng: longitude,
+    source,
+    updatedAt: Date.now()
+  };
+
+  if (typeof accuracy === 'number' && Number.isFinite(accuracy)) payload.accuracy = accuracy;
+  if (typeof heading === 'number' && Number.isFinite(heading)) payload.heading = heading;
+  if (typeof speed === 'number' && Number.isFinite(speed)) payload.speed = speed;
+  if (typeof isOnline === 'boolean') payload.isOnline = isOnline;
+  if (orderId) payload.orderId = orderId;
+
+  await db.ref(`delivery_locations/${deliveryPartnerId}`).set(payload);
   return true;
 }
 

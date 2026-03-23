@@ -1,6 +1,59 @@
 import axios from 'axios';
 import winston from 'winston';
 
+const REVERSE_GEOCODE_CACHE_TTL_MS = 5 * 60 * 1000;
+const NEARBY_LOCATIONS_CACHE_TTL_MS = 5 * 60 * 1000;
+const reverseGeocodeCache = new Map();
+const nearbyLocationsCache = new Map();
+const nearbyLocationsInflight = new Map();
+
+function getReverseGeocodeCacheKey(lat, lng, precision = 5) {
+  return `${Number(lat).toFixed(precision)},${Number(lng).toFixed(precision)}`;
+}
+
+function getCachedReverseGeocode(cacheKey) {
+  const cached = reverseGeocodeCache.get(cacheKey);
+  if (!cached) return null;
+  if ((Date.now() - cached.timestamp) > REVERSE_GEOCODE_CACHE_TTL_MS) {
+    reverseGeocodeCache.delete(cacheKey);
+    return null;
+  }
+  return cached.payload;
+}
+
+function cacheReverseGeocode(cacheKey, payload) {
+  reverseGeocodeCache.set(cacheKey, {
+    payload,
+    timestamp: Date.now()
+  });
+}
+
+function getNearbyLocationsCacheKey(lat, lng, radius = 500, query = '') {
+  return [
+    Number(lat).toFixed(4),
+    Number(lng).toFixed(4),
+    Math.round(Number(radius) || 500),
+    String(query || '').trim().toLowerCase()
+  ].join(':');
+}
+
+function getCachedNearbyLocations(cacheKey) {
+  const cached = nearbyLocationsCache.get(cacheKey);
+  if (!cached) return null;
+  if ((Date.now() - cached.timestamp) > NEARBY_LOCATIONS_CACHE_TTL_MS) {
+    nearbyLocationsCache.delete(cacheKey);
+    return null;
+  }
+  return cached.payload;
+}
+
+function cacheNearbyLocations(cacheKey, payload) {
+  nearbyLocationsCache.set(cacheKey, {
+    payload,
+    timestamp: Date.now()
+  });
+}
+
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
@@ -34,6 +87,17 @@ export const reverseGeocode = async (req, res) => {
         message: 'Invalid latitude or longitude'
       });
     }
+
+    const cacheKey = getReverseGeocodeCacheKey(latNum, lngNum);
+    const cachedPayload = getCachedReverseGeocode(cacheKey);
+    if (cachedPayload) {
+      return res.json(cachedPayload);
+    }
+
+    const respondWithCache = (payload) => {
+      cacheReverseGeocode(cacheKey, payload);
+      return res.json(payload);
+    };
 
     const apiKey = process.env.OLA_MAPS_API_KEY;
     const projectId = process.env.OLA_MAPS_PROJECT_ID;
@@ -256,7 +320,7 @@ export const reverseGeocode = async (req, res) => {
               }]
             };
 
-            return res.json({
+            return respondWithCache({
               success: true,
               data: transformedData,
               source: 'fallback'
@@ -285,7 +349,7 @@ export const reverseGeocode = async (req, res) => {
               }]
             };
 
-            return res.json({
+            return respondWithCache({
               success: true,
               data: minimalData,
               source: 'coordinates_only'
@@ -315,7 +379,7 @@ export const reverseGeocode = async (req, res) => {
             }]
           };
 
-          return res.json({
+          return respondWithCache({
             success: true,
             data: minimalData,
             source: 'coordinates_only'
@@ -466,7 +530,7 @@ export const reverseGeocode = async (req, res) => {
           }
         }
 
-        return res.json({
+        return respondWithCache({
           success: true,
           data: processedData,
           source: 'olamaps'
@@ -493,7 +557,7 @@ export const reverseGeocode = async (req, res) => {
         }]
       };
 
-      return res.json({
+      return respondWithCache({
         success: true,
         data: minimalData,
         source: 'coordinates_only'
@@ -561,75 +625,94 @@ export const getNearbyLocations = async (req, res) => {
     }
 
     const apiKey = process.env.OLA_MAPS_API_KEY;
+    const cacheKey = getNearbyLocationsCacheKey(latNum, lngNum, radiusNum, query);
+    const cachedPayload = getCachedNearbyLocations(cacheKey);
 
-    let nearbyPlaces = [];
-
-    // Fallback to OLA Maps (if available) or return empty
-    if (apiKey) {
-      try {
-        // Note: OLA Maps might have different endpoint structure
-        // This is a placeholder - adjust based on actual OLA Maps API
-        const response = await axios.get(
-          'https://api.olamaps.io/places/v1/nearby',
-          {
-            params: {
-              lat: latNum,
-              lng: lngNum,
-              radius: radiusNum,
-              key: apiKey
-            },
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            timeout: 5000
-          }
-        );
-
-        if (response.data && response.data.results) {
-          nearbyPlaces = response.data.results.slice(0, 10).map((place, index) => {
-            const placeLat = place.geometry?.location?.lat || place.lat;
-            const placeLng = place.geometry?.location?.lng || place.lng;
-            const distance = calculateDistance(latNum, lngNum, placeLat, placeLng);
-
-            return {
-              id: place.place_id || place.id || `place_${index}`,
-              name: place.name || '',
-              address: place.vicinity || place.formatted_address || place.address || '',
-              distance: distance < 1000
-                ? `${Math.round(distance)} m`
-                : `${(distance / 1000).toFixed(2)} km`,
-              distanceMeters: Math.round(distance),
-              latitude: placeLat,
-              longitude: placeLng
-            };
-          });
-
-          nearbyPlaces.sort((a, b) => a.distanceMeters - b.distanceMeters);
-
-          return res.json({
-            success: true,
-            data: {
-              locations: nearbyPlaces,
-              source: 'olamaps'
-            }
-          });
-        }
-      } catch (olaError) {
-        logger.warn('OLA Maps nearby search failed', {
-          error: olaError.message
-        });
-      }
+    if (cachedPayload) {
+      return res.json(cachedPayload);
     }
 
-    // Return empty results if all APIs fail
-    return res.json({
-      success: true,
-      data: {
-        locations: [],
-        source: 'none'
+    if (nearbyLocationsInflight.has(cacheKey)) {
+      const inflightPayload = await nearbyLocationsInflight.get(cacheKey);
+      return res.json(inflightPayload);
+    }
+
+    let nearbyPlaces = [];
+    const nearbyRequest = (async () => {
+      // Fallback to OLA Maps (if available) or return empty
+      if (apiKey) {
+        try {
+          const response = await axios.get(
+            'https://api.olamaps.io/places/v1/nearby',
+            {
+              params: {
+                lat: latNum,
+                lng: lngNum,
+                radius: radiusNum,
+                key: apiKey
+              },
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              timeout: 5000
+            }
+          );
+
+          if (response.data && response.data.results) {
+            nearbyPlaces = response.data.results.slice(0, 10).map((place, index) => {
+              const placeLat = place.geometry?.location?.lat || place.lat;
+              const placeLng = place.geometry?.location?.lng || place.lng;
+              const distance = calculateDistance(latNum, lngNum, placeLat, placeLng);
+
+              return {
+                id: place.place_id || place.id || `place_${index}`,
+                name: place.name || '',
+                address: place.vicinity || place.formatted_address || place.address || '',
+                distance: distance < 1000
+                  ? `${Math.round(distance)} m`
+                  : `${(distance / 1000).toFixed(2)} km`,
+                distanceMeters: Math.round(distance),
+                latitude: placeLat,
+                longitude: placeLng
+              };
+            });
+
+            nearbyPlaces.sort((a, b) => a.distanceMeters - b.distanceMeters);
+
+            return {
+              success: true,
+              data: {
+                locations: nearbyPlaces,
+                source: 'olamaps'
+              }
+            };
+          }
+        } catch (olaError) {
+          logger.warn('OLA Maps nearby search failed', {
+            error: olaError.message
+          });
+        }
       }
-    });
+
+      return {
+        success: true,
+        data: {
+          locations: [],
+          source: 'none'
+        }
+      };
+    })();
+
+    nearbyLocationsInflight.set(cacheKey, nearbyRequest);
+
+    try {
+      const payload = await nearbyRequest;
+      cacheNearbyLocations(cacheKey, payload);
+      return res.json(payload);
+    } finally {
+      nearbyLocationsInflight.delete(cacheKey);
+    }
   } catch (error) {
     logger.error('Get nearby locations error', {
       error: error.message,

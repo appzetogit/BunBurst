@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Building2, Info, Tag, Upload, Calendar, FileText, MapPin, X, Image as ImageIcon, Clock, Loader2 } from "lucide-react"
-import { Loader } from "@googlemaps/js-api-loader"
-
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { adminAPI, uploadAPI } from "@/lib/api"
 import { getGoogleMapsApiKey } from "@/lib/utils/googleMapsApiKey"
+import { loadGoogleMaps } from "@/lib/utils/googleMapsLoader"
 import { toast } from "sonner"
 
 const cuisinesOptions = [
@@ -305,6 +304,33 @@ export default function AddCafe() {
     return hasTrailingSpace ? `${formatted} ` : formatted
   }
 
+  const normalizeImageValue = (image) => {
+    if (!image) return null
+    if (typeof image === "string") {
+      return image.trim() ? { url: image.trim() } : null
+    }
+
+    const url =
+      image.url ||
+      image.secure_url ||
+      image.imageUrl ||
+      image.src ||
+      null
+
+    if (!url || typeof url !== "string") return null
+
+    return {
+      ...image,
+      url,
+      publicId: image.publicId || image.public_id || null,
+    }
+  }
+
+  const normalizeImageList = (images = []) =>
+    (Array.isArray(images) ? images : [])
+      .map(normalizeImageValue)
+      .filter(Boolean)
+
   // Step 1: Basic Info
   const [step1, setStep1] = useState({
     cafeName: "",
@@ -521,6 +547,18 @@ export default function AddCafe() {
                   "",
               },
             })
+
+            const normalizedMenuImages = normalizeImageList([
+              ...(data.coverImages || []),
+              ...(data.menuImages || []),
+              ...(data.onboarding?.step2?.menuImageUrls || []),
+            ])
+
+            const normalizedProfileImage =
+              normalizeImageValue(data.profileImage) ||
+              normalizeImageValue(data.onboarding?.step2?.profileImageUrl) ||
+              normalizedMenuImages[0] ||
+              null
 
             // Populate Step 2
             setStep2({
@@ -891,12 +929,7 @@ export default function AddCafe() {
           return
         }
 
-        const loader = new Loader({
-          apiKey: googleMapsApiKey,
-          version: "weekly",
-          libraries: ["geometry", "marker"],
-        })
-        const google = await loader.load()
+        const google = await loadGoogleMaps({ libraries: ["geometry", "marker"] })
         mountMap(google)
       } catch (error) {
         console.error("Error initializing map:", error)
@@ -1021,9 +1054,6 @@ export default function AddCafe() {
     const formattedPanName = formatFullName(step3.nameOnPan)
     if (!formattedPanName) errors.push("Name on PAN is required")
     if (!step3.panImage) errors.push("PAN image is required")
-    if (isEditMode && !(step3.panImage instanceof File)) {
-      errors.push("Please re-upload PAN image")
-    }
     if (!step3.fssaiNumber?.trim()) errors.push("FSSAI number is required")
     if (step3.fssaiNumber && step3.fssaiNumber.length !== 14) errors.push("FSSAI number must be 14 digits")
     if (!step3.fssaiExpiry?.trim()) errors.push("FSSAI expiry date is required")
@@ -1032,9 +1062,6 @@ export default function AddCafe() {
       if (step3.fssaiExpiry < todayIso) errors.push("FSSAI expiry date cannot be in the past")
     }
     if (!step3.fssaiImage) errors.push("FSSAI image is required")
-    if (isEditMode && !(step3.fssaiImage instanceof File)) {
-      errors.push("Please re-upload FSSAI image")
-    }
     if (step3.gstRegistered) {
       const formattedGst = formatGstNumber(step3.gstNumber)
       if (!formattedGst) errors.push("GST number is required when GST registered")
@@ -1044,9 +1071,6 @@ export default function AddCafe() {
       const formattedGstAddress = formatAddressLive(step3.gstAddress).trim()
       if (!formattedGstAddress) errors.push("GST registered address is required when GST registered")
       if (!step3.gstImage) errors.push("GST image is required when GST registered")
-      if (isEditMode && step3.gstImage && !(step3.gstImage instanceof File)) {
-        errors.push("Please re-upload GST image")
-      }
     }
     if (!step3.accountNumber?.trim()) errors.push("Account number is required")
     if (step3.accountNumber && !isValidAccountNumber(step3.accountNumber)) {

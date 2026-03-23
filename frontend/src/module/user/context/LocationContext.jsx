@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react"
 import { userAPI, locationAPI } from "@/lib/api"
 import { writeUserLocation } from "@/lib/firebaseRealtime"
+import { reverseGeocodeWithCache } from "@/lib/utils/reverseGeocodeCache"
 
 const LocationContext = createContext(null)
 
@@ -74,6 +75,10 @@ export function LocationProvider({ children }) {
         state: locationData.state || "",
         area: locationData.area || "",
         formattedAddress: locationData.formattedAddress || locationData.address || "",
+        accuracy: locationData.accuracy ?? null,
+        postalCode: locationData.postalCode || locationData.zipCode || "",
+        street: locationData.street || "",
+        streetNumber: locationData.streetNumber || "",
       }
 
       await userAPI.updateLocation(locationPayload)
@@ -90,7 +95,7 @@ export function LocationProvider({ children }) {
           area: locationPayload.area,
           city: locationPayload.city,
           state: locationPayload.state,
-          source: "address",
+          source: locationData.source || "address",
         })
       }
     } catch (err) {
@@ -101,7 +106,7 @@ export function LocationProvider({ children }) {
   }, [])
 
   /* ===================== LOCATION FETCHING ===================== */
-  const getLocation = useCallback(async (forceFresh = false) => {
+  const getLocation = useCallback(async (forceFresh = false, updateDB = true) => {
     try {
       setLoading(true)
 
@@ -155,8 +160,9 @@ export function LocationProvider({ children }) {
       setLocation(newLocation)
       setPermissionGranted(true)
 
-      // Update DB in background
-      updateLocationInDB(newLocation)
+      if (updateDB) {
+        updateLocationInDB(newLocation)
+      }
 
       return newLocation
     } catch (err) {

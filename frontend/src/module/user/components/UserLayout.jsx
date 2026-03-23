@@ -71,6 +71,7 @@ const LocationSelectorContext = createContext({
   openLocationSelector: () => {
     console.warn("LocationSelectorProvider not available")
   },
+  locationSelectorInitialView: "list",
   closeLocationSelector: () => { }
 })
 
@@ -84,11 +85,13 @@ export function useLocationSelector() {
 
 function LocationSelectorProvider({ children }) {
   const [isLocationSelectorOpen, setIsLocationSelectorOpen] = useState(false)
+  const [locationSelectorInitialView, setLocationSelectorInitialView] = useState("list")
   const navigate = useNavigate()
   const lastPathRef = useRef(window.location.pathname)
 
-  const openLocationSelector = () => {
+  const openLocationSelector = (options = {}) => {
     lastPathRef.current = window.location.pathname || "/"
+    setLocationSelectorInitialView(options.initialView === "map" ? "map" : "list")
     setIsLocationSelectorOpen(true)
     // Push a history entry so browser back can close the overlay cleanly
     try {
@@ -100,10 +103,12 @@ function LocationSelectorProvider({ children }) {
 
   const closeLocationSelector = () => {
     setIsLocationSelectorOpen(false)
+    setLocationSelectorInitialView("list")
   }
 
   const value = {
     isLocationSelectorOpen,
+    locationSelectorInitialView,
     openLocationSelector,
     closeLocationSelector
   }
@@ -133,6 +138,7 @@ function LocationSelectorProvider({ children }) {
         {isLocationSelectorOpen && (
           <LocationSelectorOverlay
             isOpen={isLocationSelectorOpen}
+            initialView={locationSelectorInitialView}
             onClose={closeLocationSelector}
           />
         )}

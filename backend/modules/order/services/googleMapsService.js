@@ -9,7 +9,11 @@ class GoogleMapsService {
   constructor() {
     this.apiKey = null; // Will be loaded from database when needed
     this.baseUrl = 'https://maps.googleapis.com/maps/api/distancematrix/json';
+    // COST CONTROL: Distance Matrix is disabled by default. Set ENABLE_GOOGLE_DISTANCE_MATRIX=true to enable.
     this.googleDistanceMatrixEnabled = process.env.ENABLE_GOOGLE_DISTANCE_MATRIX === 'true';
+    if (!this.googleDistanceMatrixEnabled) {
+      console.log('ℹ️ Google Distance Matrix API is DISABLED (using haversine fallback). Set ENABLE_GOOGLE_DISTANCE_MATRIX=true to enable.');
+    }
   }
 
   /**

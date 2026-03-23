@@ -51,7 +51,7 @@ const DeliveryTrackingMap = ({
 
   const backendUrl = API_BASE_URL.replace('/api', '');
   const [GOOGLE_MAPS_API_KEY, setGOOGLE_MAPS_API_KEY] = useState("");
-  const SOCKET_LOCATION_REQUEST_INTERVAL_MS = 3000;
+  const SOCKET_LOCATION_REQUEST_INTERVAL_MS = 10000;
 
   // Load Google Maps API key from backend
   useEffect(() => {
@@ -265,6 +265,29 @@ const DeliveryTrackingMap = ({
     }
 
     renderRoutePath(buildInterpolatedPoints());
+  }, [normalizeRoutePoint]);
+
+  const applySocketRoutePoints = useCallback((rawPoints) => {
+    const points = (rawPoints || []).map(normalizeRoutePoint).filter(Boolean);
+    if (points.length < 2) return false;
+
+    routePolylinePointsRef.current = points;
+
+    if (animationControllerRef.current) {
+      animationControllerRef.current.updatePolyline(points);
+    } else if (bikeMarkerRef.current) {
+      animationControllerRef.current = new RouteBasedAnimationController(
+        bikeMarkerRef.current,
+        points
+      );
+    }
+
+    if (routePolylineRef.current && mapInstance.current) {
+      routePolylineRef.current.setPath(points);
+      routePolylineRef.current.setMap(mapInstance.current);
+    }
+
+    return true;
   }, [normalizeRoutePoint]);
 
   // Check if delivery partner is assigned (memoized to avoid dependency issues)
@@ -624,7 +647,7 @@ const DeliveryTrackingMap = ({
         if (socketRef.current && socketRef.current.connected) {
           socketRef.current.emit('request-current-location', orderId);
         }
-      }, SOCKET_LOCATION_REQUEST_INTERVAL_MS); // Request every 3 seconds
+      }, SOCKET_LOCATION_REQUEST_INTERVAL_MS); // Request RTDB-backed snapshot every 10 seconds
 
       // Store interval ID for cleanup
       socketRef.current._locationRequestInterval = locationRequestInterval;
@@ -636,6 +659,11 @@ const DeliveryTrackingMap = ({
 
     socketRef.current.on(`location-receive-${orderId}`, (data) => {
       console.log('📍📍📍 Received REAL-TIME location update via socket:', data);
+      if (Array.isArray(data?.remainingRoutePoints) && data.remainingRoutePoints.length > 1) {
+        applySocketRoutePoints(data.remainingRoutePoints);
+      } else if (Array.isArray(data?.totalRoutePoints) && data.totalRoutePoints.length > 1) {
+        applySocketRoutePoints(data.totalRoutePoints);
+      }
       if (data && typeof data.lat === 'number' && typeof data.lng === 'number') {
         const location = { lat: data.lat, lng: data.lng, heading: data.heading || data.bearing || 0 };
         console.log('✅✅✅ Updating bike to REAL delivery boy location:', location);
@@ -665,6 +693,11 @@ const DeliveryTrackingMap = ({
 
     socketRef.current.on(`current-location-${orderId}`, (data) => {
       console.log('📍📍📍 Received CURRENT location via socket:', data);
+      if (Array.isArray(data?.remainingRoutePoints) && data.remainingRoutePoints.length > 1) {
+        applySocketRoutePoints(data.remainingRoutePoints);
+      } else if (Array.isArray(data?.totalRoutePoints) && data.totalRoutePoints.length > 1) {
+        applySocketRoutePoints(data.totalRoutePoints);
+      }
       if (data && typeof data.lat === 'number' && typeof data.lng === 'number') {
         const location = { lat: data.lat, lng: data.lng, heading: data.heading || data.bearing || 0 };
         console.log('✅✅✅ Updating bike to REAL current delivery boy location:', location);
@@ -703,6 +736,7 @@ const DeliveryTrackingMap = ({
       const normalizedPoints = (incomingPoints || []).map(normalizeRoutePoint).filter(Boolean);
 
       if (normalizedPoints.length > 1) {
+        applySocketRoutePoints(normalizedPoints);
         routePolylinePointsRef.current = normalizedPoints;
 
         // Initialize animation controller if bike marker exists
@@ -754,7 +788,7 @@ const DeliveryTrackingMap = ({
         socketRef.current.disconnect();
       }
     };
-  }, [orderId, backendUrl, moveBikeSmoothly, SOCKET_LOCATION_REQUEST_INTERVAL_MS]);
+  }, [orderId, backendUrl, moveBikeSmoothly, SOCKET_LOCATION_REQUEST_INTERVAL_MS, applySocketRoutePoints]);
 
   // Initialize Google Map (only once - prevent re-initialization)
   useEffect(() => {
@@ -778,15 +812,10 @@ const DeliveryTrackingMap = ({
           console.log('⏳ Google Maps not loaded from main.jsx, loading manually...');
           try {
             const { getGoogleMapsApiKey } = await import('@/lib/utils/googleMapsApiKey.js');
-            const { Loader } = await import('@googlemaps/js-api-loader');
             const apiKey = await getGoogleMapsApiKey();
             if (apiKey) {
-              const loader = new Loader({
-                apiKey: apiKey,
-                version: "weekly",
-                libraries: []
-              });
-              await loader.load();
+              const { loadGoogleMaps } = await import('@/lib/utils/googleMapsLoader.js');
+              await loadGoogleMaps({ libraries: [] });
               console.log('✅ Google Maps loaded manually');
             } else {
               console.error('❌ No Google Maps API key found');

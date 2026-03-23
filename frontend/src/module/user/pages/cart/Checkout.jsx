@@ -44,9 +44,8 @@ export default function Checkout() {
 
     setIsPlacingOrder(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      const orderId = createOrder({
+    try {
+      const orderId = await createOrder({
         items: cart.map(item => ({
           id: item.id,
           name: item.name,
@@ -70,7 +69,11 @@ export default function Checkout() {
       clearCart()
       setIsPlacingOrder(false)
       navigate(`/user/orders/${orderId}?confirmed=true`)
-    }, 1500)
+    } catch (error) {
+      console.error("Checkout error:", error)
+      alert(error.response?.data?.message || error.message || "Failed to place order. Please try again.")
+      setIsPlacingOrder(false)
+    }
   }
 
   if (cart.length === 0) {

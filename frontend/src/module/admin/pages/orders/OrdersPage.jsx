@@ -253,6 +253,17 @@ export default function OrdersPage({ statusKey = "all" }) {
     resetColumns,
   } = useOrdersManagement(orders, statusKey, config.title)
 
+  const handleOrderUpdated = (updatedOrder) => {
+    if (!updatedOrder) return
+    setOrders((prevOrders) =>
+      prevOrders.map((existingOrder) => {
+        const existingId = existingOrder.id || existingOrder._id || existingOrder.orderId
+        const updatedId = updatedOrder.id || updatedOrder._id || updatedOrder.orderId
+        return existingId === updatedId ? { ...existingOrder, ...updatedOrder } : existingOrder
+      })
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="p-4 lg:p-6 bg-white min-h-screen w-full max-w-full overflow-x-hidden flex items-center justify-center">
@@ -296,6 +307,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         isOpen={isViewOrderOpen}
         onOpenChange={setIsViewOrderOpen}
         order={selectedOrder}
+        onOrderUpdated={handleOrderUpdated}
       />
       <RefundModal
         isOpen={refundModalOpen}

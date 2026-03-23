@@ -14,13 +14,49 @@ function isGoogleMapsAllowedRoute() {
   return true;
 }
 
+function readRuntimeEnv(key) {
+  if (typeof window === "undefined") return undefined;
+  return window.__PUBLIC_ENV__?.[key];
+}
+
+function parseBooleanFlag(value, fallback) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on", "enabled"].includes(normalized)) return true;
+    if (["0", "false", "no", "off", "disabled"].includes(normalized)) return false;
+  }
+  return fallback;
+}
+
+export function isMapApisEnabled() {
+  const runtimeFlag = readRuntimeEnv("VITE_MAP_APIS_ENABLED");
+  const envFlag = import.meta.env.VITE_MAP_APIS_ENABLED;
+  const disabledByWindow = typeof window !== "undefined" && window.__mapApisDisabled === true;
+  const enabled = parseBooleanFlag(runtimeFlag ?? envFlag, true);
+  return enabled && !disabledByWindow;
+}
+
+export function isGooglePlacesEnabled() {
+  const runtimeFlag = readRuntimeEnv("VITE_GOOGLE_PLACES_ENABLED");
+  const envFlag = import.meta.env.VITE_GOOGLE_PLACES_ENABLED;
+  return parseBooleanFlag(runtimeFlag ?? envFlag, false);
+}
+
+export function isGoogleGeocodingEnabled() {
+  const runtimeFlag = readRuntimeEnv("VITE_GOOGLE_GEOCODING_ENABLED");
+  const envFlag = import.meta.env.VITE_GOOGLE_GEOCODING_ENABLED;
+  return parseBooleanFlag(runtimeFlag ?? envFlag, false);
+}
+
 /**
  * Get Google Maps API Key
  * Checks runtime env (admin panel), then .env file, then backend API.
  * @returns {Promise<string>} Google Maps API Key or empty string
  */
 export async function getGoogleMapsApiKey() {
-  if (!MAP_APIS_ENABLED || !isGoogleMapsAllowedRoute()) {
+  if (!isMapApisEnabled() || !isGoogleMapsAllowedRoute()) {
     if (!warnedDisabled) {
       warnedDisabled = true;
       console.warn('Google Maps APIs are disabled. Skipping API key retrieval.');
@@ -93,4 +129,6 @@ export function clearGoogleMapsApiKeyCache() {
  * MAP_APIS_ENABLED — only allow Google Maps where runtime explicitly needs it.
  * Kept for backward compatibility with any existing imports.
  */
-export const MAP_APIS_ENABLED = true;
+export const MAP_APIS_ENABLED = isMapApisEnabled();
+export const GOOGLE_PLACES_ENABLED = isGooglePlacesEnabled();
+export const GOOGLE_GEOCODING_ENABLED = isGoogleGeocodingEnabled();

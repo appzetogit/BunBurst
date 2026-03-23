@@ -24,15 +24,15 @@ function isPointInZone(lat, lng, zoneCoordinates) {
     const coordI = zoneCoordinates[i];
     const coordJ = zoneCoordinates[j];
 
-    const xi = typeof coordI === 'object' ? (coordI.latitude || coordI.lat) : null;
-    const yi = typeof coordI === 'object' ? (coordI.longitude || coordI.lng) : null;
-    const xj = typeof coordJ === 'object' ? (coordJ.latitude || coordJ.lat) : null;
-    const yj = typeof coordJ === 'object' ? (coordJ.longitude || coordJ.lng) : null;
+    const xi = typeof coordI === 'object' ? (coordI.longitude ?? coordI.lng) : null;
+    const yi = typeof coordI === 'object' ? (coordI.latitude ?? coordI.lat) : null;
+    const xj = typeof coordJ === 'object' ? (coordJ.longitude ?? coordJ.lng) : null;
+    const yj = typeof coordJ === 'object' ? (coordJ.latitude ?? coordJ.lat) : null;
 
     if (xi === null || yi === null || xj === null || yj === null) continue;
 
-    const intersect = ((yi > lng) !== (yj > lng)) &&
-      (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
+    const intersect = ((yi > lat) !== (yj > lat)) &&
+      (lng < ((xj - xi) * (lat - yi)) / ((yj - yi) || 1e-12) + xi);
     if (intersect) inside = !inside;
   }
   return inside;
