@@ -69,6 +69,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
   const userLocationMarkerRef = useRef(null) // Blue dot marker for user location
   const userLocationAccuracyCircleRef = useRef(null) // Accuracy circle for MapLibre/Mapbox
   const watchPositionIdRef = useRef(null) // Geolocation watchPosition ID
+  const isRequestingCurrentLocationRef = useRef(false) // Toggle to prevent multiple clicks
   const lastUserLocationRef = useRef(null) // Last user location for tracking
   const locationUpdateTimeoutRef = useRef(null) // Timeout for location updates
   const [currentAddress, setCurrentAddress] = useState("")
@@ -821,16 +822,14 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         return
       }
 
-      console.log("✅ Fresh location received:", {
+      console.log("✅ [BILLING EVENT] Fresh location received with address data:", {
         formattedAddress: locationData?.formattedAddress,
-        address: locationData?.address,
         city: locationData?.city,
         state: locationData?.state,
         area: locationData?.area,
+        zip: locationData?.postalCode,
         coordinates: locationData?.latitude && locationData?.longitude ?
-          `${locationData.latitude.toFixed(8)}, ${locationData.longitude.toFixed(8)}` : "N/A",
-        hasCompleteAddress: locationData?.formattedAddress &&
-          locationData.formattedAddress.split(',').length >= 4
+          `${locationData.latitude.toFixed(8)}, ${locationData.longitude.toFixed(8)}` : "N/A"
       })
 
       // Verify we got complete address (but don't fail if incomplete - still use the location)
@@ -902,6 +901,13 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             additionalDetails: locationData.formattedAddress || prev.additionalDetails,
             phone: userProfile?.phone || prev.phone || "",
           }))
+
+          // Also update currentAddress display
+          if (locationData.formattedAddress) {
+            setCurrentAddress(locationData.formattedAddress)
+          } else if (locationData.city) {
+            setCurrentAddress(`${locationData.city}, ${locationData.state || ''}`)
+          }
         }
 
         // Update map if it's initialized
@@ -1551,11 +1557,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
       setLoadingAddress(true)
       try {
-        console.log("🔍 Reverse geocoding for coordinates:", { lat: roundedLat, lng: roundedLng })
-        console.log("🔍 Coordinates precision:", {
-          lat: roundedLat.toFixed(8),
-          lng: roundedLng.toFixed(8)
-        })
+        console.log("🔍 [BILLING EVENT] Reverse geocoding for coordinates (Charged):", { lat: roundedLat, lng: roundedLng })
 
         // Use backend reverse geocoding only.
         // This keeps Google Places/Geocoding out of normal runtime flows.
@@ -1669,7 +1671,14 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
   }
 
   const handleUseCurrentLocationForAddress = async () => {
+    // Optimization: Prevent multiple clicks while locating
+    if (isRequestingCurrentLocationRef.current) {
+      console.log("📍 [USER EVENT] Already locating, ignoring extra click.")
+      return
+    }
+
     try {
+      isRequestingCurrentLocationRef.current = true
       if (!navigator.geolocation) {
         toast.error("Location services are not supported")
         return
@@ -1677,10 +1686,11 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
       toast.loading("Getting your fresh location...", { id: "current-location" })
 
-      // Use Promise.race to get location within 2 seconds
-      const locationPromise = requestLocation(true, true) // forceFresh = true, updateDB = true
+      // Optimization: Increase timeout to 12s (standard for GPS fixes) and add specific logs
+      console.log("📍 [USER EVENT] Requesting fresh location...")
+      const locationPromise = requestLocation(true) // forceFresh = true
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Location timeout")), 2000)
+        setTimeout(() => reject(new Error("Location timeout after 12s")), 12000)
       )
 
       let locationData
@@ -1708,11 +1718,29 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         }
       }
 
-      console.log("📍 Current location data received:", locationData)
+      console.log("📍 locationData received:", locationData)
 
       if (!locationData?.latitude || !locationData?.longitude) {
-        toast.error("Could not get your location. Please try again.", { id: "current-location" })
-        return
+        console.warn("⚠️ Location data missing coordinates, attempting cache fallback...")
+        // Try to recover from cache
+        try {
+          const stored = localStorage.getItem("userLocation")
+          if (stored) {
+            const cached = JSON.parse(stored)
+            if (cached?.latitude && cached?.longitude) {
+              console.log("📍 Recovered location data from cache:", cached)
+              locationData = cached
+              toast.info("Using your last known location", { id: "current-location" })
+            } else {
+              throw new Error("Invalid cache")
+            }
+          } else {
+            throw new Error("No cache available")
+          }
+        } catch (recoverErr) {
+          toast.error("Could not get your location. Please check GPS settings and try again.", { id: "current-location" })
+          return
+        }
       }
 
       const lat = parseFloat(locationData.latitude)
@@ -1872,6 +1900,8 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       } else {
         toast.error("Failed to get current location: " + (error.message || "Unknown error"), { id: "current-location" })
       }
+    } finally {
+      isRequestingCurrentLocationRef.current = false
     }
   }
 

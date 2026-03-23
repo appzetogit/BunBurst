@@ -510,6 +510,7 @@ export default function DeliveryHome() {
   const lastRiderPositionRef = useRef(null) // Last rider position for smooth animation
   const markerAnimationCancelRef = useRef(null) // Cancel function for marker animation
   const directionsResponseRef = useRef(null) // Store directions response for use in callbacks
+  const directionsCacheRef = useRef({}) // Optimization Goal #3: Cache route data to avoid repeated API calls
   const fetchedOrderDetailsForDropRef = useRef(null) // Prevent re-fetching order details for Reached Drop customer coords
   const [zones, setZones] = useState([]) // Store nearby zones
   const [mapLoading, setMapLoading] = useState(false)
@@ -541,7 +542,9 @@ export default function DeliveryHome() {
       movedEnough = distanceMeters >= 50
     }
 
-    if (timeSinceLast < 5000 && !movedEnough) return
+
+    // Optimization Goal #7: Increase throttle to 10 seconds (minimum 8-10 seconds as requested)
+    if (timeSinceLast < 10000 && !movedEnough) return
 
     lastRealtimeSentAtRef.current = now
     lastRealtimeLocationRef.current = { lat, lng }
@@ -5551,6 +5554,35 @@ export default function DeliveryHome() {
 
       const start = { lat: Number(origin[0]), lng: Number(origin[1]) };
       const end = { lat: Number(destination.lat), lng: Number(destination.lng) };
+
+      // Optimization Goal #1 & #3: Advanced Route Caching (localStorage + In-memory)
+      const cacheKey = `route_${start.lat.toFixed(4)}_${start.lng.toFixed(4)}_${end.lat.toFixed(4)}_${end.lng.toFixed(4)}`;
+      
+      // Try local memory first
+      if (directionsCacheRef.current[cacheKey]) {
+        console.log("[BILLING EVENT] Using in-memory route cache (Free)");
+        const cachedResult = directionsCacheRef.current[cacheKey];
+        setDirectionsResponse(cachedResult);
+        directionsResponseRef.current = cachedResult;
+        return cachedResult;
+      }
+
+      // Try localStorage for cross-session caching
+      const stored = localStorage.getItem(cacheKey);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          console.log("[BILLING EVENT] Restoring route from localStorage (Free)");
+          directionsCacheRef.current[cacheKey] = parsed;
+          setDirectionsResponse(parsed);
+          directionsResponseRef.current = parsed;
+          return parsed;
+        } catch (e) {
+          console.warn('?? Error parsing localStorage route:', e);
+        }
+      }
+
+      console.log("[BILLING EVENT] Calling Directions API (Charged)");
       if (!Number.isFinite(start.lat) || !Number.isFinite(start.lng) || !Number.isFinite(end.lat) || !Number.isFinite(end.lng)) {
         return null;
       }
@@ -5618,6 +5650,13 @@ export default function DeliveryHome() {
 
       setDirectionsResponse(result);
       directionsResponseRef.current = result;
+      // Store in both memory and localStorage (Optimization Goal #3)
+      directionsCacheRef.current[cacheKey] = result;
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(result));
+      } catch (e) {
+        console.warn('?? Could not save route to localStorage:', e);
+      }
       return result;
     } catch (error) {
       console.error('Error calculating local route:', error);
@@ -5794,20 +5833,10 @@ export default function DeliveryHome() {
       return
     }
 
-    // Re-initialize if navigation mode changed (cafe -> customer or vice versa)
-    if (directionsMapInstanceRef.current) {
-      // Clear existing map to re-initialize with new destination
-      directionsMapInstanceRef.current = null;
-      if (directionsRendererRef.current) {
-        directionsRendererRef.current.setMap(null);
-      }
-      if (cafeMarkerRef.current) {
-        cafeMarkerRef.current.setMap(null);
-      }
-      if (directionsBikeMarkerRef.current) {
-        directionsBikeMarkerRef.current.setMap(null);
-      }
-    }
+    // Optimization Goal #5: Preserve map instance to save Map Load costs
+    // DON'T clear directionsMapInstanceRef.current anymore.
+    // We keep it in memory so it doesn't need to be re-initialized when re-opening.
+    // The JSX visibility will handle showing/hiding it.
 
     const initializeDirectionsMap = async () => {
       if (!window.google || !window.google.maps) {
@@ -5822,6 +5851,42 @@ export default function DeliveryHome() {
       }
 
       try {
+        // Optimization Goal #5: Persistent Map Instance
+        // If map instance already exists, don't re-create it. Just update it.
+        if (directionsMapInstanceRef.current) {
+          console.log("[BILLING EVENT] Re-using existing Directions Map Instance (Saved $)");
+          // Map instance exists, just update its contents
+          const map = directionsMapInstanceRef.current;
+          
+          // Determining destination based on navigation mode
+          let destinationLocation;
+          let destinationName;
+          if (navigationMode === 'customer' && selectedCafe.customerLat && selectedCafe.customerLng) {
+            destinationLocation = { lat: selectedCafe.customerLat, lng: selectedCafe.customerLng };
+            destinationName = selectedCafe.customerName || 'Customer';
+          } else {
+            destinationLocation = { lat: selectedCafe.lat, lng: selectedCafe.lng };
+            destinationName = selectedCafe.name || 'Cafe';
+          }
+
+          const currentLocation = riderLocation || lastLocationRef.current;
+          if (currentLocation) {
+            map.setCenter({ lat: currentLocation[0], lng: currentLocation[1] });
+            // Update markers
+            if (directionsBikeMarkerRef.current) directionsBikeMarkerRef.current.setPosition({ lat: currentLocation[0], lng: currentLocation[1] });
+            if (cafeMarkerRef.current) {
+              cafeMarkerRef.current.setPosition(destinationLocation);
+              cafeMarkerRef.current.setTitle(destinationName);
+            }
+          }
+          
+          // Re-calculate route if needed (though calculateRoute handles caching)
+          await calculateRouteWithDirectionsAPI(currentLocation, destinationLocation);
+          setDirectionsMapLoading(false);
+          return;
+        }
+
+        console.log("[BILLING EVENT] Initializing new Directions Map Instance (Charged)");
         setDirectionsMapLoading(true);
         const MapCtor = await getGoogleMapConstructor();
         if (!MapCtor) {
@@ -6004,10 +6069,9 @@ export default function DeliveryHome() {
         }
       }
     };
-    // Only re-initialize if showDirectionsMap, selectedCafe.id, or navigationMode changes
-    // Don't include calculateRouteWithDirectionsAPI to prevent unnecessary re-renders
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showDirectionsMap, selectedCafe?.id, navigationMode, selectedCafe?.customerLat, selectedCafe?.customerLng, riderLocation])
+    // Optimization Goal #1: Remove riderLocation from dependencies to prevent re-initialization on move
+    // Optimization Goal #4: Stop re-fetching routes on location update
+  }, [showDirectionsMap, selectedCafe?.id, navigationMode, selectedCafe?.customerLat, selectedCafe?.customerLng])
 
   // Helper function to calculate distance in meters (Haversine formula)
   const calculateDistanceInMeters = useCallback((lat1, lng1, lat2, lng2) => {
@@ -6039,60 +6103,10 @@ export default function DeliveryHome() {
       // Uncomment if you want map to follow bike movement
       // directionsMapInstanceRef.current.panTo(newPosition);
 
-      // API Cost Optimization: Only recalculate route if bike deviates significantly (>50m from route)
-      // This prevents unnecessary API calls on every location update
-      if (lastBikePositionRef.current) {
-        const distance = calculateDistanceInMeters(
-          lastBikePositionRef.current.lat,
-          lastBikePositionRef.current.lng,
-          newPosition.lat,
-          newPosition.lng
-        );
-
-        // Only recalculate if moved >50 meters AND last recalculation was >30 seconds ago
-        const timeSinceLastRecalc = Date.now() - (lastRouteRecalculationRef.current || 0);
-        if (distance > 50 && timeSinceLastRecalc > 30000 && selectedCafe) {
-
-          lastRouteRecalculationRef.current = Date.now();
-          calculateRouteWithDirectionsAPI(
-            [newPosition.lat, newPosition.lng],
-            { lat: selectedCafe.lat, lng: selectedCafe.lng }
-          ).then(result => {
-            if (result && result.routes && result.routes[0]) {
-              // Extract route and create custom polyline (don't use DirectionsRenderer - it adds dots)
-              try {
-                const route = result.routes[0];
-                if (route && route.overview_path && window.deliveryMapInstance) {
-                  // Don't create main route polyline - only live tracking polyline will be shown
-                  // Remove old custom polyline if exists (cleanup)
-                  if (routePolylineRef.current) {
-                    routePolylineRef.current.setMap(null);
-                    routePolylineRef.current = null;
-                  }
-
-                  // Remove DirectionsRenderer from map
-                  if (directionsRendererRef.current) {
-                    directionsRendererRef.current.setMap(null);
-                  }
-                }
-              } catch (e) {
-                console.warn('?? Could not create custom polyline:', e);
-              }
-            }
-          }).catch(err => {
-            // Handle REQUEST_DENIED gracefully - don't spam console
-            if (err.message?.includes('REQUEST_DENIED') || err.message?.includes('not available')) {
-
-            } else {
-              console.warn('?? Route recalculation failed:', err);
-            }
-          });
-        }
-      }
 
       lastBikePositionRef.current = newPosition;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Optimization Goal #10: Keep navigation markers updated without recalculating full routes
   }, [showDirectionsMap, riderLocation, selectedCafe?.id, calculateDistanceInMeters])
 
   // Handle route polyline visibility and updates
@@ -9318,32 +9332,50 @@ export default function DeliveryHome() {
         )}
       </AnimatePresence>
 
-      {/* Directions Map View */}
-      <AnimatePresence>
-        {showDirectionsMap && selectedCafe && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[120] bg-white"
-          >
-            {/* Ola Maps Container for Directions */}
-            <div
-              ref={directionsMapContainerRef}
-              key="directions-map-container" // Fixed key - don't remount on location change
-              style={{ height: '100%', width: '100%', zIndex: 1 }}
-            />
+      {/* Directions Map View - Persistent Container (Optimization Goal #5) */}
+      <div
+        style={{
+          display: showDirectionsMap && selectedCafe ? 'block' : 'none',
+          position: 'fixed',
+          inset: 0,
+          zIndex: 125,
+          background: 'white'
+        }}
+      >
+        {/* Ola Maps Container for Directions - Hidden but persistent */}
+        <div
+          ref={directionsMapContainerRef}
+          key="directions-map-persistent-container"
+          style={{ height: '100%', width: '100%', zIndex: 1 }}
+        />
+
+        {/* Directions UI Overlays - Shown when map is visible */}
+        {showDirectionsMap && (
+          <>
+            {/* Detailed Info Overlay */}
+            <div className="absolute top-4 left-4 right-4 z-10 flex flex-col gap-3 pointer-events-none">
+              <div className="flex items-center justify-between pointer-events-auto">
+                <button
+                  onClick={() => setShowDirectionsMap(false)}
+                  className="p-3 bg-white rounded-full shadow-xl active:scale-95 transition-all"
+                >
+                  <X className="w-6 h-6 text-gray-800" />
+                </button>
+              </div>
+            </div>
 
             {/* Loading indicator */}
             {directionsMapLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
-                <div className="text-gray-600">Loading map...</div>
+              <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-[1] transition-opacity duration-300">
+                <div className="text-center">
+                  <Loader2 className="w-10 h-10 animate-spin text-[#e53935] mx-auto mb-2" />
+                  <div className="text-gray-800 font-bold">Initializing route...</div>
+                </div>
               </div>
             )}
-          </motion.div>
+          </>
         )}
-      </AnimatePresence>
+      </div>
 
 
       {/* Reached Pickup Popup - shown when order is ready (from order_ready socket) or when rider is within 500m */}

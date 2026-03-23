@@ -484,7 +484,8 @@ export default function OrderTracking() {
             deliveryPartnerId: apiOrder.deliveryPartnerId?._id || apiOrder.deliveryPartnerId || apiOrder.assignmentInfo?.deliveryPartnerId || null,
             assignmentInfo: apiOrder.assignmentInfo || null,
             tracking: apiOrder.tracking || {},
-            deliveryState: apiOrder.deliveryState || null
+            deliveryState: apiOrder.deliveryState || null,
+            orderType: apiOrder.orderType || 'DELIVERY'
           }
 
           setOrder(transformedOrder)
@@ -693,7 +694,8 @@ export default function OrderTracking() {
             phone: apiOrder.deliveryPartnerId.phone || '',
             avatar: null
           } : null,
-          tracking: apiOrder.tracking || {}
+          tracking: apiOrder.tracking || {},
+          orderType: apiOrder.orderType || 'DELIVERY'
         }
         setOrder(transformedOrder)
       }

@@ -118,12 +118,25 @@ export default function UserTopHeader({
     // Get location display
     const getLocationText = () => {
         if (!location) return "Select location"
-        if (location.area && location.area.trim() !== "") return location.area
-        if (location.city && location.city.trim() !== "" && location.city !== "Unknown City") return location.city
-        if (location.formattedAddress && location.formattedAddress !== "Select location") {
-            const parts = location.formattedAddress.split(',')
-            return parts[0]?.trim() || "Select location"
+
+        // Priority 1: Use specific area/locality if available
+        if (location.area && location.area.trim() !== "" && location.area !== "Unknown Area") {
+            const area = location.area.split(',')[0].trim()
+            if (area) return area
         }
+
+        // Priority 2: Use formatted address (first part)
+        if (location.address && location.address.trim() !== "" && location.address !== "Select location") {
+            const parts = (location.address || "").split(',')
+            const firstPart = parts[0]?.trim()
+            if (firstPart && isNaN(firstPart) && firstPart.length > 2) return firstPart
+        }
+
+        // Priority 3: Use city
+        if (location.city && location.city.trim() !== "" && location.city !== "Unknown City") {
+            return location.city.split(',')[0].trim()
+        }
+
         return "Select location"
     }
 

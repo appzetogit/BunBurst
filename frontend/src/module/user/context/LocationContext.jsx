@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react"
-import { userAPI } from "@/lib/api"
+import { userAPI, locationAPI } from "@/lib/api"
 import { writeUserLocation } from "@/lib/firebaseRealtime"
 
 const LocationContext = createContext(null)
@@ -114,22 +114,42 @@ export function LocationProvider({ children }) {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: forceFresh ? 0 : 3600000
+          maximumAge: forceFresh ? 5000 : 3600000 // Allow 5s old for "fresh" to avoid throttles, 1hr for others
         })
       })
 
       const { latitude, longitude } = position.coords
 
+      // Perform reverse geocoding to get real address/city name
+      let city = ""
+      let state = ""
+      let address = ""
+      let area = ""
+      let formattedAddress = ""
+
+      try {
+        console.log("🔍 [BILLING EVENT] Fetching address for home header (Reverse Geocode)...")
+        const response = await locationAPI.reverseGeocode(latitude, longitude)
+        const data = response?.data?.data?.results?.[0] || response?.data?.data?.result?.[0]
+        if (data) {
+          formattedAddress = data.formatted_address || ""
+          city = data.address_components?.city || ""
+          state = data.address_components?.state || ""
+          area = data.address_components?.area || ""
+          address = formattedAddress
+        }
+      } catch (revErr) {
+        console.warn("⚠️ Reverse geocode failed in home header flow:", revErr.message)
+      }
+
       const newLocation = {
         latitude,
         longitude,
-        // No reverse geocoding on homepage flow.
-        // Keep previously known labels if available, otherwise leave empty.
-        city: location?.city || "",
-        state: location?.state || "",
-        address: location?.address || "",
-        area: location?.area || "",
-        formattedAddress: location?.formattedAddress || "",
+        city: city || location?.city || "",
+        state: state || location?.state || "",
+        address: address || formattedAddress || location?.address || "",
+        area: area || location?.area || "",
+        formattedAddress: formattedAddress || location?.formattedAddress || "",
       }
 
       setLocation(newLocation)

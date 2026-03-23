@@ -1070,7 +1070,7 @@ Order again from this cafe in the ${companyName} app.`
 
       {/* Footer Branding */}
       <div className="flex justify-center mt-8 mb-4">
-        <h1 className="text-4xl font-black text-gray-200 tracking-tighter italic">appzeto</h1>
+        <h1 className="text-4xl font-black text-gray-200 tracking-tighter italic">BunBurst</h1>
       </div>
 
       {/* Rating & Feedback Modal */}
