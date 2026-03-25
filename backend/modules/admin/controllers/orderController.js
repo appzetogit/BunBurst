@@ -1480,44 +1480,64 @@ export const getCafeReport = asyncHandler(async (req, res) => {
 
     // Build cafe query
     const cafeQuery = {};
+    const cafeAndConditions = [];
 
     // Zone filter
     if (zone && zone !== 'All Zones') {
       const Zone = (await import('../models/Zone.js')).default;
-      const zoneDoc = await Zone.findOne({
-        name: { $regex: zone, $options: 'i' }
-      }).select('_id name').lean();
 
-      if (zoneDoc) {
-        const ordersInZone = await Order.find({
-          'assignmentInfo.zoneId': zoneDoc._id?.toString()
-        }).distinct('cafeId').lean();
+      const zoneDoc = mongoose.Types.ObjectId.isValid(zone)
+        ? await Zone.findById(zone).select('_id name').lean()
+        : await Zone.findOne({ name: { $regex: zone, $options: 'i' } })
+          .select('_id name')
+          .lean();
 
-        if (ordersInZone.length > 0) {
-          cafeQuery.$or = [
-            { _id: { $in: ordersInZone } },
-            { cafeId: { $in: ordersInZone } }
-          ];
-        } else {
-          return successResponse(res, 200, 'Cafe report retrieved successfully', {
-            cafes: [],
-            pagination: { page: 1, limit: 1000, total: 0, pages: 0 }
+      if (!zoneDoc?._id) {
+        cafeAndConditions.push({ _id: { $in: [] } });
+      } else {
+        const zoneCafeOr = [{ 'location.zoneId': zoneDoc._id }];
+
+        const zoneBoundary = zoneDoc.boundary?.type === 'Polygon' && Array.isArray(zoneDoc.boundary?.coordinates)
+          ? zoneDoc.boundary
+          : (Array.isArray(zoneDoc.coordinates) && zoneDoc.coordinates.length >= 3
+            ? {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  ...zoneDoc.coordinates.map((coord) => [coord.longitude, coord.latitude]),
+                  [zoneDoc.coordinates[0].longitude, zoneDoc.coordinates[0].latitude],
+                ],
+              ],
+            }
+            : null);
+
+        if (zoneBoundary) {
+          zoneCafeOr.push({
+            location: { $geoWithin: { $geometry: zoneBoundary } },
           });
         }
+
+        cafeAndConditions.push({ $or: zoneCafeOr });
       }
     }
 
     // Active/Inactive filter
     if (all && all !== 'All') {
-      cafeQuery.isActive = all === 'Active';
+      cafeAndConditions.push({ isActive: all === 'Active' });
     }
 
     // Search filter
     if (search) {
-      cafeQuery.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { cafeId: { $regex: search, $options: 'i' } }
-      ];
+      cafeAndConditions.push({
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { cafeId: { $regex: search, $options: 'i' } }
+        ]
+      });
+    }
+
+    if (cafeAndConditions.length > 0) {
+      cafeQuery.$and = cafeAndConditions;
     }
 
     const cafes = await Cafe.find(cafeQuery)
