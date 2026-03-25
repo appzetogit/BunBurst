@@ -23,6 +23,24 @@ const normalizeSearchValue = (value) =>
     .trim()
     .replace(/\s+/g, " ")
 
+const getAddonTimestamp = (addon) => {
+  const rawDate = addon?.createdAt || addon?.updatedAt
+  const parsed = rawDate ? Date.parse(rawDate) : NaN
+  if (!Number.isNaN(parsed)) return parsed
+
+  const id = addon?._id
+  if (typeof id === "string" && /^[0-9a-fA-F]{24}$/.test(id)) {
+    return parseInt(id.slice(0, 8), 16) * 1000
+  }
+
+  return 0
+}
+
+const sortAddonsLatestFirst = (list) =>
+  Array.isArray(list)
+    ? [...list].sort((a, b) => getAddonTimestamp(b) - getAddonTimestamp(a))
+    : []
+
 export default function AddonsList() {
   const [searchQuery, setSearchQuery] = useState("")
   const [addons, setAddons] = useState([])
@@ -31,6 +49,7 @@ export default function AddonsList() {
   const [submitting, setSubmitting] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const addonImageInputRef = useRef(null)
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -58,7 +77,7 @@ export default function AddonsList() {
       ])
 
       if (addonsRes.data?.success) {
-        setAddons(addonsRes.data.data.addons || [])
+        setAddons(sortAddonsLatestFirst(addonsRes.data.data.addons || []))
       }
 
       if (categoriesRes.data?.success) {
@@ -123,6 +142,11 @@ export default function AddonsList() {
     } finally {
       setUploadingImage(false)
     }
+  }
+
+  const handleRemoveAddonImage = () => {
+    setFormData((prev) => ({ ...prev, image: "" }))
+    if (addonImageInputRef.current) addonImageInputRef.current.value = ""
   }
 
   const handleSubmit = async (e) => {
@@ -509,16 +533,27 @@ export default function AddonsList() {
                         type="file"
                         accept="image/*"
                         className="hidden"
+                        ref={addonImageInputRef}
                         onChange={(e) => handleAddonImageUpload(e.target.files?.[0])}
                         disabled={uploadingImage}
                       />
                     </label>
                     {formData.image ? (
-                      <img
-                        src={formData.image}
-                        alt="Addon preview"
-                        className="w-12 h-12 rounded-lg object-cover border border-[#F5F5F5]"
-                      />
+                      <div className="relative">
+                        <img
+                          src={formData.image}
+                          alt="Addon preview"
+                          className="w-12 h-12 rounded-lg object-cover border border-[#F5F5F5]"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveAddonImage}
+                          className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-white border border-[#F5F5F5] shadow-sm flex items-center justify-center hover:bg-[#FFFDF5]"
+                          title="Remove image"
+                        >
+                          <X className="w-3.5 h-3.5 text-[#1E1E1E]/70" />
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 </div>

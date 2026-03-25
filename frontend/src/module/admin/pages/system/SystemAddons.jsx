@@ -3,6 +3,31 @@ import { Key, Save, Loader2 } from "lucide-react"
 import { adminAPI } from "@/lib/api"
 import { toast } from "sonner"
 
+function EnvInputField({ label, value, onChange, type = "text", placeholder = "" }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-sm font-semibold text-[#1E1E1E]">{label}</label>
+      {type === "textarea" ? (
+        <textarea
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder || `Enter ${label}`}
+          rows={4}
+          className="w-full px-3 py-2.5 border-2 border-[#F5F5F5] rounded-lg bg-white text-[#1E1E1E] focus:outline-none focus:border-[#e53935] focus:ring-2 focus:ring-[#e53935]/20 transition-all text-sm resize-y"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder || `Enter ${label}`}
+          className="w-full px-3 py-2.5 border-2 border-[#F5F5F5] rounded-lg bg-white text-[#1E1E1E] focus:outline-none focus:border-[#e53935] focus:ring-2 focus:ring-[#e53935]/20 transition-all text-sm"
+        />
+      )}
+    </div>
+  )
+}
+
 export default function SystemAddons() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -105,31 +130,6 @@ export default function SystemAddons() {
     }
   }
 
-  const InputField = ({ label, fieldKey, type = "text", placeholder = "" }) => {
-    return (
-      <div className="space-y-1.5">
-        <label className="block text-sm font-semibold text-[#1E1E1E]">{label}</label>
-        {type === "textarea" ? (
-          <textarea
-            value={envData[fieldKey] || ""}
-            onChange={(e) => handleInputChange(fieldKey, e.target.value)}
-            placeholder={placeholder || `Enter ${label}`}
-            rows={4}
-            className="w-full px-3 py-2.5 border-2 border-[#F5F5F5] rounded-lg bg-white text-[#1E1E1E] focus:outline-none focus:border-[#e53935] focus:ring-2 focus:ring-[#e53935]/20 transition-all text-sm resize-y"
-          />
-        ) : (
-          <input
-            type={type}
-            value={envData[fieldKey] || ""}
-            onChange={(e) => handleInputChange(fieldKey, e.target.value)}
-            placeholder={placeholder || `Enter ${label}`}
-            className="w-full px-3 py-2.5 border-2 border-[#F5F5F5] rounded-lg bg-white text-[#1E1E1E] focus:outline-none focus:border-[#e53935] focus:ring-2 focus:ring-[#e53935]/20 transition-all text-sm"
-          />
-        )}
-      </div>
-    );
-  }
-
   if (isLoading) {
     return (
       <div className="p-4 lg:p-6 bg-[#F5F5F5] min-h-screen flex items-center justify-center">
@@ -184,8 +184,8 @@ export default function SystemAddons() {
               Razorpay Configuration
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputField label="Razorpay API Key" fieldKey="RAZORPAY_API_KEY" />
-              <InputField label="Razorpay Secret Key" fieldKey="RAZORPAY_SECRET_KEY" type="password" />
+              <EnvInputField label="Razorpay API Key" value={envData.RAZORPAY_API_KEY} onChange={(value) => handleInputChange("RAZORPAY_API_KEY", value)} />
+              <EnvInputField label="Razorpay Secret Key" type="password" value={envData.RAZORPAY_SECRET_KEY} onChange={(value) => handleInputChange("RAZORPAY_SECRET_KEY", value)} />
             </div>
           </div>
 
@@ -198,9 +198,9 @@ export default function SystemAddons() {
               Cloudinary Configuration
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <InputField label="Cloudinary Cloud Name" fieldKey="CLOUDINARY_CLOUD_NAME" />
-              <InputField label="Cloudinary API Key" fieldKey="CLOUDINARY_API_KEY" />
-              <InputField label="Cloudinary API Secret" fieldKey="CLOUDINARY_API_SECRET" type="password" />
+              <EnvInputField label="Cloudinary Cloud Name" value={envData.CLOUDINARY_CLOUD_NAME} onChange={(value) => handleInputChange("CLOUDINARY_CLOUD_NAME", value)} />
+              <EnvInputField label="Cloudinary API Key" value={envData.CLOUDINARY_API_KEY} onChange={(value) => handleInputChange("CLOUDINARY_API_KEY", value)} />
+              <EnvInputField label="Cloudinary API Secret" type="password" value={envData.CLOUDINARY_API_SECRET} onChange={(value) => handleInputChange("CLOUDINARY_API_SECRET", value)} />
             </div>
           </div>
 
@@ -213,19 +213,20 @@ export default function SystemAddons() {
               Firebase Configuration
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputField label="Firebase API Key" fieldKey="FIREBASE_API_KEY" />
-              <InputField label="Firebase Auth Domain" fieldKey="FIREBASE_AUTH_DOMAIN" />
-              <InputField label="Firebase Storage Bucket" fieldKey="FIREBASE_STORAGE_BUCKET" />
-              <InputField label="Firebase Messaging Sender ID" fieldKey="FIREBASE_MESSAGING_SENDER_ID" />
-              <InputField label="Firebase App ID" fieldKey="FIREBASE_APP_ID" />
-              <InputField label="Measurement ID" fieldKey="MEASUREMENT_ID" />
-              <InputField label="Firebase Project ID" fieldKey="FIREBASE_PROJECT_ID" />
-              <InputField label="Firebase Client Email" fieldKey="FIREBASE_CLIENT_EMAIL" type="email" />
-              <InputField label="Firebase VAPID Key" fieldKey="VITE_FIREBASE_VAPID_KEY" />
+              <EnvInputField label="Firebase API Key" value={envData.FIREBASE_API_KEY} onChange={(value) => handleInputChange("FIREBASE_API_KEY", value)} />
+              <EnvInputField label="Firebase Auth Domain" value={envData.FIREBASE_AUTH_DOMAIN} onChange={(value) => handleInputChange("FIREBASE_AUTH_DOMAIN", value)} />
+              <EnvInputField label="Firebase Storage Bucket" value={envData.FIREBASE_STORAGE_BUCKET} onChange={(value) => handleInputChange("FIREBASE_STORAGE_BUCKET", value)} />
+              <EnvInputField label="Firebase Messaging Sender ID" value={envData.FIREBASE_MESSAGING_SENDER_ID} onChange={(value) => handleInputChange("FIREBASE_MESSAGING_SENDER_ID", value)} />
+              <EnvInputField label="Firebase App ID" value={envData.FIREBASE_APP_ID} onChange={(value) => handleInputChange("FIREBASE_APP_ID", value)} />
+              <EnvInputField label="Measurement ID" value={envData.MEASUREMENT_ID} onChange={(value) => handleInputChange("MEASUREMENT_ID", value)} />
+              <EnvInputField label="Firebase Project ID" value={envData.FIREBASE_PROJECT_ID} onChange={(value) => handleInputChange("FIREBASE_PROJECT_ID", value)} />
+              <EnvInputField label="Firebase Client Email" type="email" value={envData.FIREBASE_CLIENT_EMAIL} onChange={(value) => handleInputChange("FIREBASE_CLIENT_EMAIL", value)} />
+              <EnvInputField label="Firebase VAPID Key" value={envData.VITE_FIREBASE_VAPID_KEY} onChange={(value) => handleInputChange("VITE_FIREBASE_VAPID_KEY", value)} />
               <div className="md:col-span-2">
-                <InputField 
+                <EnvInputField 
                   label="Firebase Private Key" 
-                  fieldKey="FIREBASE_PRIVATE_KEY" 
+                  value={envData.FIREBASE_PRIVATE_KEY}
+                  onChange={(value) => handleInputChange("FIREBASE_PRIVATE_KEY", value)}
                   type="textarea"
                   placeholder="Enter Firebase Private Key (can be multiline)"
                 />
@@ -242,10 +243,10 @@ export default function SystemAddons() {
               SMTP Configuration
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputField label="SMTP Host" fieldKey="SMTP_HOST" placeholder="smtp.gmail.com" />
-              <InputField label="SMTP Port" fieldKey="SMTP_PORT" type="number" placeholder="587" />
-              <InputField label="SMTP User" fieldKey="SMTP_USER" type="email" />
-              <InputField label="SMTP Password" fieldKey="SMTP_PASS" type="password" />
+              <EnvInputField label="SMTP Host" placeholder="smtp.gmail.com" value={envData.SMTP_HOST} onChange={(value) => handleInputChange("SMTP_HOST", value)} />
+              <EnvInputField label="SMTP Port" type="number" placeholder="587" value={envData.SMTP_PORT} onChange={(value) => handleInputChange("SMTP_PORT", value)} />
+              <EnvInputField label="SMTP User" type="email" value={envData.SMTP_USER} onChange={(value) => handleInputChange("SMTP_USER", value)} />
+              <EnvInputField label="SMTP Password" type="password" value={envData.SMTP_PASS} onChange={(value) => handleInputChange("SMTP_PASS", value)} />
             </div>
           </div>
 
@@ -258,8 +259,8 @@ export default function SystemAddons() {
               SMS Hub India Configuration
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputField label="SMS Hub India API Key" fieldKey="SMSINDIAHUB_API_KEY" />
-              <InputField label="SMS Hub India Sender ID" fieldKey="SMSINDIAHUB_SENDER_ID" />
+              <EnvInputField label="SMS Hub India API Key" value={envData.SMSINDIAHUB_API_KEY} onChange={(value) => handleInputChange("SMSINDIAHUB_API_KEY", value)} />
+              <EnvInputField label="SMS Hub India Sender ID" value={envData.SMSINDIAHUB_SENDER_ID} onChange={(value) => handleInputChange("SMSINDIAHUB_SENDER_ID", value)} />
             </div>
           </div>
 
@@ -272,7 +273,7 @@ export default function SystemAddons() {
               Google Maps Configuration
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-              <InputField label="Google Maps API Key" fieldKey="VITE_GOOGLE_MAPS_API_KEY" />
+              <EnvInputField label="Google Maps API Key" value={envData.VITE_GOOGLE_MAPS_API_KEY} onChange={(value) => handleInputChange("VITE_GOOGLE_MAPS_API_KEY", value)} />
             </div>
           </div>
 

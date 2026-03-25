@@ -2399,7 +2399,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
               onBlur={() => { setTimeout(() => setShowSuggestions(false), 200) }}
               autoComplete="off"
               placeholder="Search for area, street name..."
-              className="pl-12 pr-10 h-12 w-full bg-muted border-border focus:border-primary focus:ring-primary rounded-xl"
+              className="pl-12 pr-10 h-12 w-full bg-muted border-border focus:border-primary focus:ring-primary rounded-xl text-foreground placeholder:text-muted-foreground"
             />
             {/* Clear button */}
             {searchValue.length > 0 && (
@@ -2542,7 +2542,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
                 placeholder="E.g. Floor, House no."
                 value={addressFormData.additionalDetails}
                 onChange={handleAddressFormChange}
-                className="bg-card border-border focus:border-primary focus:ring-primary"
+                className="bg-card border-border focus:border-primary focus:ring-primary text-foreground placeholder:text-muted-foreground"
               />
             </div>
 

@@ -152,11 +152,20 @@ export default function DeliverymanList() {
 
 
   const handleEdit = (deliveryman) => {
+    const normalizedEmail = (() => {
+      const raw = deliveryman?.email
+      if (raw === null || raw === undefined) return ""
+      const trimmed = String(raw).trim()
+      if (!trimmed) return ""
+      const lower = trimmed.toLowerCase()
+      if (lower === "n/a" || lower === "na") return ""
+      return trimmed
+    })()
     // Populate form data
     setEditFormData({
       id: deliveryman._id,
       name: deliveryman.name,
-      email: deliveryman.email,
+      email: normalizedEmail,
       phone: deliveryman.phone,
       salary: deliveryman.fullData?.salary?.amount || 0,
       joiningDate: deliveryman.fullData?.joiningDate ? new Date(deliveryman.fullData.joiningDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -169,10 +178,16 @@ export default function DeliverymanList() {
     e.preventDefault()
     setProcessing(true)
     try {
+      const emailValue = (editFormData?.email ?? "").trim()
+      const emailRegex = /^[^\s@]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,24}$/
+      if (emailValue && !emailRegex.test(emailValue)) {
+        toast.error("Please enter a valid email address")
+        return
+      }
       // 1. Update basic details and salary
       const payload = {
         name: editFormData.name,
-        email: editFormData.email,
+        email: emailValue,
         phone: editFormData.phone,
         salary: {
           type: 'fixed',
@@ -912,7 +927,7 @@ export default function DeliverymanList() {
             <DialogTitle>Edit Delivery Partner</DialogTitle>
           </DialogHeader>
           {editFormData && (
-            <form onSubmit={handleUpdate} className="space-y-4 mt-4">
+            <form noValidate onSubmit={handleUpdate} className="space-y-4 mt-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
                 <input
@@ -925,13 +940,12 @@ export default function DeliverymanList() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email (Optional)</label>
                 <input
                   type="email"
-                  value={editFormData.email}
+                  value={editFormData.email ?? ""}
                   onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
                 />
               </div>
 

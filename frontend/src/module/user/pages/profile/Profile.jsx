@@ -837,34 +837,6 @@ export default function Profile() {
               </motion.div>
             </Link>
 
-            <Link to="/user/profile/settings" className="block">
-              <motion.div
-                whileHover={{ x: 4, scale: 1.01 }}
-                transition={{ duration: 0.2, type: "spring", stiffness: 300 }}
-              >
-                <Card className="bg-card py-0 rounded-xl shadow-sm border border-border cursor-pointer">
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <motion.div
-                        className="bg-muted rounded-full p-2"
-                        whileHover={{ rotate: 15, scale: 1.1 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <SettingsIcon className="h-5 w-5 text-muted-foreground" />
-                      </motion.div>
-                      <span className="text-base font-medium text-foreground">Notification Setting</span>
-                    </div>
-                    <motion.div
-                      whileHover={{ x: 4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </motion.div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </Link>
-
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}
               transition={{ duration: 0.2, type: "spring", stiffness: 300 }}

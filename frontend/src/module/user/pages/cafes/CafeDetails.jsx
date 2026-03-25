@@ -1752,7 +1752,7 @@ export default function CafeDetails() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 bg-white rounded-full ${filters.vegNonVeg === "veg" ? "border-green-500 bg-green-50" : ""
+                  className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 bg-white text-gray-900 dark:border-gray-700 dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "veg" ? "border-green-500 bg-green-50 dark:bg-green-950/30" : ""
                     }`}
                   onClick={() =>
                     setFilters((prev) => ({
@@ -1764,14 +1764,14 @@ export default function CafeDetails() {
                   <div className="h-3 w-3 rounded-full bg-green-500" />
                   Veg
                   {filters.vegNonVeg === "veg" && (
-                    <X className="h-3 w-3 text-gray-600" />
+                    <X className="h-3 w-3 text-gray-600 dark:text-gray-300" />
                   )}
                 </Button>
                 {!vegMode && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 bg-white rounded-full ${filters.vegNonVeg === "non-veg" ? "border-amber-700 bg-amber-50" : ""
+                    className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 bg-white text-gray-900 dark:border-gray-700 dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "non-veg" ? "border-amber-700 bg-amber-50 dark:border-amber-500 dark:bg-amber-950/30" : ""
                       }`}
                     onClick={() =>
                       setFilters((prev) => ({
@@ -1783,7 +1783,7 @@ export default function CafeDetails() {
                     <div className="h-3 w-3 rounded-full bg-amber-700" />
                     Non-veg
                     {filters.vegNonVeg === "non-veg" && (
-                      <X className="h-3 w-3 text-gray-600" />
+                      <X className="h-3 w-3 text-gray-600 dark:text-gray-300" />
                     )}
                   </Button>
                 )}

@@ -34,6 +34,7 @@ export default function MenuAdd() {
     const [editingDish, setEditingDish] = useState(null) // { dish, section }
     const [deletingDish, setDeletingDish] = useState(false)
     const dishSectionRef = useRef(null)
+    const dishImageInputRef = useRef(null)
 
     const normalizeSearchValue = (value) =>
         String(value ?? "")
@@ -436,6 +437,16 @@ export default function MenuAdd() {
         }
     }
 
+    const handleRemoveDishImage = () => {
+        setFormData(prev => ({
+            ...prev,
+            image: "",
+            images: [],
+        }))
+        if (dishImageInputRef.current) {
+            dishImageInputRef.current.value = ""
+        }
+    }
 
     const handleSaveDish = async () => {
         if (!formData.name) {
@@ -994,11 +1005,21 @@ export default function MenuAdd() {
                                 <h3 className="text-lg font-semibold text-[#1E1E1E] mb-4">Image</h3>
                                 <div className="flex items-center gap-4">
                                     {formData.image && (
-                                        <img
-                                            src={formData.image}
-                                            alt="Dish"
-                                            className="w-32 h-32 object-cover rounded-lg"
-                                        />
+                                        <div className="relative">
+                                            <img
+                                                src={formData.image}
+                                                alt="Dish"
+                                                className="w-32 h-32 object-cover rounded-lg"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveDishImage}
+                                                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-white border border-[#F5F5F5] shadow-sm flex items-center justify-center hover:bg-[#FAFAFA]"
+                                                title="Remove image"
+                                            >
+                                                <X className="w-4 h-4 text-[#1E1E1E]/70" />
+                                            </button>
+                                        </div>
                                     )}
                                     <label className="flex items-center gap-2 px-4 py-2 bg-[#e53935] text-white rounded-lg hover:bg-[#d32f2f] cursor-pointer transition-colors">
                                         {!formData.image && <Upload className="w-5 h-5" />}
@@ -1007,6 +1028,7 @@ export default function MenuAdd() {
                                             type="file"
                                             accept="image/*"
                                             onChange={(e) => handleImageUpload(e.target.files[0])}
+                                            ref={dishImageInputRef}
                                             className="hidden"
                                         />
                                     </label>

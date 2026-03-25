@@ -783,7 +783,10 @@ export const updateDeliveryPartner = asyncHandler(async (req, res) => {
 
     // Update fields if provided
     if (name) delivery.name = name;
-    if (email) delivery.email = email;
+    if (email !== undefined) {
+      const trimmed = typeof email === 'string' ? email.trim() : '';
+      delivery.email = trimmed ? trimmed : undefined;
+    }
     if (phone) delivery.phone = phone;
 
     // Update vehicle details if provided

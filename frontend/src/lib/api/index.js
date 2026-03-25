@@ -1697,6 +1697,9 @@ export const adminAPI = {
   createCategoryType: (name) => {
     return apiClient.post('/admin/category-types', { name });
   },
+  deleteCategoryType: (id) => {
+    return apiClient.delete(`/admin/category-types/${id}`);
+  },
 
   // Fee Settings Management (Delivery & Platform Fee)
   getFeeSettings: () => {

@@ -55,6 +55,10 @@ export const getOrders = asyncHandler(async (req, res) => {
 
     // Status filter
     if (status && status !== 'all') {
+      if (status === 'offline-payments') {
+        // COD / cash payments across all order statuses
+        query['payment.method'] = { $in: ['cash', 'cod'] };
+      } else {
       // Map frontend status keys to backend status values
       const statusMap = {
         'scheduled': 'scheduled',
@@ -79,6 +83,7 @@ export const getOrders = asyncHandler(async (req, res) => {
         query.cancellationReason = {
           $regex: /rejected by cafe|cafe rejected|cafe cancelled/i
         };
+      }
       }
     }
 

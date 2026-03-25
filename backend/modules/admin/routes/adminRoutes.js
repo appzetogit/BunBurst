@@ -53,6 +53,7 @@ import {
   updateCategoryPriority,
   getCategoryTypes,
   createCategoryType,
+  deleteCategoryType,
 } from "../controllers/categoryController.js";
 import {
   getJoinRequests,
@@ -317,6 +318,7 @@ router.patch("/categories/:id/status", toggleCategoryStatus);
 router.patch("/categories/:id/priority", updateCategoryPriority);
 router.get("/category-types", getCategoryTypes);
 router.post("/category-types", createCategoryType);
+router.delete("/category-types/:id", deleteCategoryType);
 
 // Fee Settings Management (Delivery & Platform Fee)
 router.get("/fee-settings", getFeeSettings);

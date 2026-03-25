@@ -242,7 +242,7 @@ export default function UserTopHeader({
                     <div className="lg:hidden flex-1 flex justify-center min-w-0">
                         <button onClick={() => openLocationSelector()} className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-muted rounded-lg max-w-[150px]">
                             <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span className="text-sm font-bold truncate">{getLocationText()}</span>
+                            <span className="text-sm font-bold text-foreground truncate">{getLocationText()}</span>
                             <ChevronDown className="h-3 w-3 text-muted-foreground" />
                         </button>
                     </div>

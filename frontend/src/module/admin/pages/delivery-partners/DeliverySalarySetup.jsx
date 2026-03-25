@@ -101,12 +101,13 @@ export default function DeliverySalarySetup() {
     }, [searchQuery])
 
     const handleEdit = (deliveryman) => {
+        const salaryAmount = getSalaryAmount(deliveryman)
         setEditFormData({
             id: deliveryman._id,
             name: deliveryman.name,
             email: deliveryman.email,
             phone: deliveryman.phone,
-            salary: getSalaryAmount(deliveryman),
+            salary: salaryAmount > 0 ? String(salaryAmount) : "",
             joiningDate: deliveryman.fullData?.joiningDate ?
                 new Date(deliveryman.fullData.joiningDate).toISOString().split('T')[0] :
                 new Date().toISOString().split('T')[0]
@@ -338,7 +339,7 @@ export default function DeliverySalarySetup() {
                                     <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <input
                                         type="number"
-                                        value={editFormData?.salary}
+                                        value={editFormData?.salary ?? ""}
                                         onChange={(e) => setEditFormData({ ...editFormData, salary: e.target.value })}
                                         placeholder="Ex: 15000"
                                         min="0"

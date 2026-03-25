@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react"
-import { Outlet } from "react-router-dom"
+import { Outlet, useLocation } from "react-router-dom"
 import AdminSidebar from "./AdminSidebar"
 import AdminNavbar from "./AdminNavbar"
 
 export default function AdminLayout() {
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [adminTheme, setAdminTheme] = useState("light")
@@ -40,6 +41,11 @@ export default function AdminLayout() {
     window.addEventListener("storage", handleStorage)
     return () => window.removeEventListener("storage", handleStorage)
   }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    window.scrollTo(0, 0)
+  }, [location.pathname])
 
   const handleCollapseChange = (collapsed) => {
     setIsSidebarCollapsed(collapsed)

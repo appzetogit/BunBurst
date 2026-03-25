@@ -539,6 +539,18 @@ export default function AddCafe() {
     }
   }, [isEditMode, step])
 
+  useEffect(() => {
+    if (isEditMode) return
+    return () => {
+      try {
+        localStorage.removeItem(draftKey)
+        localStorage.removeItem(draftStepKey)
+      } catch (e) {
+        console.warn("Failed to clear add cafe draft:", e)
+      }
+    }
+  }, [isEditMode])
+
   // Fetch cafe data in edit mode
   useEffect(() => {
     if (isEditMode && id) {
@@ -1164,10 +1176,24 @@ export default function AddCafe() {
     return errors
   }
 
+  const normalizeAuthPhone = (value) => {
+    const digits = String(value ?? "").replace(/\D/g, "")
+    if (!digits) return ""
+    if (digits.startsWith("91") && digits.length > 10) return digits.slice(2).slice(0, 10)
+    return digits.slice(0, 10)
+  }
+
+  const isValidAuthEmail = (value) => /^[^\s@]+@([A-Za-z0-9-]+\.)+[A-Za-z]{2,24}$/.test(String(value || ""))
+  const isValidAuthPhone = (value) => /^\d{10}$/.test(String(value || ""))
+
   const validateAuth = () => {
     const errors = []
-    if (!auth.email && !auth.phone) errors.push("Either email or phone is required")
-    if (auth.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.email)) errors.push("Please enter a valid email address")
+    const emailValue = String(auth.email || "").trim().toLowerCase()
+    const phoneValue = normalizeAuthPhone(auth.phone)
+
+    if (!emailValue && !phoneValue) errors.push("Either email or phone is required")
+    if (emailValue && !isValidAuthEmail(emailValue)) errors.push("Please enter a valid email address")
+    if (!emailValue && phoneValue && !isValidAuthPhone(phoneValue)) errors.push("Phone number must be 10 digits")
     if (auth.password && auth.password.length < 6) errors.push("Password must be at least 6 characters")
     return errors
   }
@@ -2125,7 +2151,7 @@ export default function AddCafe() {
               setAuth({ ...auth, email: value, signupMethod: value ? 'email' : 'phone' })
               if (!value) {
                 setAuthEmailError("")
-              } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+              } else if (!isValidAuthEmail(value)) {
                 setAuthEmailError("Please enter a valid email address")
               } else {
                 setAuthEmailError("")
@@ -2133,7 +2159,7 @@ export default function AddCafe() {
             }}
             onBlur={() => {
               const value = String(auth.email || "").trim().toLowerCase()
-              if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+              if (value && !isValidAuthEmail(value)) {
                 setAuthEmailError("Please enter a valid email address")
               } else {
                 setAuthEmailError("")
@@ -2150,27 +2176,29 @@ export default function AddCafe() {
           <Label className="text-xs text-gray-700">Phone (if no email)</Label>
           <Input
             type="tel"
-            value={String(auth.phone || "").replace(/\D/g, "").slice(0, 10)}
+            value={normalizeAuthPhone(auth.phone)}
             onChange={(e) => {
-              const digits = String(e.target.value || "").replace(/\D/g, "").slice(0, 10)
+              const digits = normalizeAuthPhone(e.target.value)
               setAuth({ ...auth, phone: digits, signupMethod: !auth.email ? 'phone' : 'email' })
               if (!digits) {
                 setAuthPhoneError("")
-              } else if (digits.length !== 10) {
+              } else if (!String(auth.email || "").trim() && !isValidAuthPhone(digits)) {
                 setAuthPhoneError("Phone number must be 10 digits")
               } else {
                 setAuthPhoneError("")
               }
             }}
             onBlur={() => {
-              const digits = String(auth.phone || "").replace(/\D/g, "")
-              setAuth((prev) => ({ ...prev, phone: digits.slice(0, 10) }))
-              if (digits && digits.length !== 10) {
+              const digits = normalizeAuthPhone(auth.phone)
+              setAuth((prev) => ({ ...prev, phone: digits }))
+              if (!String(auth.email || "").trim() && digits && !isValidAuthPhone(digits)) {
                 setAuthPhoneError("Phone number must be 10 digits")
               } else {
                 setAuthPhoneError("")
               }
             }}
+            inputMode="numeric"
+            maxLength={10}
             className="mt-1 bg-white text-sm"
             placeholder="+91 9876543210"
           />

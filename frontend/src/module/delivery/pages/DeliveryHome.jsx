@@ -5213,6 +5213,9 @@ export default function DeliveryHome() {
             heading: 0,
             disableDefaultUI: false,
             zoomControl: true,
+            ...(window.google?.maps?.ControlPosition?.RIGHT_TOP
+              ? { zoomControlOptions: { position: window.google.maps.ControlPosition.RIGHT_TOP } }
+              : {}),
             mapTypeControl: false,
             streetViewControl: false,
             fullscreenControl: false
@@ -5451,6 +5454,9 @@ export default function DeliveryHome() {
           heading: 0,
           disableDefaultUI: false,
           zoomControl: true,
+          ...(window.google?.maps?.ControlPosition?.RIGHT_TOP
+            ? { zoomControlOptions: { position: window.google.maps.ControlPosition.RIGHT_TOP } }
+            : {}),
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false
@@ -10348,7 +10354,7 @@ export default function DeliveryHome() {
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[210] max-w-lg mx-auto max-h-[85vh]"
             >
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] min-h-0">
                 {/* Header */}
                 <div className="px-6 py-5 relative" style={{ background: '#e53935' }}>
                   <button
@@ -10369,7 +10375,7 @@ export default function DeliveryHome() {
                 </div>
 
                 {/* Bill Content */}
-                <div className="p-6 space-y-5 overflow-y-auto">
+                <div className="flex-1 min-h-0 p-6 space-y-5 overflow-y-auto overscroll-contain">
                   {/* Cafe Info */}
                   <div className="pb-4" style={{ borderBottom: '1.5px solid #F5F5F5' }}>
                     <p className="text-xs uppercase tracking-wide mb-2" style={{ color: '#9e9e9e' }}>From</p>

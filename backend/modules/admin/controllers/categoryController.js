@@ -454,3 +454,28 @@ export const createCategoryType = asyncHandler(async (req, res) => {
     return errorResponse(res, 500, 'Failed to create category type');
   }
 });
+
+/**
+ * Delete Category Type (Soft delete)
+ * DELETE /api/admin/category-types/:id
+ */
+export const deleteCategoryType = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const categoryType = await CategoryType.findById(id);
+    if (!categoryType) {
+      return errorResponse(res, 404, 'Category type not found');
+    }
+
+    categoryType.status = false;
+    await categoryType.save();
+
+    return successResponse(res, 200, 'Category type deleted successfully', {
+      type: { id: categoryType._id.toString(), name: categoryType.name }
+    });
+  } catch (error) {
+    logger.error(`Error deleting category type: ${error.message}`);
+    return errorResponse(res, 500, 'Failed to delete category type');
+  }
+});

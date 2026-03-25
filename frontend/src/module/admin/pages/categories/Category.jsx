@@ -58,6 +58,7 @@ export default function Category() {
   const [isAddingNewType, setIsAddingNewType] = useState(false)
   const [newTypeName, setNewTypeName] = useState("")
   const [isCreatingType, setIsCreatingType] = useState(false)
+  const [isDeletingType, setIsDeletingType] = useState(false)
   const fileInputRef = useRef(null)
   const filterSectionRefs = useRef({})
   const rightContentRef = useRef(null)
@@ -225,6 +226,39 @@ export default function Category() {
       toast.error(error.response?.data?.message || 'Failed to create category type')
     } finally {
       setIsCreatingType(false)
+    }
+  }
+
+  const handleDeleteCategoryType = async () => {
+    const selectedTypeName = (formData.type || "").trim()
+    if (!selectedTypeName) return
+
+    const selectedType = categoryTypes.find((type) =>
+      (type?.name || "").toLowerCase() === selectedTypeName.toLowerCase()
+    )
+
+    if (!selectedType?.id) {
+      toast.error('Selected category type not found')
+      return
+    }
+
+    if (!window.confirm(`Are you sure you want to delete "${selectedType.name}" category type?`)) return
+
+    try {
+      setIsDeletingType(true)
+      const response = await adminAPI.deleteCategoryType(selectedType.id)
+      if (response.data?.success) {
+        toast.success('Category type deleted successfully')
+        setCategoryTypes((prev) => prev.filter((t) => t?.id !== selectedType.id))
+        setFormData((prev) => ({ ...prev, type: "" }))
+      } else {
+        toast.error(response.data?.message || 'Failed to delete category type')
+      }
+    } catch (error) {
+      console.error('Error deleting category type:', error)
+      toast.error(error.response?.data?.message || 'Failed to delete category type')
+    } finally {
+      setIsDeletingType(false)
     }
   }
 
@@ -1034,7 +1068,7 @@ export default function Category() {
                           onValueChange={(value) => setFormData({ ...formData, type: value })}
                           disabled={isAddingNewType}
                         >
-                          <SelectTrigger className="h-11 bg-white border-[#F5F5F5] focus:ring-[#e53935]/20 focus:border-[#e53935] transition-all rounded-xl">
+                          <SelectTrigger className="h-11 w-full bg-white border-[#F5F5F5] focus:ring-[#e53935]/20 focus:border-[#e53935] transition-all rounded-xl">
                             <SelectValue placeholder="Select Category Type" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl">
@@ -1044,6 +1078,16 @@ export default function Category() {
                           </SelectContent>
                         </Select>
                       </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleDeleteCategoryType}
+                        disabled={isAddingNewType || isDeletingType || !formData.type}
+                        className="h-11 w-11 p-0 rounded-xl border-[#F5F5F5] text-[#e53935] hover:bg-[#fff8f7] disabled:opacity-50"
+                        title="Delete selected category type"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </Button>
                       <Button
                         type="button"
                         variant="outline"
