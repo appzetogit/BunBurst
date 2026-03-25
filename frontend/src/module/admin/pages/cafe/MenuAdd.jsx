@@ -1042,7 +1042,7 @@ export default function MenuAdd() {
                                                 })
                                             }
                                         }}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.hasVariants ? 'bg-[#e53935]' : 'bg-[#F5F5F5]'
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full border transition-colors ${formData.hasVariants ? 'border-[#e53935] bg-[#e53935]' : 'border-[#D4D4D8] bg-[#E4E4E7]'
                                             }`}
                                     >
                                         <span

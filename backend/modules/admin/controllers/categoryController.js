@@ -1,4 +1,5 @@
 import AdminCategoryManagement from '../models/AdminCategoryManagement.js';
+import CategoryType from '../models/CategoryType.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { uploadToCloudinary } from '../../../shared/utils/cloudinaryService.js';
@@ -394,3 +395,62 @@ export const updateCategoryPriority = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Get All Category Types
+ * GET /api/admin/category-types
+ */
+export const getCategoryTypes = asyncHandler(async (req, res) => {
+  try {
+    let types = await CategoryType.find({ status: true }).sort({ name: 1 }).lean();
+
+    // If no types exist, seed default types
+    if (types.length === 0) {
+      const defaultTypes = ['Starters', 'Main course', 'Desserts', 'Beverages', 'Varieties'];
+      const dataToInsert = defaultTypes.map(name => ({ name, createdBy: req.user?._id }));
+      await CategoryType.insertMany(dataToInsert);
+      types = await CategoryType.find({ status: true }).sort({ name: 1 }).lean();
+    }
+
+    return successResponse(res, 200, 'Category types retrieved successfully', {
+      types: types.map(t => ({ id: t._id.toString(), name: t.name }))
+    });
+  } catch (error) {
+    logger.error(`Error fetching category types: ${error.message}`);
+    return errorResponse(res, 500, 'Failed to fetch category types');
+  }
+});
+
+/**
+ * Create Category Type
+ * POST /api/admin/category-types
+ */
+export const createCategoryType = asyncHandler(async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!name || !name.trim()) {
+      return errorResponse(res, 400, 'Category type name is required');
+    }
+
+    // Check if type already exists
+    const existingType = await CategoryType.findOne({
+      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') }
+    });
+
+    if (existingType) {
+      return errorResponse(res, 400, 'Category type already exists');
+    }
+
+    const categoryType = await CategoryType.create({
+      name: name.trim(),
+      createdBy: req.user?._id
+    });
+
+    return successResponse(res, 201, 'Category type created successfully', {
+      type: { id: categoryType._id.toString(), name: categoryType.name }
+    });
+  } catch (error) {
+    logger.error(`Error creating category type: ${error.message}`);
+    return errorResponse(res, 500, 'Failed to create category type');
+  }
+});

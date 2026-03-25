@@ -6720,6 +6720,14 @@ export default function DeliveryHome() {
   }, [selectedCafe])
 
   // Utility function to clear order data when order is deleted or cancelled
+  const normalizePhoneForDial = useCallback((rawPhone) => {
+    const digitsOnly = String(rawPhone ?? "").replace(/\D/g, "")
+    if (!digitsOnly) return ""
+    if (digitsOnly.length === 12 && digitsOnly.startsWith("91")) return digitsOnly.slice(2)
+    if (digitsOnly.length === 11 && digitsOnly.startsWith("0")) return digitsOnly.slice(1)
+    return digitsOnly
+  }, [])
+
   const handleCallCustomer = useCallback(async () => {
     let customerPhone = selectedCafe?.customerPhone ||
       selectedCafe?.customer?.phone ||
@@ -6750,9 +6758,13 @@ export default function DeliveryHome() {
       return
     }
 
-    const cleanPhone = String(customerPhone).replace(/[^\d+]/g, '')
-    window.location.href = `tel:${cleanPhone}`
-  }, [selectedCafe])
+    const dialPhone = normalizePhoneForDial(customerPhone)
+    if (!dialPhone) {
+      toast.error('Customer phone number not available.')
+      return
+    }
+    window.location.href = `tel:${dialPhone}`
+  }, [normalizePhoneForDial, selectedCafe])
 
   const clearOrderData = useCallback(() => {
 
@@ -9772,9 +9784,12 @@ export default function DeliveryHome() {
                 }
 
                 if (cafePhone) {
-                  // Remove any spaces, dashes, or special characters except + and digits
-                  const cleanPhone = cafePhone.replace(/[^\d+]/g, '')
-                  window.location.href = `tel:${cleanPhone}`
+                  const dialPhone = normalizePhoneForDial(cafePhone)
+                  if (!dialPhone) {
+                    toast.error('Cafe phone number not available. Please contact support.')
+                    return
+                  }
+                  window.location.href = `tel:${dialPhone}`
                 } else {
                   toast.error('Cafe phone number not available. Please contact support.')
                   console.error('? Cafe phone not found in any path:', {

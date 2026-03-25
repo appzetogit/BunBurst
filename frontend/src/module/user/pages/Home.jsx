@@ -39,9 +39,6 @@ import offerImage from "@/assets/offerimage.png"
 import api, { cafeAPI, adminAPI } from "@/lib/api"
 import { API_BASE_URL } from "@/lib/api/config"
 import OptimizedImage from "@/components/OptimizedImage"
-// Explore More Icons
-import exploreOffers from "@/assets/explore more icons/offers.png"
-import exploreCollection from "@/assets/explore more icons/collection.png"
 import mealDealLogo from "@/assets/meal-deal-logo.jpeg"
 
 // Banner images for hero carousel - will be fetched from API
@@ -194,9 +191,6 @@ export default function Home() {
   const [heroBannersData, setHeroBannersData] = useState([]) // Store full banner data with linked cafes
   const [loadingBanners, setLoadingBanners] = useState(true)
   const [landingCategories, setLandingCategories] = useState([])
-  const [landingExploreMore, setLandingExploreMore] = useState([])
-  const [exploreMoreHeading, setExploreMoreHeading] = useState("Explore More")
-  const [loadingLandingConfig, setLoadingLandingConfig] = useState(true)
   const [cafesData, setCafesData] = useState([])
   const [loadingCafes, setLoadingCafes] = useState(true)
   const [realCategories, setRealCategories] = useState([])
@@ -321,33 +315,20 @@ export default function Home() {
   useEffect(() => {
     const fetchLandingConfig = async () => {
       try {
-        setLoadingLandingConfig(true)
         const response = await api.get('/hero-banners/landing/public')
         if (response.data.success && response.data.data) {
           const apiCategories = response.data.data.categories || []
-          const apiExploreMore = response.data.data.exploreMore || []
-
           // Extra safety: only keep active items and ensure order ascending
           setLandingCategories(
             apiCategories
               .filter((c) => c.isActive !== false)
               .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
           )
-          setLandingExploreMore(
-            apiExploreMore
-              .filter((e) => e.isActive !== false)
-              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-          )
-          setExploreMoreHeading(response.data.data.settings?.exploreMoreHeading || "Explore More")
         }
       } catch (error) {
         console.error('Error fetching landing config:', error)
-        // Fallback to empty arrays and default heading
+        // Fallback to empty array
         setLandingCategories([])
-        setLandingExploreMore([])
-        setExploreMoreHeading("Explore More")
-      } finally {
-        setLoadingLandingConfig(false)
       }
     }
 
@@ -1351,130 +1332,6 @@ export default function Home() {
             })}
           </div>
         </motion.section>
-
-        {/* Explore More Section */}
-        <motion.section
-          className="pt-2 sm:pt-3 lg:pt-4"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.5 }}
-        >
-          <motion.h2
-            className="text-xs sm:text-sm lg:text-base font-semibold text-muted-foreground tracking-widest uppercase mb-2 sm:mb-3 lg:mb-4 px-0"
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            {exploreMoreHeading}
-          </motion.h2>
-          <div
-            className="flex gap-2 sm:gap-3 lg:gap-4 overflow-x-auto scrollbar-hide pb-2 lg:pb-3"
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-            }}
-          >
-            {loadingLandingConfig ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : landingExploreMore.length === 0 ? (
-              // Fallback to hardcoded explore more if API returns empty
-              [
-                {
-                  id: 'offers',
-                  label: 'Offers',
-                  image: exploreOffers,
-                  href: '/user/offers'
-                },
-                {
-                  id: 'collection',
-                  label: 'Collections',
-                  image: exploreCollection,
-                  href: '/user/profile/favorites'
-                },
-              ].map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{
-                    duration: 0.4,
-                    delay: index * 0.1,
-                    type: "spring",
-                    stiffness: 100
-                  }}
-                  whileHover={{ scale: 1.1, y: -5 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Link to={item.href} className="flex-shrink-0 bg-card">
-                    <div className="flex flex-col items-center gap-2.5 w-24 sm:w-28 md:w-32 group">
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl bg-card flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-300 overflow-hidden p-2.5">
-                        <OptimizedImage
-                          src={item.image}
-                          alt={item.label}
-                          className="w-full h-full"
-                          width={112}
-                          height={112}
-                          sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 112px"
-                          objectFit="contain"
-                          placeholder="blur"
-                        />
-                      </div>
-                      <span className="text-sm sm:text-base font-semibold text-foreground/80 text-center leading-tight">
-                        {item.label}
-                      </span>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))
-            ) : (
-              landingExploreMore
-                .filter(item => item.id !== 'giftcard' && item.label?.toLowerCase() !== 'gift card')
-                .map((item, index) => (
-                  <motion.div
-                    key={item._id}
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{
-                      duration: 0.4,
-                      delay: index * 0.1,
-                      type: "spring",
-                      stiffness: 100
-                    }}
-                    whileHover={{ scale: 1.1, y: -5 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Link to={item.link} className="flex-shrink-0 bg-card">
-                      <div className="flex flex-col items-center gap-2.5 w-24 sm:w-28 md:w-32 group">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl bg-card  flex items-center justify-center shadow-sm group-hover:shadow-lg transition-all duration-300 overflow-hidden p-2.5">
-                          <OptimizedImage
-                            src={item.imageUrl}
-                            alt={item.label}
-                            className="w-full h-full"
-                            width={112}
-                            height={112}
-                            sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 112px"
-                            objectFit="contain"
-                            placeholder="blur"
-                            onError={() => { }}
-                          />
-                        </div>
-                        <span className="text-sm sm:text-base font-semibold text-foreground/80 text-center leading-tight">
-                          {item.label}
-                        </span>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))
-            )}
-          </div>
-        </motion.section>
-
         {/* Featured Foods - Horizontal Scroll */}
 
         {/* Cafes - Enhanced with Animations */}

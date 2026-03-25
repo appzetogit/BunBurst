@@ -54,6 +54,10 @@ export default function Category() {
   const [selectedImageFile, setSelectedImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [categoryTypes, setCategoryTypes] = useState([])
+  const [isAddingNewType, setIsAddingNewType] = useState(false)
+  const [newTypeName, setNewTypeName] = useState("")
+  const [isCreatingType, setIsCreatingType] = useState(false)
   const fileInputRef = useRef(null)
   const filterSectionRefs = useRef({})
   const rightContentRef = useRef(null)
@@ -84,6 +88,7 @@ export default function Category() {
 
     // Log API base URL for debugging
     fetchCategories()
+    fetchCategoryTypes()
   }, [])
 
   // Debounced search
@@ -186,6 +191,40 @@ export default function Category() {
       setCategories([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCategoryTypes = async () => {
+    try {
+      const response = await adminAPI.getCategoryTypes()
+      if (response.data.success) {
+        setCategoryTypes(response.data.data.types || [])
+      }
+    } catch (error) {
+      console.error('Error fetching category types:', error)
+    }
+  }
+
+  const handleCreateCategoryType = async (e) => {
+    e.preventDefault()
+    if (!newTypeName.trim()) return
+
+    try {
+      setIsCreatingType(true)
+      const response = await adminAPI.createCategoryType(newTypeName.trim())
+      if (response.data.success) {
+        toast.success('Category type created successfully')
+        const newType = response.data.data.type
+        setCategoryTypes(prev => [...prev, newType])
+        setFormData(prev => ({ ...prev, type: newType.name }))
+        setNewTypeName("")
+        setIsAddingNewType(false)
+      }
+    } catch (error) {
+      console.error('Error creating category type:', error)
+      toast.error(error.response?.data?.message || 'Failed to create category type')
+    } finally {
+      setIsCreatingType(false)
     }
   }
 
@@ -987,21 +1026,57 @@ export default function Category() {
               <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="type" className="text-sm font-semibold text-[#1E1E1E]">Category Type *</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => setFormData({ ...formData, type: value })}
-                  >
-                    <SelectTrigger className="h-11 bg-white border-[#F5F5F5] focus:ring-[#e53935]/20 focus:border-[#e53935] transition-all rounded-xl">
-                      <SelectValue placeholder="Select Category Type" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="Starters">Starters</SelectItem>
-                      <SelectItem value="Main course">Main course</SelectItem>
-                      <SelectItem value="Desserts">Desserts</SelectItem>
-                      <SelectItem value="Beverages">Beverages</SelectItem>
-                      <SelectItem value="Varieties">Varieties</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <Select
+                          value={formData.type}
+                          onValueChange={(value) => setFormData({ ...formData, type: value })}
+                          disabled={isAddingNewType}
+                        >
+                          <SelectTrigger className="h-11 bg-white border-[#F5F5F5] focus:ring-[#e53935]/20 focus:border-[#e53935] transition-all rounded-xl">
+                            <SelectValue placeholder="Select Category Type" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            {categoryTypes.map((type) => (
+                              <SelectItem key={type.id || type.name} value={type.name}>{type.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsAddingNewType(!isAddingNewType)}
+                        className={`h-11 w-11 p-0 rounded-xl border-[#F5F5F5] ${isAddingNewType ? 'bg-[#e53935] text-white border-[#e53935]' : 'text-[#e53935] hover:bg-[#fff8f7]'}`}
+                      >
+                        {isAddingNewType ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                      </Button>
+                    </div>
+
+                    {isAddingNewType && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-2 p-3 bg-[#fff8f7] rounded-xl border border-[#e53935]/10"
+                      >
+                        <Input
+                          value={newTypeName}
+                          onChange={(e) => setNewTypeName(e.target.value)}
+                          placeholder="New category type..."
+                          className="h-9 bg-white border-[#F5F5F5] focus:ring-[#e53935]/20 focus:border-[#e53935] text-sm rounded-lg"
+                        />
+                        <Button
+                          type="button"
+                          disabled={isCreatingType || !newTypeName.trim()}
+                          onClick={handleCreateCategoryType}
+                          className="h-9 px-4 bg-[#e53935] hover:bg-[#c62828] text-white text-xs font-bold rounded-lg shadow-sm"
+                        >
+                          {isCreatingType ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Create'}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">

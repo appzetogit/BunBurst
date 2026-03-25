@@ -29,10 +29,10 @@ const feedbackExperienceSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
-      max: 10,
+      max: 5,
       validate: {
         validator: Number.isInteger,
-        message: 'Rating must be an integer between 0 and 10'
+        message: 'Rating must be an integer between 0 and 5'
       }
     },
     experience: {
@@ -58,17 +58,13 @@ const feedbackExperienceSchema = new mongoose.Schema(
 // Calculate experience based on rating
 feedbackExperienceSchema.pre('save', function(next) {
   if (this.rating !== undefined && !this.experience) {
-    if (this.rating <= 2) {
+    if (this.rating <= 1) {
       this.experience = 'very_bad';
-    } else if (this.rating <= 3) {
+    } else if (this.rating <= 2) {
       this.experience = 'bad';
-    } else if (this.rating <= 4) {
-      this.experience = 'below_average';
-    } else if (this.rating <= 5) {
+    } else if (this.rating <= 3) {
       this.experience = 'average';
-    } else if (this.rating <= 6) {
-      this.experience = 'above_average';
-    } else if (this.rating <= 8) {
+    } else if (this.rating <= 4) {
       this.experience = 'good';
     } else {
       this.experience = 'very_good';

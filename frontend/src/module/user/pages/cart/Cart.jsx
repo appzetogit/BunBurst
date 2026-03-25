@@ -1880,9 +1880,6 @@ export default function Cart() {
               {addons.length > 0 && (
                 <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl">
                   <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-                    <div className="w-6 h-6 md:w-8 md:h-8 bg-muted rounded flex items-center justify-center">
-                      <span className="text-xs md:text-base">???</span>
-                    </div>
                     <span className="text-sm md:text-base font-semibold text-foreground">Complete your meal with</span>
                   </div>
                   {loadingAddons ? (
@@ -2160,7 +2157,7 @@ export default function Cart() {
 
               {/* Contact */}
               <div className="bg-card px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl">
-                <Link to="/user/profile" className="flex items-center justify-between">
+                <Link to="/user/profile/edit" className="flex w-full items-center justify-between">
                   <div className="flex items-center gap-3 md:gap-4">
                     <Phone className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                     <p className="text-sm md:text-base text-foreground">

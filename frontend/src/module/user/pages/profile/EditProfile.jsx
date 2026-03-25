@@ -14,12 +14,9 @@ import {
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useProfile } from "../../context/ProfileContext"
+import { useCustomerTheme } from "../../context/CustomerThemeContext"
 import { userAPI } from "@/lib/api"
 import { toast } from "sonner"
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import dayjs from 'dayjs'
 
 // Gender options
 const genderOptions = [
@@ -54,6 +51,8 @@ const saveProfileToStorage = (data) => {
 export default function EditProfile() {
   const navigate = useNavigate()
   const { userProfile, updateUserProfile } = useProfile()
+  const { theme } = useCustomerTheme()
+  const isDarkMode = theme === "dark"
 
   // Load from localStorage or use context
   const storedProfile = loadProfileFromStorage()
@@ -63,16 +62,6 @@ export default function EditProfile() {
     name: initialProfile.name ?? "",
     mobile: initialProfile.mobile ?? initialProfile.phone ?? "",
     email: initialProfile.email ?? "",
-    dateOfBirth: initialProfile.dateOfBirth
-      ? (typeof initialProfile.dateOfBirth === 'string'
-        ? dayjs(initialProfile.dateOfBirth)
-        : dayjs(initialProfile.dateOfBirth))
-      : null,
-    anniversary: initialProfile.anniversary
-      ? (typeof initialProfile.anniversary === 'string'
-        ? dayjs(initialProfile.anniversary)
-        : dayjs(initialProfile.anniversary))
-      : null,
     gender: initialProfile.gender ?? "",
   }
 
@@ -93,16 +82,6 @@ export default function EditProfile() {
       name: profile.name ?? "",
       mobile: profile.mobile ?? profile.phone ?? "",
       email: profile.email ?? "",
-      dateOfBirth: profile.dateOfBirth
-        ? (typeof profile.dateOfBirth === 'string'
-          ? dayjs(profile.dateOfBirth)
-          : dayjs(profile.dateOfBirth))
-        : null,
-      anniversary: profile.anniversary
-        ? (typeof profile.anniversary === 'string'
-          ? dayjs(profile.anniversary)
-          : dayjs(profile.anniversary))
-        : null,
       gender: profile.gender ?? "",
     }
     setFormData(newFormData)
@@ -125,12 +104,6 @@ export default function EditProfile() {
   }, [formData, initialData])
 
   const handleChange = (field, value) => {
-    if ((field === "dateOfBirth" || field === "anniversary") && value?.isValid?.()) {
-      if (value.isAfter(dayjs(), "day")) {
-        toast.error("Future dates are not allowed")
-        return
-      }
-    }
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -200,22 +173,11 @@ export default function EditProfile() {
     try {
       setIsSaving(true)
 
-      if (formData.dateOfBirth?.isValid?.() && formData.dateOfBirth.isAfter(dayjs(), "day")) {
-        toast.error("Date of birth cannot be in the future")
-        return
-      }
-      if (formData.anniversary?.isValid?.() && formData.anniversary.isAfter(dayjs(), "day")) {
-        toast.error("Anniversary cannot be in the future")
-        return
-      }
-
       // Prepare data for API
       const updateData = {
         name: formData.name,
         email: formData.email || undefined,
         phone: formData.mobile || undefined,
-        dateOfBirth: formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : undefined,
-        anniversary: formData.anniversary ? formData.anniversary.format('YYYY-MM-DD') : undefined,
         gender: formData.gender || undefined,
         profileImage: profileImage || undefined, // Include profileImage in update
       }
@@ -238,8 +200,6 @@ export default function EditProfile() {
           phone: updatedUser.phone || formData.mobile,
           email: updatedUser.email || formData.email,
           profileImage: updatedUser.profileImage || profileImage,
-          dateOfBirth: updatedUser.dateOfBirth || formData.dateOfBirth?.format('YYYY-MM-DD'),
-          anniversary: updatedUser.anniversary || formData.anniversary?.format('YYYY-MM-DD'),
           gender: updatedUser.gender || formData.gender,
         })
 
@@ -266,6 +226,14 @@ export default function EditProfile() {
   const handleEmailChange = () => {
     // Navigate to email change page or show modal
   }
+
+  const handleProfileImageClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+      fileInputRef.current.click()
+    }
+  }
+
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#0a0a0a]">
@@ -300,7 +268,7 @@ export default function EditProfile() {
             </Avatar>
             {/* Edit Icon */}
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleProfileImageClick}
               disabled={isUploadingImage}
               className="absolute bottom-0 right-0 w-8 h-8 bg-[#e53935] rounded-full flex items-center justify-center shadow-lg border-2 border-white hover:bg-[#c62828] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -315,6 +283,9 @@ export default function EditProfile() {
               type="file"
               accept="image/*"
               onChange={handleImageSelect}
+              onClick={(e) => {
+                e.target.value = ""
+              }}
               className="hidden"
             />
           </div>
@@ -383,86 +354,6 @@ export default function EditProfile() {
               </div>
             </div>
 
-            {/* Date of Birth Field */}
-            <div className="space-y-1.5">
-              <Label htmlFor="dateOfBirth" className="text-sm font-medium text-[#1E1E1E] dark:text-white">
-                Date of birth
-              </Label>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  disableFuture
-                  value={formData.dateOfBirth}
-                  onChange={(newValue) => handleChange('dateOfBirth', newValue)}
-                  slotProps={{
-                    textField: {
-                      className: "w-full",
-                      sx: {
-                        '& .MuiOutlinedInput-root': {
-                          height: '48px',
-                          borderRadius: '8px',
-                          '& fieldset': {
-                            borderColor: '#F5F5F5',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: '#F5F5F5',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#e53935',
-                            borderWidth: '1px',
-                          },
-                        },
-                        '& .MuiInputBase-input': {
-                          padding: '12px 14px',
-                          fontSize: '16px',
-                          color: '#1E1E1E',
-                        },
-                      },
-                    },
-                  }}
-                />
-              </LocalizationProvider>
-            </div>
-
-            {/* Anniversary Field */}
-            <div className="space-y-1.5">
-              <Label htmlFor="anniversary" className="text-sm font-medium text-[#1E1E1E] dark:text-white">
-                Anniversary <span className="text-[#1E1E1E]/50 dark:text-gray-500 font-normal">(Optional)</span>
-              </Label>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  disableFuture
-                  value={formData.anniversary}
-                  onChange={(newValue) => handleChange('anniversary', newValue)}
-                  slotProps={{
-                    textField: {
-                      className: "w-full",
-                      sx: {
-                        '& .MuiOutlinedInput-root': {
-                          height: '48px',
-                          borderRadius: '8px',
-                          '& fieldset': {
-                            borderColor: '#F5F5F5',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: '#F5F5F5',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#e53935',
-                            borderWidth: '1px',
-                          },
-                        },
-                        '& .MuiInputBase-input': {
-                          padding: '12px 14px',
-                          fontSize: '16px',
-                          color: '#1E1E1E',
-                        },
-                      },
-                    },
-                  }}
-                />
-              </LocalizationProvider>
-            </div>
-
             {/* Gender Field */}
             <div className="space-y-1.5">
               <Label htmlFor="gender" className="text-sm font-medium text-[#1E1E1E] dark:text-white">
@@ -473,11 +364,15 @@ export default function EditProfile() {
                 onValueChange={(value) => handleChange('gender', value)}
               >
                 <SelectTrigger className="h-12 text-base border border-[#F5F5F5] dark:border-gray-700 focus:border-[#e53935] focus:ring-1 focus:ring-[#e53935] rounded-lg bg-white dark:bg-[#1a1a1a] text-[#1E1E1E] dark:text-white">
-                  <SelectValue placeholder="Gender" />
+                  <SelectValue placeholder="Gender" className="text-[#1E1E1E] dark:text-white" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white text-[#1E1E1E] dark:bg-[#1a1a1a] dark:text-white dark:border-gray-700">
                   {genderOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="text-[#1E1E1E] dark:text-white focus:bg-[#F5F5F5] dark:focus:bg-gray-800 focus:text-[#1E1E1E] dark:focus:text-white"
+                    >
                       {option.label}
                     </SelectItem>
                   ))}

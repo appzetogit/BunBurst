@@ -927,7 +927,7 @@ export default function OrderTracking() {
       {/* Scrollable Content */}
       <div className="w-full lg:max-w-[1100px] mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-4 md:space-y-6 pb-24 md:pb-32">
         {/* Food Cooking Status */}
-        {(() => {
+        {effectiveStatus !== "cancelled" && (() => {
           const hasAcceptedPickup = order?.tracking?.outForDelivery?.status === true ||
             order?.tracking?.out_for_delivery?.status === true ||
             order?.status === 'out_for_delivery' ||
@@ -959,15 +959,17 @@ export default function OrderTracking() {
         })()}
 
         {/* Delivery Details Banner */}
-        <motion.div
-          className="rounded-xl p-4 text-center border"
-          style={{ backgroundColor: theme.soft, borderColor: theme.softBorder, color: theme.accent }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.65 }}
-        >
-          <p className="font-medium">All your delivery details in one place 👇</p>
-        </motion.div>
+        {effectiveStatus !== "cancelled" && (
+          <motion.div
+            className="rounded-xl p-4 text-center border"
+            style={{ backgroundColor: theme.soft, borderColor: theme.softBorder, color: theme.accent }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.65 }}
+          >
+            <p className="font-medium">All your delivery details in one place 👇</p>
+          </motion.div>
+        )}
 
         {/* Contact & Address Section */}
         <motion.div

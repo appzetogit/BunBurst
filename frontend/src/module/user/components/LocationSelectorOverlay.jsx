@@ -75,6 +75,12 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
   const locationUpdateTimeoutRef = useRef(null) // Timeout for location updates
   const [currentAddress, setCurrentAddress] = useState("")
   const [GOOGLE_MAPS_API_KEY, setGOOGLE_MAPS_API_KEY] = useState(null)
+  const [searchSuggestions, setSearchSuggestions] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const searchTimeoutRef = useRef(null)
+  const autocompleteServiceRef = useRef(null)
+  const placesServiceRef = useRef(null)
 
   useEffect(() => {
     if (!isOpen) {
@@ -133,6 +139,101 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
   }, [])
   const reverseGeocodeTimeoutRef = useRef(null) // Debounce timeout for reverse geocoding
   const lastReverseGeocodeCoordsRef = useRef(null) // Track last coordinates to avoid duplicate calls
+
+  // Initialize Places AutocompleteService when Google Maps is loaded
+  useEffect(() => {
+    if (MAP_APIS_DISABLED || !GOOGLE_MAPS_API_KEY) return
+    const tryInit = () => {
+      if (window.google?.maps?.places?.AutocompleteService) {
+        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService()
+        // PlacesService needs a map or a hidden div
+        const dummyDiv = document.createElement('div')
+        placesServiceRef.current = new window.google.maps.places.PlacesService(dummyDiv)
+      }
+    }
+    // May need to load the places library first
+    loadGoogleMaps({ libraries: ['places'] }).then(() => tryInit()).catch(() => { })
+  }, [GOOGLE_MAPS_API_KEY])
+
+  // Debounced search: fetch autocomplete suggestions when searchValue changes
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+
+    if (!searchValue || searchValue.trim().length < 2) {
+      setSearchSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      if (!autocompleteServiceRef.current) {
+        // Attempt lazy init
+        try {
+          await loadGoogleMaps({ libraries: ['places'] })
+          if (window.google?.maps?.places?.AutocompleteService) {
+            autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService()
+            const dummyDiv = document.createElement('div')
+            placesServiceRef.current = new window.google.maps.places.PlacesService(dummyDiv)
+          }
+        } catch { return }
+      }
+      if (!autocompleteServiceRef.current) return
+
+      setIsSearching(true)
+      try {
+        autocompleteServiceRef.current.getPlacePredictions(
+          {
+            input: searchValue,
+            componentRestrictions: { country: 'in' }, // restrict to India; remove if needed
+            types: ['geocode', 'establishment'],
+          },
+          (predictions, status) => {
+            setIsSearching(false)
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+              setSearchSuggestions(predictions)
+              setShowSuggestions(true)
+            } else {
+              setSearchSuggestions([])
+              setShowSuggestions(false)
+            }
+          }
+        )
+      } catch (err) {
+        setIsSearching(false)
+        console.warn('Places autocomplete error:', err)
+      }
+    }, 350)
+
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current) }
+  }, [searchValue])
+
+  // Handle suggestion selection: get place details, move map
+  const handleSelectSuggestion = (suggestion) => {
+    setShowSuggestions(false)
+    setSearchSuggestions([])
+    setSearchValue(suggestion.description || '')
+
+    if (!placesServiceRef.current) return
+    placesServiceRef.current.getDetails(
+      { placeId: suggestion.place_id, fields: ['geometry', 'formatted_address', 'name'] },
+      (place, status) => {
+        if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place?.geometry?.location) return
+        const lat = place.geometry.location.lat()
+        const lng = place.geometry.location.lng()
+        setMapPosition([lat, lng])
+
+        // Move map
+        if (googleMapRef.current && window.google?.maps) {
+          googleMapRef.current.panTo({ lat, lng })
+          googleMapRef.current.setZoom(17)
+          if (greenMarkerRef.current) greenMarkerRef.current.setPosition({ lat, lng })
+        }
+
+        // Reverse geocode to fill address form
+        handleMapMoveEnd(lat, lng)
+      }
+    )
+  }
 
   // Debug: Log API key status (only first few characters for security)
   useEffect(() => {
@@ -494,6 +595,17 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
           const newLat = newPos.lat()
           const newLng = newPos.lng()
           setMapPosition([newLat, newLng])
+          handleMapMoveEnd(newLat, newLng)
+        })
+
+        // Handle map click - update marker and address to pin location
+        google.maps.event.addListener(map, 'click', function (e) {
+          const newLat = e.latLng.lat()
+          const newLng = e.latLng.lng()
+          setMapPosition([newLat, newLng])
+          if (greenMarkerRef.current) {
+            greenMarkerRef.current.setPosition({ lat: newLat, lng: newLng })
+          }
           handleMapMoveEnd(newLat, newLng)
         })
 
@@ -2119,6 +2231,12 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
   }
 
   const handleCancelAddressForm = () => {
+    if (initialView === "map" && window.location.pathname.includes("/cart")) {
+      window.__locationSelectorFormOpen = false
+      onClose()
+      return
+    }
+
     setShowAddressForm(false)
     setAddressFormData({
       street: "",
@@ -2276,10 +2394,59 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-primary z-10" />
             <Input
               value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
+              onChange={(e) => { setSearchValue(e.target.value) }}
+              onFocus={() => { if (searchSuggestions.length > 0) setShowSuggestions(true) }}
+              onBlur={() => { setTimeout(() => setShowSuggestions(false), 200) }}
+              autoComplete="off"
               placeholder="Search for area, street name..."
-              className="pl-12 pr-4 h-12 w-full bg-muted border-border focus:border-primary focus:ring-primary rounded-xl"
+              className="pl-12 pr-10 h-12 w-full bg-muted border-border focus:border-primary focus:ring-primary rounded-xl"
             />
+            {/* Clear button */}
+            {searchValue.length > 0 && (
+              <button
+                type="button"
+                onClick={() => { setSearchValue(''); setSearchSuggestions([]); setShowSuggestions(false) }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+
+            {/* Suggestions Dropdown */}
+            {showSuggestions && searchSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg z-[10010] overflow-hidden">
+                {isSearching && (
+                  <div className="px-4 py-2 text-sm text-muted-foreground">Searching...</div>
+                )}
+                {searchSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.place_id}
+                    type="button"
+                    onMouseDown={() => handleSelectSuggestion(suggestion)}
+                    className="w-full flex items-start gap-3 px-4 py-3 hover:bg-muted text-left border-b border-border last:border-0 transition-colors"
+                  >
+                    <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {suggestion.structured_formatting?.main_text || suggestion.description}
+                      </p>
+                      {suggestion.structured_formatting?.secondary_text && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {suggestion.structured_formatting.secondary_text}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Loading indicator */}
+            {isSearching && searchValue.length >= 2 && !showSuggestions && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg z-[10010] px-4 py-3 text-sm text-muted-foreground">
+                Searching...
+              </div>
+            )}
           </div>
         </div>
 
@@ -2361,7 +2528,6 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
                       : "Select location on map")}
                   </p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0" />
               </div>
             </div>
 
@@ -2392,7 +2558,6 @@ export default function LocationSelectorOverlay({ isOpen, onClose, initialView =
                     {userProfile?.name || "User"}, {addressFormData.phone || userProfile?.phone || "Add phone"}
                   </p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0" />
               </div>
             </div>
 

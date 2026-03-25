@@ -147,8 +147,6 @@ function LocationSelectorProvider({ children }) {
   )
 }
 
-import { LocationProvider } from "../context/LocationContext"
-
 function UserLayoutContent() {
   const { theme } = useCustomerTheme()
   const location = useLocation()
@@ -199,19 +197,17 @@ function UserLayoutContent() {
       <CartProvider>
         <ProfileProvider>
           <OrdersProvider>
-            <LocationProvider>
-              <SearchOverlayProvider>
-                <LocationSelectorProvider>
-                  {/* <Navbar /> */}
-                  {showBottomNav && <DesktopNavbar />}
-                  <LocationPrompt />
-                  <main>
-                    <Outlet />
-                  </main>
-                  {showBottomNav && <BottomNavigation />}
-                </LocationSelectorProvider>
-              </SearchOverlayProvider>
-            </LocationProvider>
+            <SearchOverlayProvider>
+              <LocationSelectorProvider>
+                {/* <Navbar /> */}
+                {showBottomNav && <DesktopNavbar />}
+                <LocationPrompt />
+                <main>
+                  <Outlet />
+                </main>
+                {showBottomNav && <BottomNavigation />}
+              </LocationSelectorProvider>
+            </SearchOverlayProvider>
           </OrdersProvider>
         </ProfileProvider>
       </CartProvider>

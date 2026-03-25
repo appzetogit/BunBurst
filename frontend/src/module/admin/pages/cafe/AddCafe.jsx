@@ -55,6 +55,13 @@ export default function AddCafe() {
     return []
   }
 
+  const getTimeInMinutes = (value) => {
+    if (!value || typeof value !== "string") return null
+    const [hours, minutes] = value.split(":").map(Number)
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null
+    return (hours * 60) + minutes
+  }
+
   const formatCafeName = (value) => {
     if (!value) return ""
     const cleaned = String(value)
@@ -326,6 +333,48 @@ export default function AddCafe() {
     }
   }
 
+  const hasDocumentImageValue = (image) => image instanceof File || !!normalizeImageValue(image)?.url
+
+  const getDocumentImageName = (image) => {
+    if (image instanceof File) return image.name
+
+    const normalizedImage = normalizeImageValue(image)
+    if (!normalizedImage?.url) return ""
+
+    const publicId = typeof normalizedImage.publicId === "string" ? normalizedImage.publicId.trim() : ""
+    if (publicId) {
+      const publicIdName = publicId.split("/").filter(Boolean).pop() || ""
+      if (publicIdName) {
+        const extensionMatch = normalizedImage.url.split("?")[0].match(/\.([a-zA-Z0-9]+)$/)
+        return extensionMatch ? `${publicIdName}.${extensionMatch[1]}` : publicIdName
+      }
+    }
+
+    try {
+      const pathname = new URL(normalizedImage.url, "http://localhost").pathname
+      return decodeURIComponent(pathname.split("/").filter(Boolean).pop() || "")
+    } catch {
+      return decodeURIComponent(normalizedImage.url.split("/").filter(Boolean).pop()?.split("?")[0] || "")
+    }
+  }
+
+  const renderDocumentFileInput = (image, onChange) => (
+    <label className="mt-1 relative flex h-10 w-full cursor-pointer items-center rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-xs transition-[color,box-shadow,border-color] focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/25">
+      <span className="inline-flex h-7 shrink-0 items-center rounded-md bg-transparent text-sm font-medium text-foreground">
+        Choose File
+      </span>
+      <span className="ml-2 min-w-0 truncate text-sm text-black">
+        {getDocumentImageName(image) || "No file chosen"}
+      </span>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={onChange}
+        className="absolute inset-0 cursor-pointer opacity-0"
+      />
+    </label>
+  )
+
   const normalizeImageList = (images = []) =>
     (Array.isArray(images) ? images : [])
       .map(normalizeImageValue)
@@ -441,7 +490,14 @@ export default function AddCafe() {
       const draft = JSON.parse(stored)
       if (draft?.step1) setStep1(draft.step1)
       if (draft?.step2) setStep2(draft.step2)
-      if (draft?.step3) setStep3(draft.step3)
+      if (draft?.step3) {
+        setStep3({
+          ...draft.step3,
+          panImage: normalizeImageValue(draft.step3.panImage),
+          gstImage: normalizeImageValue(draft.step3.gstImage),
+          fssaiImage: normalizeImageValue(draft.step3.fssaiImage),
+        })
+      }
       if (draft?.step4) setStep4(draft.step4)
       if (draft?.auth) setAuth(draft.auth)
     } catch (e) {
@@ -457,7 +513,12 @@ export default function AddCafe() {
     const draft = {
       step1,
       step2,
-      step3,
+      step3: {
+        ...step3,
+        panImage: step3.panImage instanceof File ? null : normalizeImageValue(step3.panImage),
+        gstImage: step3.gstImage instanceof File ? null : normalizeImageValue(step3.gstImage),
+        fssaiImage: step3.fssaiImage instanceof File ? null : normalizeImageValue(step3.fssaiImage),
+      },
       step4,
       auth,
     }
@@ -1042,6 +1103,15 @@ export default function AddCafe() {
     if (!step2.cuisines || step2.cuisines.length === 0) errors.push("Please select at least one cuisine")
     if (!step2.openingTime?.trim()) errors.push("Opening time is required")
     if (!step2.closingTime?.trim()) errors.push("Closing time is required")
+    const openingTimeInMinutes = getTimeInMinutes(step2.openingTime)
+    const closingTimeInMinutes = getTimeInMinutes(step2.closingTime)
+    if (
+      openingTimeInMinutes !== null &&
+      closingTimeInMinutes !== null &&
+      openingTimeInMinutes > closingTimeInMinutes
+    ) {
+      errors.push("Opening time cannot be after closing time")
+    }
     if (!step2.openDays || step2.openDays.length === 0) errors.push("Please select at least one open day")
     return errors
   }
@@ -1053,7 +1123,7 @@ export default function AddCafe() {
     if (formattedPan && !isValidPanNumber(formattedPan)) errors.push("PAN number must be in format: AAAAA9999A")
     const formattedPanName = formatFullName(step3.nameOnPan)
     if (!formattedPanName) errors.push("Name on PAN is required")
-    if (!step3.panImage) errors.push("PAN image is required")
+    if (!hasDocumentImageValue(step3.panImage)) errors.push("PAN image is required")
     if (!step3.fssaiNumber?.trim()) errors.push("FSSAI number is required")
     if (step3.fssaiNumber && step3.fssaiNumber.length !== 14) errors.push("FSSAI number must be 14 digits")
     if (!step3.fssaiExpiry?.trim()) errors.push("FSSAI expiry date is required")
@@ -1061,7 +1131,6 @@ export default function AddCafe() {
       const todayIso = new Date().toISOString().split("T")[0]
       if (step3.fssaiExpiry < todayIso) errors.push("FSSAI expiry date cannot be in the past")
     }
-    if (!step3.fssaiImage) errors.push("FSSAI image is required")
     if (step3.gstRegistered) {
       const formattedGst = formatGstNumber(step3.gstNumber)
       if (!formattedGst) errors.push("GST number is required when GST registered")
@@ -1070,8 +1139,9 @@ export default function AddCafe() {
       if (!formattedLegalName) errors.push("GST legal name is required when GST registered")
       const formattedGstAddress = formatAddressLive(step3.gstAddress).trim()
       if (!formattedGstAddress) errors.push("GST registered address is required when GST registered")
-      if (!step3.gstImage) errors.push("GST image is required when GST registered")
+      if (!hasDocumentImageValue(step3.gstImage)) errors.push("GST image is required when GST registered")
     }
+    if (!hasDocumentImageValue(step3.fssaiImage)) errors.push("FSSAI image is required")
     if (!step3.accountNumber?.trim()) errors.push("Account number is required")
     if (step3.accountNumber && !isValidAccountNumber(step3.accountNumber)) {
       errors.push("Account number must be 9 to 18 digits")
@@ -1088,7 +1158,6 @@ export default function AddCafe() {
   const validateStep4 = () => {
     const errors = []
     if (!step4.estimatedDeliveryTime?.trim()) errors.push("Estimated delivery time is required")
-    if (!step4.featuredDish?.trim()) errors.push("Featured dish name is required")
     if (!step4.featuredPrice || isNaN(parseFloat(step4.featuredPrice)) || parseFloat(step4.featuredPrice) <= 0) {
       errors.push("Featured dish price is required and must be greater than 0")
     }
@@ -1668,6 +1737,7 @@ export default function AddCafe() {
                 type="time"
                 value={step2.openingTime || ""}
                 onChange={(e) => setStep2({ ...step2, openingTime: e.target.value })}
+                max={step2.closingTime || undefined}
                 className="bg-white text-sm"
               />
             </div>
@@ -1677,6 +1747,7 @@ export default function AddCafe() {
                 type="time"
                 value={step2.closingTime || ""}
                 onChange={(e) => setStep2({ ...step2, closingTime: e.target.value })}
+                min={step2.openingTime || undefined}
                 className="bg-white text-sm"
               />
             </div>
@@ -1777,12 +1848,7 @@ export default function AddCafe() {
         </div>
         <div>
           <Label className="text-xs text-gray-700">PAN image*</Label>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setStep3({ ...step3, panImage: e.target.files?.[0] || null })}
-            className="mt-1 bg-white text-sm text-black placeholder-black"
-          />
+          {renderDocumentFileInput(step3.panImage, (e) => setStep3({ ...step3, panImage: e.target.files?.[0] || null }))}
         </div>
       </section>
 
@@ -1871,7 +1937,7 @@ export default function AddCafe() {
               className="bg-white text-sm"
               placeholder="Registered address*"
             />
-            <Input type="file" accept="image/*" onChange={(e) => setStep3({ ...step3, gstImage: e.target.files?.[0] || null })} className="bg-white text-sm" />
+            {renderDocumentFileInput(step3.gstImage, (e) => setStep3({ ...step3, gstImage: e.target.files?.[0] || null }))}
           </div>
         )}
       </section>
@@ -1900,7 +1966,7 @@ export default function AddCafe() {
             />
           </div>
         </div>
-        <Input type="file" accept="image/*" onChange={(e) => setStep3({ ...step3, fssaiImage: e.target.files?.[0] || null })} className="bg-white text-sm" />
+        {renderDocumentFileInput(step3.fssaiImage, (e) => setStep3({ ...step3, fssaiImage: e.target.files?.[0] || null }))}
       </section>
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
@@ -1973,7 +2039,7 @@ export default function AddCafe() {
           <Input value={step4.estimatedDeliveryTime || ""} onChange={(e) => setStep4({ ...step4, estimatedDeliveryTime: e.target.value })} className="mt-1 bg-white text-sm" placeholder="e.g., 25-30 mins" />
         </div>
         <div>
-          <Label className="text-xs text-gray-700">Featured Dish Name*</Label>
+          <Label className="text-xs text-gray-700">Featured Dish Name</Label>
           <Input value={step4.featuredDish || ""} onChange={(e) => setStep4({ ...step4, featuredDish: e.target.value })} className="mt-1 bg-white text-sm" placeholder="e.g., Butter Chicken Special" />
         </div>
         <div>
@@ -2005,7 +2071,7 @@ export default function AddCafe() {
         {step4.diningSettings?.isEnabled && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs text-gray-700">Max Guests per Booking</Label>
+              <Label className="text-xs text-gray-700">Min gursts per booking</Label>
               <Input
                 type="number"
                 min="1"

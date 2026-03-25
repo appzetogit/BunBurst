@@ -1691,6 +1691,12 @@ export const adminAPI = {
       { priority },
     );
   },
+  getCategoryTypes: () => {
+    return apiClient.get('/admin/category-types');
+  },
+  createCategoryType: (name) => {
+    return apiClient.post('/admin/category-types', { name });
+  },
 
   // Fee Settings Management (Delivery & Platform Fee)
   getFeeSettings: () => {

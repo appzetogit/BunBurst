@@ -41,6 +41,14 @@ export const getJoinRequests = asyncHandler(async (req, res) => {
       query.status = 'blocked'; // Assuming 'blocked' is used for denied/rejected
     }
 
+    // Only fully completed signup requests with all mandatory documents
+    // should be visible in the admin approval queue.
+    query.signupComplete = true;
+    query['profileImage.url'] = { $exists: true, $nin: [null, ''] };
+    query['documents.aadhar.document'] = { $exists: true, $nin: [null, ''] };
+    query['documents.pan.document'] = { $exists: true, $nin: [null, ''] };
+    query['documents.drivingLicense.document'] = { $exists: true, $nin: [null, ''] };
+
     // Search filter
     if (search) {
       query.$or = [

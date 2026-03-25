@@ -7,6 +7,7 @@ import Loader from "@/components/Loader"
 import PushNotificationBootstrap from "@/components/PushNotificationBootstrap"
 import ComingSoonBanner from "@/components/ComingSoonBanner"
 import ComingSoonPage from "@/components/ComingSoonPage"
+import { LocationProvider } from "@/module/user/context/LocationContext"
 
 // Lazy Loading Components
 const UserRouter = lazy(() => import("@/module/user/components/UserRouter"))
@@ -136,7 +137,7 @@ export default function App() {
 
           <Route
             path="/*"
-            element={<UserRouter />}
+            element={<LocationProvider><UserRouter /></LocationProvider>}
           />
         </Routes>
       </div>

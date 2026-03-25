@@ -353,7 +353,17 @@ export default function UserOrderDetails() {
   }
 
   const normalizedStatus = (order?.status || "").toString().toLowerCase()
-  const isComplaintDisabled = normalizedStatus === "confirmed"
+  const isCancelledOrder = normalizedStatus === "cancelled"
+  const paymentStatus = (order?.payment?.status || "").toString().toLowerCase()
+  const paymentMethodRaw = (order?.payment?.method || order?.paymentMethod || "online").toString().toLowerCase()
+  const isComplaintDisabled = normalizedStatus === "confirmed" || isCancelledOrder
+  const billTotalLabel = (() => {
+    if (!isCancelledOrder) return "Paid"
+    if (paymentMethodRaw === "cash" || paymentStatus === "pending" || paymentStatus === "failed") return "Total"
+    if (paymentStatus === "refunded") return "Refunded"
+    if (paymentStatus === "completed") return "Refund pending"
+    return "Total"
+  })()
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans relative">
@@ -514,7 +524,7 @@ export default function UserOrderDetails() {
             </div>
 
             <div className="border-t border-gray-100 my-2 pt-2 flex justify-between items-center">
-              <span className="font-bold text-gray-800">Paid</span>
+              <span className="font-bold text-gray-800">{billTotalLabel}</span>
               <span className="font-bold text-gray-800">
                 ₹{Number(pricing.total || 0).toFixed(2)}
               </span>
@@ -574,7 +584,7 @@ export default function UserOrderDetails() {
                 Payment method
               </h4>
               <p className="text-gray-500 text-xs mt-0.5">
-                Paid via: {(() => {
+                {isCancelledOrder && paymentStatus !== "completed" ? "Payment via: " : "Paid via: "}{(() => {
                   const method = order.payment?.method || order.paymentMethod || "Online";
                   const methods = {
                     razorpay: "RazorPay",
@@ -668,7 +678,7 @@ export default function UserOrderDetails() {
               navigate(`/user/complaints/submit/${encodeURIComponent(orderIdString)}`)
             }}
             disabled={isComplaintDisabled}
-            title={isComplaintDisabled ? "Cafe complaint is available after delivery" : "Raise a cafe complaint"}
+            title={isCancelledOrder ? "Cafe complaint is not available for cancelled orders" : (isComplaintDisabled ? "Cafe complaint is available after delivery" : "Raise a cafe complaint")}
             className={`w-full border py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${
               isComplaintDisabled
                 ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"

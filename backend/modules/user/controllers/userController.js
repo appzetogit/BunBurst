@@ -45,7 +45,7 @@ export const getUserProfile = asyncHandler(async (req, res) => {
  */
 export const updateUserProfile = asyncHandler(async (req, res) => {
   try {
-    const { name, email, phone, dateOfBirth, anniversary, gender } = req.body;
+    const { name, email, phone, dateOfBirth, anniversary, gender, profileImage } = req.body;
 
     const user = await User.findById(req.user._id);
 
@@ -103,6 +103,12 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
       user.gender = gender || null;
     }
 
+    if (profileImage !== undefined) {
+      const normalizedProfileImage =
+        typeof profileImage === 'string' ? profileImage.trim() : profileImage;
+      user.profileImage = normalizedProfileImage || null;
+    }
+
     // Save to database
     await user.save();
 
@@ -111,7 +117,15 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
     delete userResponse.password;
 
     logger.info(`User profile updated: ${user._id}`, {
-      updatedFields: { name, email, phone, dateOfBirth, anniversary, gender }
+      updatedFields: {
+        name,
+        email,
+        phone,
+        dateOfBirth,
+        anniversary,
+        gender,
+        profileImageUpdated: profileImage !== undefined
+      }
     });
 
     return successResponse(res, 200, 'Profile updated successfully', {

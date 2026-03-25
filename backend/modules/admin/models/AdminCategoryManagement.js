@@ -14,7 +14,6 @@ const adminCategoryManagementSchema = new mongoose.Schema(
     type: {
       type: String,
       trim: true,
-      enum: ['Starters', 'Main course', 'Desserts', 'Beverages', 'Varieties'],
     },
     priority: {
       type: String,

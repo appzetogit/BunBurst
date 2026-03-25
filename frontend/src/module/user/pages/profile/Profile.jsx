@@ -27,7 +27,8 @@ import {
   Loader2,
   X as CloseIcon,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from "lucide-react"
 
 import AnimatedPage from "../../components/AnimatedPage"
@@ -53,7 +54,7 @@ import { useCustomerTheme } from "../../context/CustomerThemeContext"
 
 
 export default function Profile() {
-  const { userProfile, vegMode, setVegMode } = useProfile()
+  const { userProfile, vegMode, setVegMode, updateUserProfile } = useProfile()
   const navigate = useNavigate()
   const companyName = useCompanyName()
 
@@ -78,6 +79,13 @@ export default function Profile() {
   // Get first letter of name for avatar
   const avatarInitial = userProfile?.name?.charAt(0)?.toUpperCase() || userProfile?.phone?.charAt(1)?.toUpperCase() || 'U'
   const displayName = userProfile?.name || userProfile?.phone || 'User'
+  const hasProfileImage = !!(
+    userProfile?.profileImage &&
+    typeof userProfile.profileImage === "string" &&
+    userProfile.profileImage.trim() !== "" &&
+    userProfile.profileImage !== "null" &&
+    userProfile.profileImage !== "undefined"
+  )
   // Only show email if it exists and is valid, otherwise show phone or "Not available"
   const hasValidEmail = userProfile?.email && userProfile.email.trim() !== '' && userProfile.email.includes('@')
   const displayEmail = hasValidEmail ? userProfile.email : (userProfile?.phone || 'Not available')
@@ -157,6 +165,29 @@ export default function Profile() {
   }, [userProfile])
 
   const isComplete = profileCompletion === 100
+
+  const refreshProfileState = async () => {
+    const profileRes = await authAPI.getCurrentUser()
+    const userData = profileRes?.data?.data?.user || profileRes?.data?.user || profileRes?.data
+
+    if (!userData) return
+
+    updateUserProfile(userData)
+    localStorage.setItem("user_user", JSON.stringify(userData))
+    localStorage.setItem("userProfile", JSON.stringify(userData))
+
+    const editProfileCache = localStorage.getItem("appzeto_user_profile")
+    if (editProfileCache) {
+      try {
+        const parsed = JSON.parse(editProfileCache)
+        localStorage.setItem("appzeto_user_profile", JSON.stringify({ ...parsed, ...userData }))
+      } catch (error) {
+        console.error("Error updating appzeto_user_profile cache:", error)
+      }
+    }
+
+    window.dispatchEvent(new Event("userAuthChanged"))
+  }
 
   const handleLogout = async () => {
     if (isLoggingOut) return // Prevent multiple clicks
@@ -249,19 +280,33 @@ export default function Profile() {
       const response = await userAPI.uploadProfileImage(file)
 
       if (response?.data?.success) {
+        await refreshProfileState()
         toast.success("Profile photo updated successfully")
-        // The ProfileContext will automatically update when the user profile changes or we can manually update it
-        // Since we are using ProfileContext, we should refresh the user data
-        const profileRes = await authAPI.getCurrentUser()
-        const userData = profileRes?.data?.data?.user || profileRes?.data?.user || profileRes?.data
-        if (userData) {
-          // This will trigger update in ProfileContext if it's listening to auth changes
-          window.dispatchEvent(new Event("userAuthChanged"))
-        }
       }
     } catch (error) {
       console.error("Error uploading profile photo:", error)
       toast.error(error?.response?.data?.message || "Failed to upload profile photo")
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleRemovePhoto = async () => {
+    if (!hasProfileImage || isUploading) return
+
+    setIsUploading(true)
+    setPhotoSourceOpen(false)
+
+    try {
+      const response = await userAPI.updateProfile({ profileImage: "" })
+
+      if (response?.data?.success) {
+        await refreshProfileState()
+        toast.success("Profile photo removed successfully")
+      }
+    } catch (error) {
+      console.error("Error removing profile photo:", error)
+      toast.error(error?.response?.data?.message || "Failed to remove profile photo")
     } finally {
       setIsUploading(false)
     }
@@ -1001,6 +1046,24 @@ export default function Profile() {
               <span className="font-semibold">Gallery</span>
             </Button>
           </div>
+
+          {hasProfileImage && (
+            <Button
+              variant="outline"
+              className="mt-4 w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={handleRemovePhoto}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Remove current photo
+                </>
+              )}
+            </Button>
+          )}
 
           <input
             type="file"

@@ -83,6 +83,21 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onOrderUp
   const fetchedOrderDetailsIdRef = useRef(null)
 
   const resolvedOrder = detailedOrder ? { ...order, ...detailedOrder } : order
+  const resolvedPaymentMethod = getPaymentMethodLabel(resolvedOrder)
+  const isResolvedCodOrder =
+    resolvedPaymentMethod === "Cash on Delivery" ||
+    resolvedOrder?.payment?.method === "cash" ||
+    resolvedOrder?.payment?.method === "cod"
+  const resolvedPaymentCollectionStatus = isResolvedCodOrder
+    ? (
+      resolvedOrder?.paymentCollectionStatus ??
+      (
+        resolvedOrder?.status === "delivered" || resolvedOrder?.status === "picked_up"
+          ? "Collected"
+          : "Not Collected"
+      )
+    )
+    : (resolvedOrder?.paymentStatus || "Collected")
   const deliveryPartnerName =
     resolvedOrder?.deliveryPartnerName ||
     resolvedOrder?.deliveryPartnerId?.name ||
@@ -554,20 +569,14 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onOrderUp
                     )}
                   </div>
                 )}
-                {(order.paymentStatus || order.paymentCollectionStatus != null) && (
+                {(resolvedOrder?.paymentStatus || resolvedOrder?.paymentCollectionStatus != null) && (
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-[#1E1E1E] uppercase tracking-wider flex items-center gap-2">
                       <CreditCard className="w-4 h-4" />
                       Payment Status
                     </p>
-                    <p className={`text-sm font-medium ${getPaymentStatusColor(
-                      order.paymentType === 'Cash on Delivery' || order.payment?.method === 'cash' || order.payment?.method === 'cod'
-                        ? (order.paymentCollectionStatus ?? (order.status === 'delivered' ? 'Collected' : 'Not Collected'))
-                        : order.paymentStatus
-                    )}`}>
-                      {order.paymentType === 'Cash on Delivery' || order.payment?.method === 'cash' || order.payment?.method === 'cod'
-                        ? (order.paymentCollectionStatus ?? (order.status === 'delivered' ? 'Collected' : 'Not Collected'))
-                        : order.paymentStatus}
+                    <p className={`text-sm font-medium ${getPaymentStatusColor(resolvedPaymentCollectionStatus)}`}>
+                      {resolvedPaymentCollectionStatus}
                     </p>
                   </div>
                 )}

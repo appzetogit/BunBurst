@@ -1552,6 +1552,7 @@ export const completeDelivery = asyncHandler(async (req, res) => {
     const isCODOrder = orderPaymentMethod === 'cash' || orderPaymentMethod === 'cod';
     if (isCODOrder) {
       updateData['payment.status'] = 'completed';
+      updateData.paymentCollectionStatus = 'Collected';
     }
 
     // Update order to delivered

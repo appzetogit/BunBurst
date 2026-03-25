@@ -7,7 +7,37 @@ import { toast } from "sonner"
 // Indian vehicle registration number format: MH12AB1234, DL8CAB1234, KA03MX9876
 const VEHICLE_NUMBER_REGEX = /^[A-Z]{2}\d{1,2}[A-Z]{1,3}\d{4}$/
 
-const sanitizeFullName = (value = "") => value.replace(/\d/g, "")
+const sanitizeFullName = (value = "") => {
+  const lettersOnly = String(value)
+    .replace(/[^a-zA-Z\s'-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  if (!lettersOnly) return ""
+
+  return lettersOnly
+    .toLowerCase()
+    .replace(/(^|[\s'-])([a-z])/g, (_, separator, character) => `${separator}${character.toUpperCase()}`)
+}
+
+const sanitizeFullNameInput = (value = "") => {
+  const hadTrailingSpace = /\s$/.test(value)
+  const cleaned = String(value)
+    .replace(/[^a-zA-Z\s'-]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/^\s+/, "")
+    .trimEnd()
+
+  if (!cleaned) return ""
+
+  const formatted = cleaned
+    .toLowerCase()
+    .replace(/(^|[\s'-])([a-z])/g, (_, separator, character) => `${separator}${character.toUpperCase()}`)
+
+  return hadTrailingSpace ? `${formatted} ` : formatted
+}
+
+const sanitizeEmail = (value = "") => String(value).replace(/\s+/g, "").toLowerCase()
 const sanitizePlaceName = (value = "") => {
   const lettersAndSpacesOnly = value.replace(/[^a-zA-Z\s]/g, "")
   const normalizedSpaces = lettersAndSpacesOnly.replace(/\s+/g, " ").trim()
@@ -73,6 +103,7 @@ export default function SignupStep1() {
           ...prev,
           ...parsed,
           name: sanitizeFullName(parsed?.name || ""),
+          email: sanitizeEmail(parsed?.email || ""),
           city: sanitizePlaceName(parsed?.city || ""),
           state: sanitizePlaceName(parsed?.state || ""),
         }))
@@ -88,7 +119,7 @@ export default function SignupStep1() {
         setFormData(prev => ({
           ...prev,
           name: sanitizeFullName(p.name || ""),
-          email: p.email || "",
+          email: sanitizeEmail(p.email || ""),
           address: p.address || "",
           city: sanitizePlaceName(p.city || ""),
           state: sanitizePlaceName(p.state || ""),
@@ -107,12 +138,21 @@ export default function SignupStep1() {
     const { name, value } = e.target
 
     if (name === "name") {
-      const sanitized = sanitizeFullName(value)
+      const sanitized = sanitizeFullNameInput(value)
       setFormData(prev => ({ ...prev, name: sanitized }))
-      if (sanitized !== value) {
-        setErrors(prev => ({ ...prev, name: "Digits are not allowed in name" }))
-      } else if (errors.name) {
+      if (errors.name) {
         setErrors(prev => ({ ...prev, name: "" }))
+      }
+      return
+    }
+
+    if (name === "email") {
+      const sanitized = sanitizeEmail(value)
+      setFormData(prev => ({ ...prev, email: sanitized }))
+      if (sanitized && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitized)) {
+        setErrors(prev => ({ ...prev, email: "Invalid email format" }))
+      } else if (errors.email) {
+        setErrors(prev => ({ ...prev, email: "" }))
       }
       return
     }
@@ -154,8 +194,8 @@ export default function SignupStep1() {
   const validate = () => {
     const newErrors = {}
     if (!formData.name.trim()) newErrors.name = "Name is required"
-    else if (/\d/.test(formData.name)) newErrors.name = "Digits are not allowed in name"
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Invalid email format"
+    else if (formData.name.trim().length < 2) newErrors.name = "Name must be at least 2 characters"
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizeEmail(formData.email))) newErrors.email = "Invalid email format"
     if (!formData.address.trim()) newErrors.address = "Address is required"
     if (!formData.city.trim()) newErrors.city = "City is required"
     if (!formData.state.trim()) newErrors.state = "State is required"
@@ -188,8 +228,8 @@ export default function SignupStep1() {
     setIsSubmitting(true)
     try {
       const response = await deliveryAPI.submitSignupDetails({
-        name: formData.name.trim(),
-        email: formData.email.trim() || null,
+        name: sanitizeFullName(formData.name),
+        email: sanitizeEmail(formData.email) || null,
         address: formData.address.trim(),
         city: formData.city.trim(),
         state: formData.state.trim(),

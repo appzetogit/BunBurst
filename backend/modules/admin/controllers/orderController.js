@@ -5,6 +5,29 @@ import mongoose from 'mongoose';
 import { resolveOrderPaymentMethod } from '../../../shared/utils/deliveryCashLimitGuard.js';
 import { notifyUserOrderStatusUpdate } from '../../order/services/userNotificationService.js';
 
+const getEffectivePaymentCollectionStatus = (order = {}) => {
+  const paymentMethod = String(order?.payment?.method || '').toLowerCase();
+  const paymentStatus = String(order?.payment?.status || '').toLowerCase();
+  const orderStatus = String(order?.status || '').toLowerCase();
+  const storedStatus = order?.paymentCollectionStatus;
+  const isCodOrder = paymentMethod === 'cash' || paymentMethod === 'cod';
+
+  if (!isCodOrder) {
+    return 'Collected';
+  }
+
+  if (
+    storedStatus === 'Collected' ||
+    paymentStatus === 'completed' ||
+    orderStatus === 'delivered' ||
+    orderStatus === 'picked_up'
+  ) {
+    return 'Collected';
+  }
+
+  return storedStatus || 'Not Collected';
+};
+
 /**
  * Get all orders for admin
  * GET /api/admin/orders
@@ -460,11 +483,7 @@ export const getOrders = asyncHandler(async (req, res) => {
             return 'Online';
           }
         })(),
-        paymentCollectionStatus:
-          order.paymentCollectionStatus ||
-          ((order.payment?.method === 'cash' || order.payment?.method === 'cod')
-            ? (order.status === 'delivered' || order.status === 'picked_up' ? 'Collected' : 'Not Collected')
-            : 'Collected'),
+        paymentCollectionStatus: getEffectivePaymentCollectionStatus(order),
         orderStatus: orderStatusDisplay,
         adminAcceptance: order.adminAcceptance || { status: false },
         status: order.status, // Backend status
@@ -538,6 +557,8 @@ export const getOrderById = asyncHandler(async (req, res) => {
     if (!order) {
       return errorResponse(res, 404, 'Order not found');
     }
+
+    order.paymentCollectionStatus = getEffectivePaymentCollectionStatus(order);
 
     return successResponse(res, 200, 'Order retrieved successfully', {
       order

@@ -20,7 +20,6 @@ import {
   Star,
   SlidersHorizontal,
   Utensils,
-  Flame,
   Bookmark,
   Share2,
   Plus,
@@ -74,7 +73,6 @@ export default function CafeDetails() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null)
   const [expandedCoupons, setExpandedCoupons] = useState(new Set())
   const [showMenuSheet, setShowMenuSheet] = useState(false)
-  const [showLargeOrderMenu, setShowLargeOrderMenu] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [showMenuOptionsSheet, setShowMenuOptionsSheet] = useState(false)
@@ -91,6 +89,21 @@ export default function CafeDetails() {
       setFilters((prev) => ({ ...prev, vegNonVeg: null }))
     }
   }, [vegMode, filters.vegNonVeg])
+
+  useEffect(() => {
+    if (!showFilterSheet || typeof document === "undefined") return undefined
+
+    const originalBodyOverflow = document.body.style.overflow
+    const originalHtmlOverflow = document.documentElement.style.overflow
+
+    document.body.style.overflow = "hidden"
+    document.documentElement.style.overflow = "hidden"
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow
+      document.documentElement.style.overflow = originalHtmlOverflow
+    }
+  }, [showFilterSheet])
 
   // Addon states
   const [itemAddons, setItemAddons] = useState([])
@@ -1169,6 +1182,9 @@ export default function CafeDetails() {
     setShowMenuOptionsSheet(false)
   }
 
+  // Custom share sheet state (shown when navigator.share is unavailable)
+  const [shareSheetData, setShareSheetData] = useState(null) // { url, title, text }
+
   // Handle share cafe
   const handleShareCafe = async () => {
     const companyName = await getCompanyNameAsync()
@@ -1177,28 +1193,22 @@ export default function CafeDetails() {
 
     // Create share URL
     const shareUrl = `${window.location.origin}${currentPath}`
-    const shareText = `Check out ${cafeName} on ${companyName}! ${shareUrl}`
+    const shareText = `Check out ${cafeName} on ${companyName}!`
 
-    // Try Web Share API first (mobile)
+    // Try Web Share API first (native mobile share sheet - requires HTTPS)
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: cafeName,
-          text: shareText,
-          url: shareUrl,
-        })
+        await navigator.share({ title: cafeName, text: shareText, url: shareUrl })
         toast.success("Cafe shared successfully")
         setShowMenuOptionsSheet(false)
       } catch (error) {
-        // User cancelled or error occurred
         if (error.name !== "AbortError") {
-          // Fallback to copy to clipboard
-          await copyToClipboard(shareUrl)
+          setShareSheetData({ url: shareUrl, title: cafeName, text: shareText })
         }
       }
     } else {
-      // Fallback to copy to clipboard
-      await copyToClipboard(shareUrl)
+      // Show custom share sheet as fallback
+      setShareSheetData({ url: shareUrl, title: cafeName, text: shareText })
     }
   }
 
@@ -1211,27 +1221,22 @@ export default function CafeDetails() {
 
     // Create share URL
     const shareUrl = `${window.location.origin}${currentPath}?dish=${encodeURIComponent(dishId)}`
-    const shareText = `Check out ${item.name} from ${cafe?.name || "this cafe"}! ${shareUrl}`
+    const shareTitle = `${item.name} - ${cafe?.name || ""}`
+    const shareText = `Check out ${item.name} from ${cafe?.name || "this cafe"}!`
 
-    // Try Web Share API first (mobile)
+    // Try Web Share API first (native mobile share sheet - requires HTTPS)
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: `${item.name} - ${cafe?.name || ""}`,
-          text: shareText,
-          url: shareUrl,
-        })
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl })
         toast.success("Dish shared successfully")
       } catch (error) {
-        // User cancelled or error occurred
         if (error.name !== "AbortError") {
-          // Fallback to copy to clipboard
-          await copyToClipboard(shareUrl)
+          setShareSheetData({ url: shareUrl, title: shareTitle, text: shareText })
         }
       }
     } else {
-      // Fallback to copy to clipboard
-      await copyToClipboard(shareUrl)
+      // Show custom share sheet as fallback
+      setShareSheetData({ url: shareUrl, title: shareTitle, text: shareText })
     }
   }
 
@@ -2003,6 +2008,7 @@ export default function CafeDetails() {
                                         }`}
                                     >
                                       <button
+                                        type="button"
                                         onClick={(e) => {
                                           e.stopPropagation()
                                           if (!shouldShowGrayscale && !isOutOfStock) {
@@ -2020,12 +2026,16 @@ export default function CafeDetails() {
                                           }
                                         }}
                                         disabled={shouldShowGrayscale || isOutOfStock}
-                                        className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                        className={shouldShowGrayscale || isOutOfStock
+                                          ? 'flex h-5 w-5 items-center justify-center text-gray-400 cursor-not-allowed'
+                                          : 'flex h-5 w-5 items-center justify-center text-green-600 hover:text-green-700'
+                                        }
                                       >
-                                        <Minus size={14} />
+                                        <Minus size={14} className="block" />
                                       </button>
-                                      <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
+                                      <span className={`mx-2 inline-flex min-w-[1rem] items-center justify-center text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
                                       <button
+                                        type="button"
                                         onClick={(e) => {
                                           e.stopPropagation()
                                           if (!shouldShowGrayscale && !isOutOfStock) {
@@ -2037,9 +2047,12 @@ export default function CafeDetails() {
                                           }
                                         }}
                                         disabled={shouldShowGrayscale || isOutOfStock}
-                                        className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                        className={shouldShowGrayscale || isOutOfStock
+                                          ? 'flex h-5 w-5 items-center justify-center text-gray-400 cursor-not-allowed'
+                                          : 'flex h-5 w-5 items-center justify-center text-green-600 hover:text-green-700'
+                                        }
                                       >
-                                        <Plus size={14} className="stroke-[3px]" />
+                                        <Plus size={14} className="block stroke-[3px]" />
                                       </button>
                                     </div>
                                   </motion.div>
@@ -2244,6 +2257,7 @@ export default function CafeDetails() {
                                                   }`}
                                               >
                                                 <button
+                                                  type="button"
                                                   onClick={(e) => {
                                                     e.stopPropagation()
                                                     if (!shouldShowGrayscale && !isOutOfStock) {
@@ -2261,12 +2275,16 @@ export default function CafeDetails() {
                                                     }
                                                   }}
                                                   disabled={shouldShowGrayscale || isOutOfStock}
-                                                  className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                                  className={shouldShowGrayscale || isOutOfStock
+                                                    ? 'flex h-5 w-5 items-center justify-center text-gray-400 cursor-not-allowed'
+                                                    : 'flex h-5 w-5 items-center justify-center text-green-600 hover:text-green-700'
+                                                  }
                                                 >
-                                                  <Minus size={14} />
+                                                  <Minus size={14} className="block" />
                                                 </button>
-                                                <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
+                                                <span className={`mx-2 inline-flex min-w-[1rem] items-center justify-center text-sm ${shouldShowGrayscale || isOutOfStock ? 'text-gray-400' : ''}`}>{quantity}</span>
                                                 <button
+                                                  type="button"
                                                   onClick={(e) => {
                                                     e.stopPropagation()
                                                     if (!shouldShowGrayscale && !isOutOfStock) {
@@ -2278,9 +2296,12 @@ export default function CafeDetails() {
                                                     }
                                                   }}
                                                   disabled={shouldShowGrayscale || isOutOfStock}
-                                                  className={shouldShowGrayscale || isOutOfStock ? 'text-gray-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'}
+                                                  className={shouldShowGrayscale || isOutOfStock
+                                                    ? 'flex h-5 w-5 items-center justify-center text-gray-400 cursor-not-allowed'
+                                                    : 'flex h-5 w-5 items-center justify-center text-green-600 hover:text-green-700'
+                                                  }
                                                 >
-                                                  <Plus size={14} className="stroke-[3px]" />
+                                                  <Plus size={14} className="block stroke-[3px]" />
                                                 </button>
                                               </div>
                                             </motion.div>
@@ -2335,7 +2356,13 @@ export default function CafeDetails() {
       {/* Fixed UI elements outside AnimatedPage to prevent transform clipping */}
       {/* Menu Button - Fixed at bottom right */}
       {!showFilterSheet && !showMenuSheet && !showMenuOptionsSheet && (
-        <div className="fixed bottom-28 right-6 z-[55] md:bottom-32 md:right-8 transition-all duration-300">
+        <div
+          className={`fixed transition-all duration-300 ${
+            shouldShowInlineViewCartButton
+              ? "bottom-16 right-4 z-[70] md:bottom-20 md:right-8"
+              : "bottom-28 right-6 z-[55] md:bottom-32 md:right-8"
+          }`}
+        >
           <Button
             className="bg-gray-800/95 hover:bg-gray-900 text-white flex items-center gap-2 shadow-2xl px-6 py-2.5 rounded-full border border-white/10 backdrop-blur-sm"
             size="lg"
@@ -2405,30 +2432,6 @@ export default function CafeDetails() {
                         </button>
                       ))}
                     </div>
-
-                    {/* Large Order Menu Section */}
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-                      <button
-                        className="w-full flex items-center justify-between py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                        onClick={() => setShowLargeOrderMenu(!showLargeOrderMenu)}
-                      >
-                        <span className="text-base font-semibold text-gray-900 dark:text-white">
-                          LARGE ORDER MENU
-                        </span>
-                        <ChevronDown
-                          className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${showLargeOrderMenu ? "rotate-180" : ""
-                            }`}
-                        />
-                      </button>
-                      {showLargeOrderMenu && (
-                        <div className="mt-2 space-y-1 pl-4">
-                          {/* Add large order menu items here if needed */}
-                          <p className="text-sm text-gray-500 dark:text-gray-400 py-2">
-                            Large order options coming soon
-                          </p>
-                        </div>
-                      )}
-                    </div>
                   </div>
 
                   {/* Close Button */}
@@ -2486,7 +2489,7 @@ export default function CafeDetails() {
                   </div>
 
                   {/* Scrollable Content */}
-                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+                  <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-4">
                     {/* Sort by */}
                     <div className="space-y-2">
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Sort by:</h3>
@@ -2522,44 +2525,45 @@ export default function CafeDetails() {
                       </div>
                     </div>
 
-                    {/* Veg/Non-veg preference */}
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Veg/Non-veg preference:</h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            setFilters((prev) => ({
-                              ...prev,
-                              vegNonVeg: prev.vegNonVeg === "veg" ? null : "veg",
-                            }))
-                          }
-                          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "veg"
-                            ? "border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
-                            }`}
-                        >
-                          <div className="h-4 w-4 rounded-full bg-green-500 dark:bg-green-400" />
-                          <span className="font-medium">Veg</span>
-                        </button>
-                        {!vegMode && (
+                    {slug !== "man-cafe" && (
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Veg/Non-veg preference:</h3>
+                        <div className="flex gap-2">
                           <button
                             onClick={() =>
                               setFilters((prev) => ({
                                 ...prev,
-                                vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg",
+                                vegNonVeg: prev.vegNonVeg === "veg" ? null : "veg",
                               }))
                             }
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "non-veg"
-                              ? "border-amber-700 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "veg"
+                              ? "border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400"
                               : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
                               }`}
                           >
-                            <div className="h-4 w-4 rounded-full bg-amber-700 dark:bg-amber-600" />
-                            <span className="font-medium">Non-veg</span>
+                            <div className="h-4 w-4 rounded-full bg-green-500 dark:bg-green-400" />
+                            <span className="font-medium">Veg</span>
                           </button>
-                        )}
+                          {!vegMode && (
+                            <button
+                              onClick={() =>
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  vegNonVeg: prev.vegNonVeg === "non-veg" ? null : "non-veg",
+                                }))
+                              }
+                              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "non-veg"
+                                ? "border-amber-700 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                                }`}
+                            >
+                              <div className="h-4 w-4 rounded-full bg-amber-700 dark:bg-amber-600" />
+                              <span className="font-medium">Non-veg</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Top picks */}
                     <div className="space-y-2">
@@ -2581,25 +2585,6 @@ export default function CafeDetails() {
                       </button>
                     </div>
 
-                    {/* Dietary preference */}
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Dietary preference:</h3>
-                      <button
-                        onClick={() =>
-                          setFilters((prev) => ({
-                            ...prev,
-                            spicy: !prev.spicy,
-                          }))
-                        }
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all w-full ${filters.spicy
-                          ? "border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
-                          }`}
-                      >
-                        <Flame className="h-4 w-4" />
-                        <span className="font-medium">Spicy</span>
-                      </button>
-                    </div>
                   </div>
 
                   {/* Bottom Action Bar */}
@@ -2610,7 +2595,6 @@ export default function CafeDetails() {
                           sortBy: null,
                           vegNonVeg: null,
                           highlyReordered: false,
-                          spicy: false,
                         })
                       }}
                       className="text-red-600 dark:text-red-400 font-medium text-sm hover:text-red-700 dark:hover:text-red-500"
@@ -3070,7 +3054,7 @@ export default function CafeDetails() {
                                     toggleVariantSelection(variant)
                                   }
                                 }}
-                                className={`w-full text-left border rounded-lg px-3 py-2 flex items-center justify-between transition-colors ${
+                                className={`w-full text-left border rounded-lg px-3 py-2 grid grid-cols-[1fr_120px_80px] items-center transition-colors ${
                                   isSelected
                                     ? "border-red-500 bg-red-50 dark:bg-red-900/20"
                                   : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a]"
@@ -3089,7 +3073,7 @@ export default function CafeDetails() {
                                   )}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-center gap-3">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -3105,7 +3089,7 @@ export default function CafeDetails() {
                                 >
                                   <Minus className="h-4 w-4" />
                                 </button>
-                                <span className="min-w-[16px] text-sm font-semibold text-gray-900 dark:text-white text-center">
+                                <span className="w-8 text-sm font-semibold text-gray-900 dark:text-white text-center">
                                   {variantQuantity}
                                 </span>
                                 <button
@@ -3124,7 +3108,7 @@ export default function CafeDetails() {
                                   <Plus className="h-4 w-4" />
                                 </button>
                               </div>
-                              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white text-right">
                                   ₹{Math.round(variantPrice)}
                                 </span>
                               </div>
@@ -3602,10 +3586,122 @@ export default function CafeDetails() {
         )}
 
       <AddToCartAnimation
-        bottomOffset={100}
+        bottomOffset={shouldShowInlineViewCartButton ? 88 : 100}
         linkTo="/cart"
         hideOnPages={true}
       />
+
+      {/* ── Custom Share Sheet (fallback when navigator.share is unavailable) ── */}
+      {shareSheetData && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-end justify-center"
+          onClick={() => setShareSheetData(null)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+          {/* Sheet */}
+          <div
+            className="relative w-full max-w-md bg-white dark:bg-[#1a1a1a] rounded-t-2xl shadow-2xl p-5 pb-8"
+            style={{ animation: 'slideUp 0.25s ease-out' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div className="flex justify-center mb-4">
+              <div className="h-1 w-10 bg-gray-300 dark:bg-gray-600 rounded-full" />
+            </div>
+
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+              Share via
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-5 truncate">
+              {shareSheetData.title}
+            </p>
+
+            {/* Social options grid */}
+            <div className="grid grid-cols-4 gap-3 mb-5">
+              {/* WhatsApp */}
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(shareSheetData.text + ' ' + shareSheetData.url)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1.5"
+                onClick={() => setShareSheetData(null)}
+              >
+                <div className="w-14 h-14 rounded-2xl bg-[#25D366] flex items-center justify-center shadow">
+                  <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+                  </svg>
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">WhatsApp</span>
+              </a>
+
+              {/* Telegram */}
+              <a
+                href={`https://t.me/share/url?url=${encodeURIComponent(shareSheetData.url)}&text=${encodeURIComponent(shareSheetData.text)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1.5"
+                onClick={() => setShareSheetData(null)}
+              >
+                <div className="w-14 h-14 rounded-2xl bg-[#2AABEE] flex items-center justify-center shadow">
+                  <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                  </svg>
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">Telegram</span>
+              </a>
+
+              {/* X (Twitter) */}
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareSheetData.text)}&url=${encodeURIComponent(shareSheetData.url)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1.5"
+                onClick={() => setShareSheetData(null)}
+              >
+                <div className="w-14 h-14 rounded-2xl bg-black flex items-center justify-center shadow">
+                  <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">X</span>
+              </a>
+
+              {/* Copy Link */}
+              <button
+                className="flex flex-col items-center gap-1.5"
+                onClick={async () => {
+                  await copyToClipboard(shareSheetData.url)
+                  setShareSheetData(null)
+                }}
+              >
+                <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center shadow">
+                  <svg viewBox="0 0 24 24" className="w-6 h-6 stroke-gray-600 dark:stroke-gray-300" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                  </svg>
+                </div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">Copy link</span>
+              </button>
+            </div>
+
+            {/* URL preview bar */}
+            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2.5">
+              <span className="flex-1 text-xs text-gray-500 dark:text-gray-400 truncate">{shareSheetData.url}</span>
+              <button
+                className="text-xs font-medium text-green-600 shrink-0"
+                onClick={async () => {
+                  await copyToClipboard(shareSheetData.url)
+                  setShareSheetData(null)
+                }}
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
