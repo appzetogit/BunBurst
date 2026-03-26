@@ -175,7 +175,13 @@ export default function PickupOrdersPage() {
         toast.error(response.data?.message || "Failed to process refund")
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || "Failed to process refund")
+      const backendMessage = String(error.response?.data?.message || "")
+      if (error.response?.status === 400 && backendMessage.toLowerCase().includes("refund already processed or initiated")) {
+        toast.info(backendMessage)
+        fetchOrders()
+        return
+      }
+      toast.error(backendMessage || error.message || "Failed to process refund")
     } finally {
       setProcessingRefund(null)
       setRefundModalOpen(false)

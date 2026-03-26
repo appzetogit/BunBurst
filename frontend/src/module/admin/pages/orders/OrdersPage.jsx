@@ -118,14 +118,14 @@ export default function OrdersPage({ statusKey = "all" }) {
         toast.success(response.data?.message || (isWalletPayment 
           ? `Wallet refund of ₹${refundAmount || order.totalAmount} processed successfully for order ${order.orderId}`
           : `Refund initiated successfully for order ${order.orderId}`))
-        // Update the order in the local state immediately to show "Refunded" status
-        setOrders(prevOrders => 
-          prevOrders.map(o => 
-            (o.id === order.id || o.orderId === order.orderId)
-              ? { ...o, refundStatus: 'processed' } // Wallet refunds are instant, so mark as processed
+         // Update the order in the local state immediately to show "Refunded" status
+         setOrders(prevOrders => 
+           prevOrders.map(o => 
+             (o.id === order.id || o.orderId === order.orderId)
+              ? { ...o, refundStatus: isWalletPayment ? 'processed' : 'initiated' } // Razorpay refunds complete via webhook
               : o
-          )
-        )
+           )
+         )
         // Refresh the orders list to get updated data
         const params = {
           page: 1,
@@ -165,6 +165,21 @@ export default function OrdersPage({ statusKey = "all" }) {
         stack: error.stack
       }
       console.error("❌ Error details:", JSON.stringify(errorDetails, null, 2))
+
+      // Idempotency UX: if refund is already initiated/processed on backend, update UI and stop showing error.
+      const backendMessage = String(error.response?.data?.message || "")
+      if (error.response?.status === 400 && backendMessage.toLowerCase().includes("refund already processed or initiated")) {
+        const isWalletPayment = order.paymentType === "Wallet" || order.payment?.method === "wallet";
+        setOrders(prevOrders =>
+          prevOrders.map(o =>
+            (o.id === order.id || o.orderId === order.orderId)
+              ? { ...o, refundStatus: isWalletPayment ? "processed" : "initiated" }
+              : o
+          )
+        )
+        toast.info(backendMessage)
+        return
+      }
       
       // Show more specific error message
       let errorMessage = "Failed to process refund"

@@ -1,11 +1,26 @@
 import mongoose from 'mongoose';
 
 // Transaction Schema
+const normalizeNonNegativeAmount = (value) => {
+  if (value === null || value === undefined) return value;
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Number(value))
+        ? Number(value)
+        : value;
+
+  return typeof numericValue === 'number' && !Number.isNaN(numericValue)
+    ? Math.abs(numericValue)
+    : value;
+};
+
 const transactionSchema = new mongoose.Schema({
   amount: {
     type: Number,
     required: true,
-    min: 0
+    min: 0,
+    set: normalizeNonNegativeAmount
   },
   type: {
     type: String,
@@ -108,8 +123,12 @@ adminWalletSchema.virtual('pendingBalance').get(function() {
 
 // Method to add transaction and update balances
 adminWalletSchema.methods.addTransaction = function(transactionData) {
+  const rawAmount = transactionData?.amount;
+  const normalizedAmount = normalizeNonNegativeAmount(rawAmount);
+
   const transaction = {
     ...transactionData,
+    amount: normalizedAmount,
     createdAt: new Date(),
     processedAt: transactionData.processedAt || new Date()
   };

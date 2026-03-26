@@ -3592,11 +3592,13 @@ export default function CafeDetails() {
       />
 
       {/* ── Custom Share Sheet (fallback when navigator.share is unavailable) ── */}
-      {shareSheetData && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-end justify-center"
-          onClick={() => setShareSheetData(null)}
-        >
+      {typeof window !== "undefined" &&
+        shareSheetData &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[10050] flex items-end justify-center"
+            onClick={() => setShareSheetData(null)}
+          >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
@@ -3700,7 +3702,8 @@ export default function CafeDetails() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

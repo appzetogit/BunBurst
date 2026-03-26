@@ -324,15 +324,23 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                         return isCancelled && (isOnlineRefundEligible || isWalletRefundEligible);
                       })() && (
                         <>
-                          {order.refundStatus === 'processed' || order.refundStatus === 'initiated' ? (
+                          {['processed', 'initiated'].includes(String(order.refundStatus || '').toLowerCase()) ? (
                             <span className={`px-3 py-1.5 rounded-md text-xs font-medium ${
                               order.paymentType === "Wallet" || order.payment?.method === "wallet"
                                 ? "bg-[#FFF8E1] text-[#1E1E1E]"
                                 : "bg-[#FFF8E1] text-[#1E1E1E]"
                             }`}>
-                              {order.paymentType === "Wallet" || order.payment?.method === "wallet"
-                                ? "Wallet Refunded"
-                                : "Refunded"}
+                              {(() => {
+                                const refundStatus = String(order.refundStatus || '').toLowerCase()
+                                const isInitiated = refundStatus === 'initiated'
+                                const isWalletPayment = order.paymentType === "Wallet" || order.payment?.method === "wallet"
+
+                                if (isInitiated) {
+                                  return isWalletPayment ? "Wallet Refund Initiated" : "Refund Initiated"
+                                }
+
+                                return isWalletPayment ? "Wallet Refunded" : "Refunded"
+                              })()}
                             </span>
                           ) : onRefund ? (
                             <button

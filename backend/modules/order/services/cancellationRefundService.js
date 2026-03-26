@@ -351,14 +351,14 @@ const compensateCafe = async (cafeId, orderId, amount, orderNumber) => {
 /**
  * Reverse admin earnings for cancelled orders
  */
-const reverseAdminEarnings = async (orderId, adminEarning, orderNumber) => {
+  const reverseAdminEarnings = async (orderId, adminEarning, orderNumber) => {
   try {
     const wallet = await AdminWallet.findOrCreate();
 
     // Reverse commission
     if (adminEarning.commission > 0) {
       wallet.addTransaction({
-        amount: -adminEarning.commission,
+        amount: adminEarning.commission,
         type: 'deduction',
         status: 'Completed',
         description: `Commission reversal for cancelled order ${orderNumber}`,
@@ -369,7 +369,7 @@ const reverseAdminEarnings = async (orderId, adminEarning, orderNumber) => {
     // Reverse platform fee
     if (adminEarning.platformFee > 0) {
       wallet.addTransaction({
-        amount: -adminEarning.platformFee,
+        amount: adminEarning.platformFee,
         type: 'deduction',
         status: 'Completed',
         description: `Platform fee reversal for cancelled order ${orderNumber}`,
@@ -380,7 +380,7 @@ const reverseAdminEarnings = async (orderId, adminEarning, orderNumber) => {
     // Reverse delivery fee
     if (adminEarning.deliveryFee > 0) {
       wallet.addTransaction({
-        amount: -adminEarning.deliveryFee,
+        amount: adminEarning.deliveryFee,
         type: 'deduction',
         status: 'Completed',
         description: `Delivery fee reversal for cancelled order ${orderNumber}`,
@@ -391,7 +391,7 @@ const reverseAdminEarnings = async (orderId, adminEarning, orderNumber) => {
     // Reverse GST
     if (adminEarning.gst > 0) {
       wallet.addTransaction({
-        amount: -adminEarning.gst,
+        amount: adminEarning.gst,
         type: 'deduction',
         status: 'Completed',
         description: `GST reversal for cancelled order ${orderNumber}`,

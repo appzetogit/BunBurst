@@ -118,7 +118,19 @@ export default function NewRefundRequests() {
       }
     } catch (error) {
       console.error("Error processing refund:", error)
-      toast.error(error.response?.data?.message || "Failed to process refund")
+      const backendMessage = String(error.response?.data?.message || "")
+      if (error.response?.status === 400 && backendMessage.toLowerCase().includes("refund already processed or initiated")) {
+        toast.info(backendMessage)
+        // Refresh list so UI reflects the latest refundStatus (initiated/processed)
+        const params = { page: 1, limit: 1000 }
+        const refreshResponse = await adminAPI.getRefundRequests(params)
+        if (refreshResponse.data?.success && refreshResponse.data?.data?.orders) {
+          setOrders(refreshResponse.data.data.orders)
+          setTotalCount(refreshResponse.data.data.pagination?.total || refreshResponse.data.data.orders.length)
+        }
+        return
+      }
+      toast.error(backendMessage || "Failed to process refund")
     } finally {
       setProcessingRefund(null)
     }
@@ -202,7 +214,31 @@ export default function NewRefundRequests() {
                     </td>
                   </tr>
                 ) : (
-                  filteredData.map((order, index) => (
+                  filteredData.map((order, index) => {
+                    const normalizedRefundStatus = String(order.refundStatus || "").toLowerCase()
+                    const isProcessed = normalizedRefundStatus === "processed"
+                    const isInitiated = normalizedRefundStatus === "initiated"
+                    const isFailed = normalizedRefundStatus === "failed"
+
+                    const refundBadgeClass = isProcessed
+                      ? "bg-emerald-100 text-emerald-700"
+                      : isInitiated
+                        ? "bg-sky-100 text-sky-700"
+                        : isFailed
+                          ? "bg-rose-100 text-rose-700"
+                          : "bg-amber-100 text-amber-700"
+
+                    const refundBadgeLabel = isProcessed
+                      ? "Processed"
+                      : isInitiated
+                        ? "Initiated"
+                        : isFailed
+                          ? "Failed"
+                          : "Pending"
+
+                    const canProcessRefund = !isProcessed && !isInitiated
+
+                    return (
                     <tr key={order.orderId} className="hover:bg-slate-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-slate-700">{index + 1}</span>
@@ -234,12 +270,8 @@ export default function NewRefundRequests() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          order.refundStatus === 'processed' 
-                            ? 'bg-emerald-100 text-emerald-700' 
-                            : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {order.refundStatus === 'processed' ? 'Processed' : 'Pending'}
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${refundBadgeClass}`}>
+                          {refundBadgeLabel}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -254,12 +286,12 @@ export default function NewRefundRequests() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                           </button>
-                          {order.refundStatus !== 'processed' && (
+                          {canProcessRefund && (
                             <button 
                               onClick={() => handleProcessRefund(order)}
                               disabled={processingRefund === order.id}
                               className="p-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                              title="Process Refund"
+                              title={isFailed ? "Retry Refund" : "Process Refund"}
                             >
                               {processingRefund === order.id ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -271,7 +303,8 @@ export default function NewRefundRequests() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    )
+                  })
                 )}
               </tbody>
             </table>
