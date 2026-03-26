@@ -3556,6 +3556,14 @@ export default function CafeDetails() {
                           {isFavorite(cafe?.slug || slug || "") ? "Remove from Collection" : "Add to Collection"}
                         </span>
                       </button>
+                      {/* Share this cafe */}
+                      <button
+                        className="w-full flex items-center gap-4 px-2 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors text-left"
+                        onClick={handleShareCafe}
+                      >
+                        <Share2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                        <span className="text-base text-gray-900 dark:text-white">Share this cafe</span>
+                      </button>
                     </div>
 
                     {/* Disclaimer Text */}
