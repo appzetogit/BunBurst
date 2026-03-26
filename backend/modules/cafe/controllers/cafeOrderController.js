@@ -9,6 +9,22 @@ import { assignOrderToDeliveryBoy, findNearestDeliveryBoys, findNearestDeliveryB
 import { notifyDeliveryBoyNewOrder, notifyMultipleDeliveryBoys } from '../../order/services/deliveryNotificationService.js';
 import mongoose from 'mongoose';
 
+const isCodMethod = (method) => {
+  const m = String(method || '').toLowerCase();
+  return m === 'cash' || m === 'cod';
+};
+
+const isUnpaidOnlineOrderByFields = ({ method, status, orderStatus } = {}) => {
+  const m = String(method || '').toLowerCase();
+  const s = String(status || '').toLowerCase();
+  const os = String(orderStatus || '').toLowerCase();
+
+  if (isCodMethod(m) || m === 'wallet') return false;
+  if (s === 'completed' || s === 'refunded') return false;
+  if (os === 'delivered' || os === 'picked_up') return false;
+  return true;
+};
+
 /**
  * Get all orders for cafe
  * GET /api/cafe/orders
@@ -68,6 +84,20 @@ export const getCafeOrders = asyncHandler(async (req, res) => {
     if (status && status !== 'all') {
       query.status = status;
     }
+
+    // Hide unpaid online orders from cafe views (non-breaking for existing flows):
+    // unpaid online attempts stay in `pending` until verified; paid orders become `confirmed`.
+    // This clause ensures `pending` orders are visible only for COD/wallet or verified payments.
+    query.$and = [
+      ...(query.$and || []),
+      {
+        $or: [
+          { status: { $ne: 'pending' } },
+          { 'payment.method': { $in: ['cash', 'cod', 'wallet'] } },
+          { 'payment.status': { $in: ['completed', 'refunded'] } }
+        ]
+      }
+    ];
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -241,6 +271,29 @@ export const acceptOrder = asyncHandler(async (req, res) => {
 
     if (!order) {
       return errorResponse(res, 404, 'Order not found');
+    }
+
+    // Prevent cafes from accepting unpaid online orders.
+    let resolvedPaymentMethod = String(order?.payment?.method || '').toLowerCase();
+    let resolvedPaymentStatus = String(order?.payment?.status || '').toLowerCase();
+    try {
+      const paymentRecord = await Payment.findOne({ orderId: order._id })
+        .select('method status')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      if (paymentRecord?.method) {
+        const recordMethod = String(paymentRecord.method).toLowerCase();
+        if (recordMethod === 'cash' || recordMethod === 'cod') resolvedPaymentMethod = 'cash';
+      }
+
+      if (paymentRecord?.status && !resolvedPaymentStatus) {
+        resolvedPaymentStatus = String(paymentRecord.status).toLowerCase();
+      }
+    } catch (e) { /* ignore */ }
+
+    if (isUnpaidOnlineOrderByFields({ method: resolvedPaymentMethod, status: resolvedPaymentStatus, orderStatus: order.status })) {
+      return errorResponse(res, 400, 'Payment is not completed for this order. Please ask customer to complete payment.');
     }
 
     // Allow accepting orders with status 'pending' or 'confirmed'
@@ -511,6 +564,29 @@ export const markOrderPreparing = asyncHandler(async (req, res) => {
       return errorResponse(res, 404, 'Order not found');
     }
 
+    // Prevent moving unpaid online orders into preparation flow.
+    let resolvedPaymentMethod = String(order?.payment?.method || '').toLowerCase();
+    let resolvedPaymentStatus = String(order?.payment?.status || '').toLowerCase();
+    try {
+      const paymentRecord = await Payment.findOne({ orderId: order._id })
+        .select('method status')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      if (paymentRecord?.method) {
+        const recordMethod = String(paymentRecord.method).toLowerCase();
+        if (recordMethod === 'cash' || recordMethod === 'cod') resolvedPaymentMethod = 'cash';
+      }
+
+      if (paymentRecord?.status && !resolvedPaymentStatus) {
+        resolvedPaymentStatus = String(paymentRecord.status).toLowerCase();
+      }
+    } catch (e) { /* ignore */ }
+
+    if (isUnpaidOnlineOrderByFields({ method: resolvedPaymentMethod, status: resolvedPaymentStatus, orderStatus: order.status })) {
+      return errorResponse(res, 400, 'Payment is not completed for this order.');
+    }
+
     // Allow marking as preparing if status is 'confirmed', 'pending', or already 'preparing' (for retry scenarios)
     // If already preparing, we allow it to retry delivery assignment if no delivery partner is assigned
     const allowedStatuses = ['confirmed', 'pending', 'preparing'];
@@ -613,6 +689,29 @@ export const markOrderReady = asyncHandler(async (req, res) => {
 
     if (!order) {
       return errorResponse(res, 404, 'Order not found');
+    }
+
+    // Extra guard: ready flow should never proceed for unpaid online orders.
+    let resolvedPaymentMethod = String(order?.payment?.method || '').toLowerCase();
+    let resolvedPaymentStatus = String(order?.payment?.status || '').toLowerCase();
+    try {
+      const paymentRecord = await Payment.findOne({ orderId: order._id })
+        .select('method status')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      if (paymentRecord?.method) {
+        const recordMethod = String(paymentRecord.method).toLowerCase();
+        if (recordMethod === 'cash' || recordMethod === 'cod') resolvedPaymentMethod = 'cash';
+      }
+
+      if (paymentRecord?.status && !resolvedPaymentStatus) {
+        resolvedPaymentStatus = String(paymentRecord.status).toLowerCase();
+      }
+    } catch (e) { /* ignore */ }
+
+    if (isUnpaidOnlineOrderByFields({ method: resolvedPaymentMethod, status: resolvedPaymentStatus, orderStatus: order.status })) {
+      return errorResponse(res, 400, 'Payment is not completed for this order.');
     }
 
     if (order.status !== 'preparing') {

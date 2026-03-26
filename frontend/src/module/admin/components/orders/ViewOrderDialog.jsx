@@ -97,7 +97,16 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onOrderUp
           : "Not Collected"
       )
     )
-    : (resolvedOrder?.paymentStatus || "Collected")
+    : (
+      resolvedOrder?.paymentStatus ||
+      (() => {
+        const normalized = String(resolvedOrder?.payment?.status || "").toLowerCase()
+        if (['completed', 'paid', 'success', 'succeeded', 'refunded'].includes(normalized)) return "Paid"
+        if (normalized === 'failed') return "Failed"
+        if (normalized === 'pending' || normalized === 'processing') return "Pending"
+        return "Unpaid"
+      })()
+    )
   const deliveryPartnerName =
     resolvedOrder?.deliveryPartnerName ||
     resolvedOrder?.deliveryPartnerId?.name ||

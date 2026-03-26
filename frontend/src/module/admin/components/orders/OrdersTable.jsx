@@ -221,7 +221,11 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                     {(() => {
                       const isCod = order.paymentType === 'Cash on Delivery' || order.payment?.method === 'cash' || order.payment?.method === 'cod'
                       const isDelivered = order.orderStatus === 'Delivered' || order.status === 'delivered'
-                      const status = isDelivered ? 'Collected' : (order.paymentCollectionStatus ?? (isCod ? 'Not Collected' : 'Collected'))
+                      const normalizedPaymentStatus = String(order.payment?.status || order.paymentStatus || '').toLowerCase()
+                      const isPaidOnline = ['completed', 'paid', 'success', 'succeeded', 'refunded'].includes(normalizedPaymentStatus)
+                      const status = isDelivered
+                        ? 'Collected'
+                        : (order.paymentCollectionStatus ?? (isCod ? 'Not Collected' : (isPaidOnline ? 'Collected' : 'Not Collected')))
                       return (
                         <span className={`text-sm font-medium ${status === 'Collected' ? 'text-[#1E1E1E]' : 'text-[#1E1E1E]'}`}>
                           {status}
@@ -307,7 +311,17 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
 
                         const isWalletPayment = order.paymentType === "Wallet" || paymentMethod === "wallet";
 
-                        return isCancelled && (isOnlinePayment || isWalletPayment);
+                        // Refund should be possible only if customer actually paid.
+                        // Online: require payment status to be completed/paid/success/refunded OR paymentCollectionStatus=Collected.
+                        // Wallet: require payment status to be completed/paid/success/refunded (wallet is prepaid).
+                        const normalizedPaymentStatus = String(order.payment?.status || order.paymentStatus || "").toLowerCase();
+                        const isPaidLikeStatus = ['completed', 'paid', 'success', 'succeeded', 'refunded'].includes(normalizedPaymentStatus);
+                        const isCollected = String(order.paymentCollectionStatus || "").toLowerCase() === "collected";
+
+                        const isOnlineRefundEligible = isOnlinePayment && (isPaidLikeStatus || isCollected);
+                        const isWalletRefundEligible = isWalletPayment && isPaidLikeStatus;
+
+                        return isCancelled && (isOnlineRefundEligible || isWalletRefundEligible);
                       })() && (
                         <>
                           {order.refundStatus === 'processed' || order.refundStatus === 'initiated' ? (

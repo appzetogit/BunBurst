@@ -86,9 +86,37 @@ export async function notifyUserOrderStatusUpdate(order, status) {
         body = `Your order from ${order.cafeName} has been delivered successfully.`;
         break;
       case 'cancelled':
+        {
+          const cancellationReason = String(order?.cancellationReason || '').toLowerCase();
+          const paymentMethod = String(order?.payment?.method || '').toLowerCase();
+          const paymentStatus = String(order?.payment?.status || '').toLowerCase();
+
+          const isCodLike = paymentMethod === 'cash' || paymentMethod === 'cod';
+          const isWallet = paymentMethod === 'wallet';
+          const isOnline = !isCodLike && !isWallet;
+
+          const isPaymentIncompleteCancellation =
+            cancellationReason.includes('payment cancelled') ||
+            cancellationReason.includes('payment canceled') ||
+            cancellationReason.includes('payment incomplete') ||
+            cancellationReason.includes('payment failed') ||
+            (isOnline && paymentStatus !== 'completed' && cancellationReason.includes('payment'));
+
+          if (isPaymentIncompleteCancellation) {
+            title = '⚠️ Payment Incomplete';
+            body = `Payment wasn't completed, so order #${order.orderId} was cancelled.`;
+            break;
+          }
+        }
         title = '❌ Order Cancelled';
         body = `We're sorry, your order #${order.orderId} from ${order.cafeName} was cancelled.`;
         break;
+    }
+
+    // Override message for Pickup orders so copy doesn't mention "on the way".
+    if (String(order?.orderType || '').toUpperCase() === 'PICKUP' && (status === 'confirmed' || status === 'preparing')) {
+      title = '📦 Pickup Confirmed!';
+      body = `${order.cafeName} is preparing your pickup order. We'll notify you when it's ready for pickup.`;
     }
 
     // 1. Send FCM

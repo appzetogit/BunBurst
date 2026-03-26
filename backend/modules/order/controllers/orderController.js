@@ -431,10 +431,16 @@ export const createOrder = async (req, res) => {
         status: 'pending'
       },
       adminAcceptance: { status: false },
+      // IMPORTANT:
+      // - COD/cash: payment is not yet collected
+      // - Wallet: payment is collected immediately (we mark completed below)
+      // - Razorpay/online: payment is NOT collected until verifyOrderPayment succeeds
       paymentCollectionStatus:
         normalizedPaymentMethod === 'cash' || normalizedPaymentMethod === 'cod'
           ? 'Not Collected'
-          : 'Collected'
+          : normalizedPaymentMethod === 'wallet'
+            ? 'Collected'
+            : 'Not Collected'
     });
 
     // Parse preparation time from order items
@@ -953,6 +959,7 @@ export const verifyOrderPayment = async (req, res) => {
     if (!isValid) {
       // Update order payment status to failed
       order.payment.status = 'failed';
+      order.paymentCollectionStatus = 'Not Collected';
       await order.save();
 
       return res.status(400).json({
@@ -996,6 +1003,7 @@ export const verifyOrderPayment = async (req, res) => {
     order.payment.razorpayPaymentId = razorpayPaymentId;
     order.payment.razorpaySignature = razorpaySignature;
     order.payment.transactionId = razorpayPaymentId;
+    order.paymentCollectionStatus = 'Collected';
     order.status = 'confirmed';
     order.tracking.confirmed = { status: true, timestamp: new Date() };
     await order.save();
@@ -1130,7 +1138,7 @@ export const verifyOrderPayment = async (req, res) => {
 export const getUserOrders = async (req, res) => {
   try {
     const userId = req.user?.id || req.user?._id;
-    const { status, limit = 20, page = 1 } = req.query;
+    const { status, limit = 20, page = 1, includeUnpaid } = req.query;
 
     if (!userId) {
       logger.error('User ID not found in request');
@@ -1161,6 +1169,26 @@ export const getUserOrders = async (req, res) => {
         query.$or = query.$or.map(condition => ({ ...condition, status }));
       } else {
         query.status = status;
+      }
+    }
+
+    // Hide incomplete online payment orders by default (non-breaking: can be overridden for debugging).
+    // These orders are created before Razorpay checkout opens, but should not be treated as "placed"
+    // until payment is verified (verifyOrderPayment sets payment.status=completed & status=confirmed).
+    const shouldIncludeUnpaid = String(includeUnpaid || '').trim() === '1';
+    if (!shouldIncludeUnpaid) {
+      const unpaidOnlineFilter = {
+        $or: [
+          { 'payment.method': { $in: ['cash', 'cod', 'wallet'] } },
+          { 'payment.status': 'completed' },
+          { 'payment.status': 'refunded' }
+        ]
+      };
+
+      if (query.$or) {
+        query.$and = [...(query.$and || []), unpaidOnlineFilter];
+      } else {
+        query.$and = [...(query.$and || []), unpaidOnlineFilter];
       }
     }
 
@@ -1281,9 +1309,13 @@ export const getUserOrders = async (req, res) => {
       const reviewRating = order?.review?.rating ?? null;
       const paymentMethod = order?.payment?.method;
       const isCod = paymentMethod === 'cash' || paymentMethod === 'cod';
-      const fallbackCollectionStatus = isCod
-        ? (order.status === 'delivered' || order.status === 'picked_up' ? 'Collected' : 'Not Collected')
-        : 'Collected';
+      const paymentStatus = String(order?.payment?.status || '').toLowerCase();
+      const isPaymentCollected =
+        isCod
+          ? (order.status === 'delivered' || order.status === 'picked_up')
+          : (paymentStatus === 'completed' || paymentStatus === 'refunded');
+
+      const fallbackCollectionStatus = isPaymentCollected ? 'Collected' : 'Not Collected';
 
       return {
         ...order,
@@ -1438,6 +1470,10 @@ export const cancelOrder = async (req, res) => {
     const paymentMethod = order.payment?.method;
     const payment = await Payment.findOne({ orderId: order._id });
     const paymentMethodFromPayment = payment?.method || payment?.paymentMethod;
+    const paymentStatusFromOrder = String(order.payment?.status || '').toLowerCase();
+    const paymentStatusFromPayment = String(payment?.status || '').toLowerCase();
+    const effectivePaymentStatus = paymentStatusFromPayment || paymentStatusFromOrder;
+    const isPaymentCompleted = ['completed', 'refunded'].includes(effectivePaymentStatus);
 
     // Determine the actual payment method
     const actualPaymentMethod = paymentMethod || paymentMethodFromPayment;
@@ -1465,14 +1501,18 @@ export const cancelOrder = async (req, res) => {
     // COD orders don't need refund since payment hasn't been made
     let refundMessage = '';
     if (actualPaymentMethod === 'razorpay' || actualPaymentMethod === 'wallet') {
-      try {
-        const { calculateCancellationRefund } = await import('../services/cancellationRefundService.js');
-        await calculateCancellationRefund(order._id, reason);
-        logger.info(`Cancellation refund calculated for order ${order.orderId} - awaiting admin approval`);
-        refundMessage = ' Refund will be processed after admin approval.';
-      } catch (refundError) {
-        logger.error(`Error calculating cancellation refund for order ${order.orderId}:`, refundError);
-        // Don't fail the cancellation if refund calculation fails
+      if (isPaymentCompleted) {
+        try {
+          const { calculateCancellationRefund } = await import('../services/cancellationRefundService.js');
+          await calculateCancellationRefund(order._id, reason);
+          logger.info(`Cancellation refund calculated for order ${order.orderId} - awaiting admin approval`);
+          refundMessage = ' Refund will be processed after admin approval.';
+        } catch (refundError) {
+          logger.error(`Error calculating cancellation refund for order ${order.orderId}:`, refundError);
+          // Don't fail the cancellation if refund calculation fails
+        }
+      } else {
+        refundMessage = ' No refund required as payment was not completed.';
       }
     } else if (actualPaymentMethod === 'cash') {
       refundMessage = ' No refund required as payment was not made.';

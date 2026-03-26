@@ -13,7 +13,20 @@ const getEffectivePaymentCollectionStatus = (order = {}) => {
   const isCodOrder = paymentMethod === 'cash' || paymentMethod === 'cod';
 
   if (!isCodOrder) {
-    return 'Collected';
+    // For prepaid/online methods, payment is considered collected only after completion.
+    // Do NOT default to Collected, otherwise unpaid online attempts appear as paid.
+    if (
+      storedStatus === 'Collected' &&
+      (paymentStatus === 'completed' || paymentStatus === 'refunded' || orderStatus === 'delivered' || orderStatus === 'picked_up')
+    ) {
+      return 'Collected';
+    }
+
+    if (paymentStatus === 'completed' || paymentStatus === 'refunded' || orderStatus === 'delivered' || orderStatus === 'picked_up') {
+      return 'Collected';
+    }
+
+    return 'Not Collected';
   }
 
   if (

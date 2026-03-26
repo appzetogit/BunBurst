@@ -1555,6 +1555,7 @@ export default function Cart() {
       const companyName = await getCompanyNameAsync()
 
       // Initialize Razorpay payment
+      let paymentVerified = false
       await initRazorpayPayment({
         key: razorpay.key,
         amount: razorpay.amount, // Already in paise from backend
@@ -1591,6 +1592,7 @@ export default function Cart() {
 
             if (verifyResponse.data.success) {
               // Payment successful
+              paymentVerified = true
               console.log("?? Order placed successfully:", {
                 orderId: order.orderId,
                 paymentId: verifyResponse.data.data?.payment?.paymentId
@@ -1620,6 +1622,15 @@ export default function Cart() {
         },
         onClose: () => {
           console.log("?? Payment modal closed by user")
+          // User dismissed the payment modal (exit/cancel). Cancel the pending online order so it won't
+          // appear as a placed/paid order anywhere (user/admin/delivery/cafe).
+          if (!paymentVerified && order?.id) {
+            orderAPI
+              .cancelOrder(order.id, "Payment cancelled by user")
+              .catch((cancelError) => {
+                console.warn("Failed to cancel pending order after payment dismissal:", cancelError?.message || cancelError)
+              })
+          }
           setIsPlacingOrder(false)
         }
       })

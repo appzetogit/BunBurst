@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { adminAPI } from "@/lib/api"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
+import RefundModal from "../../components/orders/RefundModal"
 
 const statusLabel = (status) => {
   if (!status) return "Pending"
@@ -28,6 +29,9 @@ const statusLabel = (status) => {
 export default function PickupOrdersPage() {
   const [orders, setOrders] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [processingRefund, setProcessingRefund] = useState(null)
+  const [refundModalOpen, setRefundModalOpen] = useState(false)
+  const [selectedOrderForRefund, setSelectedOrderForRefund] = useState(null)
 
   const fetchOrders = async () => {
     try {
@@ -109,6 +113,82 @@ export default function PickupOrdersPage() {
     }
   }
 
+  const isCancelledOrder = (order) => {
+    const raw = String(order?.orderStatus || order?.status || '').toLowerCase()
+    return raw.includes('cancel')
+  }
+
+  const isPaidLikeStatus = (order) => {
+    const normalizedPaymentStatus = String(order?.paymentStatus || order?.payment?.status || "").toLowerCase()
+    return ['completed', 'paid', 'success', 'succeeded', 'refunded'].includes(normalizedPaymentStatus)
+  }
+
+  const isRefundEligible = (order) => {
+    if (!isCancelledOrder(order)) return false
+
+    const paymentMethod = order.payment?.method || order.paymentMethod
+    const isWallet = order.paymentType === "Wallet" || paymentMethod === "wallet"
+    const isCodLike = order.paymentType === "Cash on Delivery" || paymentMethod === "cash" || paymentMethod === "cod"
+    const isOnline = !isWallet && !isCodLike
+
+    // Refund only when customer actually paid
+    const isCollected = String(order.paymentCollectionStatus || "").toLowerCase() === "collected"
+    const paid = isPaidLikeStatus(order)
+
+    if (isWallet) return paid
+    if (isOnline) return paid || isCollected
+    return false
+  }
+
+  const handleRefund = (order) => {
+    const paymentMethod = order.payment?.method || order.paymentMethod
+    const isWalletPayment = order.paymentType === "Wallet" || paymentMethod === "wallet"
+
+    if (isWalletPayment) {
+      setSelectedOrderForRefund(order)
+      setRefundModalOpen(true)
+      return
+    }
+
+    const confirmMessage = `Are you sure you want to process refund for order ${order.orderId}?\n\nThis will initiate a refund to the customer's original payment method.`
+    if (!confirm(confirmMessage)) return
+
+    processRefund(order, null)
+  }
+
+  const processRefund = async (order, refundAmount = null) => {
+    const orderIdToUse = order.id || order._id || order.orderId
+    if (!orderIdToUse) {
+      toast.error("Order ID not found")
+      return
+    }
+
+    try {
+      setProcessingRefund(orderIdToUse)
+      const requestData = refundAmount !== null ? { refundAmount: parseFloat(refundAmount) } : {}
+      const response = await adminAPI.processRefund(orderIdToUse, requestData)
+
+      if (response.data?.success) {
+        toast.success(response.data?.message || `Refund initiated successfully for order ${order.orderId}`)
+        fetchOrders()
+      } else {
+        toast.error(response.data?.message || "Failed to process refund")
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to process refund")
+    } finally {
+      setProcessingRefund(null)
+      setRefundModalOpen(false)
+      setSelectedOrderForRefund(null)
+    }
+  }
+
+  const handleRefundConfirm = (amount) => {
+    if (selectedOrderForRefund) {
+      processRefund(selectedOrderForRefund, amount)
+    }
+  }
+
   // Transitions: 
   // No Admin Acceptance -> Accept Order
   // Accepted (Confirmed) -> Preparing
@@ -160,7 +240,11 @@ export default function PickupOrdersPage() {
                   const paymentMethod = order.payment?.method || order.paymentMethod
                   const isCod = order.paymentType === "Cash on Delivery" || paymentMethod === "cash" || paymentMethod === "cod"
                   const isOnline = order.paymentType === "Online" || paymentMethod === "razorpay" || paymentMethod === "online"
+                  const normalizedPaymentStatus = String(order.paymentStatus || order.payment?.status || "").toLowerCase()
+                  const isOnlinePaid = isOnline && ['paid', 'completed', 'success', 'succeeded', 'refunded'].includes(normalizedPaymentStatus)
                   const canUpdatePayment = isCod && status === "picked_up"
+                  const acceptDisabled = ['cancelled', 'delivered', 'picked_up'].includes(String(status || '').toLowerCase()) || isCancelledOrder(order)
+                  const showRefundButton = isRefundEligible(order) && !['processed', 'initiated'].includes(String(order.refundStatus || '').toLowerCase())
                   
                   return (
                     <tr key={order.id || order._id || order.orderId} className="border-t border-[#F5F5F5]">
@@ -198,8 +282,8 @@ export default function PickupOrdersPage() {
                             </option>
                           </select>
                         ) : (
-                          <span className={`text-xs font-medium ${isOnline ? 'text-green-600' : 'text-[#1E1E1E]'}`}>
-                            {isOnline ? "Paid (Online)" : (order.paymentCollectionStatus || "Not Collected")}
+                          <span className={`text-xs font-medium ${isOnline && isOnlinePaid ? 'text-green-600' : (isOnline ? 'text-red-600' : 'text-[#1E1E1E]')}`}>
+                            {isOnline ? (isOnlinePaid ? "Paid (Online)" : "Unpaid (Online)") : (order.paymentCollectionStatus || "Not Collected")}
                           </span>
                         )}
                       </td>
@@ -209,7 +293,12 @@ export default function PickupOrdersPage() {
                             <button
                               type="button"
                               onClick={() => handleAccept(order)}
-                              className="px-3 py-1.5 text-xs rounded-md border border-[#e53935] text-white bg-[#e53935] hover:bg-[#d32f2f]"
+                              disabled={acceptDisabled}
+                              className={`px-3 py-1.5 text-xs rounded-md border text-white transition-colors ${
+                                acceptDisabled
+                                  ? "border-[#F5F5F5] bg-gray-300 cursor-not-allowed"
+                                  : "border-[#e53935] bg-[#e53935] hover:bg-[#d32f2f]"
+                              }`}
                             >
                               Accept Order
                             </button>
@@ -250,6 +339,25 @@ export default function PickupOrdersPage() {
                               Picked Up
                             </span>
                           )}
+
+                          {isRefundEligible(order) && (
+                            (String(order.refundStatus || '').toLowerCase() === 'processed' || String(order.refundStatus || '').toLowerCase() === 'initiated') ? (
+                              <span className="text-xs font-medium py-1.5 px-2 rounded bg-[#FFF8E1] text-[#1E1E1E]">
+                                Refunded
+                              </span>
+                            ) : showRefundButton ? (
+                              <button
+                                type="button"
+                                onClick={() => handleRefund(order)}
+                                disabled={processingRefund === (order.id || order._id || order.orderId)}
+                                className={`px-3 py-1.5 text-xs rounded-md border text-white bg-[#e53935] hover:bg-[#d32f2f] transition-colors ${
+                                  processingRefund === (order.id || order._id || order.orderId) ? "opacity-60 cursor-not-allowed" : ""
+                                }`}
+                              >
+                                {processingRefund === (order.id || order._id || order.orderId) ? "Processing..." : "Refund"}
+                              </button>
+                            ) : null
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -260,6 +368,14 @@ export default function PickupOrdersPage() {
           </div>
         )}
       </div>
+
+      <RefundModal
+        isOpen={refundModalOpen}
+        onOpenChange={setRefundModalOpen}
+        order={selectedOrderForRefund}
+        onConfirm={handleRefundConfirm}
+        isProcessing={Boolean(processingRefund)}
+      />
     </div>
   )
 }

@@ -149,7 +149,13 @@ export default function MyOrders() {
 
   // Check if payment failed
   const isPaymentFailed = (order) => {
-    return order.payment?.status === 'failed' || order.payment?.status === 'pending'
+    const method = String(order.payment?.method || "").toLowerCase()
+    const status = String(order.payment?.status || "").toLowerCase()
+
+    // COD orders are expected to remain pending until cash is collected.
+    if (method === 'cash' || method === 'cod') return false
+
+    return status === 'failed'
   }
 
   // Get order status text

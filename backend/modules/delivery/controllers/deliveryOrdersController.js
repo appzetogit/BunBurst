@@ -47,6 +47,15 @@ export const getOrders = asyncHandler(async (req, res) => {
       }
     ];
 
+    // Do not show unpaid online orders in delivery module.
+    // (Guards against edge-cases where cafe/admin actions moved an unpaid order forward.)
+    query.$and.push({
+      $or: [
+        { 'payment.method': { $in: ['cash', 'cod', 'wallet'] } },
+        { 'payment.status': { $in: ['completed', 'refunded'] } }
+      ]
+    });
+
     if (status) {
       query.status = status;
     } else {
@@ -120,6 +129,17 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
 
     if (!order) {
       return errorResponse(res, 404, 'Order not found');
+    }
+
+    // Safety: delivery partners should never see unpaid online orders.
+    const rawPaymentMethod = String(order?.payment?.method || '').toLowerCase();
+    const rawPaymentStatus = String(order?.payment?.status || '').toLowerCase();
+    const isCodLike = rawPaymentMethod === 'cash' || rawPaymentMethod === 'cod';
+    const isWallet = rawPaymentMethod === 'wallet';
+    const isPaid = rawPaymentStatus === 'completed' || rawPaymentStatus === 'refunded';
+
+    if (!isCodLike && !isWallet && !isPaid) {
+      return errorResponse(res, 400, 'Payment is not completed for this order');
     }
 
     // Check if order is assigned to this delivery partner OR if they were notified
