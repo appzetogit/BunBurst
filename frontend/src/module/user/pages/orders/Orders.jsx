@@ -910,7 +910,7 @@ Order again from this cafe in the ${companyName} app.`
                               displayStatus = 'Not Completed'
                             }
                           } else if (normalized) {
-                            if (['completed', 'paid', 'success', 'succeeded'].includes(normalized)) {
+                            if (['completed', 'paid', 'success', 'succeeded', 'collected'].includes(normalized)) {
                               displayStatus = 'Completed'
                             } else if (normalized === 'failed') {
                               displayStatus = 'Failed'
