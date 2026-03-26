@@ -2,6 +2,7 @@ import Cafe from '../models/Cafe.js';
 import Menu from '../models/Menu.js';
 import Zone from '../../admin/models/Zone.js';
 import Order from '../../order/models/Order.js';
+import FeedbackExperience from '../../admin/models/FeedbackExperience.js';
 import { successResponse, errorResponse } from '../../../shared/utils/response.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../../../shared/utils/cloudinaryService.js';
 import { initializeCloudinary } from '../../../config/cloudinary.js';
@@ -263,7 +264,7 @@ export const getCafes = async (req, res) => {
       });
     }
 
-    // Compute dynamic rating/totalRatings from real customer reviews for returned cafes
+    // Compute dynamic rating/totalRatings from real customer feedback (module: user) for returned cafes
     if (cafes.length > 0) {
       const cafeLookup = new Map(); // key -> index in cafes array
       cafes.forEach((cafe, index) => {
@@ -273,23 +274,28 @@ export const getCafes = async (req, res) => {
         if (businessId) cafeLookup.set(businessId, index);
       });
 
-      const ratingStats = await Order.aggregate([
-        {
-          $match: {
-            cafeId: { $in: Array.from(cafeLookup.keys()) },
-            'review.rating': { $exists: true, $ne: null, $gt: 0 }
-          }
-        },
-        {
-          $group: {
-            _id: '$cafeId',
-            totalRatings: { $sum: 1 },
-            ratingSum: { $sum: '$review.rating' }
-          }
-        }
-      ]);
+      const cafeObjectIds = cafes.map((cafe) => cafe?._id).filter(Boolean);
 
-      // Accumulate stats per cafe in case orders use mixed cafeId formats
+      const ratingStats = cafeObjectIds.length > 0
+        ? await FeedbackExperience.aggregate([
+          {
+            $match: {
+              cafeId: { $in: cafeObjectIds },
+              module: 'user',
+              rating: { $exists: true, $ne: null, $gt: 0 },
+            },
+          },
+          {
+            $group: {
+              _id: '$cafeId',
+              totalRatings: { $sum: 1 },
+              ratingSum: { $sum: '$rating' },
+            },
+          },
+        ])
+        : [];
+
+      // Accumulate stats per cafe so response remains stable
       const accumulatedStats = new Map(); // index -> { totalRatings, ratingSum }
       for (const stat of ratingStats) {
         const key = stat?._id?.toString();

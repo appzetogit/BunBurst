@@ -72,7 +72,6 @@ export const sidebarMenuData = [
           { label: "Delivered", path: "/admin/orders/delivered" },
           { label: "Pickup Orders", path: "/admin/orders/pickup" },
           { label: "Cancelled", path: "/admin/orders/cancelled" },
-          { label: "Payment Failed", path: "/admin/orders/payment-failed" },
           { label: "Refunded", path: "/admin/orders/refunded" },
           { label: "Offline Payments", path: "/admin/orders/offline-payments" },
         ],

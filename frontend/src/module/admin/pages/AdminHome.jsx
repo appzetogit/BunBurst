@@ -24,14 +24,30 @@ export default function AdminHome() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState(null)
+  const [currentPlatformFee, setCurrentPlatformFee] = useState(null)
+  const [currentGstRate, setCurrentGstRate] = useState(null)
 
   // Fetch dashboard stats - hoisted so Refresh button can also call it
   const fetchDashboardStats = useCallback(async () => {
     try {
       setIsLoading(true)
+
+      let feeSettingsResponse = null
+      try {
+        feeSettingsResponse = await adminAPI.getFeeSettings()
+      } catch (feeError) {
+        console.error("Error fetching fee settings:", feeError)
+      }
+
       const response = await adminAPI.getDashboardStats()
       if (response.data?.success && response.data?.data) {
         setDashboardData(response.data.data)
+
+        const feeSettings = feeSettingsResponse?.data?.data?.feeSettings
+        if (feeSettingsResponse?.data?.success && feeSettings) {
+          setCurrentPlatformFee(feeSettings.platformFee ?? null)
+          setCurrentGstRate(feeSettings.gstRate ?? null)
+        }
       } else {
         console.error('❌ Invalid response format:', response.data)
       }
@@ -96,6 +112,16 @@ export default function AdminHome() {
   const gstTotal = dashboardData?.gst?.total || 0
   // Total revenue = Commission + Platform Fee + Delivery Fee + GST
   const totalAdminEarnings = commissionTotal + platformFeeTotal + deliveryFeeTotal + gstTotal
+
+  const currentPlatformFeeNumber = Number(currentPlatformFee)
+  const currentPlatformFeeValue = Number.isFinite(currentPlatformFeeNumber)
+    ? `₹${currentPlatformFeeNumber.toLocaleString("en-IN")}`
+    : "₹—"
+
+  const currentGstRateNumber = Number(currentGstRate)
+  const currentGstRateValue = Number.isFinite(currentGstRateNumber)
+    ? `${currentGstRateNumber.toLocaleString("en-IN")}%`
+    : "—"
 
   // Additional stats
   const totalCafes = dashboardData?.cafes?.total || 0
@@ -170,26 +196,17 @@ export default function AdminHome() {
             />
             <MetricCard
               title="Platform fee"
-              value={`₹${platformFeeTotal.toLocaleString("en-IN")}`}
-              helper="Total platform fees"
+              value={currentPlatformFeeValue}
+              helper="Current platform fee (per order)"
               icon={<CreditCard className="h-5 w-5 text-purple-600" />}
               accent="bg-purple-200/40"
               isLoading={isLoading}
               onClick={() => navigate("/admin/fee-settings")}
             />
             <MetricCard
-              title="Delivery fee"
-              value={`₹${deliveryFeeTotal.toLocaleString("en-IN")}`}
-              helper="Total delivery fees"
-              icon={<Truck className="h-5 w-5 text-blue-600" />}
-              accent="bg-blue-200/40"
-              isLoading={isLoading}
-              onClick={() => navigate("/admin/fee-settings")}
-            />
-            <MetricCard
               title="GST"
-              value={`₹${gstTotal.toLocaleString("en-IN")}`}
-              helper="Total GST collected"
+              value={currentGstRateValue}
+              helper="Current GST rate"
               icon={<Receipt className="h-5 w-5 text-orange-600" />}
               accent="bg-orange-200/40"
               isLoading={isLoading}
@@ -205,9 +222,9 @@ export default function AdminHome() {
               onClick={() => navigate("/admin/transaction-report")}
             />
             <MetricCard
-              title="Total cafes"
+              title="Active cafes"
               value={totalCafes.toLocaleString("en-IN")}
-              helper="All registered cafes"
+              helper="Currently active cafes"
               icon={<Store className="h-5 w-5 text-blue-600" />}
               accent="bg-blue-200/40"
               isLoading={isLoading}

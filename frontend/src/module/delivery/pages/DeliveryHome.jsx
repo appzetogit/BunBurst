@@ -1187,6 +1187,92 @@ export default function DeliveryHome() {
     }
   }, [])
 
+  // Fix for ReferenceError: Cannot access 'selectedCafe' before initialization
+  const emitSocketLocationUpdate = useCallback(({ lat, lng, heading }) => {
+    if (!lat || !lng) return;
+
+    if (liveTrackingSocketRef.current && liveTrackingSocketRef.current.connected) {
+      // Get orderId - prioritize from selectedCafe then activeOrder
+      const orderId = selectedCafe?.id || selectedCafe?.orderId || activeOrder?.id || activeOrder?.orderId || null;
+      
+      if (!orderId) {
+        // Look for orderId in localStorage if state is potentially stale
+        try {
+          const stored = JSON.parse(localStorage.getItem('deliveryActiveOrder') || '{}');
+          if (stored && (stored.orderId || stored.id)) {
+            // Use stored orderId as fallback
+            const fallbackOrderId = stored.orderId || stored.id;
+            liveTrackingSocketRef.current.emit('update-location', {
+              orderId: fallbackOrderId,
+              lat,
+              lng,
+              heading: heading || 0,
+              deliveryPartnerId: currentGig?._id || currentGig?.riderId || localStorage.getItem('deliveryPartnerId') || null,
+              timestamp: Date.now()
+            });
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+        return;
+      }
+
+      const deliveryPartnerId = currentGig?._id || currentGig?.driverId || currentGig?.riderId || localStorage.getItem('deliveryPartnerId') || null;
+
+      liveTrackingSocketRef.current.emit('update-location', {
+        orderId,
+        lat,
+        lng,
+        heading: heading || 0,
+        deliveryPartnerId,
+        timestamp: Date.now()
+      });
+    }
+  }, [selectedCafe, activeOrder, currentGig]);
+
+  // Initialize Location tracking socket (root namespace) for real-time order tracking
+  useEffect(() => {
+    // Only connect if online and not already connected
+    if (isOnline && !liveTrackingSocketRef.current) {
+      const socket = io(socketBaseUrl, {
+        path: '/socket.io/',
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
+      });
+
+      liveTrackingSocketRef.current = socket;
+
+      socket.on('connect', () => {
+        const orderId = selectedCafe?.id || selectedCafe?.orderId || activeOrder?.id || activeOrder?.orderId;
+        if (orderId) {
+          socket.emit('join-order-tracking', orderId);
+        }
+      });
+
+      socket.on('connect_error', (error) => {
+        // Suppress common connection logs to avoid cluttering console
+        if (error.message !== 'xhr poll error' && error.message !== 'websocket error') {
+          console.warn('🚴 [Socket] Location connection error:', error);
+        }
+      });
+
+      return () => {
+        if (liveTrackingSocketRef.current) {
+          liveTrackingSocketRef.current.disconnect();
+          liveTrackingSocketRef.current = null;
+        }
+      };
+    } else if (!isOnline && liveTrackingSocketRef.current) {
+      // Disconnect if user goes offline
+      liveTrackingSocketRef.current.disconnect();
+      liveTrackingSocketRef.current = null;
+    }
+  }, [isOnline, socketBaseUrl, selectedCafe, activeOrder]);
+
   // Calculate today's stats
   const today = new Date()
   today.setHours(0, 0, 0, 0)

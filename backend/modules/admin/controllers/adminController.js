@@ -6,6 +6,7 @@ import User from "../../auth/models/User.js";
 import Offer from "../../cafe/models/Offer.js";
 import OrderSettlement from "../../order/models/OrderSettlement.js";
 import AdminWallet from "../models/AdminWallet.js";
+import Addon from "../models/Addon.js";
 import {
   successResponse,
   errorResponse,
@@ -200,7 +201,10 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
 
     allSettlements.forEach((s, index) => {
       const commission = s.adminEarning?.commission || 0;
-      const platformFee = s.adminEarning?.platformFee || 0;
+      // Some legacy settlements may not have `adminEarning.platformFee` populated,
+      // but still have `userPayment.platformFee`.
+      const platformFee =
+        s.adminEarning?.platformFee ?? s.userPayment?.platformFee ?? 0;
       const deliveryFee = s.adminEarning?.deliveryFee || 0;
       const gst = s.adminEarning?.gst || 0;
 
@@ -236,7 +240,8 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
       0,
     );
     const last30DaysPlatformFee = last30DaysSettlements.reduce(
-      (sum, s) => sum + (s.adminEarning?.platformFee || 0),
+      (sum, s) =>
+        sum + (s.adminEarning?.platformFee ?? s.userPayment?.platformFee ?? 0),
       0,
     );
     const last30DaysDeliveryFee = last30DaysSettlements.reduce(
@@ -320,9 +325,16 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
       status: { $in: ["approved", "active"] },
     });
 
-    // Delivery boy requests pending (status = 'pending', awaiting admin approval)
+    // Delivery boy requests pending (awaiting admin approval)
+    // Keep this consistent with the join-requests queue at GET /api/admin/delivery-partners/requests
+    // (only fully completed signups with mandatory documents).
     const pendingDeliveryBoyRequests = await Delivery.countDocuments({
       status: "pending",
+      signupComplete: true,
+      "profileImage.url": { $exists: true, $nin: [null, ""] },
+      "documents.aadhar.document": { $exists: true, $nin: [null, ""] },
+      "documents.pan.document": { $exists: true, $nin: [null, ""] },
+      "documents.drivingLicense.document": { $exists: true, $nin: [null, ""] },
     });
 
     // Total foods (Menu items) - Count all individual menu items from active menus
@@ -368,39 +380,43 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
       }
     });
 
-    // Total addons - Count all addons from active menus
-    // Count ALL addons (including unavailable, pending/approved, excluding only rejected)
-    let totalAddons = 0;
-    const menusWithAddons = await Menu.find({ isActive: true })
-      .select("addons")
-      .lean();
-    menusWithAddons.forEach((menu) => {
-      // Only process if menu has addons array and it's not empty
-      if (
-        !menu.addons ||
-        !Array.isArray(menu.addons) ||
-        menu.addons.length === 0
-      ) {
-        return;
-      }
+    // Total addons - Prefer global addon management collection (active only).
+    // Fallback to menu-embedded addons for legacy data.
+    let totalAddons = await Addon.countDocuments({ isActive: true });
 
-      totalAddons += menu.addons.filter((addon) => {
-        // Only count if addon exists and has required fields (id and name are mandatory)
-        if (!addon || typeof addon !== "object") return false;
-        if (!addon.id || typeof addon.id !== "string" || addon.id.trim() === "")
-          return false;
+    if (!totalAddons) {
+      // Count ALL addons (including unavailable, pending/approved, excluding only rejected)
+      const menusWithAddons = await Menu.find({ isActive: true })
+        .select("addons")
+        .lean();
+      menusWithAddons.forEach((menu) => {
         if (
-          !addon.name ||
-          typeof addon.name !== "string" ||
-          addon.name.trim() === ""
-        )
-          return false;
-        // Exclude only rejected addons (include all others: pending, approved, available, unavailable)
-        if (addon.approvalStatus === "rejected") return false;
-        // Count all other addons regardless of availability or approval status
-        return true;
-      }).length;
-    });
+          !menu.addons ||
+          !Array.isArray(menu.addons) ||
+          menu.addons.length === 0
+        ) {
+          return;
+        }
+
+        totalAddons += menu.addons.filter((addon) => {
+          if (!addon || typeof addon !== "object") return false;
+          if (
+            !addon.id ||
+            typeof addon.id !== "string" ||
+            addon.id.trim() === ""
+          )
+            return false;
+          if (
+            !addon.name ||
+            typeof addon.name !== "string" ||
+            addon.name.trim() === ""
+          )
+            return false;
+          if (addon.approvalStatus === "rejected") return false;
+          return true;
+        }).length;
+      });
+    }
 
     // Total customers (users with role 'user' or no role specified)
     const totalCustomers = await User.countDocuments({
