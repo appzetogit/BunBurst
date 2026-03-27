@@ -939,7 +939,9 @@ export const deliveryAPI = {
     );
   },
   getOrderBill: (orderId) => {
-    return apiClient.get(API_ENDPOINTS.ORDER.BILL.replace(":id", orderId));
+    return apiClient.get(
+      API_ENDPOINTS.DELIVERY.ORDER_BILL.replace(":orderId", orderId),
+    );
   },
   acceptOrder: (orderId, currentLocation = {}) => {
     const payload = {};
