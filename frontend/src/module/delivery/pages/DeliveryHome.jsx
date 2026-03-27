@@ -54,6 +54,7 @@ import { getGoogleMapsApiKey, MAP_APIS_ENABLED } from "@/lib/utils/googleMapsApi
 import { useCompanyName } from "@/lib/hooks/useCompanyName"
 import { loadGoogleMaps } from "@/lib/utils/googleMapsLoader"
 import { subscribeActiveOrderRealtime } from "@/lib/firebaseRealtime"
+import { downloadDeliveryBill } from "../utils/digitalBillDownload"
 import {
   decodePolyline,
   extractPolylineFromDirections,
@@ -10092,22 +10093,12 @@ export default function DeliveryHome() {
                     const orderId = selectedCafe?.orderId || selectedCafe?.id || newOrder?.orderId || newOrder?.orderMongoId;
                     setIsLoadingBill(true);
                     try {
-                      // Call backend to generate/get PDF bill
-                      const response = await deliveryAPI.getOrderBill(orderId);
-                      const billUrl = response.data?.data?.billUrl || response.data?.billUrl;
-
-                      if (billUrl) {
-                        // Construct absolute URL (remove /api from BASE_URL to get root)
-                        const rootUrl = API_BASE_URL.replace(/\/api\/?$/, '');
-                        const fullUrl = `${rootUrl}${billUrl}`;
-
-                        // For APK compatibility: best way is to open the direct link
-                        // Modern Android WebViews handle PDF links better than Blobs
-                        window.open(fullUrl, '_system');
-                        toast.success('Opening bill...');
-                      } else {
-                        toast.error('Bill URL not received');
-                      }
+                      const result = await downloadDeliveryBill(orderId);
+                      toast.success(
+                        result.usedFallback
+                          ? 'Bill opened successfully'
+                          : 'Bill downloaded successfully!',
+                      );
                     } catch (error) {
                       console.error('Error downloading bill:', error);
                       toast.error('Failed to download bill');
