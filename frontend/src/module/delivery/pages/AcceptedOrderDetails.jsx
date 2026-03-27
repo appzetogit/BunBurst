@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { toast } from "sonner"
 import {
   ArrowLeft,
   MessageCircle,
@@ -25,6 +26,7 @@ import {
 import {
   getDeliveryOrderPaymentStatus
 } from "../utils/deliveryWalletState"
+import { downloadDeliveryBill, openDeliveryBill } from "../utils/digitalBillDownload"
 
 export default function AcceptedOrderDetails() {
   const navigate = useNavigate()
@@ -310,9 +312,14 @@ export default function AcceptedOrderDetails() {
           <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => {
-                  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-                  window.open(`${apiUrl}/order/${orderData.id}/bill`, '_blank');
+                onClick={async () => {
+                  try {
+                    await openDeliveryBill(orderData.id)
+                    toast.success("Bill opened successfully")
+                  } catch (error) {
+                    console.error("Error opening bill:", error)
+                    toast.error("Failed to open bill")
+                  }
                 }}
                 className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors shadow-sm"
               >
@@ -320,15 +327,18 @@ export default function AcceptedOrderDetails() {
                 View Bill
               </button>
               <button
-                onClick={() => {
-                  const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-                  // Create link to download
-                  const link = document.createElement('a');
-                  link.href = `${apiUrl}/order/${orderData.id}/bill`;
-                  link.setAttribute('download', `Bill-${orderData.id}.pdf`);
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
+                onClick={async () => {
+                  try {
+                    const result = await downloadDeliveryBill(orderData.id)
+                    toast.success(
+                      result.usedFallback
+                        ? "Bill opened successfully"
+                        : "Bill downloaded successfully!",
+                    )
+                  } catch (error) {
+                    console.error("Error downloading bill:", error)
+                    toast.error("Failed to download bill")
+                  }
                 }}
                 className="flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 text-sm font-medium text-slate-700 bg-white border border-gray-300 hover:bg-slate-50 rounded-lg transition-colors shadow-sm"
               >
