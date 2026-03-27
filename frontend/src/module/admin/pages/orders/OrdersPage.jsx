@@ -28,8 +28,33 @@ const statusConfig = {
   "offline-payments": { title: "Offline Payments", color: "slate", icon: Package },
 }
 
+const filterOrdersByRoute = (orders, statusKey) => {
+  if (statusKey !== "refunded") return orders
+
+  return orders.filter((order) => {
+    const refundStatus = String(order?.refundStatus || "").toLowerCase()
+    const paymentStatus = String(order?.paymentStatus || order?.payment?.status || "").toLowerCase()
+
+    return (
+      paymentStatus.includes("refund") ||
+      refundStatus === "initiated" ||
+      refundStatus === "processed"
+    )
+  })
+}
+
 export default function OrdersPage({ statusKey = "all" }) {
   const config = statusConfig[statusKey] || statusConfig["all"]
+  const isAllOrdersPage = statusKey === "all"
+  const isCancelledOrdersPage = statusKey === "cancelled" || statusKey === "canceled"
+  const isRefundedOrdersPage = statusKey === "refunded"
+  const layoutVariant = isAllOrdersPage
+    ? "all-orders"
+    : isCancelledOrdersPage
+      ? "cancelled-orders"
+      : isRefundedOrdersPage
+        ? "refunded-orders"
+        : "default"
   const [orders, setOrders] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [totalCount, setTotalCount] = useState(0)
@@ -54,8 +79,9 @@ export default function OrdersPage({ statusKey = "all" }) {
         const response = await adminAPI.getOrders(params)
         
         if (response.data?.success && response.data?.data?.orders) {
-          setOrders(response.data.data.orders)
-          setTotalCount(response.data.data.pagination?.total || response.data.data.orders.length)
+          const routeFilteredOrders = filterOrdersByRoute(response.data.data.orders, statusKey)
+          setOrders(routeFilteredOrders)
+          setTotalCount(routeFilteredOrders.length)
         } else {
           console.error("Failed to fetch orders:", response.data)
           toast.error("Failed to fetch orders")
@@ -137,8 +163,9 @@ export default function OrdersPage({ statusKey = "all" }) {
         }
         const refreshResponse = await adminAPI.getOrders(params)
         if (refreshResponse.data?.success && refreshResponse.data?.data?.orders) {
-          setOrders(refreshResponse.data.data.orders)
-          setTotalCount(refreshResponse.data.data.pagination?.total || refreshResponse.data.data.orders.length)
+          const routeFilteredOrders = filterOrdersByRoute(refreshResponse.data.data.orders, statusKey)
+          setOrders(routeFilteredOrders)
+          setTotalCount(routeFilteredOrders.length)
         }
       } else {
         toast.error(response.data?.message || "Failed to process refund")
@@ -292,7 +319,15 @@ export default function OrdersPage({ statusKey = "all" }) {
   }
 
   return (
-    <div className="p-4 lg:p-6 bg-white min-h-screen w-full max-w-full overflow-x-hidden">
+    <div className={`min-h-screen w-full max-w-full overflow-x-hidden p-4 lg:p-6 ${
+      isAllOrdersPage
+        ? "bg-[linear-gradient(180deg,#ffffff_0%,#fffdf8_100%)]"
+        : isCancelledOrdersPage
+          ? "bg-[linear-gradient(180deg,#ffffff_0%,#fff7f7_100%)]"
+          : isRefundedOrdersPage
+            ? "bg-[linear-gradient(180deg,#ffffff_0%,#f7fcff_100%)]"
+          : "bg-white"
+    }`}>
       <OrdersTopbar 
         title={config.title} 
         count={count} 
@@ -302,6 +337,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         activeFiltersCount={activeFiltersCount}
         onExport={handleExport}
         onSettingsClick={() => setIsSettingsOpen(true)}
+        layoutVariant={layoutVariant}
       />
       <FilterPanel
         isOpen={isFilterOpen}
@@ -339,6 +375,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         onPrintOrder={handlePrintOrder}
         onRefund={handleRefund}
         onAcceptOrder={handleAcceptOrder}
+        layoutVariant={layoutVariant}
       />
     </div>
   )

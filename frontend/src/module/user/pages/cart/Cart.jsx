@@ -1216,6 +1216,15 @@ export default function Cart() {
       return
     }
 
+    if (!isModuleAuthenticated("user")) {
+      toast.error("Please login to place your order")
+      navigate("/auth/sign-in", {
+        replace: true,
+        state: { from: window.location.pathname }
+      })
+      return
+    }
+
     if (orderType === "DELIVERY" && !defaultAddress) {
       alert("Please add a delivery address")
       return
@@ -1638,6 +1647,20 @@ export default function Cart() {
       console.error("? Order creation error:", error)
 
       let errorMessage = "Failed to create order. Please try again."
+      const authErrorMessage = error?.response?.data?.message || error?.message || ""
+      const isAuthError =
+        error?.response?.status === 401 ||
+        /refresh token not found|unauthorized|not authorized|please login|login again/i.test(authErrorMessage)
+
+      if (isAuthError) {
+        toast.error("Please login to place your order")
+        setIsPlacingOrder(false)
+        navigate("/auth/sign-in", {
+          replace: true,
+          state: { from: window.location.pathname }
+        })
+        return
+      }
 
       // Handle network errors
       if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {

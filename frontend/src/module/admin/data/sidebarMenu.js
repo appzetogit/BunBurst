@@ -64,9 +64,6 @@ export const sidebarMenuData = [
         icon: "FileText",
         subItems: [
           { label: "All", path: "/admin/orders/all" },
-          { label: "Pending", path: "/admin/orders/pending" },
-          { label: "Processing", path: "/admin/orders/processing" },
-          { label: "Food On The Way", path: "/admin/orders/food-on-the-way" },
           { label: "Delivered", path: "/admin/orders/delivered" },
           { label: "Pickup Orders", path: "/admin/orders/pickup" },
           { label: "Cancelled", path: "/admin/orders/cancelled" },

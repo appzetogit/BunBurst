@@ -210,13 +210,13 @@ export default function Customers() {
   }
 
   return (
-    <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(229,57,53,0.08),_transparent_28%),linear-gradient(180deg,#ffffff_0%,#fffdf7_48%,#ffffff_100%)] p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Filters Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+        <div className="mb-6 rounded-[28px] border border-[#F5F5F5] bg-white/90 p-6 shadow-[0_18px_50px_rgba(30,30,30,0.05)] backdrop-blur-sm">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-[#1E1E1E]">
                 Order Date
               </label>
               <div className="relative">
@@ -224,14 +224,14 @@ export default function Customers() {
                   type="date"
                   value={filters.orderDate}
                   onChange={(e) => handleFilterChange("orderDate", e.target.value)}
-                  className="w-full px-4 py-2.5 pr-10 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full rounded-2xl border border-[#F5F5F5] bg-white px-4 py-3 pr-10 text-sm text-[#1E1E1E] shadow-sm transition-all focus:border-[#e53935] focus:outline-none focus:ring-4 focus:ring-[#e53935]/10"
                 />
-                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#FFC400]" />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-[#1E1E1E]">
                 Customer Joining Date
               </label>
               <div className="relative">
@@ -239,20 +239,20 @@ export default function Customers() {
                   type="date"
                   value={filters.joiningDate}
                   onChange={(e) => handleFilterChange("joiningDate", e.target.value)}
-                  className="w-full px-4 py-2.5 pr-10 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full rounded-2xl border border-[#F5F5F5] bg-white px-4 py-3 pr-10 text-sm text-[#1E1E1E] shadow-sm transition-all focus:border-[#e53935] focus:outline-none focus:ring-4 focus:ring-[#e53935]/10"
                 />
-                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#FFC400]" />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-[#1E1E1E]">
                 Customer status
               </label>
               <select
                 value={filters.status}
                 onChange={(e) => handleFilterChange("status", e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full rounded-2xl border border-[#F5F5F5] bg-white px-4 py-3 text-sm text-[#1E1E1E] shadow-sm transition-all focus:border-[#e53935] focus:outline-none focus:ring-4 focus:ring-[#e53935]/10"
               >
                 <option value="">Select Status</option>
                 <option value="active">Active</option>
@@ -261,13 +261,13 @@ export default function Customers() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-[#1E1E1E]">
                 Sort By
               </label>
               <select
                 value={filters.sortBy}
                 onChange={(e) => handleFilterChange("sortBy", e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full rounded-2xl border border-[#F5F5F5] bg-white px-4 py-3 text-sm text-[#1E1E1E] shadow-sm transition-all focus:border-[#e53935] focus:outline-none focus:ring-4 focus:ring-[#e53935]/10"
               >
                 <option value="">Select Customer Sorting Order</option>
                 <option value="name-asc">Name (A-Z)</option>
@@ -278,7 +278,7 @@ export default function Customers() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-[#1E1E1E]">
                 Choose First
               </label>
               <input
@@ -286,7 +286,7 @@ export default function Customers() {
                 value={filters.chooseFirst}
                 onChange={(e) => handleFilterChange("chooseFirst", e.target.value)}
                 placeholder="Ex: 100"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full rounded-2xl border border-[#F5F5F5] bg-white px-4 py-3 text-sm text-[#1E1E1E] shadow-sm transition-all focus:border-[#e53935] focus:outline-none focus:ring-4 focus:ring-[#e53935]/10"
               />
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function Customers() {
                 onClick={() => {
                   // Filters are applied automatically via useMemo
                 }}
-                className="px-6 py-2.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all"
+                className="rounded-2xl bg-[#e53935] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(229,57,53,0.22)] transition-all hover:brightness-105"
               >
                 Apply Filters
               </button>
@@ -311,23 +311,23 @@ export default function Customers() {
                     chooseFirst: "",
                   })
                 }}
-                className="px-6 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-all"
+                className="rounded-2xl border border-[#F5F5F5] bg-white px-6 py-3 text-sm font-semibold text-[#1E1E1E] transition-all hover:border-[#e53935] hover:bg-[#fafafa]"
               >
                 Reset Filters
               </button>
             </div>
-            <div className="text-sm text-slate-600">
+            <div className="rounded-full bg-[#FFF8E1] px-4 py-2 text-sm font-medium text-[#1E1E1E]">
               {loading ? 'Loading...' : `Showing ${filteredCustomers.length} of ${totalCustomers} customers`}
             </div>
           </div>
         </div>
 
         {/* Customer List Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="rounded-[28px] border border-[#F5F5F5] bg-white/95 p-6 shadow-[0_22px_54px_rgba(30,30,30,0.05)]">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900">Customer list</h2>
-              <span className="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">
+              <h2 className="text-xl font-bold text-[#1E1E1E]">Customer list</h2>
+              <span className="rounded-full border border-[#F5F5F5] bg-[#FFF8E1] px-3 py-1 text-sm font-semibold text-[#1E1E1E]">
                 {filteredCustomers.length}
               </span>
             </div>
@@ -339,16 +339,16 @@ export default function Customers() {
                   placeholder="Ex: Search by name"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 w-full text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
+                  className="w-full rounded-2xl border border-[#F5F5F5] bg-white py-3 pl-10 pr-4 text-sm text-[#1E1E1E] shadow-sm transition-all focus:border-[#e53935] focus:outline-none focus:ring-4 focus:ring-[#e53935]/10"
                 />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#FFC400]" />
               </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 flex items-center gap-2 transition-all">
+                  <button className="flex items-center gap-2 rounded-2xl border border-[#F5F5F5] bg-white px-4 py-3 text-sm font-semibold text-[#1E1E1E] transition-all hover:border-[#e53935] hover:bg-[#fafafa]">
                     <Download className="w-4 h-4" />
-                    <span className="text-black font-bold">Export</span>
+                    <span className="font-bold text-[#1E1E1E]">Export</span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
                 </DropdownMenuTrigger>
@@ -375,19 +375,19 @@ export default function Customers() {
           {/* Table */}
           <div className="overflow-x-hidden">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="border-b border-[#F5F5F5] bg-[#fffdf8]">
                 <tr>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Sl</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Contact Information</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Total Order</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Total Order Amount</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Joining Date</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Active/Inactive</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-700 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#1E1E1E]">Sl</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#1E1E1E]">Name</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#1E1E1E]">Contact Information</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#1E1E1E]">Total Order</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#1E1E1E]">Total Order Amount</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#1E1E1E]">Joining Date</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-[#1E1E1E]">Active/Inactive</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-[#1E1E1E]">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-slate-100">
+              <tbody className="divide-y divide-[#F5F5F5] bg-white">
                 {loading ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-8 text-center">
@@ -402,38 +402,38 @@ export default function Customers() {
                   </tr>
                 ) : (
                   filteredCustomers.map((customer) => (
-                    <tr key={customer.id || customer.sl} className="hover:bg-slate-50 transition-colors">
+                    <tr key={customer.id || customer.sl} className="transition-colors hover:bg-[#fffdf8]">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-700">{customer.sl}</span>
+                        <span className="text-sm font-semibold text-[#1E1E1E]">{customer.sl}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-[#FFF8E1] text-[#1E1E1E] shadow-sm">
                             <span className="text-sm">👤</span>
                           </div>
-                          <span className="text-sm font-medium text-slate-900">{customer.name}</span>
+                          <span className="text-sm font-semibold text-[#1E1E1E]">{customer.name}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm text-slate-700">{customer.email}</span>
-                          <span className="text-xs text-slate-500">{customer.phone}</span>
+                          <span className="text-sm text-[#1E1E1E]">{customer.email}</span>
+                          <span className="text-xs text-[#1E1E1E]/70">{customer.phone}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-slate-700">{customer.totalOrder || 0}</span>
+                        <span className="text-sm font-medium text-[#1E1E1E]">{customer.totalOrder || 0}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-900">{formatCurrencyINR(customer.totalOrderAmount)}</span>
+                        <span className="text-sm font-semibold text-[#1E1E1E]">{formatCurrencyINR(customer.totalOrderAmount)}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-slate-700">{customer.joiningDate}</span>
+                        <span className="text-sm text-[#1E1E1E]">{customer.joiningDate}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => handleToggleStatus(customer.id || customer.sl)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                            customer.status ? "bg-blue-600" : "bg-slate-300"
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#e53935] focus:ring-offset-2 ${
+                            customer.status ? "bg-[#e53935]" : "bg-[#F5F5F5]"
                           }`}
                         >
                           <span
@@ -446,7 +446,7 @@ export default function Customers() {
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button 
                           onClick={() => handleViewDetails(customer.id || customer.sl)}
-                          className="p-1.5 rounded text-blue-600 hover:bg-blue-50 transition-colors"
+                          className="rounded-xl p-2 text-[#e53935] transition-colors hover:bg-[#FFF8E1]"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -462,60 +462,62 @@ export default function Customers() {
 
       {/* User Details Modal */}
       <Dialog open={showUserDetails} onOpenChange={setShowUserDetails}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto mx-auto">
+        <DialogContent className="mx-auto max-h-[85vh] max-w-2xl overflow-y-auto border border-[#F5F5F5] bg-[linear-gradient(180deg,#ffffff_0%,#fffdf8_100%)] p-0 shadow-[0_30px_80px_rgba(30,30,30,0.12)]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900">User Details</DialogTitle>
+            <div className="border-b border-[#F5F5F5] bg-[linear-gradient(135deg,#ffffff_0%,#fffdf8_45%,#ffffff_100%)] px-6 py-5">
+              <DialogTitle className="text-2xl font-bold text-[#1E1E1E]">User Details</DialogTitle>
+            </div>
           </DialogHeader>
           
           {loadingDetails ? (
-            <div className="py-8 text-center">
+            <div className="px-6 py-8 text-center">
               <div className="text-sm text-slate-500">Loading user details...</div>
             </div>
           ) : userDetails ? (
-            <div className="space-y-4">
+            <div className="space-y-5 px-6 pb-6">
               {/* Profile Section */}
-              <div className="bg-slate-50 rounded-lg p-4">
+              <div className="rounded-[24px] border border-[#F5F5F5] bg-[linear-gradient(135deg,#ffffff_0%,#fffdf8_100%)] p-5 shadow-[0_10px_28px_rgba(30,30,30,0.05)]">
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-[22px] bg-[#FFF8E1] shadow-sm">
                     {userDetails.profileImage ? (
-                      <img src={userDetails.profileImage} alt={userDetails.name} className="w-full h-full rounded-full object-cover" />
+                      <img src={userDetails.profileImage} alt={userDetails.name} className="h-full w-full rounded-[22px] object-cover" />
                     ) : (
-                      <User className="w-8 h-8 text-slate-400" />
+                      <User className="w-8 h-8 text-[#1E1E1E]" />
                     )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-bold text-slate-900">{userDetails.name}</h3>
+                      <h3 className="text-xl font-bold text-[#1E1E1E]">{userDetails.name}</h3>
                       {userDetails.isActive ? (
-                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 flex items-center gap-1">
+                        <span className="flex items-center gap-1 rounded-full border border-[#c7f1d6] bg-[#eafcf0] px-3 py-1 text-xs font-semibold text-[#138a4d]">
                           <CheckCircle className="w-3 h-3" />
                           Active
                         </span>
                       ) : (
-                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 flex items-center gap-1">
+                        <span className="flex items-center gap-1 rounded-full border border-[#ffd3d0] bg-[#fff1f0] px-3 py-1 text-xs font-semibold text-[#d93025]">
                           <XCircle className="w-3 h-3" />
                           Inactive
                         </span>
                       )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Mail className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-sm text-[#1E1E1E]">
+                        <Mail className="w-4 h-4 text-[#FFC400]" />
                         <span>{userDetails.email}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Phone className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-sm text-[#1E1E1E]">
+                        <Phone className="w-4 h-4 text-[#FFC400]" />
                         <span>{userDetails.phone}</span>
                         {userDetails.phoneVerified && (
                           <CheckCircle className="w-3 h-3 text-green-600" />
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <CalendarIcon className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-sm text-[#1E1E1E]">
+                        <CalendarIcon className="w-4 h-4 text-[#FFC400]" />
                         <span>Joined: {userDetails.joiningDate}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <User className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-sm text-[#1E1E1E]">
+                        <User className="w-4 h-4 text-[#FFC400]" />
                         <span>Signup: {userDetails.signupMethod || 'N/A'}</span>
                       </div>
                     </div>
@@ -525,50 +527,50 @@ export default function Customers() {
 
               {/* Statistics Section */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="bg-blue-50 rounded-lg p-3">
+                <div className="rounded-[22px] border border-[#F5F5F5] bg-[#fffdf8] p-4 shadow-sm">
                   <div className="flex items-center gap-2 mb-1">
-                    <Package className="w-4 h-4 text-blue-600" />
-                    <span className="text-xs font-semibold text-slate-700">Total Orders</span>
+                    <Package className="w-4 h-4 text-[#FFC400]" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[#1E1E1E]">Total Orders</span>
                   </div>
-                  <p className="text-xl font-bold text-blue-600">{userDetails.totalOrders || 0}</p>
+                  <p className="text-3xl font-bold text-[#e53935]">{userDetails.totalOrders || 0}</p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-3">
+                <div className="rounded-[22px] border border-[#F5F5F5] bg-[#fffdf8] p-4 shadow-sm">
                   <div className="flex items-center gap-2 mb-1">
-                    <DollarSign className="w-4 h-4 text-green-600" />
-                    <span className="text-xs font-semibold text-slate-700">Total Spent</span>
+                    <DollarSign className="w-4 h-4 text-[#FFC400]" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[#1E1E1E]">Total Spent</span>
                   </div>
-                  <p className="text-xl font-bold text-green-600">
+                  <p className="text-3xl font-bold text-[#e53935]">
                     {formatCurrencyINR(userDetails.totalOrderAmount)}
                   </p>
                 </div>
-                <div className="bg-purple-50 rounded-lg p-3">
+                <div className="rounded-[22px] border border-[#F5F5F5] bg-[#FFF8E1] p-4 shadow-sm">
                   <div className="flex items-center gap-2 mb-1">
-                    <CalendarIcon className="w-4 h-4 text-purple-600" />
-                    <span className="text-xs font-semibold text-slate-700">Member Since</span>
+                    <CalendarIcon className="w-4 h-4 text-[#FFC400]" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[#1E1E1E]">Member Since</span>
                   </div>
-                  <p className="text-base font-bold text-purple-600">{userDetails.joiningDate}</p>
+                  <p className="text-lg font-bold text-[#1E1E1E]">{userDetails.joiningDate}</p>
                 </div>
               </div>
 
               {/* Addresses Section */}
               {userDetails.addresses && userDetails.addresses.length > 0 && (
                 <div>
-                  <h4 className="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
+                  <h4 className="mb-3 flex items-center gap-2 text-lg font-bold text-[#1E1E1E]">
+                    <MapPin className="w-4 h-4 text-[#FFC400]" />
                     Addresses
                   </h4>
                   <div className="space-y-2">
                     {userDetails.addresses.map((address, index) => (
-                      <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <div key={index} className="rounded-[20px] border border-[#F5F5F5] bg-white p-4 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-semibold text-slate-700">{address.label || 'Address'}</span>
+                          <span className="text-sm font-semibold text-[#1E1E1E]">{address.label || 'Address'}</span>
                           {address.isDefault && (
-                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                            <span className="rounded-full border border-[#F5F5F5] bg-[#FFF8E1] px-3 py-1 text-xs font-semibold text-[#1E1E1E]">
                               Default
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-slate-600">
+                        <p className="text-sm leading-6 text-[#1E1E1E]">
                           {address.street}
                           {address.additionalDetails && `, ${address.additionalDetails}`}
                           {address.city && `, ${address.city}`}
@@ -584,20 +586,20 @@ export default function Customers() {
               {/* Recent Orders Section */}
               {userDetails.orders && userDetails.orders.length > 0 && (
                 <div>
-                  <h4 className="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
-                    <Package className="w-4 h-4" />
+                  <h4 className="mb-3 flex items-center gap-2 text-lg font-bold text-[#1E1E1E]">
+                    <Package className="w-4 h-4 text-[#FFC400]" />
                     Recent Orders
                   </h4>
                   <div className="space-y-2">
                     {userDetails.orders.slice(0, 5).map((order, index) => (
-                      <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200 flex items-center justify-between">
+                      <div key={index} className="flex items-center justify-between rounded-[20px] border border-[#F5F5F5] bg-white p-4 shadow-sm">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{order.orderId}</p>
-                          <p className="text-xs text-slate-600">{order.cafeName}</p>
+                          <p className="text-sm font-semibold text-[#1E1E1E]">{order.orderId}</p>
+                          <p className="text-xs text-[#1E1E1E]/70">{order.cafeName}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-slate-900">{formatCurrencyINR(order.total)}</p>
-                          <p className="text-xs text-slate-600 capitalize">{order.status}</p>
+                          <p className="text-sm font-semibold text-[#1E1E1E]">{formatCurrencyINR(order.total)}</p>
+                          <p className="text-xs font-semibold capitalize text-[#e53935]">{order.status}</p>
                         </div>
                       </div>
                     ))}
@@ -608,15 +610,15 @@ export default function Customers() {
               {/* Additional Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {userDetails.gender && (
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-slate-700 mb-1">Gender</p>
-                    <p className="text-sm text-slate-600 capitalize">{userDetails.gender}</p>
+                  <div className="rounded-[20px] border border-[#F5F5F5] bg-white p-4">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#1E1E1E]">Gender</p>
+                    <p className="text-sm font-medium capitalize text-[#1E1E1E]">{userDetails.gender}</p>
                   </div>
                 )}
                 {userDetails.dateOfBirth && (
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-slate-700 mb-1">Date of Birth</p>
-                    <p className="text-sm text-slate-600">
+                  <div className="rounded-[20px] border border-[#F5F5F5] bg-white p-4">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#1E1E1E]">Date of Birth</p>
+                    <p className="text-sm font-medium text-[#1E1E1E]">
                       {new Date(userDetails.dateOfBirth).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'short',
@@ -628,7 +630,7 @@ export default function Customers() {
               </div>
             </div>
           ) : (
-            <div className="py-8 text-center">
+            <div className="px-6 py-8 text-center">
               <div className="text-sm text-slate-500">No user details available</div>
             </div>
           )}

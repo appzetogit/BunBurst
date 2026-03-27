@@ -137,6 +137,8 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onOrderUp
     return false
   }
 
+  const onlineDeliveryPartners = deliveryPartners.filter(isPartnerOnline)
+
   useEffect(() => {
     if (showAssignDialog) {
       setIsLoadingPartners(true)
@@ -148,7 +150,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onOrderUp
         .then(res => {
           // Handle various response structures
           const partners = res.data?.data?.deliveryPartners || res.data?.deliveryPartners || []
-          setDeliveryPartners(partners)
+          setDeliveryPartners(partners.filter(isPartnerOnline))
         })
         .catch(err => {
           console.error("Failed to fetch delivery partners", err)
@@ -158,8 +160,30 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onOrderUp
     }
   }, [showAssignDialog])
 
+  useEffect(() => {
+    if (!showAssignDialog || !selectedPartner) return
+
+    const hasSelectedPartner = onlineDeliveryPartners.some(
+      (partner) => String(partner?._id) === String(selectedPartner)
+    )
+
+    if (!hasSelectedPartner) {
+      setSelectedPartner("")
+    }
+  }, [showAssignDialog, selectedPartner, onlineDeliveryPartners])
+
   const handleAssign = async () => {
     if (!selectedPartner) return
+
+    const isSelectedPartnerOnline = onlineDeliveryPartners.some(
+      (partner) => String(partner?._id) === String(selectedPartner)
+    )
+
+    if (!isSelectedPartnerOnline) {
+      toast.error("Please select an online delivery partner")
+      return
+    }
+
     try {
       setIsAssigning(true)
       await adminAPI.assignOrder(order.id || order.orderId, selectedPartner)
@@ -1193,10 +1217,10 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order, onOrderUp
                   <SelectValue placeholder={isLoadingPartners ? "Loading partners..." : "Select a delivery partner"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {deliveryPartners.length === 0 ? (
-                    <div className="p-2 text-sm text-[#1E1E1E] text-center">No active partners found</div>
+                  {onlineDeliveryPartners.length === 0 ? (
+                    <div className="p-2 text-sm text-[#1E1E1E] text-center">No online partners found</div>
                   ) : (
-                    deliveryPartners.map((p) => {
+                    onlineDeliveryPartners.map((p) => {
                       const online = isPartnerOnline(p)
                       return (
                         <SelectItem key={p._id} value={p._id}>

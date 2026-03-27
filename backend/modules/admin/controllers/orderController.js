@@ -2247,10 +2247,15 @@ export const manualAssignOrder = asyncHandler(async (req, res) => {
 
     // Find delivery boy
     const Delivery = (await import('../../delivery/models/Delivery.js')).default;
-    const deliveryBoy = await Delivery.findById(deliveryBoyId);
+    const deliveryBoy = await Delivery.findOne({
+      _id: deliveryBoyId,
+      'availability.isOnline': true,
+      status: { $in: ['approved', 'active'] },
+      isActive: true
+    });
 
     if (!deliveryBoy) {
-      return errorResponse(res, 404, 'Delivery Partner not found');
+      return errorResponse(res, 400, 'Selected delivery partner is offline or unavailable. Please assign an online delivery partner.');
     }
 
     // Salary model: unrestricted COD assignment

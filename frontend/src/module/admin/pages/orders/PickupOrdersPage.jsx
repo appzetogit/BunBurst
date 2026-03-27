@@ -100,19 +100,6 @@ export default function PickupOrdersPage() {
     }
   }
 
-  const handlePaymentCollectionStatus = async (order, status) => {
-    try {
-      await adminAPI.updatePaymentCollectionStatus(
-        order.id || order._id || order.orderId,
-        status
-      )
-      toast.success(`Payment marked as ${status} for order ${order.orderId}`)
-      fetchOrders()
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update payment status")
-    }
-  }
-
   const isCancelledOrder = (order) => {
     const raw = String(order?.orderStatus || order?.status || '').toLowerCase()
     return raw.includes('cancel')
@@ -248,7 +235,6 @@ export default function PickupOrdersPage() {
                   const isOnline = order.paymentType === "Online" || paymentMethod === "razorpay" || paymentMethod === "online"
                   const normalizedPaymentStatus = String(order.paymentStatus || order.payment?.status || "").toLowerCase()
                   const isOnlinePaid = isOnline && ['paid', 'completed', 'success', 'succeeded', 'refunded'].includes(normalizedPaymentStatus)
-                  const canUpdatePayment = isCod && status === "picked_up"
                   const acceptDisabled = ['cancelled', 'delivered', 'picked_up'].includes(String(status || '').toLowerCase()) || isCancelledOrder(order)
                   const showRefundButton = isRefundEligible(order) && !['processed', 'initiated'].includes(String(order.refundStatus || '').toLowerCase())
                   
@@ -267,31 +253,9 @@ export default function PickupOrdersPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {canUpdatePayment ? (
-                          <select
-                            value={order.paymentCollectionStatus || ""}
-                            onChange={(e) => handlePaymentCollectionStatus(order, e.target.value)}
-                            className="text-xs px-2 py-1 rounded-md border border-[#F5F5F5] text-[#1E1E1E] bg-white focus:border-[#e53935] focus:outline-none"
-                          >
-                            <option value="" disabled>Select Status</option>
-                            <option
-                              value="Collected"
-                              disabled={order.paymentCollectionStatus === "Collected"}
-                            >
-                              Payment Collected
-                            </option>
-                            <option
-                              value="Not Collected"
-                              disabled={order.paymentCollectionStatus === "Not Collected" || order.paymentCollectionStatus === "Collected"}
-                            >
-                              Payment Not Collected
-                            </option>
-                          </select>
-                        ) : (
-                          <span className={`text-xs font-medium ${isOnline && isOnlinePaid ? 'text-green-600' : (isOnline ? 'text-red-600' : 'text-[#1E1E1E]')}`}>
-                            {isOnline ? (isOnlinePaid ? "Paid (Online)" : "Unpaid (Online)") : (order.paymentCollectionStatus || "Not Collected")}
-                          </span>
-                        )}
+                        <span className={`text-xs font-medium ${isOnline && isOnlinePaid ? 'text-green-600' : (isOnline ? 'text-red-600' : 'text-[#1E1E1E]')}`}>
+                          {isOnline ? (isOnlinePaid ? "Paid (Online)" : "Unpaid (Online)") : (order.paymentCollectionStatus || "Not Collected")}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex gap-2 justify-center">

@@ -26,10 +26,14 @@ const getPaymentStatusColor = (paymentStatus) => {
   return "text-[#1E1E1E]"
 }
 
-export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPrintOrder, onRefund, onAcceptOrder }) {
+export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPrintOrder, onRefund, onAcceptOrder, layoutVariant = "default" }) {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
   const totalPages = Math.ceil(orders.length / itemsPerPage)
+  const isAllOrdersVariant = layoutVariant === "all-orders"
+  const isCancelledVariant = layoutVariant === "cancelled-orders"
+  const isRefundedVariant = layoutVariant === "refunded-orders"
+  const isFeatureVariant = isAllOrdersVariant || isCancelledVariant || isRefundedVariant
 
   // Reset to page 1 when orders change
   useEffect(() => {
@@ -55,7 +59,7 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
 
   if (orders.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5]">
+      <div className={`${isFeatureVariant ? "rounded-[28px] border border-[#F5F5F5] bg-white shadow-[0_16px_34px_rgba(30,30,30,0.05)]" : "bg-white rounded-xl shadow-sm border border-[#F5F5F5]"}`}>
         <div className="flex flex-col items-center justify-center py-20">
           <div className="w-32 h-32 bg-gradient-to-br from-[#FFF8E1] to-[#F5F5F5] rounded-2xl flex items-center justify-center mb-6 shadow-inner">
             <div className="w-20 h-20 bg-white rounded-xl flex items-center justify-center shadow-md">
@@ -70,43 +74,43 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-[#F5F5F5] overflow-hidden w-full max-w-full">
+    <div className={`${isFeatureVariant ? "overflow-hidden rounded-[28px] border border-[#F5F5F5] bg-white shadow-[0_18px_38px_rgba(30,30,30,0.05)]" : "bg-white rounded-xl shadow-sm border border-[#F5F5F5] overflow-hidden w-full max-w-full"}`}>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-full">
-          <thead className="bg-[#F5F5F5] border-b border-[#F5F5F5]">
+        <table className={`w-full ${isFeatureVariant ? "min-w-[1420px] table-fixed" : "min-w-full"}`}>
+          <thead className={`${isAllOrdersVariant ? "bg-[#fcfcfc] border-b border-[#F5F5F5]" : isCancelledVariant ? "bg-[#fff8f8] border-b border-[#F5F5F5]" : isRefundedVariant ? "bg-[#f6fbff] border-b border-[#F5F5F5]" : "bg-[#F5F5F5] border-b border-[#F5F5F5]"}`}>
             <tr>
               {visibleColumns.si && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">SI</th>
+                <th className={`text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[72px] px-5 py-4" : "px-6 py-4"}`}>SI</th>
               )}
               {visibleColumns.orderId && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Order ID</th>
+                <th className={`text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[250px] px-5 py-4" : "px-6 py-4"}`}>Order ID</th>
               )}
               {visibleColumns.orderDate && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Order Date</th>
+                <th className={`text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[210px] px-5 py-4" : "px-6 py-4"}`}>Order Date</th>
               )}
               {visibleColumns.customer && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Customer Information</th>
+                <th className={`text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[170px] px-5 py-4" : "px-6 py-4"}`}>Customer Information</th>
               )}
               {visibleColumns.cafe && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Cafe</th>
+                <th className={`text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[135px] px-5 py-4" : "px-6 py-4"}`}>Cafe</th>
               )}
               {visibleColumns.foodItems && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider min-w-[200px]">Food Items</th>
+                <th className={`text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[320px] px-5 py-4" : "min-w-[200px] px-6 py-4"}`}>Food Items</th>
               )}
               {visibleColumns.totalAmount && (
-                <th className="px-6 py-4 text-right text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Total Amount</th>
+                <th className={`text-right text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[130px] px-5 py-4" : "px-6 py-4"}`}>Total Amount</th>
               )}
               {(visibleColumns.paymentType !== false) && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Payment Type</th>
+                <th className={`text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[160px] px-5 py-4" : "px-6 py-4"}`}>Payment Type</th>
               )}
               {(visibleColumns.paymentCollectionStatus !== false) && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Payment Status</th>
+                <th className={`text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[145px] px-5 py-4" : "px-6 py-4"}`}>Payment Status</th>
               )}
               {visibleColumns.orderStatus && (
-                <th className="px-6 py-4 text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">Order Status</th>
+                <th className={`text-left text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[220px] px-5 py-4" : "px-6 py-4"}`}>Order Status</th>
               )}
               {visibleColumns.actions && (
-                <th className="px-6 py-4 text-center text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider">
+                <th className={`text-center text-[10px] font-bold text-[#1E1E1E] uppercase tracking-wider ${isFeatureVariant ? "w-[170px] px-5 py-4" : "px-6 py-4"}`}>
                   Actions
                 </th>
               )}
@@ -116,50 +120,58 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
             {paginatedOrders.map((order, index) => (
               <tr
                 key={order.orderId}
-                className="hover:bg-[#F5F5F5] transition-colors"
+                className={`transition-colors ${isAllOrdersVariant ? "align-top hover:bg-[#fffdf8]" : isCancelledVariant ? "align-top hover:bg-[#fff9f9]" : isRefundedVariant ? "align-top hover:bg-[#f9fcff]" : "hover:bg-[#F5F5F5]"}`}
               >
                 {visibleColumns.si && (
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={`${isFeatureVariant ? "px-5 py-5 whitespace-nowrap align-top" : "px-6 py-4 whitespace-nowrap"}`}>
                     <span className="text-sm font-medium text-[#1E1E1E]">{(currentPage - 1) * itemsPerPage + index + 1}</span>
                   </td>
                 )}
                 {visibleColumns.orderId && (
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-[#1E1E1E]">{order.orderId}</span>
+                  <td className={`${isFeatureVariant ? "px-5 py-5 align-top" : "px-6 py-4 whitespace-nowrap"}`}>
+                    <div className="space-y-1">
+                      <span className="block text-sm font-semibold text-[#1E1E1E]">{order.orderId}</span>
+                      {isFeatureVariant && (
+                        <span className="block text-xs text-[#1E1E1E]/60">Order reference</span>
+                      )}
+                    </div>
                   </td>
                 )}
                 {visibleColumns.orderDate && (
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-[#1E1E1E]">{order.date}, {order.time}</span>
+                  <td className={`${isFeatureVariant ? "px-5 py-5 align-top" : "px-6 py-4 whitespace-nowrap"}`}>
+                    <div className="space-y-1">
+                      <span className="block text-sm font-medium text-[#1E1E1E]">{order.date}</span>
+                      <span className="block text-xs text-[#1E1E1E]/70">{order.time}</span>
+                    </div>
                   </td>
                 )}
                 {visibleColumns.customer && (
-                  <td className="px-6 py-4">
+                  <td className={`${isFeatureVariant ? "px-5 py-5 align-top" : "px-6 py-4"}`}>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-[#1E1E1E]">{order.customerName}</span>
-                      <span className="text-xs text-[#1E1E1E] mt-0.5">{order.customerPhone}</span>
+                      <span className="text-xs text-[#1E1E1E]/70 mt-1">{order.customerPhone}</span>
                     </div>
                   </td>
                 )}
                 {visibleColumns.cafe && (
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={`${isFeatureVariant ? "px-5 py-5 whitespace-nowrap align-top" : "px-6 py-4 whitespace-nowrap"}`}>
                     <span className="text-sm font-medium text-[#1E1E1E]">{formatCafeName(order.cafe)}</span>
                   </td>
                 )}
                 {visibleColumns.foodItems && (
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-2 min-w-[200px] max-w-md">
+                  <td className={`${isFeatureVariant ? "px-5 py-5 align-top" : "px-6 py-4"}`}>
+                    <div className={`flex flex-col gap-2 ${isFeatureVariant ? "min-w-[280px]" : "min-w-[200px] max-w-md"}`}>
                       {order.items && Array.isArray(order.items) && order.items.length > 0 ? (
                         order.items.map((item, idx) => (
-                          <div key={idx || item.itemId || idx} className="flex items-center gap-2 text-sm">
-                            <span className="font-bold text-[#1E1E1E] bg-[#F5F5F5] px-2 py-0.5 rounded min-w-[2.5rem] text-center">
+                          <div key={idx || item.itemId || idx} className={`flex gap-2 text-sm ${isAllOrdersVariant ? "items-start rounded-xl border border-[#F5F5F5] bg-[#fcfcfc] px-3 py-2.5" : isCancelledVariant ? "items-start rounded-xl border border-[#F5F5F5] bg-[#fffafa] px-3 py-2.5" : isRefundedVariant ? "items-start rounded-xl border border-[#F5F5F5] bg-[#f8fcff] px-3 py-2.5" : "items-center"}`}>
+                            <span className={`font-bold text-[#1E1E1E] min-w-[2.5rem] text-center ${isAllOrdersVariant ? "rounded-lg bg-[#FFF8E1] px-2 py-1" : isCancelledVariant ? "rounded-lg bg-[#fff1f1] px-2 py-1" : isRefundedVariant ? "rounded-lg bg-[#eaf6ff] px-2 py-1" : "bg-[#F5F5F5] px-2 py-0.5 rounded"}`}>
                               {item.quantity || 1}x
                             </span>
                             <span className="text-[#1E1E1E] font-medium flex-1">
                               {item.name || 'Unknown Item'}
                             </span>
                             {(item.price !== undefined && item.price !== null) && (
-                              <span className="text-xs text-[#1E1E1E]">
+                              <span className="text-xs text-[#1E1E1E]/80 whitespace-nowrap">
                                 ₹{formatPrice(item.price)}
                               </span>
                             )}
@@ -172,14 +184,14 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                   </td>
                 )}
                 {visibleColumns.totalAmount && (
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="text-sm font-medium text-[#1E1E1E]">
+                  <td className={`${isFeatureVariant ? "px-5 py-5 whitespace-nowrap text-right align-top" : "px-6 py-4 whitespace-nowrap text-right"}`}>
+                    <div className={`text-sm text-[#1E1E1E] ${isFeatureVariant ? "font-semibold" : "font-medium"}`}>
                       ₹{order.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </td>
                 )}
                 {(visibleColumns.paymentType !== false) && (
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={`${isFeatureVariant ? "px-5 py-5 align-top" : "px-6 py-4 whitespace-nowrap"}`}>
                     {(() => {
                       // Determine payment type display
                       let paymentTypeDisplay = order.paymentType;
@@ -201,15 +213,8 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                         paymentTypeDisplay = 'Wallet';
                       }
 
-                      const isCod = paymentTypeDisplay === 'Cash on Delivery';
-                      const isWallet = paymentTypeDisplay === 'Wallet';
-
                       return (
-                        <span className={`text-sm font-medium ${
-                          isCod ? 'text-[#1E1E1E]' :
-                          isWallet ? 'text-[#1E1E1E]' :
-                          'text-[#1E1E1E]'
-                        }`}>
+                        <span className={`text-sm font-medium text-[#1E1E1E] ${isAllOrdersVariant ? "inline-flex rounded-full border border-[#F5F5F5] bg-[#fcfcfc] px-3 py-1.5" : isCancelledVariant ? "inline-flex rounded-full border border-[#F5F5F5] bg-[#fffafa] px-3 py-1.5" : isRefundedVariant ? "inline-flex rounded-full border border-[#F5F5F5] bg-[#f8fcff] px-3 py-1.5" : ""}`}>
                           {paymentTypeDisplay}
                         </span>
                       );
@@ -217,7 +222,7 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                   </td>
                 )}
                 {(visibleColumns.paymentCollectionStatus !== false) && (
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={`${isFeatureVariant ? "px-5 py-5 align-top" : "px-6 py-4 whitespace-nowrap"}`}>
                     {(() => {
                       const isCod = order.paymentType === 'Cash on Delivery' || order.payment?.method === 'cash' || order.payment?.method === 'cod'
                       const isDelivered = order.orderStatus === 'Delivered' || order.status === 'delivered'
@@ -227,7 +232,7 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                         ? 'Collected'
                         : (order.paymentCollectionStatus ?? (isCod ? 'Not Collected' : (isPaidOnline ? 'Collected' : 'Not Collected')))
                       return (
-                        <span className={`text-sm font-medium ${status === 'Collected' ? 'text-[#1E1E1E]' : 'text-[#1E1E1E]'}`}>
+                        <span className={`text-sm font-medium text-[#1E1E1E] ${isAllOrdersVariant ? "inline-flex rounded-full border border-[#F5F5F5] bg-white px-3 py-1.5" : isCancelledVariant ? "inline-flex rounded-full border border-[#F5F5F5] bg-[#fffafa] px-3 py-1.5" : isRefundedVariant ? "inline-flex rounded-full border border-[#F5F5F5] bg-[#f8fcff] px-3 py-1.5" : ""}`}>
                           {status}
                         </span>
                       )
@@ -235,7 +240,7 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                   </td>
                 )}
                 {visibleColumns.orderStatus && (
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={`${isFeatureVariant ? "px-5 py-5 align-top" : "px-6 py-4 whitespace-nowrap"}`}>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
@@ -260,7 +265,7 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                         </div>
                       )}
                       {order.cancellationReason && (
-                        <div className="text-xs text-red-600 mt-1">
+                        <div className={`mt-2 text-xs ${isCancelledVariant ? "rounded-xl border border-[#ffe0df] bg-[#fff5f5] px-3 py-2 text-[#b3261e]" : "text-red-600"}`}>
                           <span className="font-medium">
                             {order.cancelledBy === 'user' ? 'Cancelled by User - ' :
                              order.cancelledBy === 'cafe' ? 'Cancelled by Cafe - ' :
@@ -273,7 +278,7 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
                   </td>
                 )}
                 {visibleColumns.actions && (
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <td className={`${isFeatureVariant ? "px-5 py-5 whitespace-nowrap text-center align-top" : "px-6 py-4 whitespace-nowrap text-center"}`}>
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => onViewOrder(order)}
@@ -371,7 +376,7 @@ export default function OrdersTable({ orders, visibleColumns, onViewOrder, onPri
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="px-6 py-4 bg-[#F5F5F5] border-t border-[#F5F5F5] flex items-center justify-between">
+        <div className={`flex items-center justify-between border-t border-[#F5F5F5] ${isAllOrdersVariant ? "bg-white px-6 py-5" : isCancelledVariant ? "bg-[#fffafa] px-6 py-5" : isRefundedVariant ? "bg-[#f8fcff] px-6 py-5" : "bg-[#F5F5F5] px-6 py-4"}`}>
           <div className="text-sm text-[#1E1E1E]">
             Showing <span className="font-semibold">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
             <span className="font-semibold">{Math.min(currentPage * itemsPerPage, orders.length)}</span> of{" "}

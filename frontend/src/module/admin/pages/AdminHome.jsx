@@ -24,6 +24,7 @@ export default function AdminHome() {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState(null)
+  const [allOrdersCount, setAllOrdersCount] = useState(0)
   const [currentPlatformFee, setCurrentPlatformFee] = useState(null)
   const [currentGstRate, setCurrentGstRate] = useState(null)
 
@@ -39,7 +40,10 @@ export default function AdminHome() {
         console.error("Error fetching fee settings:", feeError)
       }
 
-      const response = await adminAPI.getDashboardStats()
+      const [response, ordersResponse] = await Promise.all([
+        adminAPI.getDashboardStats(),
+        adminAPI.getOrders({ page: 1, limit: 1 }),
+      ])
       if (response.data?.success && response.data?.data) {
         setDashboardData(response.data.data)
 
@@ -50,6 +54,13 @@ export default function AdminHome() {
         }
       } else {
         console.error('❌ Invalid response format:', response.data)
+      }
+      if (ordersResponse.data?.success && ordersResponse.data?.data) {
+        const totalOrdersCount =
+          ordersResponse.data.data.pagination?.total ??
+          ordersResponse.data.data.orders?.length ??
+          0
+        setAllOrdersCount(totalOrdersCount)
       }
     } catch (error) {
       console.error('❌ Error fetching dashboard stats:', error)
@@ -186,9 +197,9 @@ export default function AdminHome() {
               onClick={() => navigate("/admin/transaction-report")}
             />
             <MetricCard
-              title="Orders processed"
-              value={ordersTotal.toLocaleString("en-IN")}
-              helper="Fulfilled & billed"
+              title="All orders"
+              value={(allOrdersCount || ordersTotal).toLocaleString("en-IN")}
+              helper="Total orders in system"
               icon={<Activity className="h-5 w-5 text-amber-600" />}
               accent="bg-amber-200/40"
               isLoading={isLoading}

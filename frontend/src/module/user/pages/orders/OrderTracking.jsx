@@ -31,6 +31,7 @@ import { useProfile } from "../../context/ProfileContext"
 import { useLocation as useUserLocation } from "../../hooks/useLocation"
 import DeliveryTrackingMap from "../../components/DeliveryTrackingMap"
 import { orderAPI, cafeAPI } from "@/lib/api"
+import { MAP_APIS_ENABLED } from "@/lib/utils/googleMapsApiKey"
 import circleIcon from "@/assets/circleicon.png"
 import { useLocationSelector } from "../../components/UserLayout"
 
@@ -349,6 +350,29 @@ export default function OrderTracking() {
     // Only depends on orderId â€” order state is read via ref, not deps
     // This prevents the interval from being destroyed/recreated on every order update
   }, [orderId])
+
+  useEffect(() => {
+    if (!MAP_APIS_ENABLED) return
+
+    let cancelled = false
+
+    const preloadGoogleMaps = async () => {
+      try {
+        const { loadGoogleMaps } = await import("@/lib/utils/googleMapsLoader.js")
+        await loadGoogleMaps({ libraries: [] })
+      } catch (error) {
+        if (!cancelled) {
+          console.warn("Failed to preload Google Maps for order tracking:", error)
+        }
+      }
+    }
+
+    preloadGoogleMaps()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Fetch order from API if not found in context
   useEffect(() => {
@@ -921,7 +945,7 @@ export default function OrderTracking() {
       <DeliveryMap
         orderId={orderId}
         order={order}
-        isVisible={!showConfirmation && order !== null}
+        isVisible={order !== null}
       />
 
       {/* Scrollable Content */}
