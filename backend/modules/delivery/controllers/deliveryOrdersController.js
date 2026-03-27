@@ -231,6 +231,66 @@ export const getOrderDetails = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get order bill for assigned delivery partner
+ * GET /api/delivery/orders/:orderId/bill
+ */
+export const getOrderBill = asyncHandler(async (req, res) => {
+  try {
+    const delivery = req.delivery;
+    const { orderId } = req.params;
+
+    const query =
+      mongoose.Types.ObjectId.isValid(orderId) && orderId.length === 24
+        ? { _id: orderId }
+        : { orderId };
+
+    const order = await Order.findOne(query)
+      .populate('cafeId', 'name address phone')
+      .populate('userId', 'name phone')
+      .lean();
+
+    if (!order) {
+      return errorResponse(res, 404, 'Order not found');
+    }
+
+    const currentDeliveryId = delivery._id.toString();
+    const assignedDeliveryId = order.deliveryPartnerId?.toString?.() || String(order.deliveryPartnerId || '');
+
+    if (!assignedDeliveryId || assignedDeliveryId !== currentDeliveryId) {
+      return errorResponse(res, 403, 'Order not found or not assigned to you');
+    }
+
+    const rawPaymentMethod = String(order?.payment?.method || '').toLowerCase();
+    const rawPaymentStatus = String(order?.payment?.status || '').toLowerCase();
+    const isCodLike = rawPaymentMethod === 'cash' || rawPaymentMethod === 'cod';
+    const isWallet = rawPaymentMethod === 'wallet';
+    const isPaid = rawPaymentStatus === 'completed' || rawPaymentStatus === 'refunded';
+
+    if (!isCodLike && !isWallet && !isPaid) {
+      return errorResponse(res, 400, 'Payment is not completed for this order');
+    }
+
+    if (order.billUrl) {
+      return successResponse(res, 200, 'Order bill retrieved successfully', {
+        billUrl: order.billUrl
+      });
+    }
+
+    const { generateBill } = await import('../../order/services/billGenerationService.js');
+    const billUrl = await generateBill(order);
+
+    await Order.findByIdAndUpdate(order._id, { billUrl });
+
+    return successResponse(res, 200, 'Order bill generated successfully', {
+      billUrl
+    });
+  } catch (error) {
+    logger.error(`Error fetching delivery order bill: ${error.message}`, { error: error.stack });
+    return errorResponse(res, 500, 'Failed to generate/retrieve bill');
+  }
+});
+
+/**
  * Accept Order (Delivery Boy accepts the assigned order)
  * PATCH /api/delivery/orders/:orderId/accept
  */
