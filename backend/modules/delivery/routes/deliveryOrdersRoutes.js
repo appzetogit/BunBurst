@@ -2,6 +2,7 @@ import express from 'express';
 import { 
   getOrders, 
   getOrderDetails, 
+  getOrderBill,
   acceptOrder, 
   confirmReachedPickup, 
   confirmOrderId,
@@ -21,6 +22,7 @@ router.get('/orders', getOrders);
 // Trip History route (must be before /orders/:orderId)
 router.get('/orders/trips', getDeliveredTrips);
 router.get('/orders/:orderId', getOrderDetails);
+router.get('/orders/:orderId/bill', getOrderBill);
 router.patch('/orders/:orderId/accept', acceptOrder);
 router.patch('/orders/:orderId/reached-pickup', confirmReachedPickup);
 router.patch('/orders/:orderId/confirm-order-id', confirmOrderId);
